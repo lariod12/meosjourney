@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Character Sheet - Nhân Vật</title>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Handwritten & Game Style -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Pattern -->
+    <div class="bg-pattern"></div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Character Sheet Frame -->
+        <div class="character-sheet">
+            
+            <!-- Header Section -->
+            <div class="sheet-header">
+                <h1 class="title-sketch">CHARACTER PROFILE</h1>
+                <div class="decorative-line"></div>
+            </div>
+
+            <!-- Two Column Layout -->
+            <div class="main-layout">
+
+                <!-- Left Column - Character Info (Sticky) -->
+                <div class="left-sidebar">
+
+                    <!-- Avatar Section -->
+                    <div class="avatar-container">
+                        <div class="avatar-frame">
+                            <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300"
+                                 alt="Character Avatar"
+                                 id="characterAvatar"
+                                 class="avatar-img">
+                            <div class="avatar-border"></div>
+                        </div>
+
+                        <div class="character-name" id="characterName">SHADOW KNIGHT</div>
+                        <div class="character-title" id="characterTitle">The Code Warrior</div>
+                    </div>
+
+                    <!-- Stats Section -->
+                    <div class="stats-box">
+                        <h2 class="section-title">STATS</h2>
+                        <div class="stat-item">
+                            <div class="stat-label">LEVEL</div>
+                            <div class="stat-value" id="characterLevel">25</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">EXPERIENCE</div>
+                            <div class="xp-bar-container">
+                                <div class="xp-bar" id="xpBar">
+                                    <div class="xp-fill" id="xpFill" style="width: 65%"></div>
+                                </div>
+                                <div class="xp-text" id="xpText">6500 / 10000 XP</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skills Section - Grid like Hobbies -->
+                    <div class="skills-box">
+                        <h2 class="section-title">SKILLS</h2>
+                        <div class="skills-grid" id="skillsContainer">
+                            <!-- Skills will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Hobbies Section - Icon Grid -->
+                    <div class="interests-box">
+                        <h2 class="section-title">HOBBIES</h2>
+                        <div class="hobbies-grid" id="interestsContainer">
+                            <!-- Hobbies will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column - Real-time Content -->
+                <div class="right-content">
+
+                    <!-- Current Status -->
+                    <div class="status-box">
+                        <h2 class="section-title">CURRENT STATUS</h2>
+                        <div class="status-content">
+                            <div class="status-indicator">
+                                <span class="status-dot"></span>
+                                <span id="currentStatus">Coding a new adventure</span>
+                            </div>
+                            <div class="status-time" id="statusTime">Updated: Just now</div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Quests -->
+                    <div class="quests-box">
+                        <h2 class="section-title">DAILY QUESTS</h2>
+                        <div class="quest-progress">
+                            <span id="questProgress">0/0</span> Completed
+                        </div>
+                        <div class="quests-list" id="questsContainer">
+                            <!-- Quests will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Daily Journal -->
+                    <div class="journal-box">
+                        <h2 class="section-title">DAILY JOURNAL</h2>
+                        <div class="journal-date" id="journalDate">
+                            <!-- Current date will be inserted here -->
+                        </div>
+                        <div class="journal-content" id="journalContent">
+                            <!-- Journal entries will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="sheet-footer">
+                <div class="decorative-line"></div>
+                <p class="footer-text">Character Sheet v1.0 | Last Updated: <span id="lastUpdated"></span></p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
+

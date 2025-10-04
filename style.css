@@ -1,0 +1,664 @@
+/* ========================================
+   RPG CHARACTER SHEET - BLACK & WHITE THEME
+   Sketch/Game Art Style
+   ======================================== */
+
+/* === RESET & BASE STYLES === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --black: #000000;
+    --white: #ffffff;
+    --gray-dark: #1a1a1a;
+    --gray-medium: #333333;
+    --gray-light: #cccccc;
+    --shadow: rgba(0, 0, 0, 0.3);
+}
+
+body {
+    font-family: 'VT323', monospace;
+    background-color: var(--white);
+    color: var(--black);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* === BACKGROUND PATTERN === */
+.bg-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px);
+    background-size: 50px 50px;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* === CONTAINER === */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* === CHARACTER SHEET === */
+.character-sheet {
+    background: var(--white);
+    border: 5px solid var(--black);
+    box-shadow: 
+        8px 8px 0 var(--black),
+        inset 0 0 0 10px var(--white),
+        inset 0 0 0 12px var(--black);
+    padding: 30px;
+    position: relative;
+    animation: slideIn 0.6s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === HEADER === */
+.sheet-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.title-sketch {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 3px;
+    text-shadow: 3px 3px 0 var(--gray-light);
+    margin-bottom: 15px;
+    animation: glitch 3s infinite;
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+.decorative-line {
+    height: 3px;
+    background: var(--black);
+    position: relative;
+    margin: 20px auto;
+    max-width: 600px;
+}
+
+.decorative-line::before,
+.decorative-line::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    background: var(--white);
+    padding: 0 10px;
+}
+
+.decorative-line::before {
+    left: -10px;
+}
+
+.decorative-line::after {
+    right: -10px;
+}
+
+/* === TWO COLUMN LAYOUT === */
+.main-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* === LEFT SIDEBAR (STICKY) === */
+.left-sidebar {
+    position: sticky;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* === RIGHT CONTENT === */
+.right-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* === AVATAR === */
+.avatar-container {
+    text-align: center;
+    padding: 25px;
+    border: 4px solid var(--black);
+    background: var(--white);
+    position: relative;
+}
+
+.avatar-frame {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+    height: 280px;
+    margin: 0 auto 20px;
+    border: 5px solid var(--black);
+    background: var(--white);
+    box-shadow: 6px 6px 0 var(--black);
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(1.3) grayscale(100%);
+}
+
+.avatar-border {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border: 3px dashed var(--black);
+    pointer-events: none;
+}
+
+.character-name {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.character-title {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--gray-medium);
+    border-top: 2px solid var(--black);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* === STATS BOX === */
+.stats-box,
+.skills-box,
+.interests-box,
+.status-box,
+.quests-box,
+.journal-box {
+    border: 4px solid var(--black);
+    padding: 20px;
+    background: var(--white);
+    position: relative;
+}
+
+.section-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--black);
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--gray-light);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-value {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem;
+    background: var(--black);
+    color: var(--white);
+    padding: 5px 15px;
+    border-radius: 0;
+}
+
+/* === XP BAR === */
+.xp-bar-container {
+    flex: 1;
+    margin-left: 15px;
+}
+
+.xp-bar {
+    height: 25px;
+    border: 2px solid var(--black);
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: var(--black);
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.xp-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.1) 10px,
+        rgba(255, 255, 255, 0.1) 20px
+    );
+}
+
+.xp-text {
+    font-size: 1.2rem;
+    margin-top: 5px;
+    text-align: right;
+}
+
+/* === SKILLS GRID === */
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.skill-item {
+    border: 3px solid var(--black);
+    padding: 15px 10px;
+    background: var(--white);
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.skill-item:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 4px 4px 0 var(--gray-medium);
+}
+
+.skill-icon {
+    font-size: 2rem;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.skill-name {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* === HOBBIES GRID === */
+.hobbies-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.hobby-item {
+    border: 3px solid var(--black);
+    padding: 15px 10px;
+    background: var(--white);
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.hobby-item:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 4px 4px 0 var(--gray-medium);
+}
+
+.hobby-icon {
+    font-size: 2rem;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.hobby-name {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+
+
+/* === STATUS === */
+.status-content {
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.status-dot {
+    width: 15px;
+    height: 15px;
+    background: var(--black);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.status-time {
+    font-size: 1rem;
+    color: var(--gray-medium);
+}
+
+/* === QUESTS === */
+.quest-progress {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 10px;
+    border: 2px solid var(--black);
+    background: var(--black);
+    color: var(--white);
+}
+
+.quests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quest-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    border: 2px solid var(--black);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.quest-item:hover {
+    transform: translateX(5px);
+}
+
+.quest-item.completed {
+    background: repeating-linear-gradient(
+        45deg,
+        #f0f0f0,
+        #f0f0f0 10px,
+        #e0e0e0 10px,
+        #e0e0e0 20px
+    );
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.quest-checkbox {
+    width: 25px;
+    height: 25px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.quest-checkbox.checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.quest-text {
+    font-size: 1.2rem;
+    flex: 1;
+}
+
+/* === JOURNAL === */
+.journal-date {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-left: 4px solid var(--black);
+    background: #f5f5f5;
+}
+
+.journal-content {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: var(--white);
+    min-height: 150px;
+}
+
+.journal-entry {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.journal-entry:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.journal-time {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* === FOOTER === */
+.sheet-footer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.footer-text {
+    font-size: 1.1rem;
+    margin-top: 15px;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 1024px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    .left-sidebar {
+        position: static;
+    }
+
+    .title-sketch {
+        font-size: 1.8rem;
+    }
+
+    .avatar-frame {
+        max-width: 250px;
+        height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .character-sheet {
+        padding: 15px;
+    }
+
+    .title-sketch {
+        font-size: 1.3rem;
+    }
+
+    .avatar-container {
+        padding: 20px;
+    }
+
+    .avatar-frame {
+        max-width: 200px;
+        height: 200px;
+    }
+
+    .character-name {
+        font-size: 1.2rem;
+    }
+
+    .character-title {
+        font-size: 1.1rem;
+    }
+
+    .section-title {
+        font-size: 0.85rem;
+    }
+
+    .skills-grid,
+    .hobbies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .skill-item,
+    .hobby-item {
+        padding: 12px 8px;
+    }
+
+    .skill-icon,
+    .hobby-icon {
+        font-size: 1.6rem;
+    }
+
+    .skill-name,
+    .hobby-name {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    .character-sheet {
+        padding: 10px;
+        border-width: 3px;
+    }
+
+    .title-sketch {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    .avatar-container {
+        padding: 15px;
+    }
+
+    .avatar-frame {
+        max-width: 180px;
+        height: 180px;
+    }
+
+    .character-name {
+        font-size: 1rem;
+        letter-spacing: 1px;
+    }
+
+    .character-title {
+        font-size: 1rem;
+    }
+
+    .section-title {
+        font-size: 0.75rem;
+    }
+
+    .skills-grid,
+    .hobbies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .skill-item,
+    .hobby-item {
+        padding: 10px 6px;
+    }
+
+    .skill-icon,
+    .hobby-icon {
+        font-size: 1.4rem;
+    }
+
+    .skill-name,
+    .hobby-name {
+        font-size: 0.8rem;
+    }
+}
+
