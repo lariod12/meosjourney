@@ -138,10 +138,12 @@ body {
 /* === LEFT SIDEBAR (STICKY) === */
 .left-sidebar {
     position: sticky;
-    top: 20px;
+    top: 15px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 8px;
+    max-height: calc(100vh - 30px);
+    overflow: visible;
 }
 
 /* === RIGHT CONTENT === */
@@ -154,8 +156,8 @@ body {
 /* === AVATAR === */
 .avatar-container {
     text-align: center;
-    padding: 25px;
-    border: 4px solid var(--black);
+    padding: 15px;
+    border: 3px solid var(--black);
     background: var(--white);
     position: relative;
 }
@@ -163,12 +165,12 @@ body {
 .avatar-frame {
     position: relative;
     width: 100%;
-    max-width: 280px;
-    height: 280px;
-    margin: 0 auto 20px;
-    border: 5px solid var(--black);
+    max-width: 160px;
+    height: 160px;
+    margin: 0 auto 10px;
+    border: 3px solid var(--black);
     background: var(--white);
-    box-shadow: 6px 6px 0 var(--black);
+    box-shadow: 4px 4px 0 var(--black);
 }
 
 .avatar-img {
@@ -180,95 +182,89 @@ body {
 
 .avatar-border {
     position: absolute;
-    top: -8px;
-    left: -8px;
-    right: -8px;
-    bottom: -8px;
-    border: 3px dashed var(--black);
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border: 2px dashed var(--black);
     pointer-events: none;
 }
 
 .character-name {
     font-family: 'Press Start 2P', cursive;
-    font-size: 1.4rem;
-    margin-bottom: 8px;
+    font-size: 1rem;
+    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
+    line-height: 1.3;
 }
 
 .character-title {
     font-family: 'VT323', monospace;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-style: italic;
     color: var(--gray-medium);
-    border-top: 2px solid var(--black);
-    padding-top: 8px;
-    margin-top: 8px;
+    margin-bottom: 10px;
 }
 
-/* === STATS BOX === */
-.stats-box,
+/* === SECTION BOXES === */
 .skills-box,
 .interests-box,
 .status-box,
 .quests-box,
 .journal-box {
-    border: 4px solid var(--black);
-    padding: 20px;
+    border: 3px solid var(--black);
+    padding: 10px;
     background: var(--white);
     position: relative;
 }
 
 .section-title {
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.95rem;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 3px solid var(--black);
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--black);
     text-align: center;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
+    line-height: 1.3;
 }
 
-.stat-item {
+/* === LEVEL & XP (inside Avatar) === */
+.avatar-container .xp-bar-wrapper {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px dashed var(--gray-light);
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 10px;
 }
 
-.stat-item:last-child {
-    border-bottom: none;
-}
-
-.stat-label {
-    font-size: 1.3rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.stat-value {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 1.5rem;
-    background: var(--black);
-    color: var(--white);
-    padding: 5px 15px;
-    border-radius: 0;
-}
-
-/* === XP BAR === */
-.xp-bar-container {
-    flex: 1;
-    margin-left: 15px;
-}
-
-.xp-bar {
-    height: 25px;
+.avatar-container .xp-bar {
+    height: 28px;
     border: 2px solid var(--black);
     background: var(--white);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+}
+
+.avatar-container .level-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.65rem;
+    background: var(--black);
+    color: var(--white);
+    padding: 0 12px;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
 }
 
 .xp-fill {
@@ -294,82 +290,164 @@ body {
     );
 }
 
-.xp-text {
-    font-size: 1.2rem;
-    margin-top: 5px;
+.avatar-container .xp-text {
+    font-size: 0.7rem;
     text-align: right;
+    font-family: 'VT323', monospace;
+    color: var(--gray-medium);
+    line-height: 1;
 }
 
-/* === SKILLS GRID === */
-.skills-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.skill-item {
+/* === TABBED SECTION (Skills & Hobbies Combined) === */
+.tabbed-section {
+    padding: 15px;
     border: 3px solid var(--black);
-    padding: 15px 10px;
     background: var(--white);
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
 }
 
-.skill-item:hover {
+/* === DAILY ACTIVITIES TABBED SECTION === */
+.daily-activities-section {
+    padding: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    margin-bottom: 15px;
+}
+
+/* Tab Navigation */
+.tab-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 15px;
+    border-bottom: 3px solid var(--black);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-right: 3px solid var(--black);
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tab-btn:last-child {
+    border-right: none;
+}
+
+.tab-btn:hover {
+    background: var(--gray-light);
+}
+
+.tab-btn.active {
     background: var(--black);
     color: var(--white);
-    transform: translateY(-3px);
-    box-shadow: 4px 4px 0 var(--gray-medium);
 }
 
-.skill-icon {
-    font-size: 2rem;
-    margin-bottom: 6px;
-    font-weight: bold;
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--black);
 }
 
-.skill-name {
-    font-family: 'VT323', monospace;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+/* Tab Content Wrapper */
+.tab-content-wrapper {
+    position: relative;
+    min-height: 80px;
 }
 
-/* === HOBBIES GRID === */
-.hobbies-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+/* Tab Content */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
 }
 
-.hobby-item {
-    border: 3px solid var(--black);
-    padding: 15px 10px;
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === TAGS CONTAINER (Skills & Hobbies) === */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: 1.4;
+}
+
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border: 2px solid var(--black);
     background: var(--white);
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    cursor: default;
+    white-space: nowrap;
 }
 
-.hobby-item:hover {
+.tag:hover {
     background: var(--black);
     color: var(--white);
-    transform: translateY(-3px);
-    box-shadow: 4px 4px 0 var(--gray-medium);
+    transform: translateY(-1px);
 }
 
-.hobby-icon {
-    font-size: 2rem;
-    margin-bottom: 6px;
-    font-weight: bold;
+/* === STATUS (in left sidebar) === */
+.status-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.hobby-name {
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-family: 'VT323', monospace;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--black);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.status-time {
+    font-family: 'VT323', monospace;
+    font-size: 0.75rem;
+    color: var(--gray-medium);
+    font-style: italic;
 }
 
 
@@ -519,15 +597,72 @@ body {
     margin-bottom: 5px;
 }
 
-/* === FOOTER === */
+/* === FOOTER - CONTACT INFO === */
 .sheet-footer {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 30px;
+    padding-top: 20px;
 }
 
-.footer-text {
-    font-size: 1.1rem;
+.footer-content {
+    padding: 20px;
+}
+
+.footer-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.social-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    color: var(--black);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.social-link:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 4px 4px 0 var(--black);
+}
+
+.social-link i {
+    font-size: 1.5rem;
+}
+
+.social-link span {
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-copyright {
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+    color: var(--gray-medium);
     margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed var(--gray-light);
 }
 
 /* === RESPONSIVE DESIGN === */
@@ -539,6 +674,7 @@ body {
 
     .left-sidebar {
         position: static;
+        max-height: none;
     }
 
     .title-sketch {
@@ -548,6 +684,15 @@ body {
     .avatar-frame {
         max-width: 250px;
         height: 250px;
+    }
+
+    .skills-grid.collapsed,
+    .hobbies-grid.collapsed {
+        max-height: none;
+    }
+
+    .toggle-btn {
+        display: none !important;
     }
 }
 
@@ -659,6 +804,27 @@ body {
     .skill-name,
     .hobby-name {
         font-size: 0.8rem;
+    }
+
+    .footer-title {
+        font-size: 0.65rem;
+    }
+
+    .social-links {
+        gap: 10px;
+    }
+
+    .social-link {
+        min-width: 70px;
+        padding: 10px 12px;
+    }
+
+    .social-link i {
+        font-size: 1.2rem;
+    }
+
+    .social-link span {
+        font-size: 0.75rem;
     }
 }
 

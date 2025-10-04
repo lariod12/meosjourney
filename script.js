@@ -96,12 +96,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function populateCharacterInfo() {
     document.getElementById('characterName').textContent = characterData.name;
     document.getElementById('characterTitle').textContent = characterData.title;
-    document.getElementById('characterLevel').textContent = characterData.level;
-    
+    document.getElementById('levelLabel').textContent = `LEVEL ${characterData.level}`;
+
     // Update XP
     const xpPercentage = (characterData.currentXP / characterData.maxXP) * 100;
     document.getElementById('xpFill').style.width = xpPercentage + '%';
-    document.getElementById('xpText').textContent = 
+    document.getElementById('xpText').textContent =
         `${characterData.currentXP.toLocaleString()} / ${characterData.maxXP.toLocaleString()} XP`;
 }
 
@@ -110,13 +110,10 @@ function populateSkills() {
     container.innerHTML = '';
 
     characterData.skills.forEach(skill => {
-        const skillItem = document.createElement('div');
-        skillItem.className = 'skill-item';
-        skillItem.innerHTML = `
-            <div class="skill-icon">${skill.icon}</div>
-            <div class="skill-name">${skill.name}</div>
-        `;
-        container.appendChild(skillItem);
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = skill.name;
+        container.appendChild(tag);
     });
 }
 
@@ -125,13 +122,10 @@ function populateInterests() {
     container.innerHTML = '';
 
     characterData.interests.forEach(interest => {
-        const hobbyItem = document.createElement('div');
-        hobbyItem.className = 'hobby-item';
-        hobbyItem.innerHTML = `
-            <div class="hobby-icon">${interest.icon}</div>
-            <div class="hobby-name">${interest.name}</div>
-        `;
-        container.appendChild(hobbyItem);
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = interest.name;
+        container.appendChild(tag);
     });
 }
 
@@ -271,7 +265,7 @@ function levelUp() {
     characterData.currentXP = characterData.currentXP - characterData.maxXP;
     characterData.maxXP = Math.floor(characterData.maxXP * 1.5);
 
-    document.getElementById('characterLevel').textContent = characterData.level;
+    document.getElementById('levelLabel').textContent = `LEVEL ${characterData.level}`;
     showNotification(`LEVEL UP! You are now Level ${characterData.level}!`);
 }
 
@@ -317,6 +311,8 @@ function updateLastUpdated() {
     document.getElementById('lastUpdated').textContent = `${dateString} ${timeString}`;
 }
 
+// === TOGGLE FUNCTIONS === (Removed - no longer needed for tag-based layout)
+
 // === EASTER EGGS & ANIMATIONS ===
 
 // Add keyboard shortcuts
@@ -326,7 +322,7 @@ document.addEventListener('keydown', function(e) {
         addXP(500);
         showNotification('Cheat Code Activated! +500 XP');
     }
-    
+
     // Press 'R' to reset quests
     if (e.key === 'r' || e.key === 'R') {
         characterData.quests.forEach(q => q.completed = false);
@@ -364,4 +360,39 @@ style.textContent = `
 document.head.appendChild(style);
 
 console.log('💡 Tip: Press "L" to gain XP, "R" to reset quests!');
+
+// === TAB SWITCHING FUNCTIONALITY ===
+function initializeTabs() {
+    // Get all tab sections
+    const tabSections = document.querySelectorAll('.tabbed-section, .daily-activities-section');
+
+    tabSections.forEach(section => {
+        const tabButtons = section.querySelectorAll('.tab-btn');
+        const tabContents = section.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+
+                // Remove active class from all buttons in this section
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+
+                // Remove active class from all content in this section
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                // Show corresponding content
+                const targetContent = section.querySelector('#' + targetTab + 'Tab');
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+    });
+}
+
+// Initialize tabs when DOM is loaded
+initializeTabs();
 

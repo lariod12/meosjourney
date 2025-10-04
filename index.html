@@ -49,50 +49,20 @@
 
                         <div class="character-name" id="characterName">SHADOW KNIGHT</div>
                         <div class="character-title" id="characterTitle">The Code Warrior</div>
-                    </div>
 
-                    <!-- Stats Section -->
-                    <div class="stats-box">
-                        <h2 class="section-title">STATS</h2>
-                        <div class="stat-item">
-                            <div class="stat-label">LEVEL</div>
-                            <div class="stat-value" id="characterLevel">25</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">EXPERIENCE</div>
-                            <div class="xp-bar-container">
-                                <div class="xp-bar" id="xpBar">
-                                    <div class="xp-fill" id="xpFill" style="width: 65%"></div>
-                                </div>
-                                <div class="xp-text" id="xpText">6500 / 10000 XP</div>
+                        <!-- XP Bar with Level Text Inside -->
+                        <div class="xp-bar-wrapper">
+                            <div class="xp-bar" id="xpBar">
+                                <div class="xp-fill" id="xpFill" style="width: 65%"></div>
+                                <div class="level-label" id="levelLabel">LEVEL 25</div>
                             </div>
+                            <div class="xp-text" id="xpText">6500 / 10000 XP</div>
                         </div>
                     </div>
-
-                    <!-- Skills Section - Grid like Hobbies -->
-                    <div class="skills-box">
-                        <h2 class="section-title">SKILLS</h2>
-                        <div class="skills-grid" id="skillsContainer">
-                            <!-- Skills will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Hobbies Section - Icon Grid -->
-                    <div class="interests-box">
-                        <h2 class="section-title">HOBBIES</h2>
-                        <div class="hobbies-grid" id="interestsContainer">
-                            <!-- Hobbies will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Right Column - Real-time Content -->
-                <div class="right-content">
 
                     <!-- Current Status -->
                     <div class="status-box">
-                        <h2 class="section-title">CURRENT STATUS</h2>
+                        <h2 class="section-title">STATUS</h2>
                         <div class="status-content">
                             <div class="status-indicator">
                                 <span class="status-dot"></span>
@@ -102,25 +72,66 @@
                         </div>
                     </div>
 
-                    <!-- Daily Quests -->
-                    <div class="quests-box">
-                        <h2 class="section-title">DAILY QUESTS</h2>
-                        <div class="quest-progress">
-                            <span id="questProgress">0/0</span> Completed
+                    <!-- Skills & Hobbies - Tabbed Component -->
+                    <div class="tabbed-section">
+                        <!-- Tab Navigation -->
+                        <div class="tab-nav">
+                            <button class="tab-btn active" data-tab="skills">SKILLS</button>
+                            <button class="tab-btn" data-tab="hobbies">HOBBIES</button>
                         </div>
-                        <div class="quests-list" id="questsContainer">
-                            <!-- Quests will be populated by JavaScript -->
+
+                        <!-- Tab Content -->
+                        <div class="tab-content-wrapper">
+                            <!-- Skills Tab Content -->
+                            <div class="tab-content active" id="skillsTab">
+                                <div class="tags-container" id="skillsContainer">
+                                    <!-- Skills will be populated by JavaScript as tags -->
+                                </div>
+                            </div>
+
+                            <!-- Hobbies Tab Content -->
+                            <div class="tab-content" id="hobbiesTab">
+                                <div class="tags-container" id="interestsContainer">
+                                    <!-- Hobbies will be populated by JavaScript as tags -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Daily Journal -->
-                    <div class="journal-box">
-                        <h2 class="section-title">DAILY JOURNAL</h2>
-                        <div class="journal-date" id="journalDate">
-                            <!-- Current date will be inserted here -->
+                </div>
+
+                <!-- Right Column - Real-time Content -->
+                <div class="right-content">
+
+                    <!-- Daily Activities - Tabbed Component -->
+                    <div class="daily-activities-section">
+                        <!-- Tab Navigation -->
+                        <div class="tab-nav">
+                            <button class="tab-btn active" data-tab="quests">DAILY QUESTS</button>
+                            <button class="tab-btn" data-tab="journal">DAILY JOURNAL</button>
                         </div>
-                        <div class="journal-content" id="journalContent">
-                            <!-- Journal entries will be populated by JavaScript -->
+
+                        <!-- Tab Content -->
+                        <div class="tab-content-wrapper">
+                            <!-- Daily Quests Tab Content -->
+                            <div class="tab-content active" id="questsTab">
+                                <div class="quest-progress">
+                                    <span id="questProgress">0/0</span> Completed
+                                </div>
+                                <div class="quests-list" id="questsContainer">
+                                    <!-- Quests will be populated by JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- Daily Journal Tab Content -->
+                            <div class="tab-content" id="journalTab">
+                                <div class="journal-date" id="journalDate">
+                                    <!-- Current date will be inserted here -->
+                                </div>
+                                <div class="journal-content" id="journalContent">
+                                    <!-- Journal entries will be populated by JavaScript -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -128,10 +139,44 @@
 
             </div>
 
-            <!-- Footer -->
+            <!-- Footer - Contact Info -->
             <div class="sheet-footer">
                 <div class="decorative-line"></div>
-                <p class="footer-text">Character Sheet v1.0 | Last Updated: <span id="lastUpdated"></span></p>
+
+                <div class="footer-content">
+                    <div class="footer-title">CONNECT WITH ME</div>
+
+                    <div class="social-links">
+                        <a href="https://facebook.com/yourprofile" target="_blank" class="social-link" title="Facebook">
+                            <i class="fab fa-facebook"></i>
+                            <span>Facebook</span>
+                        </a>
+
+                        <a href="https://instagram.com/yourprofile" target="_blank" class="social-link" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                            <span>Instagram</span>
+                        </a>
+
+                        <a href="https://tiktok.com/@yourprofile" target="_blank" class="social-link" title="TikTok">
+                            <i class="fab fa-tiktok"></i>
+                            <span>TikTok</span>
+                        </a>
+
+                        <a href="https://youtube.com/@yourprofile" target="_blank" class="social-link" title="YouTube">
+                            <i class="fab fa-youtube"></i>
+                            <span>YouTube</span>
+                        </a>
+
+                        <a href="mailto:your.email@gmail.com" class="social-link" title="Gmail">
+                            <i class="fas fa-envelope"></i>
+                            <span>Gmail</span>
+                        </a>
+                    </div>
+
+                    <div class="footer-copyright">
+                        © 2025 Shadow Knight | All Rights Reserved
+                    </div>
+                </div>
             </div>
 
         </div>
