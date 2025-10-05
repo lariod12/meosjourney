@@ -75,9 +75,11 @@ Khi một element đã có `max-height`, việc chỉ thay đổi `max-height` s
 
 ---
 
-## 🎯 Áp dụng trong project: `.status-box`
+## 🎯 Áp dụng trong project
 
-### Vị trí: `style.css` - dòng 222-232
+### 1. `.status-box` (Left Sidebar)
+
+**Vị trí:** `style.css` - dòng 222-232
 
 ```css
 .status-box {
@@ -93,24 +95,68 @@ Khi một element đã có `max-height`, việc chỉ thay đổi `max-height` s
 }
 ```
 
-### Để thay đổi chiều cao status box:
+### 2. `.daily-activities-section` (Right Content)
 
-#### Muốn box cao hơn:
+**Vị trí:** `style.css` - dòng 322-333
+
+```css
+.daily-activities-section {
+    padding: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    margin-bottom: 15px;
+    min-height: 400px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao tối thiểu */
+    max-height: 600px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao tối đa */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+```
+
+**Lưu ý:** `.daily-activities-section` nằm trong `.right-content`, cần đảm bảo:
+- `.right-content` có `min-height: 0` để cho phép flex item scroll
+- `.tab-content-wrapper` có `flex: 1`, `overflow-y: auto`, `min-height: 0`
+
+### Cách thay đổi chiều cao:
+
+#### A. Status Box (Left Sidebar)
+
+**Muốn box cao hơn:**
 ```css
 min-height: 300px;  /* Tăng từ 250px */
 max-height: 400px;  /* Tăng từ 350px */
 ```
 
-#### Muốn box thấp hơn:
+**Muốn box thấp hơn:**
 ```css
 min-height: 200px;  /* Giảm từ 250px */
 max-height: 300px;  /* Giảm từ 350px */
 ```
 
-#### Muốn chiều cao cố định:
+**Muốn chiều cao cố định:**
 ```css
 min-height: 350px;  /* Cùng giá trị */
 max-height: 350px;  /* Cùng giá trị */
+```
+
+#### B. Daily Activities Section (Right Content)
+
+**Muốn section cao hơn:**
+```css
+min-height: 500px;  /* Tăng từ 400px */
+max-height: 700px;  /* Tăng từ 600px */
+```
+
+**Muốn section thấp hơn:**
+```css
+min-height: 300px;  /* Giảm từ 400px */
+max-height: 500px;  /* Giảm từ 600px */
+```
+
+**Muốn chiều cao cố định:**
+```css
+min-height: 500px;  /* Cùng giá trị */
+max-height: 500px;  /* Cùng giá trị */
 ```
 
 ---
@@ -118,6 +164,8 @@ max-height: 350px;  /* Cùng giá trị */
 ## 🔧 Kết hợp với Flexbox và Scroll
 
 Để scrollbar hoạt động đúng trong flexbox container:
+
+### Cấu trúc cho Status Box (Left Sidebar):
 
 ```css
 /* Parent container */
@@ -131,6 +179,34 @@ max-height: 350px;  /* Cùng giá trị */
 
 /* Child wrapper - nơi scroll thực sự xảy ra */
 .status-tab-content-wrapper {
+    flex: 1;           /* Chiếm toàn bộ không gian còn lại */
+    overflow-y: auto;  /* Scrollbar xuất hiện ở đây */
+    min-height: 0;     /* Quan trọng! Cho phép flex item scroll */
+}
+```
+
+### Cấu trúc cho Daily Activities (Right Content):
+
+```css
+/* Grandparent - Right Content Column */
+.right-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    min-height: 0;     /* Quan trọng! Cho phép children scroll */
+}
+
+/* Parent container */
+.daily-activities-section {
+    min-height: 400px;
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;  /* Ẩn overflow ở parent */
+}
+
+/* Child wrapper - nơi scroll thực sự xảy ra */
+.tab-content-wrapper {
     flex: 1;           /* Chiếm toàn bộ không gian còn lại */
     overflow-y: auto;  /* Scrollbar xuất hiện ở đây */
     min-height: 0;     /* Quan trọng! Cho phép flex item scroll */
