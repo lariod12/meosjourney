@@ -60,12 +60,14 @@
                         </div>
                     </div>
 
-                    <!-- Current Status & Introduce -->
+                    <!-- Status, Introduce, Skills & Hobbies - Combined Tabbed Component -->
                     <div class="status-box">
                         <!-- Tab Navigation -->
                         <div class="status-tab-nav">
                             <button class="status-tab-btn active" data-tab="status">STATUS</button>
                             <button class="status-tab-btn" data-tab="introduce">INTRODUCE</button>
+                            <button class="status-tab-btn" data-tab="skills">SKILLS</button>
+                            <button class="status-tab-btn" data-tab="hobbies">HOBBIES</button>
                         </div>
 
                         <!-- Tab Content -->
@@ -95,30 +97,22 @@
                                     <p id="characterIntroduce">A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Skills & Hobbies - Tabbed Component -->
-                    <div class="tabbed-section">
-                        <!-- Tab Navigation -->
-                        <div class="tab-nav">
-                            <button class="tab-btn active" data-tab="skills">SKILLS</button>
-                            <button class="tab-btn" data-tab="hobbies">HOBBIES</button>
-                        </div>
-
-                        <!-- Tab Content -->
-                        <div class="tab-content-wrapper">
                             <!-- Skills Tab Content -->
-                            <div class="tab-content active" id="skillsTab">
-                                <div class="tags-container" id="skillsContainer">
-                                    <!-- Skills will be populated by JavaScript as tags -->
+                            <div class="status-tab-content" id="skillsTab">
+                                <div class="skills-content">
+                                    <div class="tags-container" id="skillsContainer">
+                                        <!-- Skills will be populated by JavaScript as tags -->
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Hobbies Tab Content -->
-                            <div class="tab-content" id="hobbiesTab">
-                                <div class="tags-container" id="interestsContainer">
-                                    <!-- Hobbies will be populated by JavaScript as tags -->
+                            <div class="status-tab-content" id="hobbiesTab">
+                                <div class="hobbies-content">
+                                    <div class="tags-container" id="interestsContainer">
+                                        <!-- Hobbies will be populated by JavaScript as tags -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
