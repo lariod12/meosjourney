@@ -151,7 +151,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 25px;
-    min-height: 0;
+    min-height: 600px;
 }
 
 /* === AVATAR === */
@@ -161,6 +161,7 @@ body {
     border: 3px solid var(--black);
     background: var(--white);
     position: relative;
+    flex-shrink: 0;  /* Ngăn không cho bị shrink bởi parent flex container */
 }
 
 .avatar-frame {
@@ -225,8 +226,8 @@ body {
     padding: 10px;
     background: var(--white);
     position: relative;
-    min-height: 250px;
-    max-height: 350px;
+    height: 275px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao */
+    flex-shrink: 0;  /* Ngăn không cho bị shrink bởi parent flex container */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -325,8 +326,7 @@ body {
     padding: 15px;
     border: 3px solid var(--black);
     background: var(--white);
-    margin-bottom: 15px;
-    height: 575px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao */
+    height: 600px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao */
     display: flex;
     flex-direction: column;
     overflow: hidden;
