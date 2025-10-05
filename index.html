@@ -60,23 +60,41 @@
                         </div>
                     </div>
 
-                    <!-- Current Status -->
+                    <!-- Current Status & Description -->
                     <div class="status-box">
-                        <h2 class="section-title">STATUS</h2>
-                        <div class="status-content">
-                            <div class="status-indicator">
-                                <span class="status-dot"></span>
-                                <span id="currentStatus">Coding a new adventure</span>
+                        <!-- Tab Navigation -->
+                        <div class="status-tab-nav">
+                            <button class="status-tab-btn active" data-tab="status">STATUS</button>
+                            <button class="status-tab-btn" data-tab="description">DESCRIPTION</button>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div class="status-tab-content-wrapper">
+                            <!-- Status Tab Content -->
+                            <div class="status-tab-content active" id="statusTab">
+                                <div class="status-content">
+                                    <div class="status-indicator">
+                                        <span class="status-dot"></span>
+                                        <span id="currentStatus">Coding a new adventure</span>
+                                    </div>
+                                    <div class="status-location">
+                                        <span class="status-label">Location:</span>
+                                        <span id="currentLocation">Home</span>
+                                    </div>
+                                    <div class="status-mood">
+                                        <span class="status-label">Mood:</span>
+                                        <span id="currentMood">Chilling</span>
+                                    </div>
+                                    <div class="status-time" id="statusTime">Updated: Just now</div>
+                                </div>
                             </div>
-                            <div class="status-location">
-                                <span class="status-label">Location:</span>
-                                <span id="currentLocation">Home</span>
+
+                            <!-- Description Tab Content -->
+                            <div class="status-tab-content" id="descriptionTab">
+                                <div class="description-content">
+                                    <p id="characterDescription">A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.</p>
+                                </div>
                             </div>
-                            <div class="status-mood">
-                                <span class="status-label">Mood:</span>
-                                <span id="currentMood">Chilling</span>
-                            </div>
-                            <div class="status-time" id="statusTime">Updated: Just now</div>
                         </div>
                     </div>
 

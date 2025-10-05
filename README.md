@@ -36,11 +36,17 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 - Icons đại diện cho từng sở thích
 - Hover animation
 
-#### 4. **Current Status** (Trạng thái hiện tại)
-- Hiển thị hoạt động đang làm
-- Location (vị trí hiện tại)
-- Timestamp tự động cập nhật
-- Animated status indicator
+#### 4. **Status & Description** (Trạng thái & Giới thiệu)
+Hệ thống 2 tabs:
+- **Tab Status** (mặc định):
+  - Hiển thị hoạt động đang làm
+  - Location (vị trí hiện tại)
+  - Mood (trạng thái cảm xúc)
+  - Timestamp tự động cập nhật
+  - Animated status indicator
+- **Tab Description**:
+  - Giới thiệu ngắn về nhân vật
+  - Border và style tương tự tab Status
 
 #### 5. **Daily Schedule** (Lịch trình hàng ngày)
 - Timeline theo giờ

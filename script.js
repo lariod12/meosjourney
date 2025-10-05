@@ -43,6 +43,9 @@ const characterData = {
         timestamp: new Date()
     },
 
+    // Character Description
+    description: "A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.",
+
     // Daily Quests
     quests: [
         { id: 1, text: "Complete 3 coding challenges", completed: false },
@@ -79,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     populateSkills();
     populateInterests();
     populateStatus();
+    populateDescription();
     populateQuests();
     populateJournal();
     updateLastUpdated();
@@ -136,6 +140,10 @@ function populateStatus() {
     document.getElementById('currentLocation').textContent = characterData.status.location;
     document.getElementById('currentMood').textContent = characterData.status.mood;
     updateStatusTime();
+}
+
+function populateDescription() {
+    document.getElementById('characterDescription').textContent = characterData.description;
 }
 
 function updateStatusTime() {
@@ -393,6 +401,31 @@ function initializeTabs() {
                     targetContent.classList.add('active');
                 }
             });
+        });
+    });
+
+    // Initialize Status Tabs
+    const statusTabButtons = document.querySelectorAll('.status-tab-btn');
+    const statusTabContents = document.querySelectorAll('.status-tab-content');
+
+    statusTabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+
+            // Remove active class from all status tab buttons
+            statusTabButtons.forEach(btn => btn.classList.remove('active'));
+
+            // Remove active class from all status tab contents
+            statusTabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button
+            this.classList.add('active');
+
+            // Show corresponding content
+            const targetContent = document.querySelector('#' + targetTab + 'Tab');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
         });
     });
 }
