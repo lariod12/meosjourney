@@ -36,9 +36,9 @@ const characterData = {
     
     // Current Status
     status: {
-        text: "Coding a new adventure",
+        text: "Studying character design",
         location: "Home",
-        mood: "Chilling",
+        mood: "Focused",
         timestamp: new Date()
     },
 
