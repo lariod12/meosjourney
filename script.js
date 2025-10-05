@@ -5,8 +5,8 @@
 
 // === CHARACTER DATA ===
 const characterData = {
-    name: "SHADOW KNIGHT",
-    title: "The Code Warrior",
+    name: "MÉO",
+    title: "Forever Curious",
     level: 25,
     currentXP: 6500,
     maxXP: 10000,
@@ -48,12 +48,12 @@ const characterData = {
 
     // Daily Quests
     quests: [
-        { id: 1, text: "Complete 3 coding challenges", completed: false },
-        { id: 2, text: "Review 5 pull requests", completed: true },
-        { id: 3, text: "Write documentation for new feature", completed: false },
-        { id: 4, text: "Learn a new algorithm", completed: false },
-        { id: 5, text: "Exercise for 30 minutes", completed: true },
-        { id: 6, text: "Read 1 chapter of tech book", completed: false }
+        { id: 1, text: "Complete 3 coding challenges", completed: false, xp: 150 },
+        { id: 2, text: "Review 5 pull requests", completed: true, xp: 100 },
+        { id: 3, text: "Write documentation for new feature", completed: false, xp: 120 },
+        { id: 4, text: "Learn a new algorithm", completed: false, xp: 200 },
+        { id: 5, text: "Exercise for 30 minutes", completed: true, xp: 80 },
+        { id: 6, text: "Read 1 chapter of tech book", completed: false, xp: 100 }
     ],
     
     // Daily Journal Entries
@@ -86,13 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
     populateQuests();
     populateJournal();
     updateLastUpdated();
-    
+
     // Update XP bar animation
     animateXPBar();
-    
-    // Set up quest interactions
-    setupQuestInteractions();
-    
+
+    // REMOVED: setupQuestInteractions() - Quest list is now read-only
+
     // Update time every minute
     setInterval(updateLastUpdated, 60000);
 });
@@ -167,18 +166,19 @@ function updateStatusTime() {
 function populateQuests() {
     const container = document.getElementById('questsContainer');
     container.innerHTML = '';
-    
+
     characterData.quests.forEach(quest => {
         const questDiv = document.createElement('div');
         questDiv.className = `quest-item ${quest.completed ? 'completed' : ''}`;
-        questDiv.dataset.questId = quest.id;
+        // Loại bỏ dataset.questId vì không cần tương tác nữa
+        // Loại bỏ checkbox, chỉ hiển thị text (read-only)
         questDiv.innerHTML = `
-            <div class="quest-checkbox ${quest.completed ? 'checked' : ''}"></div>
             <div class="quest-text">${quest.text}</div>
+            <div class="quest-xp">+${quest.xp} XP</div>
         `;
         container.appendChild(questDiv);
     });
-    
+
     updateQuestProgress();
 }
 
@@ -205,10 +205,13 @@ function populateJournal() {
 }
 
 // === QUEST INTERACTIONS ===
+// LOẠI BỎ - Quest list chỉ để xem (read-only), không cho phép tương tác
+// Hệ thống sẽ tự động cập nhật quest status
 
+/* REMOVED - No longer needed for read-only quest list
 function setupQuestInteractions() {
     const questItems = document.querySelectorAll('.quest-item');
-    
+
     questItems.forEach(item => {
         item.addEventListener('click', function() {
             const questId = parseInt(this.dataset.questId);
@@ -221,11 +224,11 @@ function toggleQuest(questId) {
     const quest = characterData.quests.find(q => q.id === questId);
     if (quest) {
         quest.completed = !quest.completed;
-        
+
         // Re-render quests
         populateQuests();
         setupQuestInteractions();
-        
+
         // Add XP if quest completed
         if (quest.completed) {
             addXP(100);
@@ -235,6 +238,7 @@ function toggleQuest(questId) {
         }
     }
 }
+*/
 
 function updateQuestProgress() {
     const completed = characterData.quests.filter(q => q.completed).length;
@@ -335,13 +339,14 @@ document.addEventListener('keydown', function(e) {
         showNotification('Cheat Code Activated! +500 XP');
     }
 
-    // Press 'R' to reset quests
+    // REMOVED: 'R' shortcut - Quest list is now read-only, no manual reset
+    /*
     if (e.key === 'r' || e.key === 'R') {
         characterData.quests.forEach(q => q.completed = false);
         populateQuests();
-        setupQuestInteractions();
         showNotification('Daily Quests Reset!');
     }
+    */
 });
 
 // Add CSS animations for notifications

@@ -383,6 +383,7 @@ body {
     position: relative;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;  /* Ngăn scroll ngang khi hover quest items */
     min-height: 0;
 }
 
@@ -658,13 +659,11 @@ body {
     padding: 12px;
     border: 2px solid var(--black);
     background: var(--white);
-    cursor: pointer;
-    transition: all 0.3s ease;
+    /* Loại bỏ tất cả tính năng tương tác - chỉ hiển thị read-only */
 }
 
-.quest-item:hover {
-    transform: translateX(5px);
-}
+/* Loại bỏ hover effects - quest list chỉ để xem, không tương tác */
+/* .quest-item:hover { ... } - REMOVED */
 
 .quest-item.completed {
     background: repeating-linear-gradient(
@@ -678,29 +677,32 @@ body {
     opacity: 0.7;
 }
 
-.quest-checkbox {
-    width: 25px;
-    height: 25px;
-    border: 3px solid var(--black);
-    background: var(--white);
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.quest-checkbox.checked::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.5rem;
-    font-weight: bold;
-}
+/* Checkbox styles - REMOVED (không cần checkbox nữa) */
+/* .quest-checkbox { ... } - REMOVED */
+/* .quest-checkbox.checked::after { ... } - REMOVED */
 
 .quest-text {
     font-size: 1.2rem;
     flex: 1;
+}
+
+.quest-xp {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border: 2px solid var(--black);
+    background: var(--black);
+    color: var(--white);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* XP badge cho completed quest có style khác */
+.quest-item.completed .quest-xp {
+    background: var(--gray-medium);
+    border-color: var(--gray-medium);
+    opacity: 0.8;
 }
 
 /* === JOURNAL === */
