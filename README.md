@@ -133,12 +133,14 @@ blog-art-minimal/
 - **HTML5**: Cấu trúc trang web
 - **CSS3**: Styling với animations
 - **Vanilla JavaScript**: Logic và tương tác
-- **Font Awesome 6.4.0**: Icons
-- **Google Fonts**: 
-  - Press Start 2P (retro game font)
-  - Permanent Marker (handwritten font)
-  - VT323 (monospace font)
-- **DiceBear API**: Avatar generation
+- **Font Awesome 6.4.0**: Icons (chỉ dùng icons đen/trắng)
+- **Google Fonts** (Handwritten Sketch Style):
+  - **Architects Daughter** - Titles và headings (chữ viết tay sketch đậm)
+  - **Kalam** - Body text chính (chữ viết tay tự nhiên)
+  - **Patrick Hand** - Text phụ và labels (chữ viết tay mềm mại)
+  - **Caveat** - Dự phòng
+  - **Indie Flower** - Dự phòng
+- **DiceBear API**: Avatar generation (pixel art black & white)
 
 ## 🎨 Customization Tips
 
@@ -177,7 +179,14 @@ Trong `index.html`, bạn có thể comment out hoặc xóa các sections không
 - `.journal-box`
 
 ### Thay đổi fonts
-Trong `index.html`, thay đổi Google Fonts link và update trong `style.css`.
+**LƯU Ý**: Chỉ sử dụng fonts có style handwritten/sketch để giữ theme nhất quán!
+
+Fonts hiện tại (tất cả đều là handwritten sketch style):
+- `Architects Daughter` - Cho titles, headings
+- `Kalam` - Cho body text
+- `Patrick Hand` - Cho text phụ
+
+Để thay đổi, cập nhật trong `index.html` (Google Fonts link) và `style.css` (font-family).
 
 ## 📱 Responsive Breakpoints
 
