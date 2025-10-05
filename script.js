@@ -43,7 +43,7 @@ const characterData = {
     },
 
     // Character Introduce
-    introduce: "A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.",
+    introduce: "A creative artist who brings imagination to life through drawing. Passionate about exploring the world, discovering new cultures, and savoring delicious food. Every sketch tells a story, every journey sparks inspiration, and every meal brings pure happiness.",
 
     // Daily Quests
     quests: [
