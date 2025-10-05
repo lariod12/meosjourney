@@ -11,28 +11,27 @@ const characterData = {
     currentXP: 6500,
     maxXP: 10000,
     
-    // Skills - grid items like hobbies
+    // Skills - grid items (no icons)
     skills: [
-        { name: "JavaScript", icon: "{ }" },
-        { name: "React", icon: "⚛" },
-        { name: "Node.js", icon: "◆" },
-        { name: "Python", icon: "⟨/⟩" },
-        { name: "Database", icon: "▣" },
-        { name: "Git", icon: "⎇" },
-        { name: "Docker", icon: "◈" },
-        { name: "AWS", icon: "△" }
+        { name: "Photoshop" },
+        { name: "Illustrator" },
+        { name: "Drawing" },
+        { name: "Video Editing" },
+        { name: "Animation" },
+        { name: "Clip Studio Paint" },
+        { name: "CapCut" },
+        { name: "Motion Graphics" }
     ],
 
-    // Interests/Hobbies - with icons (no emoji)
+    // Interests/Hobbies (no icons)
     interests: [
-        { name: "Gaming", icon: "▲" },
-        { name: "Music", icon: "♪" },
-        { name: "Reading", icon: "■" },
-        { name: "Art", icon: "✎" },
-        { name: "Coffee", icon: "◉" },
-        { name: "Code", icon: "</>" },
-        { name: "Design", icon: "◐" },
-        { name: "Travel", icon: "✈" }
+        { name: "Gaming" },
+        { name: "Music" },
+        { name: "Reading" },
+        { name: "Art" },
+        { name: "Food" },
+        { name: "Design" },
+        { name: "Travel" }
     ],
     
     // Current Status
