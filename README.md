@@ -5,10 +5,16 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 ## ✨ Tính năng
 
 ### 🎨 Thiết kế
-- **Phong cách**: Black & White, Game Art, Sketch/Hand-drawn aesthetic
+
+#### Theme Style Chủ Đạo: **Pure Black & White**
+- **Màu sắc**: Chỉ sử dụng đen (#000000) và trắng (#ffffff) với các tông xám
+- **KHÔNG có màu sắc**: Tuyệt đối không sử dụng bất kỳ màu nào khác (đỏ, xanh, vàng, v.v.)
+- **Icons**: Chỉ sử dụng ký tự đặc biệt, symbols, và ASCII art - KHÔNG dùng emoji có màu
+- **Phong cách**: Minimalist, Game Art, Sketch/Hand-drawn aesthetic
 - **Layout**: Center-aligned với avatar nhân vật làm trung tâm
 - **Responsive**: Tương thích với mọi thiết bị (Desktop, Tablet, Mobile)
 - **Animations**: Hiệu ứng chuyển động mượt mà, không quá phức tạp
+- **Typography**: Retro game fonts (Press Start 2P, VT323) cho cảm giác cổ điển
 
 ### 📊 Thông tin hiển thị
 
@@ -32,6 +38,7 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 
 #### 4. **Current Status** (Trạng thái hiện tại)
 - Hiển thị hoạt động đang làm
+- Location (vị trí hiện tại)
 - Timestamp tự động cập nhật
 - Animated status indicator
 
@@ -135,18 +142,30 @@ blog-art-minimal/
 
 ## 🎨 Customization Tips
 
-### Thay đổi màu sắc
-Mặc dù theme là Black & White, bạn có thể thay đổi trong `style.css`:
+### Theme Style Guidelines
+**LƯU Ý QUAN TRỌNG**: Project này tuân thủ nghiêm ngặt theme **Pure Black & White**
 
-```css
-:root {
-    --black: #000000;
-    --white: #ffffff;
-    --gray-dark: #1a1a1a;
-    --gray-medium: #333333;
-    --gray-light: #cccccc;
-}
-```
+#### Quy tắc thiết kế:
+1. **Chỉ sử dụng màu đen, trắng và xám**
+   - Không thêm bất kỳ màu sắc nào khác (đỏ, xanh, vàng, v.v.)
+   - Tất cả elements phải là đen/trắng/xám
+
+2. **Icons và Symbols**
+   - Chỉ dùng ký tự đặc biệt: ▸ ◆ ⚛ ✎ ♪ ■ △ ◈ ⎇ ◉ ◐ ✈ </> { } ⟨/⟩ ▣
+   - KHÔNG sử dụng emoji có màu (🎮 📍 ❤️ v.v.)
+   - Ưu tiên ASCII art và geometric shapes
+
+3. **Thay đổi màu sắc trong `style.css`**
+   ```css
+   :root {
+       --black: #000000;
+       --white: #ffffff;
+       --gray-dark: #1a1a1a;
+       --gray-medium: #333333;
+       --gray-light: #cccccc;
+   }
+   ```
+   **Chỉ điều chỉnh các giá trị này, không thêm màu mới!**
 
 ### Thêm/Xóa sections
 Trong `index.html`, bạn có thể comment out hoặc xóa các sections không cần:
@@ -183,12 +202,14 @@ Trong `index.html`, thay đổi Google Fonts link và update trong `style.css`.
 ## 💡 Ý tưởng mở rộng
 
 1. **Local Storage**: Lưu progress quests vào localStorage
-2. **Theme Switcher**: Thêm dark mode hoặc color themes
+2. **Dark Mode**: Đảo ngược màu (nền đen, chữ trắng) - vẫn giữ theme B&W
 3. **Export Data**: Export character sheet thành PDF/Image
 4. **Multiplayer**: Kết nối với backend để share character
 5. **Achievements**: Hệ thống thành tựu khi hoàn thành quests
-6. **Stats Chart**: Thêm radar chart cho skills
-7. **Animation**: Thêm particle effects, parallax scrolling
+6. **Stats Chart**: Thêm radar chart cho skills (chỉ dùng đường đen/trắng)
+7. **Animation**: Thêm particle effects, parallax scrolling (monochrome)
+
+**LƯU Ý**: Mọi tính năng mở rộng phải tuân thủ theme Black & White!
 
 ## 📄 License
 

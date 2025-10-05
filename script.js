@@ -38,6 +38,8 @@ const characterData = {
     // Current Status
     status: {
         text: "Coding a new adventure",
+        location: "Home",
+        mood: "Chilling",
         timestamp: new Date()
     },
 
@@ -131,6 +133,8 @@ function populateInterests() {
 
 function populateStatus() {
     document.getElementById('currentStatus').textContent = characterData.status.text;
+    document.getElementById('currentLocation').textContent = characterData.status.location;
+    document.getElementById('currentMood').textContent = characterData.status.mood;
     updateStatusTime();
 }
 
