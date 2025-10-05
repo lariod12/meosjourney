@@ -43,8 +43,8 @@ const characterData = {
         timestamp: new Date()
     },
 
-    // Character Description
-    description: "A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.",
+    // Character Introduce
+    introduce: "A mysterious warrior who codes by day and adventures by night. Passionate about creating digital experiences and solving complex problems.",
 
     // Daily Quests
     quests: [
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     populateSkills();
     populateInterests();
     populateStatus();
-    populateDescription();
+    populateIntroduce();
     populateQuests();
     populateJournal();
     updateLastUpdated();
@@ -142,8 +142,8 @@ function populateStatus() {
     updateStatusTime();
 }
 
-function populateDescription() {
-    document.getElementById('characterDescription').textContent = characterData.description;
+function populateIntroduce() {
+    document.getElementById('characterIntroduce').textContent = characterData.introduce;
 }
 
 function updateStatusTime() {

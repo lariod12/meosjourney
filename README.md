@@ -36,7 +36,7 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 - Icons đại diện cho từng sở thích
 - Hover animation
 
-#### 4. **Status & Description** (Trạng thái & Giới thiệu)
+#### 4. **Status & Introduce** (Trạng thái & Giới thiệu)
 Hệ thống 2 tabs:
 - **Tab Status** (mặc định):
   - Hiển thị hoạt động đang làm
@@ -44,8 +44,8 @@ Hệ thống 2 tabs:
   - Mood (trạng thái cảm xúc)
   - Timestamp tự động cập nhật
   - Animated status indicator
-- **Tab Description**:
-  - Giới thiệu ngắn về nhân vật
+- **Tab Introduce**:
+  - Giới thiệu bản thân nhân vật
   - Border và style tương tự tab Status
 
 #### 5. **Daily Schedule** (Lịch trình hàng ngày)

@@ -543,8 +543,8 @@ body {
     font-style: italic;
 }
 
-/* Description Content */
-.description-content {
+/* Introduce Content */
+.introduce-content {
     padding: 15px;
     border: 2px dashed var(--black);
     background: repeating-linear-gradient(
@@ -556,7 +556,7 @@ body {
     );
 }
 
-.description-content p {
+.introduce-content p {
     font-family: 'Kalam', cursive;
     font-size: 1rem;
     line-height: 1.6;
