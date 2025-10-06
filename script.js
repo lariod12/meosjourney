@@ -201,15 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
     populateQuests();
     populateJournal();
     populateHistory();
-    updateLastUpdated();
 
     // Update XP bar animation
     animateXPBar();
 
     // REMOVED: setupQuestInteractions() - Quest list is now read-only
-
-    // Update time every minute
-    setInterval(updateLastUpdated, 60000);
 });
 
 // === AVATAR LOADER ===
@@ -531,16 +527,7 @@ function showNotification(message) {
 }
 
 // === UTILITY FUNCTIONS ===
-
-function updateLastUpdated() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-    const dateString = now.toLocaleDateString('vi-VN');
-    document.getElementById('lastUpdated').textContent = `${dateString} ${timeString}`;
-}
+// (Removed updateLastUpdated - element doesn't exist in current HTML)
 
 // === TOGGLE FUNCTIONS === (Removed - no longer needed for tag-based layout)
 
