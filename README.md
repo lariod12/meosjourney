@@ -11,10 +11,10 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 - **KHÔNG có màu sắc**: Tuyệt đối không sử dụng bất kỳ màu nào khác (đỏ, xanh, vàng, v.v.)
 - **Icons**: Chỉ sử dụng ký tự đặc biệt, symbols, và ASCII art - KHÔNG dùng emoji có màu
 - **Phong cách**: Minimalist, Game Art, Sketch/Hand-drawn aesthetic
-- **Layout**: Center-aligned với avatar nhân vật làm trung tâm
+- **Layout**: Two-column grid (380px left sidebar, 1fr right content) với sticky sidebar
 - **Responsive**: Tương thích với mọi thiết bị (Desktop, Tablet, Mobile)
 - **Animations**: Hiệu ứng chuyển động mượt mà, không quá phức tạp
-- **Typography**: Retro game fonts (Press Start 2P, VT323) cho cảm giác cổ điển
+- **Typography**: Handwritten sketch fonts (Architects Daughter, Kalam, Patrick Hand)
 
 ### 📊 Thông tin hiển thị
 
@@ -25,19 +25,8 @@ Một trang web Single-Page Application (SPA) với thiết kế phong cách gam
 - Level hiện tại
 - Experience Bar (XP) với progress bar động
 
-#### 2. **Skills** (Kỹ năng)
-- Hiển thị dạng grid 2 cột
-- Mỗi skill có icon, tên và level
-- Hover effect để tương tác
-- Dễ dàng customize trong `script.js`
-
-#### 3. **Interests** (Sở thích)
-- Hiển thị dạng tags
-- Icons đại diện cho từng sở thích
-- Hover animation
-
-#### 4. **Status & Introduce** (Trạng thái & Giới thiệu)
-Hệ thống 2 tabs:
+#### 2. **Status, Introduce, Skills & Hobbies** (Left Sidebar)
+Hệ thống 4 tabs trong left sidebar:
 - **Tab Status** (mặc định):
   - Hiển thị hoạt động đang làm
   - Location (vị trí hiện tại)
@@ -46,24 +35,30 @@ Hệ thống 2 tabs:
   - Animated status indicator
 - **Tab Introduce**:
   - Giới thiệu bản thân nhân vật
-  - Border và style tương tự tab Status
+  - Styled với dashed border
+- **Tab Skills**:
+  - Hiển thị dạng tags
+  - Hover effect để tương tác
+  - Dễ dàng customize trong `script.js`
+- **Tab Hobbies**:
+  - Hiển thị dạng tags
+  - Hover animation
 
-#### 5. **Daily Schedule** (Lịch trình hàng ngày)
-- Timeline theo giờ
-- Các hoạt động trong ngày
-- Dễ đọc và theo dõi
-
-#### 6. **Daily Quests** (Nhiệm vụ hàng ngày)
-- Danh sách nhiệm vụ với checkbox
-- Click để đánh dấu hoàn thành
+#### 3. **Daily Quests** (Nhiệm vụ hàng ngày)
+- Danh sách nhiệm vụ (read-only)
 - Progress counter (X/Y completed)
-- Tự động cộng XP khi hoàn thành quest
-- Visual feedback khi complete
+- Hiển thị XP cho mỗi quest
+- Visual feedback cho completed quests
 
-#### 7. **Daily Journal** (Nhật ký hàng ngày)
+#### 4. **Daily Journal** (Nhật ký hàng ngày)
 - Ghi chú các sự kiện trong ngày
 - Timestamp cho mỗi entry
 - Tự động hiển thị ngày hiện tại
+
+#### 5. **History** (Lịch sử)
+- Lưu trữ journal entries của các ngày trước
+- Click để expand/collapse từng ngày
+- Hiển thị theo định dạng tương tự Daily Journal
 
 ## 🚀 Cách sử dụng
 
@@ -78,21 +73,25 @@ Mở file `script.js` và chỉnh sửa object `characterData`:
 
 ```javascript
 const characterData = {
-    name: "SHADOW KNIGHT",           // Tên nhân vật
-    title: "The Code Warrior",       // Chức danh
+    name: "MÉO",                      // Tên nhân vật
+    title: "Forever Curious",         // Chức danh
     level: 25,                        // Level
     currentXP: 6500,                  // XP hiện tại
     maxXP: 10000,                     // XP tối đa
     
     skills: [
-        { name: "JavaScript", icon: "fa-code", level: "Lv. 90" },
+        { name: "Photoshop" },
+        { name: "Illustrator" },
         // Thêm skills của bạn...
     ],
     
     interests: [
-        { name: "Gaming", icon: "fa-gamepad" },
+        { name: "Gaming" },
+        { name: "Music" },
         // Thêm interests của bạn...
     ],
+    
+    introduce: "A creative artist...", // Giới thiệu bản thân
     
     // ... các phần khác
 };
@@ -100,19 +99,24 @@ const characterData = {
 
 ### Thay đổi Avatar
 
-Trong file `index.html`, tìm dòng:
-```html
-<img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300" 
-```
+**Cách 1: Sử dụng avatar riêng**
+1. Đặt file ảnh vào folder `/public/avatars/`
+2. Đặt tên file là `avatar.png`, `avatar.jpg`, `avatar.jpeg`, `avatar.gif`, hoặc `avatar.webp`
+3. Script sẽ tự động tìm và load avatar của bạn
 
-Thay đổi parameter `seed=RPGCharacter` thành tên khác để tạo avatar mới, hoặc thay thế bằng URL ảnh của bạn.
+**Cách 2: Thay đổi DiceBear seed**
+- Nếu không có avatar trong `/public/avatars/`, hệ thống sẽ dùng DiceBear API
+- Thay đổi seed trong `script.js` dòng 219: `seed=RPGCharacter` thành tên khác
 
 ## 🎮 Tính năng tương tác
 
-### Quest System
-- **Click vào quest** để đánh dấu hoàn thành/chưa hoàn thành
-- Mỗi quest hoàn thành sẽ được **+100 XP**
-- Progress bar tự động cập nhật
+### Tab Switching
+- **Left Sidebar**: Chuyển đổi giữa Status, Introduce, Skills, và Hobbies
+- **Right Content**: Chuyển đổi giữa Daily Quests, Daily Journal, và History
+
+### History Expansion
+- **Click vào history date header** để expand/collapse journal entries của ngày đó
+- Chỉ một item được expand tại một thời điểm
 
 ### XP & Level System
 - XP bar tự động tính toán phần trăm
@@ -121,7 +125,6 @@ Thay đổi parameter `seed=RPGCharacter` thành tên khác để tạo avatar m
 
 ### Keyboard Shortcuts (Easter Eggs)
 - **Press 'L'**: Thêm 500 XP (cheat code!)
-- **Press 'R'**: Reset tất cả daily quests
 
 ## 📁 Cấu trúc file
 
@@ -131,6 +134,10 @@ blog-art-minimal/
 ├── index.html          # HTML structure
 ├── style.css           # Styling (Black & White theme)
 ├── script.js           # JavaScript logic & data
+├── public/
+│   └── avatars/        # Đặt avatar riêng tại đây
+├── docs/               # Documentation
+├── AGENTS.md           # AI coding assistant instructions
 └── README.md           # Documentation (file này)
 ```
 
@@ -175,14 +182,12 @@ blog-art-minimal/
    ```
    **Chỉ điều chỉnh các giá trị này, không thêm màu mới!**
 
-### Thêm/Xóa sections
-Trong `index.html`, bạn có thể comment out hoặc xóa các sections không cần:
-- `.stats-box`
-- `.skills-box`
-- `.interests-box`
-- `.schedule-box`
-- `.quests-box`
-- `.journal-box`
+### Chỉnh chiều cao các sections
+Trong `style.css`, bạn có thể điều chỉnh chiều cao của các sections:
+- `.status-box` (line 229): Chiều cao của Status/Introduce/Skills/Hobbies tabs
+- `.daily-activities-section` (line 329): Chiều cao của Quests/Journal/History tabs
+
+Xem file `docs/CSS-HEIGHT-MANAGEMENT.md` để biết thêm chi tiết.
 
 ### Thay đổi fonts
 **LƯU Ý**: Chỉ sử dụng fonts có style handwritten/sketch để giữ theme nhất quán!
@@ -238,5 +243,5 @@ Created with ❤️ for RPG lovers and developers
 
 **Enjoy your RPG Character Sheet! ⚔️🎮**
 
-*Tip: Press F12 to open Developer Console and see the easter egg hints!*
+*Tip: Press F12 to open Developer Console and press 'L' for XP boost!*
 
