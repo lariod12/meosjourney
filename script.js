@@ -75,7 +75,10 @@ const characterData = {
 // === INITIALIZATION ===
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎮 RPG Character Sheet Initialized!');
-    
+
+    // Load avatar first
+    loadAvatar();
+
     // Populate all sections
     populateCharacterInfo();
     populateSkills();
@@ -94,6 +97,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update time every minute
     setInterval(updateLastUpdated, 60000);
 });
+
+// === AVATAR LOADER ===
+
+async function loadAvatar() {
+    const avatarImg = document.getElementById('characterAvatar');
+    const defaultAvatar = "https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300";
+
+    try {
+        // Try to load avatar.png, avatar.jpg, or avatar.jpeg from /public/avatars/
+        const extensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        let avatarFound = false;
+
+        for (const ext of extensions) {
+            try {
+                const response = await fetch(`/public/avatars/avatar.${ext}`);
+                if (response.ok) {
+                    avatarImg.src = `/public/avatars/avatar.${ext}`;
+                    avatarFound = true;
+                    console.log(`✅ Avatar loaded: avatar.${ext}`);
+                    break;
+                }
+            } catch (err) {
+                // Continue to next extension
+            }
+        }
+
+        if (!avatarFound) {
+            // Use default template avatar
+            avatarImg.src = defaultAvatar;
+            console.log('ℹ️ No custom avatar found, using template avatar');
+        }
+    } catch (error) {
+        // Fallback to default template
+        avatarImg.src = defaultAvatar;
+        console.log('ℹ️ Using template avatar');
+    }
+}
 
 // === POPULATE FUNCTIONS ===
 
