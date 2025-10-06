@@ -366,29 +366,19 @@ function populateHistory() {
         const historyItem = document.createElement('div');
         historyItem.className = 'history-item';
 
-        // Create header (date) - clickable
-        const historyHeader = document.createElement('div');
-        historyHeader.className = 'history-header';
+        // Create date header - clickable
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'history-date-header';
 
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const dateText = day.date.toLocaleDateString('en-US', dateOptions);
 
-        historyHeader.innerHTML = `
-            <span class="history-date">${dateText}</span>
+        dateHeader.innerHTML = `
+            <span class="history-date-text">${dateText}</span>
             <span class="history-arrow">▼</span>
         `;
 
-        // Create content (journal entries) - hidden by default
-        const historyContent = document.createElement('div');
-        historyContent.className = 'history-content';
-
-        // Add date header inside content (like journal-date)
-        const dateHeader = document.createElement('div');
-        dateHeader.className = 'history-date-header';
-        dateHeader.textContent = dateText;
-        historyContent.appendChild(dateHeader);
-
-        // Add entries wrapper (like journal-content)
+        // Create entries wrapper - hidden by default
         const entriesWrapper = document.createElement('div');
         entriesWrapper.className = 'history-entries-wrapper';
 
@@ -402,28 +392,27 @@ function populateHistory() {
             entriesWrapper.appendChild(entryDiv);
         });
 
-        historyContent.appendChild(entriesWrapper);
-
         // Add click event to toggle content
-        historyHeader.addEventListener('click', function() {
+        dateHeader.addEventListener('click', function() {
             const isExpanded = historyItem.classList.contains('expanded');
 
             // Close all other items
             document.querySelectorAll('.history-item').forEach(item => {
                 item.classList.remove('expanded');
-                item.querySelector('.history-arrow').textContent = '▼';
+                const arrow = item.querySelector('.history-arrow');
+                if (arrow) arrow.textContent = '▼';
             });
 
             // Toggle current item
             if (!isExpanded) {
                 historyItem.classList.add('expanded');
-                historyHeader.querySelector('.history-arrow').textContent = '▲';
+                dateHeader.querySelector('.history-arrow').textContent = '▲';
             }
         });
 
-        // Append header and content to item
-        historyItem.appendChild(historyHeader);
-        historyItem.appendChild(historyContent);
+        // Append header and entries to item
+        historyItem.appendChild(dateHeader);
+        historyItem.appendChild(entriesWrapper);
 
         // Append item to list
         historyList.appendChild(historyItem);
