@@ -219,15 +219,15 @@ async function loadAvatar() {
     const defaultAvatar = "https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300";
 
     try {
-        // Try to load avatar.png, avatar.jpg, or avatar.jpeg from /public/avatars/
+        // Try to load avatar.png, avatar.jpg, or avatar.jpeg from ./public/avatars/
         const extensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
         let avatarFound = false;
 
         for (const ext of extensions) {
             try {
-                const response = await fetch(`/public/avatars/avatar.${ext}`);
+                const response = await fetch(`./public/avatars/avatar.${ext}`);
                 if (response.ok) {
-                    avatarImg.src = `/public/avatars/avatar.${ext}`;
+                    avatarImg.src = `./public/avatars/avatar.${ext}`;
                     avatarFound = true;
                     console.log(`✅ Avatar loaded: avatar.${ext}`);
                     break;
