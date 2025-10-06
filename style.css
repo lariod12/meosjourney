@@ -792,6 +792,25 @@ body {
     border-top: 2px solid var(--black);
 }
 
+.history-date-header {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-left: 4px solid var(--black);
+    background: #f5f5f5;
+    font-weight: 700;
+}
+
+.history-entries-wrapper {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: var(--white);
+    min-height: 150px;
+}
+
 .history-content .journal-entry {
     border-bottom: 1px solid var(--gray-light);
     padding-bottom: 15px;

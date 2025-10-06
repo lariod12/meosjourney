@@ -382,6 +382,16 @@ function populateHistory() {
         const historyContent = document.createElement('div');
         historyContent.className = 'history-content';
 
+        // Add date header inside content (like journal-date)
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'history-date-header';
+        dateHeader.textContent = dateText;
+        historyContent.appendChild(dateHeader);
+
+        // Add entries wrapper (like journal-content)
+        const entriesWrapper = document.createElement('div');
+        entriesWrapper.className = 'history-entries-wrapper';
+
         day.entries.forEach(entry => {
             const entryDiv = document.createElement('div');
             entryDiv.className = 'journal-entry';
@@ -389,8 +399,10 @@ function populateHistory() {
                 <div class="journal-time">${entry.time}</div>
                 <div class="journal-text">${entry.entry}</div>
             `;
-            historyContent.appendChild(entryDiv);
+            entriesWrapper.appendChild(entryDiv);
         });
+
+        historyContent.appendChild(entriesWrapper);
 
         // Add click event to toggle content
         historyHeader.addEventListener('click', function() {
