@@ -253,10 +253,10 @@ function populateJournal() {
     const dateDiv = document.getElementById('journalDate');
     const contentDiv = document.getElementById('journalContent');
 
-    // Set current date
+    // Set current date (always uses current day, in English)
     const today = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateDiv.textContent = today.toLocaleDateString('vi-VN', options);
+    dateDiv.textContent = today.toLocaleDateString('en-US', options);
 
     // Populate journal entries
     contentDiv.innerHTML = '';
