@@ -742,6 +742,68 @@ body {
     margin-bottom: 5px;
 }
 
+/* === HISTORY TAB === */
+.history-list {
+    padding: 10px 0;
+}
+
+.history-item {
+    margin-bottom: 10px;
+    border: 2px solid var(--black);
+    background: var(--white);
+}
+
+.history-header {
+    padding: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.history-header:hover {
+    background: var(--gray-light);
+}
+
+.history-date {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.history-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.history-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0;
+    background: var(--white);
+}
+
+.history-item.expanded .history-content {
+    max-height: 2000px;
+    padding: 20px;
+    border-top: 2px solid var(--black);
+}
+
+.history-content .journal-entry {
+    border-bottom: 1px solid var(--gray-light);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.history-content .journal-entry:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
 /* === FOOTER - CONTACT INFO === */
 .sheet-footer {
     text-align: center;
