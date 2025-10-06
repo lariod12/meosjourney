@@ -59,15 +59,19 @@ const characterData = {
     journal: [
         {
             time: "07:00 AM",
-            entry: "Woke up early feeling energized. Morning coffee and planning out today's creative tasks."
+            entry: "Woke up early feeling energized. Morning coffee and planning out today's tasks."
+        },
+        {
+            time: "08:30 AM",
+            entry: "Quest Completed: Exercise for 30 minutes (+80 XP)"
         },
         {
             time: "09:30 AM",
-            entry: "Started working on the new RPG character sheet project. Excited to combine my love for gaming and coding."
+            entry: "Started working on coding challenges. Currently on challenge 1 of 3. Focus mode activated!"
         },
         {
             time: "11:00 AM",
-            entry: "Experimented with new brush techniques in Clip Studio Paint. The results are looking promising!"
+            entry: "Quest Completed: Review 5 pull requests (+100 XP)"
         },
         {
             time: "12:30 PM",
@@ -75,27 +79,27 @@ const characterData = {
         },
         {
             time: "02:15 PM",
-            entry: "Had a productive team meeting. Discussed new features for the upcoming sprint. Team morale is high."
+            entry: "Working on coding challenge #2. This one is tricky but I'm making progress. Learning a lot about optimization."
         },
         {
             time: "03:45 PM",
-            entry: "Worked on character design sketches. Playing around with different styles and expressions."
+            entry: "Took a break to sketch some character designs. Playing around with different styles and expressions for inspiration."
         },
         {
             time: "05:00 PM",
-            entry: "Edited a short video clip using CapCut. The new transition effects are really smooth!"
+            entry: "Started researching new algorithms for today's learning quest. Binary search trees are fascinating!"
         },
         {
-            time: "05:45 PM",
-            entry: "Learned about advanced CSS animations today. Looking forward to implementing them in future projects."
+            time: "06:30 PM",
+            entry: "Attempted to write documentation for the new feature. Need more clarity on requirements before finishing this quest."
         },
         {
-            time: "07:30 PM",
-            entry: "Gaming session with friends online. Nothing beats cooperative gameplay and good teamwork."
+            time: "08:00 PM",
+            entry: "Taking a breather with some gaming. Nothing beats unwinding after a productive day of coding and learning."
         },
         {
-            time: "09:00 PM",
-            entry: "Wrapped up the day with some light reading. Currently diving into a fantasy novel that's super inspiring for character design ideas."
+            time: "09:30 PM",
+            entry: "Planning to finish that tech book chapter before bed. Almost done with today's reading goal!"
         }
     ]
 };
