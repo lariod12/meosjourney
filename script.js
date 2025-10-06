@@ -58,16 +58,44 @@ const characterData = {
     // Daily Journal Entries
     journal: [
         {
+            time: "07:00 AM",
+            entry: "Woke up early feeling energized. Morning coffee and planning out today's creative tasks."
+        },
+        {
             time: "09:30 AM",
             entry: "Started working on the new RPG character sheet project. Excited to combine my love for gaming and coding."
+        },
+        {
+            time: "11:00 AM",
+            entry: "Experimented with new brush techniques in Clip Studio Paint. The results are looking promising!"
+        },
+        {
+            time: "12:30 PM",
+            entry: "Lunch break! Tried a new recipe today. Cooking is just another form of creativity."
         },
         {
             time: "02:15 PM",
             entry: "Had a productive team meeting. Discussed new features for the upcoming sprint. Team morale is high."
         },
         {
+            time: "03:45 PM",
+            entry: "Worked on character design sketches. Playing around with different styles and expressions."
+        },
+        {
+            time: "05:00 PM",
+            entry: "Edited a short video clip using CapCut. The new transition effects are really smooth!"
+        },
+        {
             time: "05:45 PM",
             entry: "Learned about advanced CSS animations today. Looking forward to implementing them in future projects."
+        },
+        {
+            time: "07:30 PM",
+            entry: "Gaming session with friends online. Nothing beats cooperative gameplay and good teamwork."
+        },
+        {
+            time: "09:00 PM",
+            entry: "Wrapped up the day with some light reading. Currently diving into a fantasy novel that's super inspiring for character design ideas."
         }
     ]
 };
