@@ -26,6 +26,7 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
+    width: 100%;
 }
 
 /* === BACKGROUND PATTERN === */
@@ -51,19 +52,24 @@ body {
     padding: 20px;
     position: relative;
     z-index: 1;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === CHARACTER SHEET === */
 .character-sheet {
     background: var(--white);
     border: 5px solid var(--black);
-    box-shadow: 
+    box-shadow:
         8px 8px 0 var(--black),
         inset 0 0 0 10px var(--white),
         inset 0 0 0 12px var(--black);
     padding: 30px;
     position: relative;
     animation: slideIn 0.6s ease-out;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 @keyframes slideIn {
@@ -144,6 +150,8 @@ body {
     gap: 8px;
     max-height: calc(100vh - 30px);
     overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === RIGHT CONTENT === */
@@ -152,6 +160,8 @@ body {
     flex-direction: column;
     gap: 25px;
     min-height: 600px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === AVATAR === */
@@ -161,7 +171,9 @@ body {
     border: 3px solid var(--black);
     background: var(--white);
     position: relative;
-    flex-shrink: 0;  /* Ngăn không cho bị shrink bởi parent flex container */
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .avatar-frame {
@@ -219,6 +231,8 @@ body {
     padding: 10px;
     background: var(--white);
     position: relative;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .status-box {
@@ -226,11 +240,13 @@ body {
     padding: 10px;
     background: var(--white);
     position: relative;
-    height: 275px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao */
-    flex-shrink: 0;  /* Ngăn không cho bị shrink bởi parent flex container */
+    height: 275px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .section-title {
@@ -319,6 +335,8 @@ body {
     padding: 15px;
     border: 3px solid var(--black);
     background: var(--white);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === DAILY ACTIVITIES TABBED SECTION === */
@@ -326,10 +344,12 @@ body {
     padding: 15px;
     border: 3px solid var(--black);
     background: var(--white);
-    height: 600px;  /* ← CHỈNH Ở ĐÂY để thay đổi chiều cao */
+    height: 600px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Tab Navigation */
@@ -1071,6 +1091,16 @@ body {
     border-top: 2px dashed var(--gray-light);
 }
 
+.footer-version {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.85rem;
+    color: var(--gray-light);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 1024px) {
     .main-layout {
@@ -1193,140 +1223,505 @@ body {
     }
 }
 
-@media (max-width: 480px) {
+/* iPhone 12 Pro and similar (390px - 430px) */
+@media (max-width: 430px) {
     .container {
-        padding: 10px;
+        padding: 6px;
     }
 
     .character-sheet {
         padding: 10px;
         border-width: 3px;
+        box-shadow:
+            4px 4px 0 var(--black),
+            inset 0 0 0 5px var(--white),
+            inset 0 0 0 7px var(--black);
+    }
+
+    .main-layout {
+        gap: 15px;
+    }
+
+    .left-sidebar {
+        gap: 6px;
+    }
+
+    .right-content {
+        gap: 15px;
     }
 
     .title-sketch {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
         letter-spacing: 1px;
+        text-shadow: 2px 2px 0 var(--gray-light);
+    }
+
+    .decorative-line {
+        max-width: 100%;
+        height: 2px;
+    }
+
+    .decorative-line::before,
+    .decorative-line::after {
+        font-size: 1.2rem;
+        padding: 0 8px;
     }
 
     .avatar-container {
-        padding: 15px;
+        padding: 10px;
+        border-width: 2px;
     }
 
     .avatar-frame {
-        max-width: 180px;
-        height: 180px;
+        max-width: 130px;
+        height: 130px;
+        border-width: 2px;
+        box-shadow: 3px 3px 0 var(--black);
+    }
+
+    .avatar-border {
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
     }
 
     .character-name {
-        font-size: 1rem;
-        letter-spacing: 1px;
+        font-size: 1.1rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
     }
 
     .character-title {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .xp-bar-wrapper {
+        gap: 2px;
+        margin-top: 8px;
+    }
+
+    .xp-bar {
+        height: 24px;
+    }
+
+    .level-label {
+        font-size: 0.75rem;
+        padding: 0 10px;
+    }
+
+    .xp-text {
+        font-size: 0.75rem;
     }
 
     .section-title {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
     }
 
-    .skills-grid,
-    .hobbies-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+    /* Status Box */
+    .status-box {
+        height: 240px;
+        padding: 8px;
+        border-width: 2px;
     }
 
-    .skill-item,
-    .hobby-item {
-        padding: 10px 6px;
+    .status-tab-nav {
+        margin-bottom: 8px;
+        border-bottom-width: 2px;
     }
 
-    .skill-icon,
-    .hobby-icon {
-        font-size: 1.4rem;
+    .status-tab-btn {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+        border-right-width: 2px;
+        border-bottom-width: 2px;
     }
 
-    .skill-name,
-    .hobby-name {
+    .status-content {
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .status-indicator,
+    .status-location,
+    .status-mood {
+        font-size: 0.9rem;
+    }
+
+    .status-label {
+        font-size: 0.85rem;
+    }
+
+    .status-time {
         font-size: 0.8rem;
     }
 
+    .introduce-content,
+    .skills-content,
+    .hobbies-content {
+        padding: 8px;
+        border-width: 2px;
+    }
+
+    .introduce-content p {
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    /* Tags */
+    .tags-container {
+        gap: 4px;
+    }
+
+    .tag {
+        padding: 3px 5px;
+        font-size: 0.8rem;
+        border-width: 2px;
+    }
+
+    /* Daily Activities Section */
+    .daily-activities-section {
+        height: 520px;
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .tab-nav {
+        margin-bottom: 10px;
+        border-bottom-width: 2px;
+    }
+
+    .tab-btn {
+        padding: 7px 8px;
+        font-size: 0.75rem;
+        border-right-width: 2px;
+    }
+
+    .tab-content-wrapper {
+        font-size: 0.9rem;
+    }
+
+    /* Quest Progress */
+    .quest-progress {
+        font-size: 1rem;
+        padding: 7px;
+        margin-bottom: 10px;
+        border-width: 2px;
+    }
+
+    .quests-list {
+        gap: 7px;
+    }
+
+    .quest-item {
+        padding: 8px;
+        border-width: 2px;
+    }
+
+    .quest-text {
+        font-size: 0.95rem;
+    }
+
+    .quest-xp {
+        font-size: 0.8rem;
+        padding: 3px 7px;
+        border-width: 2px;
+    }
+
+    /* Journal */
+    .journal-date {
+        font-size: 1rem;
+        padding: 7px;
+        margin-bottom: 10px;
+        border-left-width: 2px;
+    }
+
+    .journal-content {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .journal-entry {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+    }
+
+    .journal-time {
+        font-size: 0.85rem;
+        margin-bottom: 3px;
+    }
+
+    .journal-text {
+        font-size: 0.9rem;
+    }
+
+    /* History */
+    .history-date-header {
+        font-size: 1rem;
+        padding: 7px;
+        border-left-width: 2px;
+    }
+
+    .history-arrow {
+        font-size: 0.85rem;
+    }
+
+    .history-entries-wrapper {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        border-width: 2px;
+    }
+
+    .history-item.expanded .history-entries-wrapper {
+        padding: 10px;
+        min-height: 100px;
+    }
+
+    /* Footer */
+    .sheet-footer {
+        margin-top: 10px;
+        padding-top: 12px;
+    }
+
+    .footer-content {
+        padding: 12px;
+    }
+
     .footer-title {
-        font-size: 0.65rem;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
     }
 
     .social-links {
-        gap: 10px;
+        gap: 6px;
+        margin-bottom: 12px;
     }
 
     .social-link {
-        min-width: 70px;
-        padding: 10px 12px;
+        min-width: 60px;
+        padding: 7px 8px;
+        border-width: 2px;
+        gap: 3px;
     }
 
     .social-link i {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
 
     .social-link span {
+        font-size: 0.65rem;
+    }
+
+    .footer-copyright {
+        font-size: 0.8rem;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top-width: 2px;
+    }
+
+    .footer-version {
         font-size: 0.75rem;
+        margin-top: 6px;
     }
 
     /* Achievement responsive for mobile */
     .achievements-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        padding: 10px;
+        gap: 8px;
+        padding: 8px;
     }
 
     .achievement-item {
-        min-height: 100px;
-        padding: 12px 8px;
+        min-height: 85px;
+        padding: 8px 5px;
+        border-width: 2px;
+        gap: 6px;
+    }
+
+    .achievement-item::before {
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-width: 1px;
     }
 
     .achievement-icon {
-        font-size: 2rem;
+        font-size: 1.7rem;
     }
 
     .achievement-name {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
+        line-height: 1.2;
     }
 
     .achievement-modal {
-        padding: 15px;
+        padding: 10px;
     }
 
     .achievement-modal-content {
-        padding: 20px;
-        max-width: 90%;
+        padding: 18px;
+        max-width: 92%;
+        border-width: 3px;
+        box-shadow: 6px 6px 0 var(--black);
     }
 
     .achievement-modal-close {
-        width: 30px;
-        height: 30px;
-        font-size: 1.2rem;
+        width: 28px;
+        height: 28px;
+        font-size: 1.1rem;
+        top: 12px;
+        right: 12px;
+        border-width: 2px;
     }
 
     .achievement-modal-icon {
-        font-size: 3.5rem;
-        margin-bottom: 15px;
+        font-size: 3rem;
+        margin-bottom: 12px;
     }
 
     .achievement-modal-title {
-        font-size: 1.3rem;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom-width: 2px;
     }
 
     .achievement-modal-description {
-        font-size: 1rem;
-        padding: 12px;
-        margin-bottom: 15px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        padding: 10px;
+        margin-bottom: 12px;
     }
 
     .achievement-modal-reward {
-        font-size: 1.1rem;
-        padding: 10px 15px;
+        font-size: 1rem;
+        padding: 8px 12px;
+        border-width: 2px;
+    }
+}
+
+/* Extra small devices (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .container {
+        padding: 5px;
+    }
+
+    .character-sheet {
+        padding: 8px;
+        border-width: 2px;
+        box-shadow:
+            3px 3px 0 var(--black),
+            inset 0 0 0 4px var(--white),
+            inset 0 0 0 6px var(--black);
+    }
+
+    .main-layout {
+        gap: 12px;
+    }
+
+    .left-sidebar {
+        gap: 5px;
+    }
+
+    .right-content {
+        gap: 12px;
+    }
+
+    .title-sketch {
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+    }
+
+    .avatar-container {
+        padding: 8px;
+    }
+
+    .avatar-frame {
+        max-width: 110px;
+        height: 110px;
+    }
+
+    .character-name {
+        font-size: 0.95rem;
+    }
+
+    .character-title {
+        font-size: 0.85rem;
+    }
+
+    .status-box {
+        height: 210px;
+        padding: 6px;
+    }
+
+    .status-tab-btn {
+        padding: 5px 5px;
+        font-size: 0.65rem;
+    }
+
+    .daily-activities-section {
+        height: 480px;
+        padding: 8px;
+    }
+
+    .tab-btn {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+    }
+
+    .quest-item {
+        padding: 7px;
+    }
+
+    .quest-text {
+        font-size: 0.9rem;
+    }
+
+    .quest-xp {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+
+    .journal-content {
+        padding: 8px;
+    }
+
+    .social-link {
+        min-width: 55px;
+        padding: 6px 7px;
+    }
+
+    .social-link i {
+        font-size: 0.95rem;
+    }
+
+    .social-link span {
+        font-size: 0.6rem;
+    }
+
+    .achievement-item {
+        min-height: 80px;
+        padding: 7px 4px;
+    }
+
+    .achievement-icon {
+        font-size: 1.5rem;
+    }
+
+    .achievement-name {
+        font-size: 0.65rem;
+    }
+
+    .footer-version {
+        font-size: 0.7rem;
+        margin-top: 5px;
     }
 }
 
