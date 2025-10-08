@@ -110,56 +110,87 @@ const characterData = {
             name: "First Steps",
             icon: "★",
             description: "Complete your first daily quest and begin your journey",
-            reward: "+50 EXP"
+            specialReward: "Unlock 'Beginner' title",
+            exp: 50,
+            completed: true
         },
         {
             id: 2,
             name: "Code Master",
             icon: "⚛",
             description: "Successfully complete 100 coding challenges",
-            reward: "+200 EXP"
+            specialReward: "Unlock 'Code Wizard' badge",
+            exp: 200,
+            completed: true
         },
         {
             id: 3,
             name: "Team Player",
             icon: "◆",
             description: "Review 50 pull requests and help your teammates grow",
-            reward: "+150 EXP"
+            specialReward: "Unlock 'Mentor' role",
+            exp: 150,
+            completed: false
         },
         {
             id: 4,
             name: "Knowledge Seeker",
             icon: "✎",
             description: "Read 10 technical books from cover to cover",
-            reward: "+300 EXP"
+            specialReward: "Unlock 'Scholar' title + Reading List feature",
+            exp: 300,
+            completed: true
         },
         {
             id: 5,
             name: "Health Warrior",
             icon: "⚔",
             description: "Exercise for 30 consecutive days without missing a day",
-            reward: "+250 EXP"
+            exp: 250,
+            completed: false
         },
         {
             id: 6,
             name: "Creative Mind",
             icon: "♪",
             description: "Create 20 unique character designs or artworks",
-            reward: "+180 EXP"
+            specialReward: "Unlock 'Artist' badge + Gallery feature",
+            exp: 180,
+            completed: false
         },
         {
             id: 7,
             name: "Level Up",
             icon: "▲",
             description: "Reach Level 25 through dedication and hard work",
-            reward: "+500 EXP"
+            specialReward: "Unlock 'Veteran' title + Special avatar frame",
+            exp: 500,
+            completed: false
         },
         {
             id: 8,
             name: "Night Owl",
             icon: "◐",
             description: "Complete 5 quests after midnight while the world sleeps",
-            reward: "+100 EXP"
+            exp: 100,
+            completed: false
+        },
+        {
+            id: 9,
+            name: "Early Bird",
+            icon: "◑",
+            description: "Complete 10 quests before 6 AM and start your day right",
+            exp: 120,
+            completed: true
+        },
+        {
+            id: 10,
+            name: "Perfectionist",
+            icon: "◈",
+            description: "Complete 20 quests with 100% accuracy and zero mistakes",
+            specialReward: "Unlock 'Flawless' badge + Accuracy tracker",
+            exp: 350,
+            completed: false
         }
     ],
 
@@ -486,7 +517,13 @@ function populateAchievements() {
         const achievementItem = document.createElement('div');
         achievementItem.className = 'achievement-item';
 
+        // Add completed class if achievement is completed
+        if (achievement.completed) {
+            achievementItem.classList.add('completed');
+        }
+
         achievementItem.innerHTML = `
+            ${achievement.completed ? '<div class="achievement-check">✓</div>' : ''}
             <div class="achievement-icon">${achievement.icon}</div>
             <div class="achievement-name">${achievement.name}</div>
         `;
@@ -503,16 +540,41 @@ function populateAchievements() {
 // === ACHIEVEMENT MODAL ===
 function showAchievementModal(achievement) {
     const modal = document.getElementById('achievementModal');
+    const modalStatus = document.getElementById('modalStatus');
     const modalIcon = document.getElementById('modalIcon');
     const modalTitle = document.getElementById('modalTitle');
     const modalDescription = document.getElementById('modalDescription');
-    const modalReward = document.getElementById('modalReward');
+    const modalRewardsList = document.getElementById('modalRewardsList');
 
     // Populate modal content
     modalIcon.textContent = achievement.icon;
     modalTitle.textContent = achievement.name;
     modalDescription.textContent = achievement.description;
-    modalReward.textContent = achievement.reward;
+
+    // Build rewards list - 2 rows layout (Special Unlock on top / EXP on bottom)
+    let rewardsHTML = '';
+
+    if (achievement.specialReward) {
+        // Two rows: Special Unlock (top) + EXP (bottom)
+        rewardsHTML = `
+            <div class="reward-special">${achievement.specialReward}</div>
+            <div class="reward-exp">+${achievement.exp} EXP</div>
+        `;
+    } else {
+        // Only EXP - centered
+        rewardsHTML = `<div class="reward-exp-only">+${achievement.exp} EXP</div>`;
+    }
+
+    modalRewardsList.innerHTML = rewardsHTML;
+
+    // Set status badge - only show if completed
+    if (achievement.completed) {
+        modalStatus.textContent = '✓ COMPLETED';
+        modalStatus.className = 'achievement-modal-status completed';
+        modalStatus.style.display = 'inline-block';
+    } else {
+        modalStatus.style.display = 'none';
+    }
 
     // Show modal
     modal.classList.add('active');
