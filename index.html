@@ -133,6 +133,7 @@
                             <button class="tab-btn active" data-tab="quests">DAILY QUESTS</button>
                             <button class="tab-btn" data-tab="journal">DAILY JOURNAL</button>
                             <button class="tab-btn" data-tab="history">HISTORY</button>
+                            <button class="tab-btn" data-tab="achievements">ACHIEVEMENT</button>
                         </div>
 
                         <!-- Tab Content -->
@@ -161,6 +162,13 @@
                             <div class="tab-content" id="historyTab">
                                 <div class="history-list" id="historyList">
                                     <!-- History entries will be populated by JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- Achievement Tab Content -->
+                            <div class="tab-content" id="achievementsTab">
+                                <div class="achievements-grid" id="achievementsContainer">
+                                    <!-- Achievements will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
@@ -210,6 +218,17 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Achievement Modal Dialog -->
+    <div class="achievement-modal" id="achievementModal">
+        <div class="achievement-modal-content">
+            <div class="achievement-modal-close" id="modalClose">✕</div>
+            <div class="achievement-modal-icon" id="modalIcon"></div>
+            <div class="achievement-modal-title" id="modalTitle"></div>
+            <div class="achievement-modal-description" id="modalDescription"></div>
+            <div class="achievement-modal-reward" id="modalReward"></div>
         </div>
     </div>
 

@@ -103,6 +103,66 @@ const characterData = {
         }
     ],
 
+    // Achievements - Bảng Thành Tựu
+    achievements: [
+        {
+            id: 1,
+            name: "First Steps",
+            icon: "★",
+            description: "Complete your first daily quest and begin your journey",
+            reward: "+50 EXP"
+        },
+        {
+            id: 2,
+            name: "Code Master",
+            icon: "⚛",
+            description: "Successfully complete 100 coding challenges",
+            reward: "+200 EXP"
+        },
+        {
+            id: 3,
+            name: "Team Player",
+            icon: "◆",
+            description: "Review 50 pull requests and help your teammates grow",
+            reward: "+150 EXP"
+        },
+        {
+            id: 4,
+            name: "Knowledge Seeker",
+            icon: "✎",
+            description: "Read 10 technical books from cover to cover",
+            reward: "+300 EXP"
+        },
+        {
+            id: 5,
+            name: "Health Warrior",
+            icon: "⚔",
+            description: "Exercise for 30 consecutive days without missing a day",
+            reward: "+250 EXP"
+        },
+        {
+            id: 6,
+            name: "Creative Mind",
+            icon: "♪",
+            description: "Create 20 unique character designs or artworks",
+            reward: "+180 EXP"
+        },
+        {
+            id: 7,
+            name: "Level Up",
+            icon: "▲",
+            description: "Reach Level 25 through dedication and hard work",
+            reward: "+500 EXP"
+        },
+        {
+            id: 8,
+            name: "Night Owl",
+            icon: "◐",
+            description: "Complete 5 quests after midnight while the world sleeps",
+            reward: "+100 EXP"
+        }
+    ],
+
     // Historical Journal Data (Previous Days)
     history: [
         {
@@ -201,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
     populateQuests();
     populateJournal();
     populateHistory();
+    populateAchievements();
 
     // Update XP bar animation
     animateXPBar();
@@ -414,6 +475,80 @@ function populateHistory() {
         historyList.appendChild(historyItem);
     });
 }
+
+function populateAchievements() {
+    const container = document.getElementById('achievementsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    characterData.achievements.forEach(achievement => {
+        const achievementItem = document.createElement('div');
+        achievementItem.className = 'achievement-item';
+
+        achievementItem.innerHTML = `
+            <div class="achievement-icon">${achievement.icon}</div>
+            <div class="achievement-name">${achievement.name}</div>
+        `;
+
+        // Add click event to show modal
+        achievementItem.addEventListener('click', () => {
+            showAchievementModal(achievement);
+        });
+
+        container.appendChild(achievementItem);
+    });
+}
+
+// === ACHIEVEMENT MODAL ===
+function showAchievementModal(achievement) {
+    const modal = document.getElementById('achievementModal');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const modalReward = document.getElementById('modalReward');
+
+    // Populate modal content
+    modalIcon.textContent = achievement.icon;
+    modalTitle.textContent = achievement.name;
+    modalDescription.textContent = achievement.description;
+    modalReward.textContent = achievement.reward;
+
+    // Show modal
+    modal.classList.add('active');
+}
+
+function closeAchievementModal() {
+    const modal = document.getElementById('achievementModal');
+    modal.classList.remove('active');
+}
+
+// Setup modal close events
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('achievementModal');
+    const closeBtn = document.getElementById('modalClose');
+
+    // Close on X button click
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeAchievementModal);
+    }
+
+    // Close on background click
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAchievementModal();
+            }
+        });
+    }
+
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAchievementModal();
+        }
+    });
+});
 
 // === QUEST INTERACTIONS ===
 // LOẠI BỎ - Quest list chỉ để xem (read-only), không cho phép tương tác

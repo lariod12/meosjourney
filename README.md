@@ -60,6 +60,13 @@ Hệ thống 4 tabs trong left sidebar:
 - Click để expand/collapse từng ngày
 - Hiển thị theo định dạng tương tự Daily Journal
 
+#### 6. **Achievement** (Bảng Thành Tựu) 🆕
+- Hiển thị các thành tựu dưới dạng grid layout
+- Click vào achievement để xem chi tiết trong modal dialog
+- Mỗi achievement có: icon, tên, mô tả, và phần thưởng EXP
+- Modal có thể đóng bằng: nút X, click background, hoặc phím ESC
+- Xem chi tiết: `docs/ACHIEVEMENT_FEATURE.md`
+
 ## 🚀 Cách sử dụng
 
 ### Cài đặt
@@ -112,11 +119,16 @@ const characterData = {
 
 ### Tab Switching
 - **Left Sidebar**: Chuyển đổi giữa Status, Introduce, Skills, và Hobbies
-- **Right Content**: Chuyển đổi giữa Daily Quests, Daily Journal, và History
+- **Right Content**: Chuyển đổi giữa Daily Quests, Daily Journal, History, và Achievement
 
 ### History Expansion
 - **Click vào history date header** để expand/collapse journal entries của ngày đó
 - Chỉ một item được expand tại một thời điểm
+
+### Achievement Modal
+- **Click vào achievement item** để mở modal dialog với thông tin chi tiết
+- **Đóng modal**: Click nút X, click background, hoặc nhấn phím ESC
+- Modal hiển thị: icon lớn, tên, mô tả chi tiết, và phần thưởng EXP
 
 ### XP & Level System
 - XP bar tự động tính toán phần trăm
@@ -125,6 +137,7 @@ const characterData = {
 
 ### Keyboard Shortcuts (Easter Eggs)
 - **Press 'L'**: Thêm 500 XP (cheat code!)
+- **Press 'ESC'**: Đóng achievement modal (nếu đang mở)
 
 ## 📁 Cấu trúc file
 
@@ -136,10 +149,20 @@ blog-art-minimal/
 ├── script.js           # JavaScript logic & data
 ├── public/
 │   └── avatars/        # Đặt avatar riêng tại đây
-├── docs/               # Documentation
-├── AGENTS.md           # AI coding assistant instructions
+├── docs/               # Documentation files
+│   ├── ACHIEVEMENT_FEATURE.md      # Achievement tab documentation
+│   ├── CHANGELOG.md                # Version history
+│   └── CSS-HEIGHT-MANAGEMENT.md   # CSS height guide
+├── .augment/
+│   └── rules/
+│       └── AGENTS.md   # AI coding assistant instructions
 └── README.md           # Documentation (file này)
 ```
+
+**📝 LƯU Ý QUAN TRỌNG**:
+- **Tất cả các file `.md` documentation phải được đặt trong folder `docs/`**
+- **KHÔNG** để các file `.md` (trừ README.md) ở ngoài root directory
+- File `AGENTS.md` nằm trong `.augment/rules/` (quy tắc cho AI assistant)
 
 ## 🛠️ Công nghệ sử dụng
 
@@ -205,7 +228,32 @@ Fonts hiện tại (tất cả đều là handwritten sketch style):
 - **Tablet**: 768px - 1024px (1 column layout)
 - **Mobile**: < 768px (optimized for small screens)
 
-## 🐛 Troubleshooting
+## � Documentation
+
+Tất cả documentation được lưu trong folder `docs/`:
+
+- **`docs/ACHIEVEMENT_FEATURE.md`**: Hướng dẫn chi tiết về tab Achievement
+  - Cách thêm achievement mới
+  - Cấu trúc dữ liệu
+  - Customization tips
+  - Modal dialog system
+
+- **`docs/CSS-HEIGHT-MANAGEMENT.md`**: Hướng dẫn quản lý chiều cao các sections
+  - Điều chỉnh chiều cao status box
+  - Điều chỉnh chiều cao daily activities
+  - Responsive height management
+
+- **`docs/CHANGELOG.md`**: Lịch sử thay đổi và cập nhật
+  - Version history
+  - Feature updates
+  - Bug fixes
+
+**📝 Quy tắc Documentation**:
+- Tất cả file `.md` (trừ `README.md`) phải được đặt trong folder `docs/`
+- Không để file documentation ở root directory
+- Sử dụng naming convention: `UPPERCASE-WITH-HYPHENS.md`
+
+## �🐛 Troubleshooting
 
 ### Icons không hiển thị
 - Kiểm tra kết nối internet (Font Awesome load từ CDN)
@@ -225,9 +273,8 @@ Fonts hiện tại (tất cả đều là handwritten sketch style):
 2. **Dark Mode**: Đảo ngược màu (nền đen, chữ trắng) - vẫn giữ theme B&W
 3. **Export Data**: Export character sheet thành PDF/Image
 4. **Multiplayer**: Kết nối với backend để share character
-5. **Achievements**: Hệ thống thành tựu khi hoàn thành quests
-6. **Stats Chart**: Thêm radar chart cho skills (chỉ dùng đường đen/trắng)
-7. **Animation**: Thêm particle effects, parallax scrolling (monochrome)
+5. ~~**Achievements**: Hệ thống thành tựu khi hoàn thành quests~~ ✅ **ĐÃ HOÀN THÀNH**
+9. **Achievement Unlock**: Animation khi unlock achievement mới
 
 **LƯU Ý**: Mọi tính năng mở rộng phải tuân thủ theme Black & White!
 
