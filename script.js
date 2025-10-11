@@ -6,7 +6,7 @@
 // === CHARACTER DATA ===
 const characterData = {
     name: "MÉO",
-    title: "Forever Curious",
+    caption: "Forever Curious",
     level: 25,
     currentXP: 6500,
     maxXP: 10000,
@@ -341,7 +341,7 @@ async function loadAvatar() {
 
 function populateCharacterInfo() {
     document.getElementById('characterName').textContent = characterData.name;
-    document.getElementById('characterTitle').textContent = characterData.title;
+    document.getElementById('characterCaption').textContent = characterData.caption;
     document.getElementById('levelLabel').textContent = `LEVEL ${characterData.level}`;
 
     // Update XP
