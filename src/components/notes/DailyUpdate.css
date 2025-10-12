@@ -16,7 +16,7 @@ body {
     min-height: 100vh;
 }
 
-.container {
+.notes-container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
@@ -26,7 +26,7 @@ body {
    Header
    ======================================== */
 
-.header {
+.notes-header {
     text-align: center;
     border: 3px solid #000000;
     padding: 30px 20px;
@@ -194,7 +194,7 @@ body {
    Footer
    ======================================== */
 
-.footer {
+.notes-footer {
     text-align: center;
     padding: 25px;
     font-family: 'Patrick Hand', cursive;
