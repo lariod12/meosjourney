@@ -34,7 +34,7 @@ Lưu trữ thông tin cá nhân của owner (chỉ có 1 document duy nhất).
 {
   // Thông tin cơ bản
   name: "MÉO",                    // string
-  title: "Forever Curious",       // string
+  caption: "Forever Curious",     // string
   level: 25,                      // number
   currentXP: 6500,               // number
   maxXP: 10000,                  // number
@@ -64,7 +64,7 @@ Lưu trữ thông tin cá nhân của owner (chỉ có 1 document duy nhất).
   
   // Current Status
   status: {
-    text: "Studying character design",  // string
+    doing: "Studying character design", // string
     location: "Home",                   // string
     mood: "Focused",                    // string
     timestamp: Timestamp               // Firestore Timestamp
@@ -104,7 +104,7 @@ Lưu trữ danh sách nhiệm vụ hàng ngày (public read, owner write).
 ```javascript
 {
   id: 1,                                          // number
-  text: "Complete 3 coding challenges",          // string
+  title: "Complete 3 coding challenges",         // string
   completed: false,                              // boolean
   xp: 150,                                       // number
   createdAt: Timestamp,                          // Firestore Timestamp
@@ -119,7 +119,7 @@ Lưu trữ danh sách nhiệm vụ hàng ngày (public read, owner write).
 // Document ID: quest_001
 {
   id: 1,
-  text: "Complete 3 coding challenges",
+  title: "Complete 3 coding challenges",
   completed: false,
   xp: 150,
   createdAt: Timestamp.now(),
@@ -130,7 +130,7 @@ Lưu trữ danh sách nhiệm vụ hàng ngày (public read, owner write).
 // Document ID: quest_002
 {
   id: 2,
-  text: "Review 5 pull requests",
+  title: "Review 5 pull requests",
   completed: true,
   xp: 100,
   createdAt: Timestamp.now(),
@@ -434,7 +434,7 @@ service cloud.firestore {
 1. Click "Start collection"
 2. Collection ID: profile
 3. Document ID: owner
-4. Add fields theo cấu trúc ở trên (name, title, level, currentXP, ...)
+4. Add fields theo cấu trúc ở trên (name, caption, level, currentXP, ...)
 ```
 
 #### Tạo Collection `quests`:

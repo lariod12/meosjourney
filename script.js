@@ -36,7 +36,7 @@ const characterData = {
     
     // Current Status
     status: {
-        text: "Studying character design",
+        doing: "Studying character design",
         location: "Home",
         mood: "Focused",
         timestamp: new Date()
@@ -47,12 +47,12 @@ const characterData = {
 
     // Daily Quests
     quests: [
-        { id: 1, text: "Complete 3 coding challenges", completed: false, xp: 150 },
-        { id: 2, text: "Review 5 pull requests", completed: true, xp: 100 },
-        { id: 3, text: "Write documentation for new feature", completed: false, xp: 120 },
-        { id: 4, text: "Learn a new algorithm", completed: false, xp: 200 },
-        { id: 5, text: "Exercise for 30 minutes", completed: true, xp: 80 },
-        { id: 6, text: "Read 1 chapter of tech book", completed: false, xp: 100 }
+        { id: 1, title: "Complete 3 coding challenges", completed: false, xp: 150 },
+        { id: 2, title: "Review 5 pull requests", completed: true, xp: 100 },
+        { id: 3, title: "Write documentation for new feature", completed: false, xp: 120 },
+        { id: 4, title: "Learn a new algorithm", completed: false, xp: 200 },
+        { id: 5, title: "Exercise for 30 minutes", completed: true, xp: 80 },
+        { id: 6, title: "Read 1 chapter of tech book", completed: false, xp: 100 }
     ],
     
     // Daily Journal Entries
@@ -376,7 +376,7 @@ function populateInterests() {
 }
 
 function populateStatus() {
-    document.getElementById('currentStatus').textContent = characterData.status.text;
+    document.getElementById('currentStatus').textContent = characterData.status.doing;
     document.getElementById('currentLocation').textContent = characterData.status.location;
     document.getElementById('currentMood').textContent = characterData.status.mood;
     updateStatusTime();
@@ -414,7 +414,7 @@ function populateQuests() {
         // Loại bỏ dataset.questId vì không cần tương tác nữa
         // Loại bỏ checkbox, chỉ hiển thị text (read-only)
         questDiv.innerHTML = `
-            <div class="quest-text">${quest.text}</div>
+            <div class="quest-text">${quest.title}</div>
             <div class="quest-xp">+${quest.xp} XP</div>
         `;
         container.appendChild(questDiv);
