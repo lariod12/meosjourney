@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
 
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/blog-art-minimal/' : '/',
+  base: mode === 'production' ? '/meosjourney/' : '/',
   plugins: [
     react(),
     mode === 'production' && obfuscatorPlugin({
