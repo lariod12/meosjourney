@@ -1,294 +1,261 @@
-# 🎮 RPG Character Sheet - Black & White Edition
+# Meo's Journey - RPG Character Sheet
 
-Một trang web Single-Page Application (SPA) với thiết kế phong cách game/art/sketch để giới thiệu nhân vật RPG của bạn.
+A beautiful, minimalist RPG character sheet website built with **React** and **Vite**. Features a striking black & white sketch/game art aesthetic with smooth animations and a mobile-first responsive design.
 
-## ✨ Tính năng
+## ✨ Features
 
-### 🎨 Thiết kế
+- 🎨 **Pure Black & White Design** - Minimalist sketch art theme
+- ⚡ **React + Vite** - Lightning-fast development and production builds
+- 📱 **Mobile-First Responsive** - Optimized for all screen sizes
+- 🔒 **Code Obfuscation** - Production builds are fully obfuscated for security
+- 🎮 **Interactive UI** - Smooth animations and transitions
+- 🧩 **Component-Based** - Modular, maintainable architecture
+- 🌐 **Static Deployment** - Deploy anywhere (Vercel, Netlify, GitHub Pages)
 
-#### Theme Style Chủ Đạo: **Pure Black & White**
-- **Màu sắc**: Chỉ sử dụng đen (#000000) và trắng (#ffffff) với các tông xám
-- **KHÔNG có màu sắc**: Tuyệt đối không sử dụng bất kỳ màu nào khác (đỏ, xanh, vàng, v.v.)
-- **Icons**: Chỉ sử dụng ký tự đặc biệt, symbols, và ASCII art - KHÔNG dùng emoji có màu
-- **Phong cách**: Minimalist, Game Art, Sketch/Hand-drawn aesthetic
-- **Layout**: Two-column grid (380px left sidebar, 1fr right content) với sticky sidebar
-- **Responsive**: Tương thích với mọi thiết bị (Desktop, Tablet, Mobile)
-- **Animations**: Hiệu ứng chuyển động mượt mà, không quá phức tạp
-- **Typography**: Handwritten sketch fonts (Architects Daughter, Kalam, Patrick Hand)
+## 🚀 Quick Start
 
-### 📊 Thông tin hiển thị
+### Prerequisites
 
-#### 1. **Character Info** (Thông tin nhân vật)
-- Avatar nhân vật (sử dụng DiceBear API)
-- Tên nhân vật
-- Chức danh/Title
-- Level hiện tại
-- Experience Bar (XP) với progress bar động
+- Node.js 18+ 
+- pnpm (recommended for faster installs)
 
-#### 2. **Status, Introduce, Skills & Hobbies** (Left Sidebar)
-Hệ thống 4 tabs trong left sidebar:
-- **Tab Status** (mặc định):
-  - Hiển thị hoạt động đang làm
-  - Location (vị trí hiện tại)
-  - Mood (trạng thái cảm xúc)
-  - Timestamp tự động cập nhật
-  - Animated status indicator
-- **Tab Introduce**:
-  - Giới thiệu bản thân nhân vật
-  - Styled với dashed border
-- **Tab Skills**:
-  - Hiển thị dạng tags
-  - Hover effect để tương tác
-  - Dễ dàng customize trong `script.js`
-- **Tab Hobbies**:
-  - Hiển thị dạng tags
-  - Hover animation
-
-#### 3. **Daily Quests** (Nhiệm vụ hàng ngày)
-- Danh sách nhiệm vụ (read-only)
-- Progress counter (X/Y completed)
-- Hiển thị XP cho mỗi quest
-- Visual feedback cho completed quests
-
-#### 4. **Daily Journal** (Nhật ký hàng ngày)
-- Ghi chú các sự kiện trong ngày
-- Timestamp cho mỗi entry
-- Tự động hiển thị ngày hiện tại
-
-#### 5. **History** (Lịch sử)
-- Lưu trữ journal entries của các ngày trước
-- Click để expand/collapse từng ngày
-- Hiển thị theo định dạng tương tự Daily Journal
-
-#### 6. **Achievement** (Bảng Thành Tựu) 🆕
-- Hiển thị các thành tựu dưới dạng grid layout
-- Click vào achievement để xem chi tiết trong modal dialog
-- Mỗi achievement có: icon, tên, mô tả, và phần thưởng EXP
-- Modal có thể đóng bằng: nút X, click background, hoặc phím ESC
-- Xem chi tiết: `docs/ACHIEVEMENT_FEATURE.md`
-
-## 🚀 Cách sử dụng
-
-### Cài đặt
-1. Clone hoặc download project
-2. Mở file `index.html` bằng trình duyệt web
-3. Không cần cài đặt thêm gì cả!
-
-### Customize thông tin nhân vật
-
-Mở file `script.js` và chỉnh sửa object `characterData`:
-
-```javascript
-const characterData = {
-    name: "MÉO",                      // Tên nhân vật
-    title: "Forever Curious",         // Chức danh
-    level: 25,                        // Level
-    currentXP: 6500,                  // XP hiện tại
-    maxXP: 10000,                     // XP tối đa
-    
-    skills: [
-        { name: "Photoshop" },
-        { name: "Illustrator" },
-        // Thêm skills của bạn...
-    ],
-    
-    interests: [
-        { name: "Gaming" },
-        { name: "Music" },
-        // Thêm interests của bạn...
-    ],
-    
-    introduce: "A creative artist...", // Giới thiệu bản thân
-    
-    // ... các phần khác
-};
+```bash
+npm install -g pnpm
 ```
 
-### Thay đổi Avatar
+### Installation
 
-**Cách 1: Sử dụng avatar riêng**
-1. Đặt file ảnh vào folder `/public/avatars/`
-2. Đặt tên file là `avatar.png`, `avatar.jpg`, `avatar.jpeg`, `avatar.gif`, hoặc `avatar.webp`
-3. Script sẽ tự động tìm và load avatar của bạn
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/blog-art-minimal.git
+cd blog-art-minimal
 
-**Cách 2: Thay đổi DiceBear seed**
-- Nếu không có avatar trong `/public/avatars/`, hệ thống sẽ dùng DiceBear API
-- Thay đổi seed trong `script.js` dòng 219: `seed=RPGCharacter` thành tên khác
+# Install dependencies
+pnpm install
 
-## 🎮 Tính năng tương tác
+# Start development server
+pnpm run dev
+```
 
-### Tab Switching
-- **Left Sidebar**: Chuyển đổi giữa Status, Introduce, Skills, và Hobbies
-- **Right Content**: Chuyển đổi giữa Daily Quests, Daily Journal, History, và Achievement
+The app will open at `http://localhost:3000`
 
-### History Expansion
-- **Click vào history date header** để expand/collapse journal entries của ngày đó
-- Chỉ một item được expand tại một thời điểm
+## 📦 Build & Deploy
 
-### Achievement Modal
-- **Click vào achievement item** để mở modal dialog với thông tin chi tiết
-- **Đóng modal**: Click nút X, click background, hoặc nhấn phím ESC
-- Modal hiển thị: icon lớn, tên, mô tả chi tiết, và phần thưởng EXP
+```bash
+# Production build with code obfuscation
+pnpm run build
 
-### XP & Level System
-- XP bar tự động tính toán phần trăm
-- Khi đủ XP sẽ tự động **Level Up**
-- Notification hiển thị khi level up
+# Preview production build locally
+pnpm run preview
+```
 
-### Keyboard Shortcuts (Easter Eggs)
-- **Press 'L'**: Thêm 500 XP (cheat code!)
-- **Press 'ESC'**: Đóng achievement modal (nếu đang mở)
+Build output will be in the `dist/` directory, ready for deployment.
 
-## 📁 Cấu trúc file
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+pnpm add -g vercel
+
+# Deploy
+vercel
+```
+
+### Deploy to Netlify
+
+```bash
+# Install Netlify CLI
+pnpm add -g netlify-cli
+
+# Deploy
+netlify deploy --prod --dir=dist
+```
+
+### Deploy to GitHub Pages
+
+**Option 1: Automatic Deploy (Recommended)**
+
+GitHub Actions workflow đã được cấu hình. Chỉ cần:
+
+1. Push code lên GitHub:
+```bash
+git add .
+git commit -m "React migration complete"
+git push origin main
+```
+
+2. Bật GitHub Pages trong repo settings:
+   - Vào **Settings** > **Pages**
+   - Source: chọn **GitHub Actions**
+   - Workflow sẽ tự động build và deploy
+
+**Option 2: Manual Deploy**
+
+```bash
+# Deploy thủ công
+pnpm run deploy
+```
+
+## 🏗️ Project Structure
 
 ```
 blog-art-minimal/
-│
-├── index.html          # HTML structure
-├── style.css           # Styling (Black & White theme)
-├── script.js           # JavaScript logic & data
 ├── public/
-│   └── avatars/        # Đặt avatar riêng tại đây
-├── docs/               # Documentation files
-│   ├── ACHIEVEMENT_FEATURE.md      # Achievement tab documentation
-│   ├── CHANGELOG.md                # Version history
-│   └── CSS-HEIGHT-MANAGEMENT.md   # CSS height guide
-├── .augment/
-│   └── rules/
-│       └── AGENTS.md   # AI coding assistant instructions
-└── README.md           # Documentation (file này)
+│   └── avatars/           # Custom avatar images
+├── src/
+│   ├── assets/
+│   │   └── styles/
+│   │       └── global.css # Global styles
+│   ├── components/        # React components
+│   │   ├── Avatar.jsx
+│   │   ├── StatusBox.jsx
+│   │   ├── DailyActivities.jsx
+│   │   ├── QuestsTab.jsx
+│   │   ├── JournalTab.jsx
+│   │   ├── HistoryTab.jsx
+│   │   ├── AchievementsTab.jsx
+│   │   ├── AchievementModal.jsx
+│   │   ├── Header.jsx
+│   │   ├── Footer.jsx
+│   │   ├── TabNavigation.jsx
+│   │   └── CharacterSheet.jsx
+│   ├── contexts/
+│   │   └── CharacterContext.jsx  # State management
+│   ├── data/
+│   │   └── characterData.js      # Character data
+│   ├── hooks/
+│   │   └── useAvatar.js          # Custom hooks
+│   ├── utils/
+│   │   └── dateUtils.js          # Utilities
+│   ├── App.jsx
+│   └── main.jsx
+├── index.html
+├── vite.config.js        # Vite config with obfuscation
+├── package.json
+└── README.md
 ```
 
-**📝 LƯU Ý QUAN TRỌNG**:
-- **Tất cả các file `.md` documentation phải được đặt trong folder `docs/`**
-- **KHÔNG** để các file `.md` (trừ README.md) ở ngoài root directory
-- File `AGENTS.md` nằm trong `.augment/rules/` (quy tắc cho AI assistant)
+## 🎨 Customization
 
-## 🛠️ Công nghệ sử dụng
+### Update Character Data
 
-- **HTML5**: Cấu trúc trang web
-- **CSS3**: Styling với animations
-- **Vanilla JavaScript**: Logic và tương tác
-- **Font Awesome 6.4.0**: Icons (chỉ dùng icons đen/trắng)
-- **Google Fonts** (Handwritten Sketch Style):
-  - **Architects Daughter** - Titles và headings (chữ viết tay sketch đậm)
-  - **Kalam** - Body text chính (chữ viết tay tự nhiên)
-  - **Patrick Hand** - Text phụ và labels (chữ viết tay mềm mại)
-  - **Caveat** - Dự phòng
-  - **Indie Flower** - Dự phòng
-- **DiceBear API**: Avatar generation (pixel art black & white)
+Edit `src/data/characterData.js` to customize:
+- Character name, level, XP
+- Skills and hobbies
+- Daily quests
+- Journal entries
+- Achievements
+- History
 
-## 🎨 Customization Tips
+### Custom Avatar
 
-### Theme Style Guidelines
-**LƯU Ý QUAN TRỌNG**: Project này tuân thủ nghiêm ngặt theme **Pure Black & White**
+Place your avatar image in `/public/avatars/` with one of these names:
+- `avatar.png`
+- `avatar.jpg`
+- `avatar.jpeg`
+- `avatar.gif`
+- `avatar.webp`
 
-#### Quy tắc thiết kế:
-1. **Chỉ sử dụng màu đen, trắng và xám**
-   - Không thêm bất kỳ màu sắc nào khác (đỏ, xanh, vàng, v.v.)
-   - Tất cả elements phải là đen/trắng/xám
+If no custom avatar is found, it falls back to DiceBear API.
 
-2. **Icons và Symbols**
-   - Chỉ dùng ký tự đặc biệt: ▸ ◆ ⚛ ✎ ♪ ■ △ ◈ ⎇ ◉ ◐ ✈ </> { } ⟨/⟩ ▣
-   - KHÔNG sử dụng emoji có màu (🎮 📍 ❤️ v.v.)
-   - Ưu tiên ASCII art và geometric shapes
+### Update Social Links
 
-3. **Thay đổi màu sắc trong `style.css`**
-   ```css
-   :root {
-       --black: #000000;
-       --white: #ffffff;
-       --gray-dark: #1a1a1a;
-       --gray-medium: #333333;
-       --gray-light: #cccccc;
-   }
-   ```
-   **Chỉ điều chỉnh các giá trị này, không thêm màu mới!**
+Edit `src/components/Footer.jsx` to change social media links.
 
-### Chỉnh chiều cao các sections
-Trong `style.css`, bạn có thể điều chỉnh chiều cao của các sections:
-- `.status-box` (line 229): Chiều cao của Status/Introduce/Skills/Hobbies tabs
-- `.daily-activities-section` (line 329): Chiều cao của Quests/Journal/History tabs
+### Styling
 
-Xem file `docs/CSS-HEIGHT-MANAGEMENT.md` để biết thêm chi tiết.
+Global styles are in `src/assets/styles/global.css`. The project uses:
+- **Fonts**: Architects Daughter, Kalam, Patrick Hand (via Google Fonts)
+- **Colors**: Pure black (#000000), white (#ffffff), and grayscale
+- **Layout**: CSS Grid for responsive two-column layout
+- **Breakpoints**: 1024px, 768px, 480px, 375px
 
-### Thay đổi fonts
-**LƯU Ý**: Chỉ sử dụng fonts có style handwritten/sketch để giữ theme nhất quán!
+## 🔧 Tech Stack
 
-Fonts hiện tại (tất cả đều là handwritten sketch style):
-- `Architects Daughter` - Cho titles, headings
-- `Kalam` - Cho body text
-- `Patrick Hand` - Cho text phụ
+- **React 19** - UI library
+- **Vite 7** - Build tool
+- **pnpm** - Package manager
+- **JavaScript Obfuscator** - Code protection
+- **Terser** - Minification
 
-Để thay đổi, cập nhật trong `index.html` (Google Fonts link) và `style.css` (font-family).
+## 🛡️ Security Features
 
-## 📱 Responsive Breakpoints
+Production builds include:
+- Code obfuscation (hexadecimal identifiers)
+- String array encoding (base64)
+- Control flow flattening
+- Dead code injection
+- Console output disabled
+- Self-defending code
+- Minification with Terser
 
-- **Desktop**: > 1024px (2 columns layout)
-- **Tablet**: 768px - 1024px (1 column layout)
-- **Mobile**: < 768px (optimized for small screens)
+## 📱 Responsive Design
 
-## � Documentation
+- **Desktop** (1024px+): Two-column layout with sticky sidebar
+- **Tablet** (768px-1024px): Optimized spacing
+- **Mobile** (480px-768px): Single column, adjusted font sizes
+- **Small Mobile** (375px-480px): Compact layout
+- **Extra Small** (<375px): Minimal spacing
 
-Tất cả documentation được lưu trong folder `docs/`:
+## 🎮 Features
 
-- **`docs/ACHIEVEMENT_FEATURE.md`**: Hướng dẫn chi tiết về tab Achievement
-  - Cách thêm achievement mới
-  - Cấu trúc dữ liệu
-  - Customization tips
-  - Modal dialog system
+### Left Sidebar (Character Info)
+- Avatar with XP bar and level
+- Status/Introduce/Skills/Hobbies tabs
 
-- **`docs/CSS-HEIGHT-MANAGEMENT.md`**: Hướng dẫn quản lý chiều cao các sections
-  - Điều chỉnh chiều cao status box
-  - Điều chỉnh chiều cao daily activities
-  - Responsive height management
+### Right Content Area
+- Daily Quests (read-only display)
+- Daily Journal (timestamped entries)
+- History (collapsible by date)
+- Achievements (grid with modal details)
 
-- **`docs/CHANGELOG.md`**: Lịch sử thay đổi và cập nhật
-  - Version history
-  - Feature updates
-  - Bug fixes
+### Interactive Elements
+- Tab navigation
+- Achievement modal
+- Collapsible history
+- Hover effects
+- Smooth transitions
 
-**📝 Quy tắc Documentation**:
-- Tất cả file `.md` (trừ `README.md`) phải được đặt trong folder `docs/`
-- Không để file documentation ở root directory
-- Sử dụng naming convention: `UPPERCASE-WITH-HYPHENS.md`
+## 📝 Development
 
-## �🐛 Troubleshooting
+```bash
+# Start dev server with hot reload
+pnpm run dev
 
-### Icons không hiển thị
-- Kiểm tra kết nối internet (Font Awesome load từ CDN)
-- Kiểm tra console log có lỗi không
+# Build for production
+pnpm run build
 
-### Avatar không load
-- Kiểm tra kết nối internet (DiceBear API)
-- Thay thế bằng local image nếu cần
+# Preview production build
+pnpm run preview
+```
 
-### JavaScript không chạy
-- Mở Developer Console (F12) để xem lỗi
-- Đảm bảo `script.js` được load đúng
+## 📚 Documentation
 
-## 💡 Ý tưởng mở rộng
+- [AGENTS.md](docs/AGENTS.md) - Development guidelines and project structure
+- [MIGRATION-GUIDE.md](docs/MIGRATION-GUIDE.md) - Detailed guide on vanilla JS to React migration
+- [DEPLOY.md](docs/DEPLOY.md) - Complete deployment guide for GitHub Pages
 
-1. **Local Storage**: Lưu progress quests vào localStorage
-2. **Dark Mode**: Đảo ngược màu (nền đen, chữ trắng) - vẫn giữ theme B&W
-3. **Export Data**: Export character sheet thành PDF/Image
-4. **Multiplayer**: Kết nối với backend để share character
-5. ~~**Achievements**: Hệ thống thành tựu khi hoàn thành quests~~ ✅ **ĐÃ HOÀN THÀNH**
-9. **Achievement Unlock**: Animation khi unlock achievement mới
+## 🤝 Contributing
 
-**LƯU Ý**: Mọi tính năng mở rộng phải tuân thủ theme Black & White!
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-Free to use and modify for personal projects!
+ISC License - feel free to use this project for personal or commercial purposes.
 
-## 👨‍💻 Author
+## 🙏 Credits
 
-Created with ❤️ for RPG lovers and developers
+- **Design**: Black & white sketch/game art aesthetic
+- **Fonts**: Google Fonts (Architects Daughter, Kalam, Patrick Hand)
+- **Icons**: Font Awesome 6.4.0
+- **Avatar Fallback**: DiceBear API
 
 ---
 
-**Enjoy your RPG Character Sheet! ⚔️🎮**
+**Made with ❤️ by Méo**
 
-*Tip: Press F12 to open Developer Console and press 'L' for XP boost!*
-
+Version 1.0 - React Edition

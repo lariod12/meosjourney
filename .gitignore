@@ -1,41 +1,36 @@
 # Dependencies
 node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Logs
+logs
+*.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
-
-# Build outputs
-dist/
-build/
-*.min.js
-*.min.css
+lerna-debug.log*
 
 # Environment variables
 .env
 .env.local
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# IDE and Editor files
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-*.swp
-*.swo
-*~
-
-# OS files
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Temporary files
-*.tmp
-*.log
-*.cache
-*.json
-# Custom avatars (optional - uncomment if you don't want to commit avatars)
-# public/avatars/*
-# !public/avatars/.gitkeep
+# Cache
+.cache/

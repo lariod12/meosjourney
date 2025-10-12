@@ -1,0 +1,9 @@
+# This file tells GitHub Pages to NOT process this site with Jekyll
+# It only needs to exist (empty file is fine)
+# 
+# Why needed:
+# - GitHub Pages uses Jekyll by default
+# - Jekyll ignores files/folders starting with underscore (_)
+# - Vite builds may create _assets or similar folders
+# - This empty file disables Jekyll processing
+# - Allows all Vite build files to be served correctly

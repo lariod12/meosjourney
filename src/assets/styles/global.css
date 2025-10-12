@@ -1,0 +1,1914 @@
+/* ========================================
+   RPG CHARACTER SHEET - BLACK & WHITE THEME
+   Sketch/Game Art Style
+   ======================================== */
+
+/* === RESET & BASE STYLES === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --black: #000000;
+    --white: #ffffff;
+    --gray-dark: #1a1a1a;
+    --gray-medium: #333333;
+    --gray-light: #cccccc;
+    --shadow: rgba(0, 0, 0, 0.3);
+}
+
+body {
+    font-family: 'Kalam', cursive;
+    background-color: var(--white);
+    color: var(--black);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+}
+
+/* === BACKGROUND PATTERN === */
+.bg-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px);
+    background-size: 50px 50px;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* === CONTAINER === */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* === CHARACTER SHEET === */
+.character-sheet {
+    background: var(--white);
+    border: 5px solid var(--black);
+    box-shadow:
+        8px 8px 0 var(--black),
+        inset 0 0 0 10px var(--white),
+        inset 0 0 0 12px var(--black);
+    padding: 30px;
+    position: relative;
+    animation: slideIn 0.6s ease-out;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === HEADER === */
+.sheet-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.title-sketch {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 3px;
+    text-shadow: 3px 3px 0 var(--gray-light);
+    margin-bottom: 15px;
+    animation: glitch 3s infinite;
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+.decorative-line {
+    height: 3px;
+    background: var(--black);
+    position: relative;
+    margin: 20px auto;
+    max-width: 600px;
+}
+
+.decorative-line::before,
+.decorative-line::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    background: var(--white);
+    padding: 0 10px;
+}
+
+.decorative-line::before {
+    left: -10px;
+}
+
+.decorative-line::after {
+    right: -10px;
+}
+
+/* === TWO COLUMN LAYOUT === */
+.main-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* === LEFT SIDEBAR (STICKY) === */
+.left-sidebar {
+    position: sticky;
+    top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: calc(100vh - 30px);
+    overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* === RIGHT CONTENT === */
+.right-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    min-height: 600px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* === AVATAR === */
+.avatar-container {
+    text-align: center;
+    padding: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.avatar-frame {
+    position: relative;
+    width: 100%;
+    max-width: 160px;
+    height: 160px;
+    margin: 0 auto 10px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    box-shadow: 4px 4px 0 var(--black);
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(1.3) grayscale(100%);
+}
+
+.avatar-border {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border: 2px dashed var(--black);
+    pointer-events: none;
+}
+
+.character-name {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    font-weight: 700;
+}
+
+.character-title {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--gray-medium);
+    margin-bottom: 10px;
+}
+
+/* === SECTION BOXES === */
+.skills-box,
+.interests-box,
+.quests-box,
+.journal-box {
+    border: 3px solid var(--black);
+    padding: 10px;
+    background: var(--white);
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.status-box {
+    border: 3px solid var(--black);
+    padding: 10px;
+    background: var(--white);
+    position: relative;
+    height: 275px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.section-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--black);
+    text-align: center;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    font-weight: 700;
+}
+
+/* === LEVEL & XP (inside Avatar) === */
+.avatar-container .xp-bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 10px;
+}
+
+.avatar-container .xp-bar {
+    height: 28px;
+    border: 2px solid var(--black);
+    background: var(--white);
+    position: relative;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+}
+
+.avatar-container .level-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.85rem;
+    background: var(--black);
+    color: var(--white);
+    padding: 0 12px;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    font-weight: 700;
+}
+
+.xp-fill {
+    height: 100%;
+    background: var(--black);
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.xp-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.1) 10px,
+        rgba(255, 255, 255, 0.1) 20px
+    );
+}
+
+.avatar-container .xp-text {
+    font-size: 0.85rem;
+    text-align: right;
+    font-family: 'Patrick Hand', cursive;
+    color: var(--gray-medium);
+    line-height: 1;
+}
+
+/* === TABBED SECTION (Skills & Hobbies Combined) === */
+.tabbed-section {
+    padding: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* === DAILY ACTIVITIES TABBED SECTION === */
+.daily-activities-section {
+    padding: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Tab Navigation */
+.tab-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 15px;
+    border-bottom: 3px solid var(--black);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-right: 3px solid var(--black);
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-weight: 700;
+}
+
+.tab-btn:last-child {
+    border-right: none;
+}
+
+.tab-btn:hover {
+    background: var(--gray-light);
+}
+
+.tab-btn.active {
+    background: var(--black);
+    color: var(--white);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--black);
+}
+
+/* Tab Content Wrapper */
+.tab-content-wrapper {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;  /* Ngăn scroll ngang khi hover quest items */
+    min-height: 0;
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === TAGS CONTAINER (Skills & Hobbies) === */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: 1.4;
+}
+
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border: 2px solid var(--black);
+    background: var(--white);
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    cursor: default;
+    white-space: nowrap;
+}
+
+.tag:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+/* === STATUS (in left sidebar) === */
+/* Status Tab Navigation */
+.status-tab-nav {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 3px solid var(--black);
+    margin-bottom: 15px;
+}
+
+.status-tab-btn {
+    flex: 1 1 50%;
+    padding: 8px 10px;
+    border: none;
+    border-right: 3px solid var(--black);
+    border-bottom: 3px solid var(--black);
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-weight: 700;
+}
+
+.status-tab-btn:nth-child(2n) {
+    border-right: none;
+}
+
+.status-tab-btn:nth-last-child(-n+2) {
+    border-bottom: none;
+}
+
+.status-tab-btn.active {
+    background: var(--black);
+    color: var(--white);
+}
+
+.status-tab-btn:hover:not(.active) {
+    background: var(--gray-light);
+}
+
+/* Status Tab Content */
+.status-tab-content-wrapper {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.status-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.status-tab-content.active {
+    display: block;
+}
+
+.status-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--black);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.status-location,
+.status-mood {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--black);
+}
+
+.status-label {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+}
+
+.status-time {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.9rem;
+    color: var(--gray-medium);
+    font-style: italic;
+}
+
+/* Introduce Content */
+.introduce-content {
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+.introduce-content p {
+    font-family: 'Kalam', cursive;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--black);
+    margin: 0;
+}
+
+/* Skills & Hobbies Content */
+.skills-content,
+.hobbies-content {
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+
+
+/* === STATUS === */
+.status-content {
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.status-dot {
+    width: 15px;
+    height: 15px;
+    background: var(--black);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.status-time {
+    font-size: 1rem;
+    color: var(--gray-medium);
+}
+
+/* === QUESTS === */
+.quest-progress {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 10px;
+    border: 2px solid var(--black);
+    background: var(--black);
+    color: var(--white);
+    font-weight: 700;
+}
+
+.quests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quest-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    border: 2px solid var(--black);
+    background: var(--white);
+    /* Loại bỏ tất cả tính năng tương tác - chỉ hiển thị read-only */
+}
+
+/* Loại bỏ hover effects - quest list chỉ để xem, không tương tác */
+/* .quest-item:hover { ... } - REMOVED */
+
+.quest-item.completed {
+    background: repeating-linear-gradient(
+        45deg,
+        #f0f0f0,
+        #f0f0f0 10px,
+        #e0e0e0 10px,
+        #e0e0e0 20px
+    );
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Checkbox styles - REMOVED (không cần checkbox nữa) */
+/* .quest-checkbox { ... } - REMOVED */
+/* .quest-checkbox.checked::after { ... } - REMOVED */
+
+.quest-text {
+    font-size: 1.2rem;
+    flex: 1;
+}
+
+.quest-xp {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border: 2px solid var(--black);
+    background: var(--black);
+    color: var(--white);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* XP badge cho completed quest có style khác */
+.quest-item.completed .quest-xp {
+    background: var(--gray-medium);
+    border-color: var(--gray-medium);
+    opacity: 0.8;
+}
+
+/* === JOURNAL === */
+.journal-date {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-left: 4px solid var(--black);
+    background: #f5f5f5;
+    font-weight: 700;
+}
+
+.journal-content {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: var(--white);
+    min-height: 150px;
+}
+
+.journal-entry {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.journal-entry:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.journal-time {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* === HISTORY TAB === */
+.history-list {
+    padding: 10px 0;
+}
+
+.history-item {
+    margin-bottom: 10px;
+}
+
+.history-date-header {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.4rem;
+    padding: 10px;
+    border-left: 4px solid var(--black);
+    background: #f5f5f5;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.history-date-header:hover {
+    background: #e5e5e5;
+}
+
+.history-date-text {
+    flex: 1;
+}
+
+.history-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+    margin-left: 10px;
+}
+
+.history-entries-wrapper {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    padding: 0;
+    border: 0;
+    background: var(--white);
+}
+
+.history-item.expanded .history-entries-wrapper {
+    max-height: 2000px;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    margin-top: 10px;
+    min-height: 150px;
+}
+
+.history-entries-wrapper .journal-entry {
+    border-bottom: 1px solid var(--gray-light);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.history-entries-wrapper .journal-entry:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* === ACHIEVEMENT TAB === */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 20px;
+    padding: 15px;
+}
+
+.achievement-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 140px;
+}
+
+.achievement-item.completed {
+    background: var(--gray-light);
+    border-style: solid;
+}
+
+.achievement-check {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: var(--black);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.achievement-item::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 2px var(--black);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.achievement-item:hover::before {
+    opacity: 1;
+}
+
+.achievement-item:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-5px);
+    box-shadow: 6px 6px 0 var(--gray-medium);
+}
+
+.achievement-item.completed:hover {
+    background: var(--black);
+}
+
+.achievement-item:active {
+    transform: translateY(-3px);
+}
+
+.achievement-icon {
+    font-size: 3rem;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.achievement-item:hover .achievement-icon {
+    transform: scale(1.2) rotate(5deg);
+}
+
+.achievement-name {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1rem;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+}
+
+/* Achievement Modal Dialog */
+.achievement-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.achievement-modal.active {
+    display: flex;
+}
+
+.achievement-modal-content {
+    background: var(--white);
+    border: 5px solid var(--black);
+    box-shadow: 10px 10px 0 var(--black);
+    padding: 30px;
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.achievement-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.achievement-modal-close:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: rotate(90deg);
+}
+
+.achievement-modal-status {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 12px;
+    border: 2px solid var(--black);
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+    display: inline-block;
+    width: 100%;
+}
+
+.achievement-modal-status.completed {
+    background: var(--black);
+    color: var(--white);
+}
+
+.achievement-modal-icon {
+    font-size: 5rem;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1;
+    animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.achievement-modal-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--black);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.achievement-modal-description {
+    font-family: 'Kalam', cursive;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--white),
+        var(--white) 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+    );
+}
+
+.achievement-modal-rewards-box {
+    border: 3px solid var(--black);
+    background: var(--black);
+    padding: 0;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.rewards-box-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+    padding: 12px 15px;
+    background: var(--black);
+    color: var(--white);
+    text-align: center;
+    border-bottom: 2px dashed var(--white);
+}
+
+.rewards-box-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    background: var(--black);
+    gap: 12px;
+}
+
+/* Special Unlock text - top row */
+.reward-special {
+    font-family: 'Kalam', cursive;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    color: var(--white);
+    text-align: center;
+    width: 100%;
+}
+
+/* EXP box - bottom row */
+.reward-exp {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--white);
+    background: var(--black);
+    padding: 8px 15px;
+    border: 3px solid var(--white);
+    text-align: center;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+/* When there's only EXP (no special reward) - centered */
+.reward-exp-only {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 10px 20px;
+    background: var(--black);
+    color: var(--white);
+    border: 3px solid var(--white);
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* === FOOTER - CONTACT INFO === */
+.sheet-footer {
+    text-align: center;
+    margin-top: 15px;
+    padding-top: 20px;
+}
+
+.footer-content {
+    padding: 20px;
+}
+
+.footer-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.social-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    color: var(--black);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.social-link:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 4px 4px 0 var(--black);
+}
+
+.social-link i {
+    font-size: 1.5rem;
+}
+
+.social-link span {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-copyright {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1rem;
+    color: var(--gray-medium);
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed var(--gray-light);
+}
+
+.footer-version {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 0.85rem;
+    color: var(--gray-light);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 1024px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    .left-sidebar {
+        position: static;
+        max-height: none;
+    }
+
+    .title-sketch {
+        font-size: 1.8rem;
+    }
+
+    .avatar-frame {
+        max-width: 250px;
+        height: 250px;
+    }
+
+    .skills-grid.collapsed,
+    .hobbies-grid.collapsed {
+        max-height: none;
+    }
+
+    .toggle-btn {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .character-sheet {
+        padding: 15px;
+    }
+
+    .title-sketch {
+        font-size: 1.3rem;
+    }
+
+    .avatar-container {
+        padding: 20px;
+    }
+
+    .avatar-frame {
+        max-width: 200px;
+        height: 200px;
+    }
+
+    .character-name {
+        font-size: 1.2rem;
+    }
+
+    .character-title {
+        font-size: 1.1rem;
+    }
+
+    .section-title {
+        font-size: 0.85rem;
+    }
+
+    .skills-grid,
+    .hobbies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .skill-item,
+    .hobby-item {
+        padding: 12px 8px;
+    }
+
+    .skill-icon,
+    .hobby-icon {
+        font-size: 1.6rem;
+    }
+
+    .skill-name,
+    .hobby-name {
+        font-size: 0.9rem;
+    }
+
+    /* Achievement responsive */
+    .achievements-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+
+    .achievement-item {
+        min-height: 120px;
+        padding: 15px 10px;
+    }
+
+    .achievement-icon {
+        font-size: 2.5rem;
+    }
+
+    .achievement-name {
+        font-size: 0.9rem;
+    }
+
+    .achievement-modal-content {
+        padding: 25px;
+    }
+
+    .achievement-modal-icon {
+        font-size: 4rem;
+    }
+
+    .achievement-modal-title {
+        font-size: 1.6rem;
+    }
+
+    .achievement-modal-description {
+        font-size: 1.1rem;
+    }
+}
+
+/* iPhone 12 Pro and similar (390px - 430px) */
+@media (max-width: 430px) {
+    .container {
+        padding: 6px;
+    }
+
+    .character-sheet {
+        padding: 10px;
+        border-width: 3px;
+        box-shadow:
+            4px 4px 0 var(--black),
+            inset 0 0 0 5px var(--white),
+            inset 0 0 0 7px var(--black);
+    }
+
+    .main-layout {
+        gap: 15px;
+    }
+
+    .left-sidebar {
+        gap: 6px;
+    }
+
+    .right-content {
+        gap: 15px;
+    }
+
+    .title-sketch {
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+        text-shadow: 2px 2px 0 var(--gray-light);
+    }
+
+    .decorative-line {
+        max-width: 100%;
+        height: 2px;
+    }
+
+    .decorative-line::before,
+    .decorative-line::after {
+        font-size: 1.2rem;
+        padding: 0 8px;
+    }
+
+    .avatar-container {
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .avatar-frame {
+        max-width: 130px;
+        height: 130px;
+        border-width: 2px;
+        box-shadow: 3px 3px 0 var(--black);
+    }
+
+    .avatar-border {
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+    }
+
+    .character-name {
+        font-size: 1.1rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .character-title {
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .xp-bar-wrapper {
+        gap: 2px;
+        margin-top: 8px;
+    }
+
+    .xp-bar {
+        height: 24px;
+    }
+
+    .level-label {
+        font-size: 0.75rem;
+        padding: 0 10px;
+    }
+
+    .xp-text {
+        font-size: 0.75rem;
+    }
+
+    .section-title {
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+    }
+
+    /* Status Box */
+    .status-box {
+        height: 240px;
+        padding: 8px;
+        border-width: 2px;
+    }
+
+    .status-tab-nav {
+        margin-bottom: 8px;
+        border-bottom-width: 2px;
+    }
+
+    .status-tab-btn {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+        border-right-width: 2px;
+        border-bottom-width: 2px;
+    }
+
+    .status-content {
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .status-indicator,
+    .status-location,
+    .status-mood {
+        font-size: 0.9rem;
+    }
+
+    .status-label {
+        font-size: 0.85rem;
+    }
+
+    .status-time {
+        font-size: 0.8rem;
+    }
+
+    .introduce-content,
+    .skills-content,
+    .hobbies-content {
+        padding: 8px;
+        border-width: 2px;
+    }
+
+    .introduce-content p {
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    /* Tags */
+    .tags-container {
+        gap: 4px;
+    }
+
+    .tag {
+        padding: 3px 5px;
+        font-size: 0.8rem;
+        border-width: 2px;
+    }
+
+    /* Daily Activities Section */
+    .daily-activities-section {
+        height: 520px;
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .tab-nav {
+        margin-bottom: 10px;
+        border-bottom-width: 2px;
+    }
+
+    .tab-btn {
+        padding: 7px 8px;
+        font-size: 0.75rem;
+        border-right-width: 2px;
+    }
+
+    .tab-content-wrapper {
+        font-size: 0.9rem;
+    }
+
+    /* Quest Progress */
+    .quest-progress {
+        font-size: 1rem;
+        padding: 7px;
+        margin-bottom: 10px;
+        border-width: 2px;
+    }
+
+    .quests-list {
+        gap: 7px;
+    }
+
+    .quest-item {
+        padding: 8px;
+        border-width: 2px;
+    }
+
+    .quest-text {
+        font-size: 0.95rem;
+    }
+
+    .quest-xp {
+        font-size: 0.8rem;
+        padding: 3px 7px;
+        border-width: 2px;
+    }
+
+    /* Journal */
+    .journal-date {
+        font-size: 1rem;
+        padding: 7px;
+        margin-bottom: 10px;
+        border-left-width: 2px;
+    }
+
+    .journal-content {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        padding: 10px;
+        border-width: 2px;
+    }
+
+    .journal-entry {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+    }
+
+    .journal-time {
+        font-size: 0.85rem;
+        margin-bottom: 3px;
+    }
+
+    .journal-text {
+        font-size: 0.9rem;
+    }
+
+    /* History */
+    .history-date-header {
+        font-size: 1rem;
+        padding: 7px;
+        border-left-width: 2px;
+    }
+
+    .history-arrow {
+        font-size: 0.85rem;
+    }
+
+    .history-entries-wrapper {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        border-width: 2px;
+    }
+
+    .history-item.expanded .history-entries-wrapper {
+        padding: 10px;
+        min-height: 100px;
+    }
+
+    /* Footer */
+    .sheet-footer {
+        margin-top: 10px;
+        padding-top: 12px;
+    }
+
+    .footer-content {
+        padding: 12px;
+    }
+
+    .footer-title {
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .social-links {
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+
+    .social-link {
+        min-width: 60px;
+        padding: 7px 8px;
+        border-width: 2px;
+        gap: 3px;
+    }
+
+    .social-link i {
+        font-size: 1rem;
+    }
+
+    .social-link span {
+        font-size: 0.65rem;
+    }
+
+    .footer-copyright {
+        font-size: 0.8rem;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top-width: 2px;
+    }
+
+    .footer-version {
+        font-size: 0.75rem;
+        margin-top: 6px;
+    }
+
+    /* Achievement responsive for mobile */
+    .achievements-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .achievement-item {
+        min-height: 85px;
+        padding: 8px 5px;
+        border-width: 2px;
+        gap: 6px;
+    }
+
+    .achievement-check {
+        width: 20px;
+        height: 20px;
+        font-size: 0.75rem;
+        top: 3px;
+        right: 3px;
+    }
+
+    .achievement-item::before {
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-width: 1px;
+    }
+
+    .achievement-icon {
+        font-size: 1.7rem;
+    }
+
+    .achievement-name {
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+
+    .achievement-modal {
+        padding: 10px;
+    }
+
+    .achievement-modal-content {
+        padding: 18px;
+        max-width: 92%;
+        border-width: 3px;
+        box-shadow: 6px 6px 0 var(--black);
+    }
+
+    .achievement-modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 1.1rem;
+        top: 12px;
+        right: 12px;
+        border-width: 2px;
+    }
+
+    .achievement-modal-status {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+        margin-bottom: 12px;
+    }
+
+    .achievement-modal-icon {
+        font-size: 3rem;
+        margin-bottom: 12px;
+    }
+
+    .achievement-modal-title {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom-width: 2px;
+    }
+
+    .achievement-modal-description {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+
+    .achievement-modal-rewards-box {
+        border-width: 2px;
+    }
+
+    .rewards-box-title {
+        font-size: 0.85rem;
+        padding: 10px 12px;
+        letter-spacing: 1.5px;
+    }
+
+    .rewards-box-list {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .reward-special {
+        font-size: 0.95rem;
+    }
+
+    .reward-exp {
+        font-size: 1.1rem;
+        padding: 6px 12px;
+    }
+
+    .reward-exp-only {
+        font-size: 1.3rem;
+        padding: 8px 15px;
+    }
+}
+
+/* Extra small devices (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .container {
+        padding: 5px;
+    }
+
+    .character-sheet {
+        padding: 8px;
+        border-width: 2px;
+        box-shadow:
+            3px 3px 0 var(--black),
+            inset 0 0 0 4px var(--white),
+            inset 0 0 0 6px var(--black);
+    }
+
+    .main-layout {
+        gap: 12px;
+    }
+
+    .left-sidebar {
+        gap: 5px;
+    }
+
+    .right-content {
+        gap: 12px;
+    }
+
+    .title-sketch {
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+    }
+
+    .avatar-container {
+        padding: 8px;
+    }
+
+    .avatar-frame {
+        max-width: 110px;
+        height: 110px;
+    }
+
+    .character-name {
+        font-size: 0.95rem;
+    }
+
+    .character-title {
+        font-size: 0.85rem;
+    }
+
+    .status-box {
+        height: 210px;
+        padding: 6px;
+    }
+
+    .status-tab-btn {
+        padding: 5px 5px;
+        font-size: 0.65rem;
+    }
+
+    .daily-activities-section {
+        height: 480px;
+        padding: 8px;
+    }
+
+    .tab-btn {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+    }
+
+    .quest-item {
+        padding: 7px;
+    }
+
+    .quest-text {
+        font-size: 0.9rem;
+    }
+
+    .quest-xp {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+
+    .journal-content {
+        padding: 8px;
+    }
+
+    .social-link {
+        min-width: 55px;
+        padding: 6px 7px;
+    }
+
+    .social-link i {
+        font-size: 0.95rem;
+    }
+
+    .social-link span {
+        font-size: 0.6rem;
+    }
+
+    .achievement-item {
+        min-height: 80px;
+        padding: 7px 4px;
+    }
+
+    .achievement-check {
+        width: 18px;
+        height: 18px;
+        font-size: 0.7rem;
+        top: 2px;
+        right: 2px;
+    }
+
+    .achievement-icon {
+        font-size: 1.5rem;
+    }
+
+    .achievement-name {
+        font-size: 0.65rem;
+    }
+
+    .achievement-modal-status {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    .achievement-modal-icon {
+        font-size: 2.5rem;
+    }
+
+    .achievement-modal-title {
+        font-size: 1.1rem;
+    }
+
+    .achievement-modal-description {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    .achievement-modal-rewards-box {
+        border-width: 2px;
+    }
+
+    .rewards-box-title {
+        font-size: 0.8rem;
+        padding: 10px;
+        letter-spacing: 1px;
+    }
+
+    .rewards-box-list {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .reward-special {
+        font-size: 0.9rem;
+    }
+
+    .reward-exp {
+        font-size: 1rem;
+        padding: 6px 10px;
+    }
+
+    .reward-exp-only {
+        font-size: 1.2rem;
+        padding: 8px 12px;
+    }
+
+    .footer-version {
+        font-size: 0.7rem;
+        margin-top: 5px;
+    }
+}
+
