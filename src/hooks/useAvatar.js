@@ -9,14 +9,18 @@ export const useAvatar = () => {
     const loadAvatar = async () => {
       const extensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
       let avatarFound = false;
+      
+      // Get base path from import.meta.env (Vite's base path)
+      const basePath = import.meta.env.BASE_URL;
 
       for (const ext of extensions) {
         try {
-          const response = await fetch(`/avatars/avatar.${ext}`);
+          const avatarPath = `${basePath}avatars/avatar.${ext}`;
+          const response = await fetch(avatarPath);
           if (response.ok) {
-            setAvatarUrl(`/avatars/avatar.${ext}`);
+            setAvatarUrl(avatarPath);
             avatarFound = true;
-            console.log(`✅ Avatar loaded: avatar.${ext}`);
+            console.log(`✅ Avatar loaded: ${avatarPath}`);
             break;
           }
         } catch (err) {
