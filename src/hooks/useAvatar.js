@@ -12,9 +12,9 @@ export const useAvatar = () => {
 
       for (const ext of extensions) {
         try {
-          const response = await fetch(`/public/avatars/avatar.${ext}`);
+          const response = await fetch(`/avatars/avatar.${ext}`);
           if (response.ok) {
-            setAvatarUrl(`/public/avatars/avatar.${ext}`);
+            setAvatarUrl(`/avatars/avatar.${ext}`);
             avatarFound = true;
             console.log(`✅ Avatar loaded: avatar.${ext}`);
             break;

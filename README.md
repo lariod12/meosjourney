@@ -234,6 +234,7 @@ pnpm run preview
 - [AGENTS.md](docs/AGENTS.md) - Development guidelines and project structure
 - [MIGRATION-GUIDE.md](docs/MIGRATION-GUIDE.md) - Detailed guide on vanilla JS to React migration
 - [DEPLOY.md](docs/DEPLOY.md) - Complete deployment guide for GitHub Pages
+- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## 🤝 Contributing
 

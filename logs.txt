@@ -1,335 +1,45 @@
-build:
-2025-10-12T15:31:08.0284640Z Current runner version: '2.328.0'
-2025-10-12T15:31:08.0309215Z ##[group]Runner Image Provisioner
-2025-10-12T15:31:08.0309995Z Hosted Compute Agent
-2025-10-12T15:31:08.0310476Z Version: 20250912.392
-2025-10-12T15:31:08.0311034Z Commit: d921fda672a98b64f4f82364647e2f10b2267d0b
-2025-10-12T15:31:08.0311693Z Build Date: 2025-09-12T15:23:14Z
-2025-10-12T15:31:08.0312212Z ##[endgroup]
-2025-10-12T15:31:08.0312719Z ##[group]Operating System
-2025-10-12T15:31:08.0313202Z Ubuntu
-2025-10-12T15:31:08.0313676Z 24.04.3
-2025-10-12T15:31:08.0314212Z LTS
-2025-10-12T15:31:08.0314621Z ##[endgroup]
-2025-10-12T15:31:08.0315065Z ##[group]Runner Image
-2025-10-12T15:31:08.0315568Z Image: ubuntu-24.04
-2025-10-12T15:31:08.0316026Z Version: 20250929.60.1
-2025-10-12T15:31:08.0316941Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250929.60/images/ubuntu/Ubuntu2404-Readme.md
-2025-10-12T15:31:08.0318323Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250929.60
-2025-10-12T15:31:08.0319211Z ##[endgroup]
-2025-10-12T15:31:08.0320175Z ##[group]GITHUB_TOKEN Permissions
-2025-10-12T15:31:08.0322273Z Contents: read
-2025-10-12T15:31:08.0322715Z Metadata: read
-2025-10-12T15:31:08.0323174Z Pages: write
-2025-10-12T15:31:08.0323592Z ##[endgroup]
-2025-10-12T15:31:08.0325919Z Secret source: Actions
-2025-10-12T15:31:08.0326516Z Prepare workflow directory
-2025-10-12T15:31:08.0646638Z Prepare all required actions
-2025-10-12T15:31:08.0684700Z Getting action download info
-2025-10-12T15:31:08.4678863Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
-2025-10-12T15:31:08.9050014Z Download action repository 'pnpm/action-setup@v4' (SHA:41ff72655975bd51cab0327fa583b6e92b6d3061)
-2025-10-12T15:31:09.5864310Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
-2025-10-12T15:31:09.7090470Z Download action repository 'actions/upload-pages-artifact@v3' (SHA:56afc609e74202658d3ffba0e8f6dda462b719fa)
-2025-10-12T15:31:10.2219818Z Getting action download info
-2025-10-12T15:31:10.3648555Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
-2025-10-12T15:31:10.5247452Z Complete job name: build
-2025-10-12T15:31:10.6025911Z ##[group]Run actions/checkout@v4
-2025-10-12T15:31:10.6026969Z with:
-2025-10-12T15:31:10.6027591Z   repository: lariod12/meosjourney
-2025-10-12T15:31:10.6028647Z   token: ***
-2025-10-12T15:31:10.6029244Z   ssh-strict: true
-2025-10-12T15:31:10.6029865Z   ssh-user: git
-2025-10-12T15:31:10.6030517Z   persist-credentials: true
-2025-10-12T15:31:10.6031212Z   clean: true
-2025-10-12T15:31:10.6031859Z   sparse-checkout-cone-mode: true
-2025-10-12T15:31:10.6032612Z   fetch-depth: 1
-2025-10-12T15:31:10.6033227Z   fetch-tags: false
-2025-10-12T15:31:10.6033847Z   show-progress: true
-2025-10-12T15:31:10.6035103Z   lfs: false
-2025-10-12T15:31:10.6035697Z   submodules: false
-2025-10-12T15:31:10.6036349Z   set-safe-directory: true
-2025-10-12T15:31:10.6037325Z ##[endgroup]
-2025-10-12T15:31:10.7100597Z Syncing repository: lariod12/meosjourney
-2025-10-12T15:31:10.7102769Z ##[group]Getting Git version info
-2025-10-12T15:31:10.7103789Z Working directory is '/home/runner/work/meosjourney/meosjourney'
-2025-10-12T15:31:10.7105580Z [command]/usr/bin/git version
-2025-10-12T15:31:10.7943367Z git version 2.51.0
-2025-10-12T15:31:10.7970628Z ##[endgroup]
-2025-10-12T15:31:10.7994865Z Temporarily overriding HOME='/home/runner/work/_temp/1eb0cf62-2ebb-4f2c-9f5a-f67fdfff880c' before making global git config changes
-2025-10-12T15:31:10.7998250Z Adding repository directory to the temporary git global config as a safe directory
-2025-10-12T15:31:10.8001053Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/meosjourney/meosjourney
-2025-10-12T15:31:10.8071499Z Deleting the contents of '/home/runner/work/meosjourney/meosjourney'
-2025-10-12T15:31:10.8074995Z ##[group]Initializing the repository
-2025-10-12T15:31:10.8078674Z [command]/usr/bin/git init /home/runner/work/meosjourney/meosjourney
-2025-10-12T15:31:10.9265788Z hint: Using 'master' as the name for the initial branch. This default branch name
-2025-10-12T15:31:10.9267301Z hint: is subject to change. To configure the initial branch name to use in all
-2025-10-12T15:31:10.9268580Z hint: of your new repositories, which will suppress this warning, call:
-2025-10-12T15:31:10.9269547Z hint:
-2025-10-12T15:31:10.9270273Z hint: 	git config --global init.defaultBranch <name>
-2025-10-12T15:31:10.9271140Z hint:
-2025-10-12T15:31:10.9271939Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
-2025-10-12T15:31:10.9273208Z hint: 'development'. The just-created branch can be renamed via this command:
-2025-10-12T15:31:10.9274348Z hint:
-2025-10-12T15:31:10.9274970Z hint: 	git branch -m <name>
-2025-10-12T15:31:10.9275636Z hint:
-2025-10-12T15:31:10.9276509Z hint: Disable this message with "git config set advice.defaultBranchName false"
-2025-10-12T15:31:10.9303356Z Initialized empty Git repository in /home/runner/work/meosjourney/meosjourney/.git/
-2025-10-12T15:31:10.9317369Z [command]/usr/bin/git remote add origin https://github.com/lariod12/meosjourney
-2025-10-12T15:31:10.9433834Z ##[endgroup]
-2025-10-12T15:31:10.9435874Z ##[group]Disabling automatic garbage collection
-2025-10-12T15:31:10.9437604Z [command]/usr/bin/git config --local gc.auto 0
-2025-10-12T15:31:10.9463989Z ##[endgroup]
-2025-10-12T15:31:10.9465816Z ##[group]Setting up auth
-2025-10-12T15:31:10.9471868Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-10-12T15:31:10.9498665Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-10-12T15:31:11.1093548Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-10-12T15:31:11.1123967Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-10-12T15:31:11.1297822Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-2025-10-12T15:31:11.1335220Z ##[endgroup]
-2025-10-12T15:31:11.1337070Z ##[group]Fetching the repository
-2025-10-12T15:31:11.1345532Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e13257c922d8b486cc42937b79c06d079a3e99e2:refs/remotes/origin/main
-2025-10-12T15:31:11.7972178Z From https://github.com/lariod12/meosjourney
-2025-10-12T15:31:11.7972988Z  * [new ref]         e13257c922d8b486cc42937b79c06d079a3e99e2 -> origin/main
-2025-10-12T15:31:11.8041934Z ##[endgroup]
-2025-10-12T15:31:11.8042314Z ##[group]Determining the checkout info
-2025-10-12T15:31:11.8043839Z ##[endgroup]
-2025-10-12T15:31:11.8048580Z [command]/usr/bin/git sparse-checkout disable
-2025-10-12T15:31:11.8118721Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
-2025-10-12T15:31:11.8141350Z ##[group]Checking out the ref
-2025-10-12T15:31:11.8144854Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
-2025-10-12T15:31:11.8255440Z Switched to a new branch 'main'
-2025-10-12T15:31:11.8256404Z branch 'main' set up to track 'origin/main'.
-2025-10-12T15:31:11.8260824Z ##[endgroup]
-2025-10-12T15:31:11.8288758Z [command]/usr/bin/git log -1 --format=%H
-2025-10-12T15:31:11.8305862Z e13257c922d8b486cc42937b79c06d079a3e99e2
-2025-10-12T15:31:11.8455208Z ##[group]Run pnpm/action-setup@v4
-2025-10-12T15:31:11.8455467Z with:
-2025-10-12T15:31:11.8455630Z   dest: ~/setup-pnpm
-2025-10-12T15:31:11.8455822Z   run_install: null
-2025-10-12T15:31:11.8456014Z   package_json_file: package.json
-2025-10-12T15:31:11.8456219Z   standalone: false
-2025-10-12T15:31:11.8456394Z ##[endgroup]
-2025-10-12T15:31:11.8950256Z ##[group]Running self-installer...
-2025-10-12T15:31:12.5203436Z Progress: resolved 1, reused 0, downloaded 0, added 0
-2025-10-12T15:31:12.5355679Z Packages: +1
-2025-10-12T15:31:12.5356415Z +
-2025-10-12T15:31:12.9714321Z Progress: resolved 1, reused 0, downloaded 1, added 1, done
-2025-10-12T15:31:12.9959197Z 
-2025-10-12T15:31:12.9959513Z dependencies:
-2025-10-12T15:31:12.9959908Z + pnpm 10.14.0 (10.18.2 is available)
-2025-10-12T15:31:12.9960181Z 
-2025-10-12T15:31:12.9988545Z Done in 939ms
-2025-10-12T15:31:13.0101812Z ##[endgroup]
-2025-10-12T15:31:13.0104429Z Installation Completed!
-2025-10-12T15:31:13.0231536Z ##[group]Run actions/setup-node@v4
-2025-10-12T15:31:13.0231786Z with:
-2025-10-12T15:31:13.0231957Z   node-version: 20
-2025-10-12T15:31:13.0232125Z   cache: pnpm
-2025-10-12T15:31:13.0232296Z   always-auth: false
-2025-10-12T15:31:13.0232478Z   check-latest: false
-2025-10-12T15:31:13.0232795Z   token: ***
-2025-10-12T15:31:13.0232985Z env:
-2025-10-12T15:31:13.0233200Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:13.0233465Z ##[endgroup]
-2025-10-12T15:31:13.2198207Z Found in cache @ /opt/hostedtoolcache/node/20.19.5/x64
-2025-10-12T15:31:13.2204681Z ##[group]Environment details
-2025-10-12T15:31:15.7559790Z node: v20.19.5
-2025-10-12T15:31:15.7560208Z npm: 10.8.2
-2025-10-12T15:31:15.7560496Z yarn: 1.22.22
-2025-10-12T15:31:15.7561202Z ##[endgroup]
-2025-10-12T15:31:15.7588388Z [command]/home/runner/setup-pnpm/node_modules/.bin/pnpm store path --silent
-2025-10-12T15:31:16.1942734Z /home/runner/setup-pnpm/node_modules/.bin/store/v10
-2025-10-12T15:31:16.4605432Z pnpm cache is not found
-2025-10-12T15:31:16.4698152Z ##[group]Run pnpm install
-2025-10-12T15:31:16.4698448Z [36;1mpnpm install[0m
-2025-10-12T15:31:16.4795966Z shell: /usr/bin/bash -e {0}
-2025-10-12T15:31:16.4796228Z env:
-2025-10-12T15:31:16.4796459Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:16.4796745Z ##[endgroup]
-2025-10-12T15:31:16.8400707Z Lockfile is up to date, resolution step is skipped
-2025-10-12T15:31:16.8661054Z Progress: resolved 1, reused 0, downloaded 0, added 0
-2025-10-12T15:31:16.9005637Z Packages: +211
-2025-10-12T15:31:16.9007322Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-2025-10-12T15:31:17.8669570Z Progress: resolved 211, reused 0, downloaded 137, added 137
-2025-10-12T15:31:18.2466048Z Progress: resolved 211, reused 0, downloaded 211, added 211, done
-2025-10-12T15:31:18.3786743Z 
-2025-10-12T15:31:18.3787277Z dependencies:
-2025-10-12T15:31:18.3787650Z + react 19.2.0
-2025-10-12T15:31:18.3788042Z + react-dom 19.2.0
-2025-10-12T15:31:18.3788180Z 
-2025-10-12T15:31:18.3788327Z devDependencies:
-2025-10-12T15:31:18.3795590Z + @vitejs/plugin-react 5.0.4
-2025-10-12T15:31:18.3796517Z + gh-pages 6.3.0
-2025-10-12T15:31:18.3797395Z + javascript-obfuscator 4.1.1
-2025-10-12T15:31:18.3798547Z + terser 5.44.0
-2025-10-12T15:31:18.3798856Z + vite 7.1.9
-2025-10-12T15:31:18.3799298Z + vite-plugin-javascript-obfuscator 3.1.0
-2025-10-12T15:31:18.3799650Z 
-2025-10-12T15:31:18.3800421Z ╭ Warning ─────────────────────────────────────────────────────────────────────╮
-2025-10-12T15:31:18.3801238Z │                                                                              │
-2025-10-12T15:31:18.3802173Z │   Ignored build scripts: esbuild, javascript-obfuscator.                     │
-2025-10-12T15:31:18.3803230Z │   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
-2025-10-12T15:31:18.3804372Z │   to run scripts.                                                            │
-2025-10-12T15:31:18.3805194Z │                                                                              │
-2025-10-12T15:31:18.3806037Z ╰──────────────────────────────────────────────────────────────────────────────╯
-2025-10-12T15:31:18.3806381Z 
-2025-10-12T15:31:18.3913619Z Done in 1.8s using pnpm v10.14.0
-2025-10-12T15:31:18.4047859Z ##[group]Run pnpm run build
-2025-10-12T15:31:18.4048128Z [36;1mpnpm run build[0m
-2025-10-12T15:31:18.4067392Z shell: /usr/bin/bash -e {0}
-2025-10-12T15:31:18.4067616Z env:
-2025-10-12T15:31:18.4067837Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:18.4068100Z ##[endgroup]
-2025-10-12T15:31:18.7321610Z 
-2025-10-12T15:31:18.7322656Z > blog-art-minimal@1.0.0 build /home/runner/work/meosjourney/meosjourney
-2025-10-12T15:31:18.7323058Z > vite build
-2025-10-12T15:31:18.7323173Z 
-2025-10-12T15:31:19.3410703Z [36mvite v7.1.9 [32mbuilding for production...[36m[39m
-2025-10-12T15:31:19.7016314Z transforming...
-2025-10-12T15:31:22.4285998Z [32m✓[39m 45 modules transformed.
-2025-10-12T15:31:25.1627223Z rendering chunks...
-2025-10-12T15:31:25.1805138Z computing gzip size...
-2025-10-12T15:31:25.2089309Z [2mdist/[22m[32mindex.html                 [39m[1m[2m  1.06 kB[22m[1m[22m[2m │ gzip:   0.54 kB[22m
-2025-10-12T15:31:25.2090752Z [2mdist/[22m[2massets/[22m[35mindex-BSHtpop9.css  [39m[1m[2m 23.53 kB[22m[1m[22m[2m │ gzip:   4.50 kB[22m
-2025-10-12T15:31:25.2092083Z [2mdist/[22m[2massets/[22m[36mindex-DZHTFEv5.js   [39m[1m[2m344.75 kB[22m[1m[22m[2m │ gzip: 121.30 kB[22m
-2025-10-12T15:31:25.2092797Z [32m✓ built in 5.83s[39m
-2025-10-12T15:31:25.2590545Z ##[group]Run actions/upload-pages-artifact@v3
-2025-10-12T15:31:25.2591026Z with:
-2025-10-12T15:31:25.2591321Z   path: ./dist
-2025-10-12T15:31:25.2591639Z   name: github-pages
-2025-10-12T15:31:25.2591991Z   retention-days: 1
-2025-10-12T15:31:25.2592311Z env:
-2025-10-12T15:31:25.2592678Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:25.2593183Z ##[endgroup]
-2025-10-12T15:31:25.2691463Z ##[group]Run echo ::group::Archive artifact
-2025-10-12T15:31:25.2692002Z [36;1mecho ::group::Archive artifact[0m
-2025-10-12T15:31:25.2692434Z [36;1mtar \[0m
-2025-10-12T15:31:25.2692841Z [36;1m  --dereference --hard-dereference \[0m
-2025-10-12T15:31:25.2693345Z [36;1m  --directory "$INPUT_PATH" \[0m
-2025-10-12T15:31:25.2693830Z [36;1m  -cvf "$RUNNER_TEMP/artifact.tar" \[0m
-2025-10-12T15:31:25.2694436Z [36;1m  --exclude=.git \[0m
-2025-10-12T15:31:25.2694827Z [36;1m  --exclude=.github \[0m
-2025-10-12T15:31:25.2695167Z [36;1m  .[0m
-2025-10-12T15:31:25.2695584Z [36;1mecho ::endgroup::[0m
-2025-10-12T15:31:25.3868321Z shell: /usr/bin/sh -e {0}
-2025-10-12T15:31:25.3868712Z env:
-2025-10-12T15:31:25.3869110Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:25.3869626Z   INPUT_PATH: ./dist
-2025-10-12T15:31:25.3869962Z ##[endgroup]
-2025-10-12T15:31:25.3920170Z ##[group]Archive artifact
-2025-10-12T15:31:25.3934318Z ./
-2025-10-12T15:31:25.3934580Z ./avatars/
-2025-10-12T15:31:25.3934911Z ./avatars/avatar.png
-2025-10-12T15:31:25.3939869Z ./index.html
-2025-10-12T15:31:25.3940219Z ./assets/
-2025-10-12T15:31:25.3940597Z ./assets/index-BSHtpop9.css
-2025-10-12T15:31:25.3941021Z ./assets/index-DZHTFEv5.js
-2025-10-12T15:31:25.3944696Z ##[endgroup]
-2025-10-12T15:31:25.4005679Z ##[group]Run actions/upload-artifact@v4
-2025-10-12T15:31:25.4005927Z with:
-2025-10-12T15:31:25.4006089Z   name: github-pages
-2025-10-12T15:31:25.4006309Z   path: /home/runner/work/_temp/artifact.tar
-2025-10-12T15:31:25.4006540Z   retention-days: 1
-2025-10-12T15:31:25.4006740Z   if-no-files-found: error
-2025-10-12T15:31:25.4006964Z   compression-level: 6
-2025-10-12T15:31:25.4007145Z   overwrite: false
-2025-10-12T15:31:25.4007326Z   include-hidden-files: false
-2025-10-12T15:31:25.4007515Z env:
-2025-10-12T15:31:25.4007715Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
-2025-10-12T15:31:25.4007964Z ##[endgroup]
-2025-10-12T15:31:25.6021697Z With the provided path, there will be 1 file uploaded
-2025-10-12T15:31:25.6026056Z Artifact name is valid!
-2025-10-12T15:31:25.6027128Z Root directory input is valid!
-2025-10-12T15:31:25.8223388Z Beginning upload of artifact content to blob storage
-2025-10-12T15:31:26.3282457Z Uploaded bytes 814896
-2025-10-12T15:31:26.3889936Z Finished uploading artifact content to blob storage!
-2025-10-12T15:31:26.3905342Z SHA256 digest of uploaded artifact zip is 64353214b29eee16f480075b81a1280a03114b36b7297719110c96cbb238ef36
-2025-10-12T15:31:26.3906171Z Finalizing artifact upload
-2025-10-12T15:31:26.5108625Z Artifact github-pages.zip successfully finalized. Artifact ID 4248593156
-2025-10-12T15:31:26.5109774Z Artifact github-pages has been successfully uploaded! Final size is 814896 bytes. Artifact ID is 4248593156
-2025-10-12T15:31:26.5116926Z Artifact download URL: https://github.com/lariod12/meosjourney/actions/runs/18445952844/artifacts/4248593156
-2025-10-12T15:31:26.5260972Z Post job cleanup.
-2025-10-12T15:31:26.7002816Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/meosjourney/meosjourney --files-from manifest.txt --use-compress-program zstdmt
-2025-10-12T15:31:28.1378825Z Sent 21219121 of 21219121 (100.0%), 24.5 MBs/sec
-2025-10-12T15:31:28.3203132Z Cache saved with the key: node-cache-Linux-x64-pnpm-a8a27b99d1e79a0feaf05bbcb10f9ed39e9b05a7ccde224409f74b213ff835fa
-2025-10-12T15:31:28.3349316Z Post job cleanup.
-2025-10-12T15:31:28.3839469Z Pruning is unnecessary.
-2025-10-12T15:31:28.3909517Z Post job cleanup.
-2025-10-12T15:31:28.4768429Z [command]/usr/bin/git version
-2025-10-12T15:31:28.4800463Z git version 2.51.0
-2025-10-12T15:31:28.4839509Z Temporarily overriding HOME='/home/runner/work/_temp/0f96ca27-782a-4c6d-a712-0287c75ee74f' before making global git config changes
-2025-10-12T15:31:28.4840871Z Adding repository directory to the temporary git global config as a safe directory
-2025-10-12T15:31:28.4846040Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/meosjourney/meosjourney
-2025-10-12T15:31:28.4877439Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-10-12T15:31:28.4905258Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-10-12T15:31:28.5120475Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-10-12T15:31:28.5138554Z http.https://github.com/.extraheader
-2025-10-12T15:31:28.5149842Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2025-10-12T15:31:28.5178445Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-10-12T15:31:28.5439507Z Cleaning up orphan processes
-Explain
-Beta
-0 / 10
-used queries
-1
-
-deploy: 
-2025-10-12T15:31:34.7932235Z Current runner version: '2.328.0'
-2025-10-12T15:31:34.7953985Z ##[group]Runner Image Provisioner
-2025-10-12T15:31:34.7954709Z Hosted Compute Agent
-2025-10-12T15:31:34.7955163Z Version: 20250912.392
-2025-10-12T15:31:34.7955775Z Commit: d921fda672a98b64f4f82364647e2f10b2267d0b
-2025-10-12T15:31:34.7956388Z Build Date: 2025-09-12T15:23:14Z
-2025-10-12T15:31:34.7956906Z ##[endgroup]
-2025-10-12T15:31:34.7957554Z ##[group]Operating System
-2025-10-12T15:31:34.7958075Z Ubuntu
-2025-10-12T15:31:34.7958487Z 24.04.3
-2025-10-12T15:31:34.7958924Z LTS
-2025-10-12T15:31:34.7959328Z ##[endgroup]
-2025-10-12T15:31:34.7959739Z ##[group]Runner Image
-2025-10-12T15:31:34.7960262Z Image: ubuntu-24.04
-2025-10-12T15:31:34.7960687Z Version: 20250929.60.1
-2025-10-12T15:31:34.7961601Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250929.60/images/ubuntu/Ubuntu2404-Readme.md
-2025-10-12T15:31:34.7962992Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250929.60
-2025-10-12T15:31:34.7963829Z ##[endgroup]
-2025-10-12T15:31:34.7964804Z ##[group]GITHUB_TOKEN Permissions
-2025-10-12T15:31:34.7966779Z Contents: read
-2025-10-12T15:31:34.7967460Z Metadata: read
-2025-10-12T15:31:34.7967890Z Pages: write
-2025-10-12T15:31:34.7968326Z ##[endgroup]
-2025-10-12T15:31:34.7970466Z Secret source: Actions
-2025-10-12T15:31:34.7971310Z Prepare workflow directory
-2025-10-12T15:31:34.8279764Z Prepare all required actions
-2025-10-12T15:31:34.8316001Z Getting action download info
-2025-10-12T15:31:35.1805377Z Download action repository 'actions/deploy-pages@v4' (SHA:d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e)
-2025-10-12T15:31:36.0602275Z Complete job name: deploy
-2025-10-12T15:31:36.1143767Z ##[group]Run actions/deploy-pages@v4
-2025-10-12T15:31:36.1144760Z with:
-2025-10-12T15:31:36.1145485Z   token: ***
-2025-10-12T15:31:36.1146022Z   timeout: 600000
-2025-10-12T15:31:36.1146515Z   error_count: 10
-2025-10-12T15:31:36.1147067Z   reporting_interval: 5000
-2025-10-12T15:31:36.1147848Z   artifact_name: github-pages
-2025-10-12T15:31:36.1148523Z   preview: false
-2025-10-12T15:31:36.1149267Z ##[endgroup]
-2025-10-12T15:31:36.5259144Z Fetching artifact metadata for "github-pages" in this workflow run
-2025-10-12T15:31:36.7185877Z Found 1 artifact(s)
-2025-10-12T15:31:36.7198345Z Creating Pages deployment with payload:
-2025-10-12T15:31:36.7199417Z {
-2025-10-12T15:31:36.7200298Z 	"artifact_id": 4248593156,
-2025-10-12T15:31:36.7201427Z 	"pages_build_version": "e13257c922d8b486cc42937b79c06d079a3e99e2",
-2025-10-12T15:31:36.7272223Z 	"oidc_token": "***"
-2025-10-12T15:31:36.7273256Z }
-2025-10-12T15:31:37.1084410Z Created deployment for e13257c922d8b486cc42937b79c06d079a3e99e2, ID: e13257c922d8b486cc42937b79c06d079a3e99e2
-2025-10-12T15:31:42.1103766Z Getting Pages deployment status...
-2025-10-12T15:31:42.3452143Z Reported success!
-2025-10-12T15:31:42.3660441Z Evaluate and set environment url
-2025-10-12T15:31:42.3667126Z Evaluated environment url: https://lariod12.github.io/meosjourney/
-2025-10-12T15:31:42.3670030Z Cleaning up orphan processes
-Memo
-Highlight
-Explain
-Beta
-0 / 10
-used queries
-1
+index-CSIQeXz9.js:1 
+ 
+ GET https://lariod12.github.io/public/avatars/avatar.png 404 (Not Found)
+ktvjZ	@	index-CSIQeXz9.js:1
+qkkMA	@	index-CSIQeXz9.js:1
+(anonymous)	@	index-CSIQeXz9.js:1
+MyGAx	@	index-CSIQeXz9.js:1
+(anonymous)	@	index-CSIQeXz9.js:1
+wl	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+rc	@	index-CSIQeXz9.js:1
+oc	@	index-CSIQeXz9.js:1
+Ss	@	index-CSIQeXz9.js:1
+(anonymous)	@	index-CSIQeXz9.js:1
+M	@	index-CSIQeXz9.js:1
+index-CSIQeXz9.js:1 
+ 
+ GET https://lariod12.github.io/public/avatars/avatar.jpg 404 (Not Found)
+index-CSIQeXz9.js:1 
+ 
+ GET https://lariod12.github.io/public/avatars/avatar.jpeg 404 (Not Found)
+index-CSIQeXz9.js:1 
+ 
+ GET https://lariod12.github.io/public/avatars/avatar.gif 404 (Not Found)
+index-CSIQeXz9.js:1 
+ 
+ GET https://lariod12.github.io/public/avatars/avatar.webp 404 (Not Found)
