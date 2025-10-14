@@ -34,3 +34,9 @@ lerna-debug.log*
 
 # Cache
 .cache/
+
+# Config folders (folders starting with dot)
+.*/
+!.vscode/
+!.gitignore
+!.github/
