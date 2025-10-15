@@ -196,7 +196,7 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Action Buttons */}
           <div className="form-actions">
-            <button type="submit" className="btn-primary">◆ Lưu Update</button>
+            <button type="submit" className="btn-primary">Submit</button>
             <button type="button" onClick={handleReset} className="btn-secondary">✕ Reset</button>
           </div>
         </form>
