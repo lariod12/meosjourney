@@ -1,10 +1,12 @@
-import { collection, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const CHARACTER_ID = import.meta.env.VITE_CHARACTER_ID || 'qA5WkN2rIGKGhMSvTwYj';
 
-export const fetchFirstDocData = async (colPath) => {
-  const snap = await getDocs(collection(db, ...colPath));
+export const fetchFirstDocData = async (colPath, fromServer = false) => {
+  const snap = fromServer 
+    ? await getDocsFromServer(collection(db, ...colPath))
+    : await getDocs(collection(db, ...colPath));
   const first = snap.docs[0];
   return first ? { id: first.id, ...first.data() } : null;
 };
@@ -35,11 +37,32 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
   const caption = typeof profile?.caption === 'string' && profile.caption.trim() ? profile.caption : base.caption;
 
   // Process status data
+  let statusTimestamp = new Date();
+  
+  if (status?.timestamp) {
+    // Firestore Timestamp object
+    if (typeof status.timestamp.toDate === 'function') {
+      statusTimestamp = status.timestamp.toDate();
+    } 
+    // Already a Date object
+    else if (status.timestamp instanceof Date) {
+      statusTimestamp = status.timestamp;
+    }
+    // ISO string or timestamp number
+    else {
+      statusTimestamp = new Date(status.timestamp);
+    }
+  } else if (base.status?.timestamp) {
+    statusTimestamp = base.status.timestamp instanceof Date 
+      ? base.status.timestamp 
+      : new Date(base.status.timestamp);
+  }
+  
   const statusData = status ? {
     doing: status.doing || base.status?.doing || '',
     location: status.location || base.status?.location || '',
     mood: status.mood || base.status?.mood || '',
-    timestamp: status.timestamp?.toDate?.() || status.timestamp || base.status?.timestamp || new Date()
+    timestamp: statusTimestamp
   } : base.status || {};
 
   return {

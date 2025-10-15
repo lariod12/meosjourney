@@ -590,6 +590,12 @@ body {
     font-style: italic;
 }
 
+.status-refresh-note {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-left: 4px;
+}
+
 /* Introduce Content */
 .introduce-content {
     padding: 15px;
@@ -1470,6 +1476,10 @@ body {
 
     .status-time {
         font-size: 0.8rem;
+    }
+
+    .status-refresh-note {
+        font-size: 0.7rem;
     }
 
     .introduce-content,

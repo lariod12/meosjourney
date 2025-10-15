@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useCharacter } from '../contexts/CharacterContext';
 import TabNavigation from './TabNavigation';
 import TimeAgo from './TimeAgo';
 
 const StatusBox = () => {
   const data = useCharacter();
+  const [pageLoadTime] = useState(() => new Date());
 
   const tabs = [
     {
@@ -25,9 +27,7 @@ const StatusBox = () => {
             <span>{data.status.mood}</span>
           </div>
           <div className="status-time">
-            Updated: <TimeAgo timestamp={data.status.timestamp} />
-            <br />
-            <small>(Refresh page to get latest data)</small>
+            Updated: <TimeAgo timestamp={pageLoadTime} /> <span className="status-refresh-note">(Refresh page to get latest data)</span>
           </div>
         </div>
       )
