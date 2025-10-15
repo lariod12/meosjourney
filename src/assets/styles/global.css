@@ -328,7 +328,15 @@ body {
     font-family: 'Patrick Hand', cursive;
     color: var(--gray-medium);
     line-height: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 6px;
+    white-space: nowrap;
 }
+
+.avatar-container .xp-text::after { content: ' XP'; }
+.avatar-container .xp-text .xp-max::before { content: '/'; margin-right: 2px; }
 
 /* === TABBED SECTION (Skills & Hobbies Combined) === */
 .tabbed-section {
@@ -1408,6 +1416,11 @@ body {
 
     .xp-text {
         font-size: 0.75rem;
+        display: flex;
+        justify-content: flex-end;
+        align-items: baseline;
+        gap: 6px;
+        white-space: nowrap;
     }
 
     .section-title {

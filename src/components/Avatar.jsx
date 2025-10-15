@@ -23,7 +23,8 @@ const Avatar = () => {
           <div className="level-label">LEVEL {data.level}</div>
         </div>
         <div className="xp-text">
-          {data.currentXP.toLocaleString()} / {data.maxXP.toLocaleString()} XP
+          <div className="xp-current">{data.currentXP.toLocaleString()}</div>
+          <div className="xp-max">{data.maxXP.toLocaleString()}</div>
         </div>
       </div>
     </div>
