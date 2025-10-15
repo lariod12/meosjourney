@@ -15,7 +15,7 @@ const Avatar = () => {
       </div>
 
       <div className="character-name">{data.name}</div>
-      <div className="character-title">{data.caption}</div>
+      <div className="caption">{data.caption}</div>
 
       <div className="xp-bar-wrapper">
         <div className="xp-bar">

@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdate.css';
-import dump from '../../../local/firestore_data_20251014_234458.json';
+import { fetchConfig, CHARACTER_ID } from '../../services/firestore';
 
 const CORRECT_PASSWORD = '0929';
 const SESSION_KEY = 'meos05_access';
 
 const DailyUpdate = ({ onBack }) => {
-  const MOOD_OPTIONS = dump?.subcollections?.config?.['0nonOO90jKVdbbEoin0l']?.data?.moodOptions || [];
+  const [moodOptions, setMoodOptions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     noteDate: new Date().toISOString().split('T')[0],
@@ -20,6 +20,11 @@ const DailyUpdate = ({ onBack }) => {
   const [moodOpen, setMoodOpen] = useState(false);
 
   useEffect(() => {
+    // Load config for mood options from Firestore
+    fetchConfig(CHARACTER_ID)
+      .then(cfg => setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []))
+      .catch(() => setMoodOptions([]));
+
     // Check if already authenticated
     if (sessionStorage.getItem(SESSION_KEY) === 'granted') {
       setIsAuthenticated(true);
@@ -41,11 +46,10 @@ const DailyUpdate = ({ onBack }) => {
   }, [onBack]);
 
   useEffect(() => {
-    if (!formData.mood && MOOD_OPTIONS.length) {
-      setFormData(prev => ({ ...prev, mood: MOOD_OPTIONS[0] }));
+    if (!formData.mood && moodOptions.length) {
+      setFormData(prev => ({ ...prev, mood: moodOptions[0] }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [moodOptions]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -152,7 +156,7 @@ const DailyUpdate = ({ onBack }) => {
                 </button>
                 {moodOpen && (
                   <div className="select-options" role="listbox">
-                    {MOOD_OPTIONS.map(opt => (
+                    {moodOptions.map(opt => (
                       <div
                         key={opt}
                         role="option"
