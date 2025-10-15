@@ -1,6 +1,6 @@
 import { useCharacter } from '../contexts/CharacterContext';
-import { getTimeAgo } from '../utils/dateUtils';
 import TabNavigation from './TabNavigation';
+import TimeAgo from './TimeAgo';
 
 const StatusBox = () => {
   const data = useCharacter();
@@ -25,7 +25,9 @@ const StatusBox = () => {
             <span>{data.status.mood}</span>
           </div>
           <div className="status-time">
-            Updated: {getTimeAgo(data.status.timestamp)}
+            Updated: <TimeAgo timestamp={data.status.timestamp} />
+            <br />
+            <small>(Refresh page to get latest data)</small>
           </div>
         </div>
       )
