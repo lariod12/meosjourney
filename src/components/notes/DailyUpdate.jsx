@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './DailyUpdate.css';
+import dump from '../../../local/firestore_data_20251014_234458.json';
 
 const CORRECT_PASSWORD = '0929';
 const SESSION_KEY = 'meos05_access';
 
 const DailyUpdate = ({ onBack }) => {
+  const MOOD_OPTIONS = dump?.subcollections?.config?.['0nonOO90jKVdbbEoin0l']?.data?.moodOptions || [];
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     noteDate: new Date().toISOString().split('T')[0],
@@ -13,6 +15,9 @@ const DailyUpdate = ({ onBack }) => {
     mood: '',
     journalEntry: ''
   });
+
+  const moodRef = useRef(null);
+  const [moodOpen, setMoodOpen] = useState(false);
 
   useEffect(() => {
     // Check if already authenticated
@@ -34,6 +39,23 @@ const DailyUpdate = ({ onBack }) => {
       if (onBack) onBack();
     }
   }, [onBack]);
+
+  useEffect(() => {
+    if (!formData.mood && MOOD_OPTIONS.length) {
+      setFormData(prev => ({ ...prev, mood: MOOD_OPTIONS[0] }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moodRef.current && !moodRef.current.contains(e.target)) {
+        setMoodOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -116,14 +138,37 @@ const DailyUpdate = ({ onBack }) => {
 
             <div className="form-group">
               <label htmlFor="mood">Mood</label>
-              <input 
-                type="text" 
-                id="mood" 
-                name="mood" 
-                value={formData.mood}
-                onChange={handleChange}
-                placeholder="e.g., Focused, Relaxed, Energetic" 
-              />
+              <div className="select-wrap" ref={moodRef}>
+                <button
+                  type="button"
+                  id="mood"
+                  className="select-display"
+                  aria-haspopup="listbox"
+                  aria-expanded={moodOpen}
+                  onClick={() => setMoodOpen(o => !o)}
+                >
+                  {formData.mood || 'Select mood'}
+                  <span className="select-caret">▾</span>
+                </button>
+                {moodOpen && (
+                  <div className="select-options" role="listbox">
+                    {MOOD_OPTIONS.map(opt => (
+                      <div
+                        key={opt}
+                        role="option"
+                        aria-selected={formData.mood === opt}
+                        className={`select-option${formData.mood === opt ? ' selected' : ''}`}
+                        onMouseDown={() => {
+                          setFormData(prev => ({ ...prev, mood: opt }));
+                          setMoodOpen(false);
+                        }}
+                      >
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
