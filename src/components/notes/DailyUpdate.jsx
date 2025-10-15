@@ -132,7 +132,7 @@ const DailyUpdate = ({ onBack }) => {
             <h2>▸ Daily Journal</h2>
             
             <div className="form-group">
-              <label htmlFor="journalEntry">Nhật ký hôm nay</label>
+              <label htmlFor="journalEntry">Current Journal</label>
               <textarea 
                 id="journalEntry" 
                 name="journalEntry" 
