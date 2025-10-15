@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './DailyUpdate.css';
 
-const CORRECT_PASSWORD = 'meos05';
+const CORRECT_PASSWORD = '0929';
 const SESSION_KEY = 'meos05_access';
 
 const DailyUpdate = ({ onBack }) => {
@@ -67,31 +67,24 @@ const DailyUpdate = ({ onBack }) => {
     return null;
   }
 
+  const formattedDate = new Date(formData.noteDate).toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
   return (
     <div className="notes-container">
       <header className="notes-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
         <h1>✎ Daily Update</h1>
-        <div className="subtitle">Cập nhật hàng ngày</div>
+        <div className="subtitle">
+          {formattedDate}
+        </div>
       </header>
 
       <main className="update-form">
         <form id="dailyUpdateForm" onSubmit={handleSubmit}>
-          
-          {/* Date */}
-          <div className="form-section">
-            <h2>▸ Ngày</h2>
-            <div className="form-group">
-              <input 
-                type="date" 
-                id="noteDate" 
-                name="noteDate" 
-                value={formData.noteDate}
-                onChange={handleChange}
-                required 
-              />
-            </div>
-          </div>
 
           {/* Status Update */}
           <div className="form-section">
