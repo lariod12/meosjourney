@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdate.css';
-import { fetchConfig, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveStatus, CHARACTER_ID } from '../../services/firestore';
 
 const CORRECT_PASSWORD = '0929';
 const SESSION_KEY = 'meos05_access';
@@ -10,11 +10,13 @@ const DailyUpdate = ({ onBack }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [formData, setFormData] = useState({
     noteDate: new Date().toISOString().split('T')[0],
-    currentActivity: '',
+    doing: '',
     location: '',
     mood: '',
     journalEntry: ''
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const moodRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
@@ -69,22 +71,52 @@ const DailyUpdate = ({ onBack }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('=== FORM DATA (Test Only) ===');
-    console.log(formData);
-    console.log('=============================');
+    if (isSubmitting) return;
     
-    alert('✓ UI Test Mode\n\nForm data logged to console.\nLogic chưa được implement.');
+    setIsSubmitting(true);
+    
+    try {
+      // Submit Status Update
+      const statusResult = await saveStatus({
+        doing: formData.doing,
+        location: formData.location,
+        mood: formData.mood
+      }, CHARACTER_ID);
+      
+      if (statusResult.success) {
+        console.log('✅ Status saved:', statusResult.id);
+        alert('✓ Status Update saved successfully!');
+        
+        // Reset only status fields after successful submit
+        setFormData(prev => ({
+          ...prev,
+          doing: '',
+          location: '',
+          mood: moodOptions[0] || ''
+        }));
+      } else {
+        alert('⚠️ ' + (statusResult.message || 'No data to save'));
+      }
+      
+      // TODO: Submit Journal (later implementation)
+      
+    } catch (error) {
+      console.error('❌ Error saving:', error);
+      alert('✕ Error: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setFormData({
       noteDate: new Date().toISOString().split('T')[0],
-      currentActivity: '',
+      doing: '',
       location: '',
-      mood: '',
+      mood: moodOptions[0] || '',
       journalEntry: ''
     });
   };
@@ -117,12 +149,12 @@ const DailyUpdate = ({ onBack }) => {
             <h2>▸ Status Update</h2>
             
             <div className="form-group">
-              <label htmlFor="currentActivity">Current Activity</label>
+              <label htmlFor="doing">Current Activity</label>
               <input 
                 type="text" 
-                id="currentActivity" 
-                name="currentActivity" 
-                value={formData.currentActivity}
+                id="doing" 
+                name="doing" 
+                value={formData.doing}
                 onChange={handleChange}
                 placeholder="e.g., Studying character design" 
               />
@@ -200,8 +232,12 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Action Buttons */}
           <div className="form-actions">
-            <button type="submit" className="btn-primary">Submit</button>
-            <button type="button" onClick={handleReset} className="btn-secondary">✕ Reset</button>
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
+            <button type="button" onClick={handleReset} className="btn-secondary" disabled={isSubmitting}>
+              ✕ Reset
+            </button>
           </div>
         </form>
       </main>
