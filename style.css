@@ -286,7 +286,7 @@ body {
     bottom: 0;
     font-family: 'Architects Daughter', cursive;
     font-size: 0.85rem;
-    background: var(--black);
+    background: transparent;
     color: var(--white);
     padding: 0 12px;
     white-space: nowrap;
@@ -297,6 +297,11 @@ body {
     justify-content: center;
     z-index: 2;
     font-weight: 700;
+    text-shadow: 
+        -1px -1px 0 var(--black),
+        1px -1px 0 var(--black),
+        -1px 1px 0 var(--black),
+        1px 1px 0 var(--black);
 }
 
 .xp-fill {

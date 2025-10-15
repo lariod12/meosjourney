@@ -11,7 +11,6 @@ const Avatar = () => {
     <div className="avatar-container">
       <div className="avatar-frame">
         <img src={avatarUrl} alt="Character Avatar" className="avatar-img" />
-        <div className="avatar-border"></div>
       </div>
 
       <div className="character-name">{data.name}</div>
