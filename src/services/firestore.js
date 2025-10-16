@@ -166,3 +166,33 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
     throw new Error(`Firestore error: ${error.message}`);
   }
 };
+
+export const fetchAchievements = async (characterId = CHARACTER_ID) => {
+  try {
+    const achievementsRef = collection(db, 'main', characterId, 'achievements');
+    const snapshot = await getDocs(achievementsRef);
+    
+    const achievements = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    return achievements;
+  } catch (error) {
+    console.error('❌ Error fetching achievements:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const updateAchievement = async (achievementId, achievementData, characterId = CHARACTER_ID) => {
+  try {
+    const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    await setDoc(achievementRef, achievementData, { merge: true });
+    
+    console.log('✅ Achievement updated:', achievementId);
+    return { success: true, id: achievementId };
+  } catch (error) {
+    console.error('❌ Error updating achievement:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};

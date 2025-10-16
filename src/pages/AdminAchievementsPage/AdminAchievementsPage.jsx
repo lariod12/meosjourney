@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './AdminAchievementsPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
-import { fetchConfig, saveAchievement, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -10,6 +10,9 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('create');
+  const [achievements, setAchievements] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +28,21 @@ const AdminAchievementsPage = ({ onBack }) => {
       .then(cfg => setCorrectPassword(cfg?.pwDailyUpdate || null))
       .catch(() => setCorrectPassword(null));
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'manage') {
+      loadAchievements();
+    }
+  }, [isAuthenticated, activeTab]);
+
+  const loadAchievements = async () => {
+    try {
+      const data = await fetchAchievements(CHARACTER_ID);
+      setAchievements(data);
+    } catch (error) {
+      console.error('Error loading achievements:', error);
+    }
+  };
 
   useEffect(() => {
     if (correctPassword === null) return;
@@ -90,6 +108,9 @@ const AdminAchievementsPage = ({ onBack }) => {
       if (result.success) {
         alert('✓ Achievement created successfully!');
         handleReset();
+        if (activeTab === 'manage') {
+          loadAchievements();
+        }
       }
     } catch (error) {
       console.error('❌ Error creating achievement:', error);
@@ -123,6 +144,46 @@ const AdminAchievementsPage = ({ onBack }) => {
     return null;
   }
 
+
+
+  const handleUpdate = async (achievementId) => {
+    const hasXP = formData.xp && Number(formData.xp) > 0;
+    const hasSpecialReward = formData.specialReward.trim().length > 0;
+
+    if (!hasXP && !hasSpecialReward) {
+      alert('❌ Must provide either XP Reward or Special Reward');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const achievementData = {
+        name: formData.name.trim(),
+        desc: formData.desc.trim(),
+        icon: formData.icon.trim(),
+        xp: Number(formData.xp) || 0,
+        specialReward: formData.specialReward.trim(),
+        dueDate: formData.dueDate || null
+      };
+
+      await updateAchievement(achievementId, achievementData, CHARACTER_ID);
+      alert('✓ Achievement updated successfully!');
+      setEditingId(null);
+      handleReset();
+      loadAchievements();
+    } catch (error) {
+      console.error('❌ Error updating achievement:', error);
+      alert('✕ Error: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
+
+
+
   return (
     <div className="admin-container">
       <header className="admin-header">
@@ -130,7 +191,22 @@ const AdminAchievementsPage = ({ onBack }) => {
         <h1>⚙️ Admin - Achievements</h1>
       </header>
 
-      <main className="admin-form">
+      <nav className="admin-tabs">
+        <button
+          className={`tab ${activeTab === 'create' ? 'active' : ''}`}
+          onClick={() => setActiveTab('create')}
+        >
+          ➕ Create
+        </button>
+        <button
+          className={`tab ${activeTab === 'manage' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manage')}
+        >
+          📋 Manage
+        </button>
+      </nav>
+
+      <main className="admin-form">{activeTab === 'create' ? (
         <form onSubmit={handleSubmit}>
           <div className="form-section">
             <h2>▸ Create Achievement</h2>
@@ -219,6 +295,145 @@ const AdminAchievementsPage = ({ onBack }) => {
             </button>
           </div>
         </form>
+      ) : (
+        <div className="achievements-list">
+          <h2>▸ Manage Achievements</h2>
+          {achievements.length === 0 ? (
+            <p className="empty-message">No achievements found</p>
+          ) : (
+            <div className="achievements-table">
+              {achievements.map(achievement => {
+              const isEditing = editingId === achievement.id;
+              
+              return (
+              <div key={achievement.id} className="achievement-row">
+                <div className="achievement-cell icon-cell">
+                  <span className="achievement-icon">{achievement.icon}</span>
+                </div>
+                
+                <div className="achievement-cell main-cell">
+                  {isEditing ? (
+                    <div className="achievement-edit-form">
+                    <div className="form-group">
+                      <label>Name *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Description *</label>
+                      <textarea
+                        name="desc"
+                        rows="3"
+                        value={formData.desc}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Icon *</label>
+                      <input
+                        type="text"
+                        name="icon"
+                        value={formData.icon}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>XP Reward</label>
+                      <input
+                        type="number"
+                        name="xp"
+                        value={formData.xp}
+                        onChange={handleChange}
+                        min="0"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Special Reward</label>
+                      <input
+                        type="text"
+                        name="specialReward"
+                        value={formData.specialReward}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Due Date</label>
+                      <input
+                        type="date"
+                        name="dueDate"
+                        value={formData.dueDate}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="achievement-actions">
+                      <button
+                        onClick={() => handleUpdate(achievement.id)}
+                        className="btn-primary"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Updating...' : 'Update'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingId(null);
+                          handleReset();
+                        }}
+                        className="btn-secondary"
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    </div>
+                  ) : (
+                    <div className="achievement-view-row">
+                      <div className="achievement-info">
+                        <h3>{achievement.name}</h3>
+                        <p className="achievement-desc">{achievement.desc}</p>
+                        <div className="achievement-details">
+                          {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
+                          {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
+                          {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
+                        </div>
+                      </div>
+                      <div className="achievement-status-cell">
+                        <span className={`achievement-status ${achievement.completed ? 'completed' : 'pending'}`}>
+                          {achievement.completed ? '✓ Completed' : '○ Pending'}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setEditingId(achievement.id);
+                            setFormData({
+                              name: achievement.name,
+                              desc: achievement.desc,
+                              icon: achievement.icon,
+                              xp: achievement.xp || '',
+                              specialReward: achievement.specialReward || '',
+                              dueDate: achievement.dueDate || ''
+                            });
+                          }}
+                          className="btn-edit"
+                        >
+                          ✎ Edit
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+            })}
+            </div>
+          )}
+        </div>
+      )}
       </main>
     </div>
   );
