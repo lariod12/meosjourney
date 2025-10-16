@@ -1,8 +1,7 @@
 import TabNavigation from './TabNavigation';
-import QuestsTab from './QuestsTab';
-import JournalTab from './JournalTab';
-import HistoryTab from './HistoryTab';
-import AchievementsTab from './AchievementsTab';
+import { QuestsTab } from '../../quests/components';
+import { JournalTab, HistoryTab } from '../../journal/components';
+import { AchievementsTab } from '../../achievements/components';
 
 const DailyActivities = () => {
   const tabs = [

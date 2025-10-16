@@ -1,8 +1,6 @@
-import Header from './Header';
-import Avatar from './Avatar';
-import StatusBox from './StatusBox';
-import DailyActivities from './DailyActivities';
-import Footer from './Footer';
+import { Header, Footer } from '../../components/layout';
+import { Avatar } from '../../components/common';
+import { StatusBox, DailyActivities } from '../../features/character/components';
 
 const CharacterSheet = () => {
   return (

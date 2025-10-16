@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useCharacter } from '../contexts/CharacterContext';
+import { useState } from 'react';
+import { useCharacter } from '../../../contexts/CharacterContext';
 import TabNavigation from './TabNavigation';
-import TimeAgo from './TimeAgo';
+import { TimeAgo } from '../../../components/common';
 
 const StatusBox = () => {
   const data = useCharacter();

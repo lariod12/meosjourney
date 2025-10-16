@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCharacter } from '../contexts/CharacterContext';
+import { useCharacter } from '../../../contexts';
 import AchievementModal from './AchievementModal';
 
 const AchievementsTab = () => {

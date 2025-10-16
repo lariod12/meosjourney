@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useCharacter } from '../contexts/CharacterContext';
-import { formatDate } from '../utils/dateUtils';
+import { useCharacter } from '../../../contexts';
+import { formatDate } from '../../../utils/dateUtils';
 
 const HistoryTab = () => {
   const data = useCharacter();

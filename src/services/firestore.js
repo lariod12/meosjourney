@@ -1,7 +1,8 @@
 import { collection, getDocs, doc, setDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
 import { db } from './firebase';
+import { CHARACTER_ID } from '../config/constants';
 
-export const CHARACTER_ID = import.meta.env.VITE_CHARACTER_ID || 'qA5WkN2rIGKGhMSvTwYj';
+export { CHARACTER_ID };
 
 export const fetchFirstDocData = async (colPath, fromServer = false) => {
   const snap = fromServer 

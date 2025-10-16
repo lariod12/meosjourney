@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { CharacterProvider } from './contexts/CharacterContext';
+import { CharacterProvider } from './contexts';
 import { characterData } from './data/characterData';
-import { fetchCharacterViewData, CHARACTER_ID } from './services/firestore';
-import CharacterSheet from './components/CharacterSheet';
-import DailyUpdate from './components/notes/DailyUpdate';
+import { fetchCharacterViewData, CHARACTER_ID } from './services';
+import CharacterSheet from './pages/HomePage';
+import DailyUpdatePage from './pages/DailyUpdatePage';
 import './assets/styles/global.css';
 
 const HomePage = () => {
@@ -37,7 +37,7 @@ const App = () => {
     <Router basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/notes/meos05" element={<DailyUpdate onBack={() => window.history.back()} />} />
+        <Route path="/notes/meos05" element={<DailyUpdatePage onBack={() => window.history.back()} />} />
       </Routes>
     </Router>
   );

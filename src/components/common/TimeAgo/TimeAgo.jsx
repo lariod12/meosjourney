@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTimeAgo } from '../utils/dateUtils';
+import { getTimeAgo } from '../../../utils/dateUtils';
 
 const TimeAgo = ({ timestamp, updateInterval = 30000 }) => {
   const [timeText, setTimeText] = useState(getTimeAgo(timestamp));

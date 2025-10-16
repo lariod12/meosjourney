@@ -1,4 +1,4 @@
-import { useCharacter } from '../contexts/CharacterContext';
+import { useCharacter } from '../../../contexts';
 
 const Footer = () => {
   const data = useCharacter();

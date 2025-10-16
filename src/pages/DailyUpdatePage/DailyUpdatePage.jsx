@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import './DailyUpdate.css';
+import './DailyUpdatePage.css';
 import { fetchConfig, saveStatus, CHARACTER_ID } from '../../services/firestore';
 
 const CORRECT_PASSWORD = '0929';

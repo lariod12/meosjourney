@@ -1,5 +1,5 @@
-import { useCharacter } from '../contexts/CharacterContext';
-import { formatDate } from '../utils/dateUtils';
+import { useCharacter } from '../../../contexts';
+import { formatDate } from '../../../utils/dateUtils';
 
 const JournalTab = () => {
   const data = useCharacter();

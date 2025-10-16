@@ -1,5 +1,5 @@
-import { useCharacter } from '../contexts/CharacterContext';
-import { useAvatar } from '../hooks/useAvatar';
+import { useCharacter } from '../../../contexts';
+import { useAvatar } from '../../../hooks';
 
 const Avatar = () => {
   const data = useCharacter();
