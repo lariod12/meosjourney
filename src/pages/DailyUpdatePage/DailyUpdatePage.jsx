@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdatePage.css';
 import { fetchConfig, saveStatus, CHARACTER_ID } from '../../services/firestore';
+import PasswordModal from '../../components/PasswordModal/PasswordModal';
 
-const CORRECT_PASSWORD = '0929';
 const SESSION_KEY = 'meos05_access';
 
 const DailyUpdate = ({ onBack }) => {
   const [moodOptions, setMoodOptions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [correctPassword, setCorrectPassword] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [formData, setFormData] = useState({
     noteDate: new Date().toISOString().split('T')[0],
     doing: '',
@@ -15,17 +17,28 @@ const DailyUpdate = ({ onBack }) => {
     mood: '',
     journalEntry: ''
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const moodRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
 
   useEffect(() => {
-    // Load config for mood options from Firestore
+    // Load config from Firestore
     fetchConfig(CHARACTER_ID)
-      .then(cfg => setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []))
-      .catch(() => setMoodOptions([]));
+      .then(cfg => {
+        setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
+        setCorrectPassword(cfg?.pwDailyUpdate || null);
+      })
+      .catch(() => {
+        setMoodOptions([]);
+        setCorrectPassword(null);
+      });
+  }, []);
+
+  useEffect(() => {
+    // Wait until password is loaded from config
+    if (correctPassword === null) return;
 
     // Check if already authenticated
     if (sessionStorage.getItem(SESSION_KEY) === 'granted') {
@@ -33,19 +46,26 @@ const DailyUpdate = ({ onBack }) => {
       return;
     }
 
-    // Prompt for password
-    const userPassword = prompt('🔒 Enter password to access:');
-    
-    if (userPassword === CORRECT_PASSWORD) {
+    // Show password modal
+    setShowPasswordModal(true);
+  }, [correctPassword]);
+
+  const handlePasswordSubmit = (password) => {
+    if (password === correctPassword) {
       sessionStorage.setItem(SESSION_KEY, 'granted');
       setIsAuthenticated(true);
-    } else if (userPassword !== null) {
-      alert('❌ Incorrect password. Access denied.');
-      if (onBack) onBack();
+      setShowPasswordModal(false);
     } else {
+      alert('❌ Incorrect password. Access denied.');
+      setShowPasswordModal(false);
       if (onBack) onBack();
     }
-  }, [onBack]);
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    if (onBack) onBack();
+  };
 
   useEffect(() => {
     if (!formData.mood && moodOptions.length) {
@@ -73,11 +93,11 @@ const DailyUpdate = ({ onBack }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Submit Status Update
       const statusResult = await saveStatus({
@@ -85,11 +105,11 @@ const DailyUpdate = ({ onBack }) => {
         location: formData.location,
         mood: formData.mood
       }, CHARACTER_ID);
-      
+
       if (statusResult.success) {
         console.log('✅ Status saved:', statusResult.id);
         alert('✓ Status Update saved successfully!');
-        
+
         // Reset only status fields after successful submit
         setFormData(prev => ({
           ...prev,
@@ -100,9 +120,9 @@ const DailyUpdate = ({ onBack }) => {
       } else {
         alert('⚠️ ' + (statusResult.message || 'No data to save'));
       }
-      
+
       // TODO: Submit Journal (later implementation)
-      
+
     } catch (error) {
       console.error('❌ Error saving:', error);
       alert('✕ Error: ' + error.message);
@@ -120,6 +140,15 @@ const DailyUpdate = ({ onBack }) => {
       journalEntry: ''
     });
   };
+
+  if (showPasswordModal) {
+    return (
+      <PasswordModal
+        onSubmit={handlePasswordSubmit}
+        onCancel={handlePasswordCancel}
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return null;
@@ -147,28 +176,28 @@ const DailyUpdate = ({ onBack }) => {
           {/* Status Update */}
           <div className="form-section">
             <h2>▸ Status Update</h2>
-            
+
             <div className="form-group">
               <label htmlFor="doing">Current Activity</label>
-              <input 
-                type="text" 
-                id="doing" 
-                name="doing" 
+              <input
+                type="text"
+                id="doing"
+                name="doing"
                 value={formData.doing}
                 onChange={handleChange}
-                placeholder="e.g., Studying character design" 
+                placeholder="e.g., Studying character design"
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="location">Location</label>
-              <input 
-                type="text" 
-                id="location" 
-                name="location" 
+              <input
+                type="text"
+                id="location"
+                name="location"
                 value={formData.location}
                 onChange={handleChange}
-                placeholder="e.g., Home, Coffee shop, Office" 
+                placeholder="e.g., Home, Coffee shop, Office"
               />
             </div>
 
@@ -211,12 +240,12 @@ const DailyUpdate = ({ onBack }) => {
           {/* Daily Journal */}
           <div className="form-section">
             <h2>▸ Daily Journal</h2>
-            
+
             <div className="form-group">
               <label htmlFor="journalEntry">Current Journal</label>
-              <textarea 
-                id="journalEntry" 
-                name="journalEntry" 
+              <textarea
+                id="journalEntry"
+                name="journalEntry"
                 rows="12"
                 value={formData.journalEntry}
                 onChange={handleChange}
