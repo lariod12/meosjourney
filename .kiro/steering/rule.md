@@ -12,6 +12,8 @@ inclusion: always
 - Provide explanations and responses to user in Vietnamese
 
 ## File Creation Rules
-- DO NOT create any `.md` files without explicit user permission
 - All `.md` files MUST be placed in the `local/` folder
 - Exception: The project's root `README.md` file is allowed outside `local/`
+
+## Notes
+- You need take a look into local folder to understand DatabaseArchitecture and firestore_data.. .json is current database for more context to develope feature
