@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
 import { db } from './firebase';
 import { CHARACTER_ID } from '../config/constants';
 
@@ -124,6 +124,39 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     
     console.warn('⚠️ No data to save (all fields empty)');
     return { success: false, message: 'No data to save' };
+    
+  } catch (error) {
+    console.error('❌ Firestore Error:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const saveAchievement = async (achievementData, characterId = CHARACTER_ID) => {
+  try {
+    const dataToSave = {
+      name: achievementData.name,
+      desc: achievementData.desc,
+      icon: achievementData.icon,
+      xp: achievementData.xp,
+      specialReward: achievementData.specialReward,
+      dueDate: achievementData.dueDate,
+      completed: false,
+      completedAt: null,
+      createdAt: serverTimestamp()
+    };
+    
+    console.log('💾 Creating achievement:', dataToSave);
+    console.log('📍 Collection: main/' + characterId + '/achievements');
+    
+    const achievementsRef = collection(db, 'main', characterId, 'achievements');
+    const docRef = await addDoc(achievementsRef, dataToSave);
+    
+    console.log('✅ Achievement created with ID:', docRef.id);
+    
+    return { success: true, id: docRef.id, data: dataToSave };
     
   } catch (error) {
     console.error('❌ Firestore Error:', error);

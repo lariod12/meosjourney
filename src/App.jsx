@@ -5,6 +5,7 @@ import { characterData } from './data/characterData';
 import { fetchCharacterViewData, CHARACTER_ID } from './services';
 import CharacterSheet from './pages/HomePage';
 import DailyUpdatePage from './pages/DailyUpdatePage';
+import AdminAchievementsPage from './pages/AdminAchievementsPage';
 import './assets/styles/global.css';
 
 const HomePage = () => {
@@ -38,6 +39,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/notes/meos05" element={<DailyUpdatePage onBack={() => window.history.back()} />} />
+        <Route path="/admin/meos05" element={<AdminAchievementsPage onBack={() => window.history.back()} />} />
       </Routes>
     </Router>
   );
