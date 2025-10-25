@@ -170,6 +170,245 @@ Global styles are in `src/assets/styles/global.css`. The project uses:
 - **Layout**: CSS Grid for responsive two-column layout
 - **Breakpoints**: 1024px, 768px, 480px, 375px
 
+## 🎨 Style Guidelines
+
+### Design Philosophy
+Meo's Journey follows a **hand-drawn sketch aesthetic** with a strict black and white color palette. The design mimics notebook sketches and doodles with intentional imperfections that create charm and personality.
+
+### Color Palette
+```css
+/* Primary Colors - ONLY use these */
+--primary-black: #000000;    /* Main text, borders, backgrounds */
+--primary-white: #ffffff;    /* Backgrounds, inverted text */
+--gray-light: #f8f8f8;      /* Subtle backgrounds */
+--gray-medium: #666666;     /* Secondary text, shadows */
+--gray-dark: #333333;       /* Disabled states */
+```
+
+### Typography
+```css
+/* Font Hierarchy */
+--font-heading: 'Patrick Hand', cursive;     /* Headers, titles */
+--font-body: 'Kalam', cursive;              /* Body text, buttons */
+--font-accent: 'Architects Daughter', cursive; /* Special elements */
+
+/* Font Sizes */
+--text-xs: 14px;    /* Small labels */
+--text-sm: 16px;    /* Body text */
+--text-md: 18px;    /* Buttons, inputs */
+--text-lg: 22px;    /* Subheadings */
+--text-xl: 28px;    /* Section headers */
+--text-2xl: 42px;   /* Page titles */
+```
+
+### Sketch Effects & Animations
+
+#### 1. Rotation Effects
+Elements should have subtle random rotations to mimic hand-drawn imperfections:
+```css
+.sketch-element {
+  transform: rotate(-1deg);  /* Slight tilt */
+}
+
+.sketch-element-alt {
+  transform: rotate(0.5deg); /* Opposite tilt */
+}
+```
+
+#### 2. Border Styles
+All borders should be solid black, typically 2-4px thick:
+```css
+.sketch-border {
+  border: 3px solid #000000;
+}
+
+.sketch-border-thick {
+  border: 4px solid #000000;
+}
+
+.sketch-border-dashed {
+  border: 2px dashed #000000; /* For special emphasis */
+}
+```
+
+#### 3. Shadow Effects
+Use solid black shadows to create depth:
+```css
+.sketch-shadow {
+  box-shadow: 4px 4px 0 #000000;
+}
+
+.sketch-shadow-hover {
+  box-shadow: 6px 6px 0 #000000;
+}
+
+.sketch-shadow-pressed {
+  box-shadow: 2px 2px 0 #666666;
+}
+```
+
+#### 4. Button States
+All interactive elements should follow this pattern:
+```css
+.sketch-button {
+  background-color: #ffffff;
+  color: #000000;
+  border: 3px solid #000000;
+  transform: rotate(-0.5deg);
+  transition: all 0.2s ease;
+}
+
+.sketch-button:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: rotate(-0.5deg) translateY(-2px);
+  box-shadow: 2px 4px 0 #666666;
+}
+
+.sketch-button:active {
+  transform: rotate(-0.5deg) translateY(0);
+  box-shadow: 1px 2px 0 #666666;
+}
+```
+
+### Component Patterns
+
+#### 1. Modal/Dialog Components
+```css
+.sketch-modal {
+  background-color: #ffffff;
+  border: 4px solid #000000;
+  transform: rotate(-1deg);
+  box-shadow: 8px 8px 0 #000000;
+}
+
+.sketch-modal-header {
+  background-color: #000000;
+  color: #ffffff;
+  transform: rotate(1deg);
+  margin: -4px -4px 0 -4px;
+}
+```
+
+#### 2. Form Elements
+```css
+.sketch-input {
+  border: 3px solid #000000;
+  background-color: #ffffff;
+  font-family: 'Kalam', cursive;
+  transition: all 0.3s ease;
+}
+
+.sketch-input:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 4px #e0e0e0;
+}
+```
+
+#### 3. Cards/Containers
+```css
+.sketch-card {
+  border: 3px solid #000000;
+  background-color: #ffffff;
+  transform: rotate(0.5deg);
+}
+
+.sketch-card:hover {
+  box-shadow: 4px 4px 0 #000000;
+  transform: rotate(0.5deg) translateY(-1px);
+}
+```
+
+### Animation Guidelines
+
+#### 1. Hover Effects
+- Always include subtle `translateY(-2px)` on hover
+- Add box-shadow for depth
+- Keep transitions smooth with `0.2s ease`
+
+#### 2. Active States
+- Reduce shadow and translation on `:active`
+- Simulate "pressing down" effect
+
+#### 3. Loading States
+- Use opacity changes rather than color changes
+- Maintain sketch aesthetic even in disabled states
+
+### Layout Principles
+
+#### 1. Spacing System
+```css
+/* Consistent spacing scale */
+--space-xs: 5px;
+--space-sm: 10px;
+--space-md: 15px;
+--space-lg: 20px;
+--space-xl: 30px;
+--space-2xl: 40px;
+```
+
+#### 2. Container Patterns
+- Always use thick black borders (3-4px)
+- White backgrounds with black text
+- Subtle rotations for organic feel
+- Consistent padding (20-40px)
+
+#### 3. Grid & Flexbox
+- Use CSS Grid for main layouts
+- Flexbox for component internals
+- Maintain sketch aesthetic in all breakpoints
+
+### Accessibility Considerations
+
+#### 1. Color Contrast
+- Black on white: Perfect contrast ratio
+- Gray text (#666666) only for secondary information
+- Never use color alone to convey information
+
+#### 2. Focus States
+- Clear focus indicators with box-shadow
+- Maintain sketch aesthetic in focus states
+- Keyboard navigation support
+
+#### 3. Motion Sensitivity
+- Keep animations subtle and optional
+- Respect `prefers-reduced-motion`
+
+### Do's and Don'ts
+
+#### ✅ Do's
+- Use only black, white, and grayscale colors
+- Apply subtle rotations to elements
+- Use thick black borders consistently
+- Include hover/active states for all interactive elements
+- Maintain hand-drawn, imperfect aesthetic
+- Use sketch-style fonts throughout
+
+#### ❌ Don'ts
+- Never use colors outside the black/white palette
+- Avoid perfect alignment - embrace slight imperfections
+- Don't use thin borders (less than 2px)
+- Avoid rounded corners - keep sharp edges
+- Don't use gradients or complex shadows
+- Never use system fonts - stick to sketch fonts
+
+### Implementation Examples
+
+See these components for reference:
+- `DeleteConfirmModal` - Perfect modal implementation
+- `AdminAchievementsPage` - Button states and interactions
+- `PasswordModal` - Form styling and layout
+
+### Testing Your Styles
+
+Before committing styles, ensure:
+1. Only black/white/gray colors used
+2. All interactive elements have hover/active states
+3. Borders are 2-4px thick and black
+4. Fonts are from the approved sketch font family
+5. Subtle rotations applied where appropriate
+6. Responsive design maintained across breakpoints
+
 ## 🔧 Tech Stack
 
 - **React 19** - UI library

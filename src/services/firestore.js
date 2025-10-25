@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, addDoc, serverTimestamp, getDocsFromServer } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, serverTimestamp, getDocsFromServer, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { CHARACTER_ID } from '../config/constants';
 
@@ -193,6 +193,19 @@ export const updateAchievement = async (achievementId, achievementData, characte
     return { success: true, id: achievementId };
   } catch (error) {
     console.error('❌ Error updating achievement:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const deleteAchievement = async (achievementId, characterId = CHARACTER_ID) => {
+  try {
+    const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    await deleteDoc(achievementRef);
+    
+    console.log('✅ Achievement deleted:', achievementId);
+    return { success: true, id: achievementId };
+  } catch (error) {
+    console.error('❌ Error deleting achievement:', error);
     throw new Error(`Firestore error: ${error.message}`);
   }
 };

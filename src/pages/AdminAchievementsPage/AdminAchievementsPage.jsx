@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import './AdminAchievementsPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, CHARACTER_ID } from '../../services/firestore';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfirmModal';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -13,6 +14,8 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('create');
   const [achievements, setAchievements] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '' });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -178,6 +181,33 @@ const AdminAchievementsPage = ({ onBack }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeleteClick = (achievementId, achievementName) => {
+    setDeleteTarget({ id: achievementId, name: achievementName });
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsSubmitting(true);
+    setShowDeleteModal(false);
+
+    try {
+      await deleteAchievement(deleteTarget.id, CHARACTER_ID);
+      alert('✓ Achievement deleted successfully!');
+      loadAchievements();
+    } catch (error) {
+      console.error('❌ Error deleting achievement:', error);
+      alert('✕ Error: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+      setDeleteTarget({ id: null, name: '' });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget({ id: null, name: '' });
   };
 
 
@@ -407,22 +437,32 @@ const AdminAchievementsPage = ({ onBack }) => {
                         <span className={`achievement-status ${achievement.completed ? 'completed' : 'pending'}`}>
                           {achievement.completed ? '✓ Completed' : '○ Pending'}
                         </span>
-                        <button
-                          onClick={() => {
-                            setEditingId(achievement.id);
-                            setFormData({
-                              name: achievement.name,
-                              desc: achievement.desc,
-                              icon: achievement.icon,
-                              xp: achievement.xp || '',
-                              specialReward: achievement.specialReward || '',
-                              dueDate: achievement.dueDate || ''
-                            });
-                          }}
-                          className="btn-edit"
-                        >
-                          ✎ Edit
-                        </button>
+                        <div className="achievement-buttons">
+                          <button
+                            onClick={() => {
+                              setEditingId(achievement.id);
+                              setFormData({
+                                name: achievement.name,
+                                desc: achievement.desc,
+                                icon: achievement.icon,
+                                xp: achievement.xp || '',
+                                specialReward: achievement.specialReward || '',
+                                dueDate: achievement.dueDate || ''
+                              });
+                            }}
+                            className="btn-edit"
+                            disabled={isSubmitting}
+                          >
+                            ✎ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(achievement.id, achievement.name)}
+                            className="btn-delete"
+                            disabled={isSubmitting}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -435,6 +475,13 @@ const AdminAchievementsPage = ({ onBack }) => {
         </div>
       )}
       </main>
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        achievementName={deleteTarget.name}
+      />
     </div>
   );
 };
