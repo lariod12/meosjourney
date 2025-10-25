@@ -333,143 +333,140 @@ const AdminAchievementsPage = ({ onBack }) => {
           ) : (
             <div className="achievements-table">
               {achievements.map(achievement => {
-              const isEditing = editingId === achievement.id;
-              
-              return (
-              <div key={achievement.id} className="achievement-row">
-                <div className="achievement-cell icon-cell">
-                  <span className="achievement-icon">{achievement.icon}</span>
-                </div>
-                
-                <div className="achievement-cell main-cell">
-                  {isEditing ? (
-                    <div className="achievement-edit-form">
-                    <div className="form-group">
-                      <label>Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                      />
+                const isEditing = editingId === achievement.id;
+
+                return (
+                  <div key={achievement.id} className="achievement-row">
+                    <div className="achievement-cell icon-cell">
+                      <span className="achievement-icon">{achievement.icon}</span>
                     </div>
-                    <div className="form-group">
-                      <label>Description *</label>
-                      <textarea
-                        name="desc"
-                        rows="3"
-                        value={formData.desc}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Icon *</label>
-                      <input
-                        type="text"
-                        name="icon"
-                        value={formData.icon}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>XP Reward</label>
-                      <input
-                        type="number"
-                        name="xp"
-                        value={formData.xp}
-                        onChange={handleChange}
-                        min="0"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Special Reward</label>
-                      <input
-                        type="text"
-                        name="specialReward"
-                        value={formData.specialReward}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Due Date</label>
-                      <input
-                        type="date"
-                        name="dueDate"
-                        value={formData.dueDate}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <div className="achievement-actions">
-                      <button
-                        onClick={() => handleUpdate(achievement.id)}
-                        className="btn-primary"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? 'Updating...' : 'Update'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingId(null);
-                          handleReset();
-                        }}
-                        className="btn-secondary"
-                        disabled={isSubmitting}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    </div>
-                  ) : (
-                    <div className="achievement-view-row">
-                      <div className="achievement-info">
-                        <h3>{achievement.name}</h3>
-                        <p className="achievement-desc">{achievement.desc}</p>
-                        <div className="achievement-details">
-                          {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
-                          {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
-                          {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
+
+                    <div className="achievement-cell main-cell">
+                      {isEditing ? (
+                        <div className="achievement-edit-form">
+                          <div className="form-group">
+                            <label>Name *</label>
+                            <input
+                              type="text"
+                              name="name"
+                              value={formData.name}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Description *</label>
+                            <textarea
+                              name="desc"
+                              rows="3"
+                              value={formData.desc}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Icon *</label>
+                            <input
+                              type="text"
+                              name="icon"
+                              value={formData.icon}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>XP Reward</label>
+                            <input
+                              type="number"
+                              name="xp"
+                              value={formData.xp}
+                              onChange={handleChange}
+                              min="0"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Special Reward</label>
+                            <input
+                              type="text"
+                              name="specialReward"
+                              value={formData.specialReward}
+                              onChange={handleChange}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Due Date</label>
+                            <input
+                              type="date"
+                              name="dueDate"
+                              value={formData.dueDate}
+                              onChange={handleChange}
+                            />
+                          </div>
+                          <div className="achievement-actions">
+                            <button
+                              onClick={() => handleUpdate(achievement.id)}
+                              className="btn-primary"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? 'Updating...' : 'Update'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingId(null);
+                                handleReset();
+                              }}
+                              className="btn-secondary"
+                              disabled={isSubmitting}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="achievement-status-cell">
-                        <span className={`achievement-status ${achievement.completed ? 'completed' : 'pending'}`}>
-                          {achievement.completed ? '✓ Completed' : '○ Pending'}
-                        </span>
-                        <div className="achievement-buttons">
-                          <button
-                            onClick={() => {
-                              setEditingId(achievement.id);
-                              setFormData({
-                                name: achievement.name,
-                                desc: achievement.desc,
-                                icon: achievement.icon,
-                                xp: achievement.xp || '',
-                                specialReward: achievement.specialReward || '',
-                                dueDate: achievement.dueDate || ''
-                              });
-                            }}
-                            className="btn-edit"
-                            disabled={isSubmitting}
-                          >
-                            ✎ Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(achievement.id, achievement.name)}
-                            className="btn-delete"
-                            disabled={isSubmitting}
-                          >
-                            🗑️ Delete
-                          </button>
+                      ) : (
+                        <div className="achievement-view-row">
+                          <div className="achievement-info">
+                            <h3>{achievement.name}</h3>
+                            <p className="achievement-desc">{achievement.desc}</p>
+                            <div className="achievement-details">
+                              {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
+                              {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
+                              {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
+                            </div>
+                          </div>
+                          <div className="achievement-status-cell">
+                            <div className="achievement-buttons">
+                              <button
+                                onClick={() => {
+                                  setEditingId(achievement.id);
+                                  setFormData({
+                                    name: achievement.name,
+                                    desc: achievement.desc,
+                                    icon: achievement.icon,
+                                    xp: achievement.xp || '',
+                                    specialReward: achievement.specialReward || '',
+                                    dueDate: achievement.dueDate || ''
+                                  });
+                                }}
+                                className="btn-edit"
+                                disabled={isSubmitting}
+                              >
+                                ✎ Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(achievement.id, achievement.name)}
+                                className="btn-delete"
+                                disabled={isSubmitting}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-            })}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
