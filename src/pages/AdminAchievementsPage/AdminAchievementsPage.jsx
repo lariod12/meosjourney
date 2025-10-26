@@ -17,6 +17,7 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [editingId, setEditingId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '', type: '' });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,6 +34,16 @@ const AdminAchievementsPage = ({ onBack }) => {
     fetchConfig(CHARACTER_ID)
       .then(cfg => setCorrectPassword(cfg?.pwDailyUpdate || null))
       .catch(() => setCorrectPassword(null));
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.admin-dropdown')) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -304,43 +315,67 @@ const AdminAchievementsPage = ({ onBack }) => {
         <h1>⚙️ Admin - Meos05</h1>
       </header>
 
-      <nav className="admin-tabs">
+      <nav className="admin-dropdown">
         <button
-          className={`tab ${activeTab === 'create-achievement' ? 'active' : ''}`}
+          className="dropdown-toggle"
           onClick={() => {
-            console.log('Switched to Create Achievement tab');
-            setActiveTab('create-achievement');
+            console.log('Dropdown toggle clicked');
+            setDropdownOpen(!dropdownOpen);
           }}
         >
-          🏆 Create Achievement
+          <span className="dropdown-current">
+            {activeTab === 'create-achievement' && '🏆 Create Achievement'}
+            {activeTab === 'create-quest' && '⚔️ Create Quest'}
+            {activeTab === 'manage-achievements' && '📋 Manage Achievements'}
+            {activeTab === 'manage-quests' && '📝 Manage Quests'}
+          </span>
+          <span className="dropdown-arrow">{dropdownOpen ? '▲' : '▼'}</span>
         </button>
-        <button
-          className={`tab ${activeTab === 'create-quest' ? 'active' : ''}`}
-          onClick={() => {
-            console.log('Switched to Create Quest tab');
-            setActiveTab('create-quest');
-          }}
-        >
-          ⚔️ Create Quest
-        </button>
-        <button
-          className={`tab ${activeTab === 'manage-achievements' ? 'active' : ''}`}
-          onClick={() => {
-            console.log('Switched to Manage Achievements tab');
-            setActiveTab('manage-achievements');
-          }}
-        >
-          📋 Manage Achievements
-        </button>
-        <button
-          className={`tab ${activeTab === 'manage-quests' ? 'active' : ''}`}
-          onClick={() => {
-            console.log('Switched to Manage Quests tab');
-            setActiveTab('manage-quests');
-          }}
-        >
-          📝 Manage Quests
-        </button>
+
+        {dropdownOpen && (
+          <div className="dropdown-menu">
+            <button
+              className={`dropdown-item ${activeTab === 'create-achievement' ? 'active' : ''}`}
+              onClick={() => {
+                console.log('Switched to Create Achievement');
+                setActiveTab('create-achievement');
+                setDropdownOpen(false);
+              }}
+            >
+              🏆 Create Achievement
+            </button>
+            <button
+              className={`dropdown-item ${activeTab === 'create-quest' ? 'active' : ''}`}
+              onClick={() => {
+                console.log('Switched to Create Quest');
+                setActiveTab('create-quest');
+                setDropdownOpen(false);
+              }}
+            >
+              ⚔️ Create Quest
+            </button>
+            <button
+              className={`dropdown-item ${activeTab === 'manage-achievements' ? 'active' : ''}`}
+              onClick={() => {
+                console.log('Switched to Manage Achievements');
+                setActiveTab('manage-achievements');
+                setDropdownOpen(false);
+              }}
+            >
+              📋 Manage Achievements
+            </button>
+            <button
+              className={`dropdown-item ${activeTab === 'manage-quests' ? 'active' : ''}`}
+              onClick={() => {
+                console.log('Switched to Manage Quests');
+                setActiveTab('manage-quests');
+                setDropdownOpen(false);
+              }}
+            >
+              📝 Manage Quests
+            </button>
+          </div>
+        )}
       </nav>
 
       <main className="admin-form">{activeTab === 'create-achievement' ? (

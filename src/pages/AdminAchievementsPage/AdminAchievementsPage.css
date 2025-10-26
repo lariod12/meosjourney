@@ -43,35 +43,100 @@
   font-family: 'Patrick Hand', cursive;
 }
 
-.admin-tabs {
-  display: flex;
-  gap: 10px;
+/* ========================================
+   Dropdown Navigation
+   ======================================== */
+
+.admin-dropdown {
+  position: relative;
   margin-bottom: 20px;
-  border-bottom: 3px solid #000000;
 }
 
-.admin-tabs .tab {
-  padding: 15px 30px;
+.dropdown-toggle {
+  width: 100%;
+  padding: 16px 20px;
   font-size: 18px;
   font-family: 'Kalam', cursive;
   font-weight: bold;
   background-color: #ffffff;
   color: #000000;
   border: 3px solid #000000;
-  border-bottom: none;
   cursor: pointer;
   transition: all 0.3s;
-  position: relative;
-  top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
 }
 
-.admin-tabs .tab:hover {
+.dropdown-toggle:hover {
   background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 #000000;
 }
 
-.admin-tabs .tab.active {
+.dropdown-toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 0 #000000;
+}
+
+.dropdown-current {
+  flex: 1;
+  text-align: left;
+}
+
+.dropdown-arrow {
+  margin-left: 10px;
+  font-size: 14px;
+  transition: transform 0.3s;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 3px solid #000000;
+  z-index: 1000;
+  box-shadow: 4px 4px 0 #000000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-family: 'Kalam', cursive;
+  font-weight: bold;
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  border-bottom: 2px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  display: block;
+  min-height: 44px;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f0f0;
+  transform: translateX(5px);
+}
+
+.dropdown-item.active {
   background-color: #000000;
   color: #ffffff;
+}
+
+.dropdown-item.active:hover {
+  background-color: #333333;
 }
 
 .admin-form {
@@ -172,17 +237,188 @@
   box-shadow: 0 4px 0 #666666;
 }
 
+/* ========================================
+   Mobile-First Responsive Design
+   ======================================== */
+
 @media (max-width: 768px) {
   .admin-container {
     padding: 10px;
+    max-width: 100%;
+  }
+
+  .admin-header {
+    padding: 20px 10px;
+    margin-bottom: 20px;
+  }
+
+  .admin-header .back-link {
+    left: 10px;
+    top: 10px;
+    padding: 6px 12px;
+    font-size: 16px;
+  }
+
+  .admin-header h1 {
+    font-size: 28px;
+    margin-top: 10px;
+  }
+
+  .admin-dropdown {
+    margin-bottom: 15px;
+  }
+
+  .dropdown-toggle {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  .dropdown-item {
+    padding: 12px 16px;
+    font-size: 15px;
   }
 
   .admin-form {
-    padding: 20px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .form-section h2 {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 12px 15px;
+    font-size: 16px;
   }
 
   .form-actions {
     flex-direction: column;
+    gap: 12px;
+    margin-top: 25px;
+  }
+
+  .form-actions button {
+    padding: 14px 20px;
+    font-size: 18px;
+  }
+
+  /* Achievement/Quest lists on mobile */
+  .achievements-list,
+  .quests-list {
+    padding: 15px 0;
+  }
+
+  .achievements-list h2,
+  .quests-list h2 {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .achievement-row,
+  .quest-row {
+    flex-direction: column;
+  }
+
+  .icon-cell {
+    border-right: none;
+    border-bottom: 2px solid #000000;
+    padding: 15px;
+    min-width: auto;
+  }
+
+  .main-cell {
+    padding: 15px;
+  }
+
+  .achievement-view-row,
+  .quest-view-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .achievement-status-cell,
+  .quest-status-cell {
+    align-items: flex-start;
+  }
+
+  .achievement-buttons,
+  .quest-buttons {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .achievement-details,
+  .quest-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .empty-message {
+    padding: 30px 15px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-container {
+    padding: 8px;
+  }
+
+  .admin-header {
+    padding: 15px 8px;
+  }
+
+  .admin-header h1 {
+    font-size: 24px;
+  }
+
+  .dropdown-toggle {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .dropdown-item {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .admin-form {
+    padding: 12px;
+  }
+
+  .form-section h2 {
+    font-size: 20px;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .form-actions button {
+    padding: 12px 16px;
+    font-size: 16px;
+    min-height: 44px;
   }
 }
 
@@ -406,7 +642,12 @@
 }
 
 .quest-cell {
-  /* Inherit from achievement-cell styles */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-right: 2px solid #000000;
+  min-width: 80px;
 }
 
 .quest-icon {
