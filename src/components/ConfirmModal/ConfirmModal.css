@@ -81,6 +81,17 @@
   padding: 0 25px 25px 25px;
 }
 
+/* Single button layout */
+.confirm-modal-actions.single-button {
+  justify-content: center;
+}
+
+.confirm-modal-actions.single-button .confirm-btn-confirm {
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 200px;
+}
+
 .confirm-btn-cancel,
 .confirm-btn-confirm {
   flex: 1;

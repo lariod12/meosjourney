@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './AdminAchievementsPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfirmModal';
+import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -18,6 +19,16 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '', type: '' });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    onConfirm: null,
+    onCancel: null
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -91,9 +102,20 @@ const AdminAchievementsPage = ({ onBack }) => {
       setIsAuthenticated(true);
       setShowPasswordModal(false);
     } else {
-      alert('❌ Incorrect password. Access denied.');
       setShowPasswordModal(false);
-      if (onBack) onBack();
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Access Denied',
+        message: 'Incorrect password. Please try again.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          if (onBack) onBack();
+        },
+        onCancel: null
+      });
     }
   };
 
@@ -107,72 +129,183 @@ const AdminAchievementsPage = ({ onBack }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (isSubmitting) return;
 
+    if (activeTab === 'create-achievement') {
+      // Validate: must have either xp or specialReward
+      const hasXP = formData.xp && Number(formData.xp) > 0;
+      const hasSpecialReward = formData.specialReward.trim().length > 0;
+
+      if (!hasXP && !hasSpecialReward) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Must provide either XP Reward or Special Reward',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
+      // Show confirmation dialog
+      setConfirmModal({
+        isOpen: true,
+        type: 'info',
+        title: 'Confirm Creation',
+        message: `Are you sure you want to create achievement "${formData.name.trim()}"?`,
+        confirmText: 'Create',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          handleCreateAchievement();
+        },
+        onCancel: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+
+    } else if (activeTab === 'create-quest') {
+      // Validate quest
+      if (!formData.title.trim()) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Quest title is required',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
+      if (!formData.xp || Number(formData.xp) <= 0) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'XP reward must be greater than 0',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
+      // Show confirmation dialog
+      setConfirmModal({
+        isOpen: true,
+        type: 'info',
+        title: 'Confirm Creation',
+        message: `Are you sure you want to create quest "${formData.title.trim()}" with ${formData.xp} XP reward?`,
+        confirmText: 'Create',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          handleCreateQuest();
+        },
+        onCancel: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    }
+  };
+
+  const handleCreateAchievement = async () => {
     setIsSubmitting(true);
 
     try {
-      if (activeTab === 'create-achievement') {
-        // Validate: must have either xp or specialReward
-        const hasXP = formData.xp && Number(formData.xp) > 0;
-        const hasSpecialReward = formData.specialReward.trim().length > 0;
+      const achievementData = {
+        name: formData.name.trim(),
+        desc: formData.desc.trim(),
+        icon: formData.icon.trim(),
+        xp: Number(formData.xp) || 0,
+        specialReward: formData.specialReward.trim(),
+        dueDate: formData.dueDate || null
+      };
 
-        if (!hasXP && !hasSpecialReward) {
-          alert('❌ Must provide either XP Reward or Special Reward');
-          return;
-        }
+      const result = await saveAchievement(achievementData, CHARACTER_ID);
 
-        const achievementData = {
-          name: formData.name.trim(),
-          desc: formData.desc.trim(),
-          icon: formData.icon.trim(),
-          xp: Number(formData.xp) || 0,
-          specialReward: formData.specialReward.trim(),
-          dueDate: formData.dueDate || null
-        };
-
-        const result = await saveAchievement(achievementData, CHARACTER_ID);
-
-        if (result.success) {
-          alert('✓ Achievement created successfully!');
-          handleReset();
-          if (activeTab === 'manage-achievements') {
-            loadAchievements();
-          }
-        }
-      } else if (activeTab === 'create-quest') {
-        // Validate quest
-        if (!formData.title.trim()) {
-          alert('❌ Quest title is required');
-          return;
-        }
-
-        if (!formData.xp || Number(formData.xp) <= 0) {
-          alert('❌ XP reward must be greater than 0');
-          return;
-        }
-
-        const questData = {
-          title: formData.title.trim(),
-          xp: Number(formData.xp)
-        };
-
-        const result = await saveQuest(questData, CHARACTER_ID);
-
-        if (result.success) {
-          alert('✓ Quest created successfully!');
-          handleReset();
-          if (activeTab === 'manage-quests') {
-            loadQuests();
-          }
-        }
+      if (result.success) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'Achievement created successfully!',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            handleReset();
+            if (activeTab === 'manage-achievements') {
+              loadAchievements();
+            }
+          },
+          onCancel: null
+        });
       }
     } catch (error) {
-      console.error('❌ Error creating:', error);
-      alert('✕ Error: ' + error.message);
+      console.error('❌ Error creating achievement:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to create achievement: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateQuest = async () => {
+    setIsSubmitting(true);
+
+    try {
+      const questData = {
+        title: formData.title.trim(),
+        xp: Number(formData.xp)
+      };
+
+      const result = await saveQuest(questData, CHARACTER_ID);
+
+      if (result.success) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'Quest created successfully!',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            handleReset();
+            if (activeTab === 'manage-quests') {
+              loadQuests();
+            }
+          },
+          onCancel: null
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error creating quest:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to create quest: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -210,7 +343,16 @@ const AdminAchievementsPage = ({ onBack }) => {
     const hasSpecialReward = formData.specialReward.trim().length > 0;
 
     if (!hasXP && !hasSpecialReward) {
-      alert('❌ Must provide either XP Reward or Special Reward');
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'Must provide either XP Reward or Special Reward',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
       return;
     }
 
@@ -227,13 +369,33 @@ const AdminAchievementsPage = ({ onBack }) => {
       };
 
       await updateAchievement(achievementId, achievementData, CHARACTER_ID);
-      alert('✓ Achievement updated successfully!');
-      setEditingId(null);
-      handleReset();
-      loadAchievements();
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Achievement updated successfully!',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setEditingId(null);
+          handleReset();
+          loadAchievements();
+        },
+        onCancel: null
+      });
     } catch (error) {
       console.error('❌ Error updating achievement:', error);
-      alert('✕ Error: ' + error.message);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to update achievement: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -241,12 +403,30 @@ const AdminAchievementsPage = ({ onBack }) => {
 
   const handleUpdateQuest = async (questId) => {
     if (!formData.title.trim()) {
-      alert('❌ Quest title is required');
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'Quest title is required',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
       return;
     }
 
     if (!formData.xp || Number(formData.xp) <= 0) {
-      alert('❌ XP reward must be greater than 0');
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'XP reward must be greater than 0',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
       return;
     }
 
@@ -259,13 +439,33 @@ const AdminAchievementsPage = ({ onBack }) => {
       };
 
       await updateQuest(questId, questData, CHARACTER_ID);
-      alert('✓ Quest updated successfully!');
-      setEditingId(null);
-      handleReset();
-      loadQuests();
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Quest updated successfully!',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setEditingId(null);
+          handleReset();
+          loadQuests();
+        },
+        onCancel: null
+      });
     } catch (error) {
       console.error('❌ Error updating quest:', error);
-      alert('✕ Error: ' + error.message);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to update quest: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -283,16 +483,47 @@ const AdminAchievementsPage = ({ onBack }) => {
     try {
       if (deleteTarget.type === 'quest') {
         await deleteQuest(deleteTarget.id, CHARACTER_ID);
-        alert('✓ Quest deleted successfully!');
-        loadQuests();
+        setConfirmModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'Quest deleted successfully!',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            loadQuests();
+          },
+          onCancel: null
+        });
       } else {
         await deleteAchievement(deleteTarget.id, CHARACTER_ID);
-        alert('✓ Achievement deleted successfully!');
-        loadAchievements();
+        setConfirmModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: 'Achievement deleted successfully!',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            loadAchievements();
+          },
+          onCancel: null
+        });
       }
     } catch (error) {
       console.error('❌ Error deleting:', error);
-      alert('✕ Error: ' + error.message);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to delete: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
     } finally {
       setIsSubmitting(false);
       setDeleteTarget({ id: null, name: '', type: '' });
@@ -768,6 +999,17 @@ const AdminAchievementsPage = ({ onBack }) => {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         achievementName={deleteTarget.name}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        type={confirmModal.type}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={confirmModal.onCancel || (() => setConfirmModal(prev => ({ ...prev, isOpen: false })))}
       />
     </div>
   );

@@ -102,6 +102,7 @@
   box-shadow: 4px 4px 0 #000000;
   max-height: 300px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dropdown-item {
@@ -127,7 +128,8 @@
 
 .dropdown-item:hover {
   background-color: #f0f0f0;
-  transform: translateX(5px);
+  border-left: 5px solid #000000;
+  padding-left: 15px;
 }
 
 .dropdown-item.active {
@@ -137,6 +139,8 @@
 
 .dropdown-item.active:hover {
   background-color: #333333;
+  border-left: 5px solid #ffffff;
+  padding-left: 15px;
 }
 
 .admin-form {

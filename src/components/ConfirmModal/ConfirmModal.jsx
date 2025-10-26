@@ -1,12 +1,12 @@
 import './ConfirmModal.css';
 
-const ConfirmModal = ({ 
-  isOpen, 
-  title = "Confirm Action", 
-  message, 
-  confirmText = "OK", 
+const ConfirmModal = ({
+  isOpen,
+  title = "Confirm Action",
+  message,
+  confirmText = "OK",
   cancelText = "Cancel",
-  onConfirm, 
+  onConfirm,
   onCancel,
   type = "info" // "info", "success", "warning", "error"
 }) => {
@@ -40,22 +40,24 @@ const ConfirmModal = ({
             {title}
           </h2>
         </div>
-        
+
         <div className="confirm-modal-content">
           <p className="confirm-message">{message}</p>
         </div>
-        
-        <div className="confirm-modal-actions">
-          <button 
-            type="button" 
-            className="confirm-btn-cancel" 
-            onClick={handleCancel}
-          >
-            {cancelText}
-          </button>
-          <button 
-            type="button" 
-            className="confirm-btn-confirm" 
+
+        <div className={`confirm-modal-actions ${!cancelText ? 'single-button' : ''}`}>
+          {cancelText && (
+            <button
+              type="button"
+              className="confirm-btn-cancel"
+              onClick={handleCancel}
+            >
+              {cancelText}
+            </button>
+          )}
+          <button
+            type="button"
+            className="confirm-btn-confirm"
             onClick={handleConfirm}
           >
             {confirmText}
