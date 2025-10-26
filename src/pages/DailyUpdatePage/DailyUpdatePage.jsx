@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdatePage.css';
-import { fetchConfig, saveStatus, saveJournal, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveStatus, saveJournal, fetchQuests, CHARACTER_ID } from '../../services/firestore';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 
@@ -19,6 +19,12 @@ const DailyUpdate = ({ onBack }) => {
     journalEntry: ''
   });
 
+  // Daily Quests Update states
+  const [availableQuests, setAvailableQuests] = useState([]);
+  const [selectedQuestSubmissions, setSelectedQuestSubmissions] = useState([]);
+  const [showQuestDropdown, setShowQuestDropdown] = useState(false);
+  const questDropdownRef = useRef(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -34,17 +40,28 @@ const DailyUpdate = ({ onBack }) => {
   // Collapse/expand states - collapsed by default
   const [statusExpanded, setStatusExpanded] = useState(false);
   const [journalExpanded, setJournalExpanded] = useState(false);
+  const [questsExpanded, setQuestsExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config from Firestore
-    fetchConfig(CHARACTER_ID)
-      .then(cfg => {
+    // Load config and quests from Firestore
+    Promise.all([
+      fetchConfig(CHARACTER_ID),
+      fetchQuests(CHARACTER_ID)
+    ])
+      .then(([cfg, quests]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
+        
+        // Filter only incomplete quests
+        const incompleteQuests = quests.filter(q => !q.completed);
+        setAvailableQuests(incompleteQuests);
+        console.log('📋 Loaded incomplete quests:', incompleteQuests.length);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Error loading data:', error);
         setMoodOptions([]);
         setCorrectPassword(null);
+        setAvailableQuests([]);
       });
   }, []);
 
@@ -97,6 +114,9 @@ const DailyUpdate = ({ onBack }) => {
     const handleClickOutside = (e) => {
       if (moodRef.current && !moodRef.current.contains(e.target)) {
         setMoodOpen(false);
+      }
+      if (questDropdownRef.current && !questDropdownRef.current.contains(e.target)) {
+        setShowQuestDropdown(false);
       }
     };
     document.addEventListener('click', handleClickOutside);
@@ -205,6 +225,62 @@ const DailyUpdate = ({ onBack }) => {
       mood: moodOptions[0] || '',
       journalEntry: ''
     });
+    setSelectedQuestSubmissions([]);
+  };
+
+  // Quest submission handlers
+  const handleAddQuestSubmission = (quest) => {
+    console.log('➕ Adding quest submission:', quest.title);
+    setSelectedQuestSubmissions(prev => [...prev, {
+      questId: quest.id,
+      questTitle: quest.title,
+      description: '',
+      image: null,
+      imagePreview: null
+    }]);
+    setShowQuestDropdown(false);
+  };
+
+  const handleRemoveQuestSubmission = (index) => {
+    console.log('➖ Removing quest submission at index:', index);
+    setSelectedQuestSubmissions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleQuestDescriptionChange = (index, value) => {
+    setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
+      i === index ? { ...submission, description: value } : submission
+    ));
+  };
+
+  const handleQuestImageChange = (index, file) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
+          i === index ? { 
+            ...submission, 
+            image: file,
+            imagePreview: reader.result 
+          } : submission
+        ));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveQuestImage = (index) => {
+    setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
+      i === index ? { 
+        ...submission, 
+        image: null,
+        imagePreview: null 
+      } : submission
+    ));
+  };
+
+  const getAvailableQuestsForDropdown = () => {
+    const selectedQuestIds = selectedQuestSubmissions.map(s => s.questId);
+    return availableQuests.filter(q => !selectedQuestIds.includes(q.id));
   };
 
   if (showPasswordModal) {
@@ -345,6 +421,136 @@ const DailyUpdate = ({ onBack }) => {
 ◆ Bài học rút ra?`}
                   />
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Daily Quests Update */}
+          <div className="form-section">
+            <h2 
+              className="section-title clickable" 
+              onClick={() => {
+                console.log('Daily Quests Update section clicked');
+                setQuestsExpanded(!questsExpanded);
+              }}
+            >
+              {questsExpanded ? '▼' : '▸'} Daily Quests Update
+            </h2>
+
+            {questsExpanded && (
+              <div className="section-content">
+                {/* Add Quest Button */}
+                <div className="quest-add-section">
+                  <div className="select-wrap" ref={questDropdownRef}>
+                    <button
+                      type="button"
+                      className="btn-add-quest"
+                      onClick={() => setShowQuestDropdown(!showQuestDropdown)}
+                      disabled={getAvailableQuestsForDropdown().length === 0}
+                    >
+                      ➕ Add Completed Quest
+                    </button>
+                    
+                    {showQuestDropdown && getAvailableQuestsForDropdown().length > 0 && (
+                      <div className="quest-dropdown">
+                        {getAvailableQuestsForDropdown().map(quest => (
+                          <div
+                            key={quest.id}
+                            className="quest-dropdown-item"
+                            onClick={() => handleAddQuestSubmission(quest)}
+                          >
+                            <span className="quest-dropdown-title">{quest.title}</span>
+                            <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && (
+                    <p className="no-quests-message">No incomplete quests available</p>
+                  )}
+                </div>
+
+                {/* Quest Submission Forms */}
+                {selectedQuestSubmissions.map((submission, index) => (
+                  <div key={index} className="quest-submission-form">
+                    <div className="quest-submission-header">
+                      <h3 className="quest-submission-title">⚔️ {submission.questTitle}</h3>
+                      <button
+                        type="button"
+                        className="btn-remove-quest"
+                        onClick={() => handleRemoveQuestSubmission(index)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`quest-desc-${index}`}>Description</label>
+                      <textarea
+                        id={`quest-desc-${index}`}
+                        rows="4"
+                        value={submission.description}
+                        onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
+                        placeholder="Describe how you completed this quest..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`quest-image-${index}`}>Attach Image</label>
+                      <div className="image-upload-section">
+                        {!submission.imagePreview ? (
+                          <div className="image-upload-placeholder">
+                            <input
+                              type="file"
+                              id={`quest-image-${index}`}
+                              accept="image/*"
+                              onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
+                              style={{ display: 'none' }}
+                            />
+                            <label htmlFor={`quest-image-${index}`} className="btn-upload-image">
+                              📷 Choose Image or Take Photo
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="image-preview-container">
+                            <img 
+                              src={submission.imagePreview} 
+                              alt="Quest completion" 
+                              className="image-preview"
+                            />
+                            <button
+                              type="button"
+                              className="btn-remove-image"
+                              onClick={() => handleRemoveQuestImage(index)}
+                            >
+                              ✕ Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-submit-quest"
+                      onClick={() => {
+                        console.log('🎯 Quest submission (no logic yet):', submission);
+                        setConfirmModal({
+                          isOpen: true,
+                          type: 'info',
+                          title: 'Coming Soon',
+                          message: 'Quest submission logic will be implemented after database structure is designed.',
+                          confirmText: 'OK',
+                          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                        });
+                      }}
+                    >
+                      Submit Quest
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
