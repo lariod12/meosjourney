@@ -181,7 +181,8 @@ export const uploadAvatarImage = async (file, characterId) => {
 
 /**
  * Upload quest confirmation image to Firebase Storage
- * Images are stored in quests-confirm/ folder with quest name prefix
+ * Images are stored in quests-confirm/ folder with quest name + date prefix
+ * Format: name_YYMMDD_{timestamp}.jpg (e.g., newquest01_251016_1234567890.jpg)
  * 
  * @param {File} file - Image file to upload
  * @param {string} questName - Name of the quest (used as prefix)
@@ -209,16 +210,27 @@ export const uploadQuestConfirmImage = async (file, questName) => {
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', { 
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit', 
+      day: '2-digit'
+    }).replace(/-/g, ''); // Format: YYMMDD
+
+    // Generate filename: name_YYMMDD_{timestamp}.ext
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${sanitizedQuestName}_${timestamp}.${fileExtension}`;
+    const fileName = `${sanitizedQuestName}_${dateSuffix}_${timestamp}.${fileExtension}`;
     
-    // Storage path: quests-confirm/{questName}_{timestamp}.jpg
+    // Storage path: quests-confirm/{name_YYMMDD_{timestamp}.jpg}
     const storagePath = `quests-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
     console.log('📤 Uploading quest confirmation image to:', storagePath);
-    console.log('🎯 Quest name prefix:', sanitizedQuestName);
+    console.log('🎯 Quest name prefix:', `${sanitizedQuestName}_${dateSuffix}`);
+    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
 
     const snapshot = await uploadBytes(storageRef, file);
     console.log('✅ Quest confirmation image uploaded successfully');
@@ -229,7 +241,7 @@ export const uploadQuestConfirmImage = async (file, questName) => {
     return {
       url: downloadURL,
       path: storagePath,
-      questNamePrefix: sanitizedQuestName
+      questNamePrefix: `${sanitizedQuestName}_${dateSuffix}`
     };
 
   } catch (error) {
