@@ -7,10 +7,11 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .icon-picker-input {
-  width: 100%;
+  flex: 1;
   padding: 12px;
   padding-right: 50px;
   border: 2px solid #000;
@@ -24,6 +25,30 @@
 .icon-picker-input:focus {
   border-color: #000;
   box-shadow: 3px 3px 0 #000;
+}
+
+.icon-picker-all-btn {
+  padding: 12px 20px;
+  border: 2px solid #000;
+  background: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.icon-picker-all-btn:hover {
+  background: #000;
+  color: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.icon-picker-all-btn:active {
+  transform: translate(0, 0);
+  box-shadow: none;
 }
 
 .icon-picker-preview {
@@ -40,12 +65,22 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   background: #fff;
   border: 2px solid #000;
   box-shadow: 4px 4px 0 #000;
   z-index: 1000;
+}
+
+.icon-picker-header {
+  padding: 12px;
+  border-bottom: 2px solid #000;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  background: #f5f5f5;
+  text-align: center;
 }
 
 .icon-picker-grid {
@@ -83,6 +118,16 @@
   text-align: center;
   font-family: 'Courier New', monospace;
   color: #666;
+}
+
+.icon-picker-loading {
+  padding: 16px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #666;
+  border-top: 2px solid #000;
+  background: #f5f5f5;
 }
 
 /* Scrollbar styling */
