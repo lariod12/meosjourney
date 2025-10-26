@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdatePage.css';
-import { fetchConfig, saveStatus, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveStatus, saveJournal, CHARACTER_ID } from '../../services/firestore';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
+import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 
 const SESSION_KEY = 'meos05_access';
 
@@ -19,6 +20,13 @@ const DailyUpdate = ({ onBack }) => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    onConfirm: null
+  });
 
   const moodRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
@@ -56,9 +64,17 @@ const DailyUpdate = ({ onBack }) => {
       setIsAuthenticated(true);
       setShowPasswordModal(false);
     } else {
-      alert('❌ Incorrect password. Access denied.');
-      setShowPasswordModal(false);
-      if (onBack) onBack();
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Access Denied',
+        message: 'Incorrect password. Please try again.',
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setShowPasswordModal(false);
+          if (onBack) onBack();
+        }
+      });
     }
   };
 
@@ -99,33 +115,79 @@ const DailyUpdate = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      // Submit Status Update
-      const statusResult = await saveStatus({
-        doing: formData.doing,
-        location: formData.location,
-        mood: formData.mood
-      }, CHARACTER_ID);
+      const results = [];
+      
+      // Submit Status Update (if has data)
+      const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.mood.trim();
+      
+      if (hasStatusData) {
+        const statusResult = await saveStatus({
+          doing: formData.doing,
+          location: formData.location,
+          mood: formData.mood
+        }, CHARACTER_ID);
 
-      if (statusResult.success) {
-        console.log('✅ Status saved:', statusResult.id);
-        alert('✓ Status Update saved successfully!');
-
-        // Reset only status fields after successful submit
-        setFormData(prev => ({
-          ...prev,
-          doing: '',
-          location: '',
-          mood: moodOptions[0] || ''
-        }));
-      } else {
-        alert('⚠️ ' + (statusResult.message || 'No data to save'));
+        if (statusResult.success) {
+          console.log('✅ Status saved:', statusResult.id);
+          results.push('Status Update');
+        } else {
+          console.warn('⚠️ Status not saved:', statusResult.message);
+        }
       }
 
-      // TODO: Submit Journal (later implementation)
+      // Submit Journal Entry (if has content)
+      if (formData.journalEntry.trim()) {
+        const journalResult = await saveJournal({
+          caption: formData.journalEntry
+        }, CHARACTER_ID);
+
+        if (journalResult.success) {
+          console.log('✅ Journal saved:', journalResult.id);
+          results.push('Journal Entry');
+        }
+      }
+
+      // Show success message
+      if (results.length > 0) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: `${results.join(' & ')} saved successfully!`,
+          confirmText: 'OK',
+          onConfirm: () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            // Reset form after successful submit
+            setFormData(prev => ({
+              ...prev,
+              doing: '',
+              location: '',
+              mood: moodOptions[0] || '',
+              journalEntry: ''
+            }));
+          }
+        });
+      } else {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'No Data',
+          message: 'No data to save. Please fill in at least one field.',
+          confirmText: 'OK',
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+        });
+      }
 
     } catch (error) {
       console.error('❌ Error saving:', error);
-      alert('✕ Error: ' + error.message);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to save: ${error.message}`,
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -274,6 +336,17 @@ const DailyUpdate = ({ onBack }) => {
       <footer className="notes-footer">
         <p>◆ Keep tracking your journey</p>
       </footer>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        type={confirmModal.type}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText || 'OK'}
+        cancelText="Cancel"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

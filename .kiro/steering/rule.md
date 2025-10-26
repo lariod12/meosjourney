@@ -2,26 +2,40 @@
 inclusion: always
 ---
 
-## Commit Conventions
-- All commit messages MUST follow this format: `update: <clean and concise message>`
-- Keep commit messages small and descriptive
+---
+inclusion: always
+---
 
-## Language Guidelines
-- Write all code in English
-- Write all code comments in English
-- Provide explanations and responses to user in Vietnamese
+## Git Conventions
+- Commit messages MUST follow format: `update: <clean and concise message>`
+- Keep commits small and descriptive
 
-## File Creation Rules
-- All `.md` files MUST be placed in the `local/` folder
-- Exception: The project's root `README.md` file is allowed outside `local/`
-- Follow structure folder react convention for easily maintain and readability
+## Language Standards
+- Code and comments: English only
+- User responses: Vietnamese
+- Be direct and concise in all communications
 
-## Working
-- Always follow theme style from this project is black and white color only and style sketch
+## File Organization
+- All `.md` files go in `local/` folder (except root `README.md`)
+- Follow React folder structure conventions for maintainability
 
-## Notes
-- You need take a look into local folder to understand DatabaseArchitecture and firestore_data.. .json is current database for more context to develope feature
-- Always response straight and to the point
-- Do not use any unnecessary words or phrases
-- If need read or review data from database you need to use firebase mcp
+## Design System
+- Theme: Black and white color palette only
+- Style: Sketch-based aesthetic
+- Maintain consistent visual language across components
+
+## Development Standards
+- Follow React conventions and best practices
+- Add `console.log` statements for UI interactions to aid debugging
+- Structure components for scalability and maintenance
+
+## Database Context
+- Review `local/DatabaseArchitecture.md` for schema understanding
+- Check `local/firestore_data_*.json` for current data structure
+- Use Firebase MCP tools for database operations and queries
+
+## Architecture Patterns
+- Component-based React structure
+- Separation of concerns between UI and data layers
+- Consistent naming conventions following React standards
 

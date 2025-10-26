@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, addDoc, serverTimestamp, getDocsFromServer, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, addDoc, serverTimestamp, getDocsFromServer, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { CHARACTER_ID } from '../config/constants';
 
@@ -207,5 +207,87 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
   } catch (error) {
     console.error('❌ Error deleting achievement:', error);
     throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
+  try {
+    // Validate journal content
+    if (!journalData.caption || !journalData.caption.trim()) {
+      throw new Error('Journal content cannot be empty');
+    }
+
+    // Generate datetime-based document ID using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const datetimeId = now.toLocaleString('sv-SE', { 
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).replace(' ', '_').replace(/:/g, '-'); // Format: YYYY-MM-DD_HH-MM-SS (Vietnam time)
+    
+    const dataToSave = {
+      caption: journalData.caption.trim(),
+      createAt: serverTimestamp() // Note: keeping original typo from DB schema
+    };
+    
+    console.log('💾 Creating journal entry with Vietnam timezone ID:', datetimeId);
+    console.log('📝 Data:', dataToSave);
+    console.log('📍 Document: main/' + characterId + '/journal/' + datetimeId);
+    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
+    
+    // Use setDoc with custom document ID instead of addDoc
+    const journalDocRef = doc(db, 'main', characterId, 'journal', datetimeId);
+    await setDoc(journalDocRef, dataToSave);
+    
+    console.log('✅ Journal entry created with Vietnam timezone ID:', datetimeId);
+    
+    // Update history collection with journal reference
+    await updateTodayHistory(characterId, datetimeId);
+    
+    return { success: true, id: datetimeId, data: dataToSave };
+    
+  } catch (error) {
+    console.error('❌ Firestore Error:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+const updateTodayHistory = async (characterId, journalId) => {
+  try {
+    // Get today's date as document ID (YYYY-MM-DD format)
+    const today = new Date().toISOString().split('T')[0];
+    const journalPath = `/main/${characterId}/journal/${journalId}`;
+    
+    console.log('📅 Updating history for date:', today);
+    console.log('📝 Adding journal path:', journalPath);
+    
+    const historyRef = doc(db, 'main', characterId, 'history', today);
+    
+    // Check if history document exists for today
+    const historySnap = await getDoc(historyRef);
+    
+    if (historySnap.exists()) {
+      // Add to existing journals array
+      const currentJournals = historySnap.data().journals || [];
+      const updatedJournals = [...currentJournals, journalPath];
+      
+      await setDoc(historyRef, { journals: updatedJournals }, { merge: true });
+      console.log('✅ Updated existing history document');
+    } else {
+      // Create new history document
+      await setDoc(historyRef, { journals: [journalPath] });
+      console.log('✅ Created new history document');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error updating history:', error);
+    // Don't throw error here - journal was saved successfully
   }
 };
