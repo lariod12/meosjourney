@@ -210,6 +210,106 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
   }
 };
 
+// ========================================
+// Daily Quest Functions
+// ========================================
+
+export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
+  try {
+    // Validate quest data
+    if (!questData.title || !questData.title.trim()) {
+      throw new Error('Quest title cannot be empty');
+    }
+
+    if (!questData.xp || questData.xp <= 0) {
+      throw new Error('Quest XP must be greater than 0');
+    }
+
+    // Generate datetime-based document ID using Vietnam timezone (UTC+7) - same as journal
+    const now = new Date();
+    const datetimeId = now.toLocaleString('sv-SE', { 
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).replace(' ', '_').replace(/:/g, '-'); // Format: YYYY-MM-DD_HH-MM-SS (Vietnam time)
+    
+    const dataToSave = {
+      title: questData.title.trim(),
+      xp: questData.xp,
+      completed: false,
+      completedAt: null,
+      createdAt: serverTimestamp()
+    };
+    
+    console.log('💾 Creating quest with Vietnam timezone ID:', datetimeId);
+    console.log('⚔️ Data:', dataToSave);
+    console.log('📍 Document: main/' + characterId + '/quests/' + datetimeId);
+    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
+    
+    // Use setDoc with custom document ID instead of addDoc
+    const questDocRef = doc(db, 'main', characterId, 'quests', datetimeId);
+    await setDoc(questDocRef, dataToSave);
+    
+    console.log('✅ Quest created with Vietnam timezone ID:', datetimeId);
+    
+    return { success: true, id: datetimeId, data: dataToSave };
+    
+  } catch (error) {
+    console.error('❌ Firestore Error:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const fetchQuests = async (characterId = CHARACTER_ID) => {
+  try {
+    const questsRef = collection(db, 'main', characterId, 'quests');
+    const snapshot = await getDocs(questsRef);
+    
+    const quests = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    return quests;
+  } catch (error) {
+    console.error('❌ Error fetching quests:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const updateQuest = async (questId, questData, characterId = CHARACTER_ID) => {
+  try {
+    const questRef = doc(db, 'main', characterId, 'quests', questId);
+    await setDoc(questRef, questData, { merge: true });
+    
+    console.log('✅ Quest updated:', questId);
+    return { success: true, id: questId };
+  } catch (error) {
+    console.error('❌ Error updating quest:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
+  try {
+    const questRef = doc(db, 'main', characterId, 'quests', questId);
+    await deleteDoc(questRef);
+    
+    console.log('✅ Quest deleted:', questId);
+    return { success: true, id: questId };
+  } catch (error) {
+    console.error('❌ Error deleting quest:', error);
+    throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
 export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
   try {
     // Validate journal content

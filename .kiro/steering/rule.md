@@ -25,9 +25,11 @@ inclusion: always
 - Maintain consistent visual language across components
 
 ## Development Standards
+- Follow README.md at first time
 - Follow React conventions and best practices
 - Add `console.log` statements for UI interactions to aid debugging
 - Structure components for scalability and maintenance
+
 
 ## Database Context
 - Review `local/DatabaseArchitecture.md` for schema understanding

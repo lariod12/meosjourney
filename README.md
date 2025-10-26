@@ -175,6 +175,8 @@ Global styles are in `src/assets/styles/global.css`. The project uses:
 ### Design Philosophy
 Meo's Journey follows a **hand-drawn sketch aesthetic** with a strict black and white color palette. The design mimics notebook sketches and doodles with intentional imperfections that create charm and personality.
 
+> **📱 Mobile-First Design**: All styles MUST be optimized for mobile devices first. This is a mobile-first web application. Desktop styles are enhancements, not the primary focus. Always test on mobile devices and ensure touch-friendly interactions.
+
 ### Color Palette
 ```css
 /* Primary Colors - ONLY use these */
@@ -334,6 +336,50 @@ All interactive elements should follow this pattern:
 - Use opacity changes rather than color changes
 - Maintain sketch aesthetic even in disabled states
 
+### Mobile-First Guidelines
+
+#### 1. Touch Targets
+```css
+/* Minimum touch target sizes */
+.touch-target {
+  min-height: 44px;  /* iOS guideline */
+  min-width: 44px;   /* Ensure tappable area */
+  padding: 12px 16px; /* Comfortable touch padding */
+}
+```
+
+#### 2. Mobile Spacing
+```css
+/* Mobile-optimized spacing */
+--mobile-space-xs: 8px;
+--mobile-space-sm: 12px;
+--mobile-space-md: 16px;
+--mobile-space-lg: 24px;
+--mobile-space-xl: 32px;
+```
+
+#### 3. Responsive Typography
+```css
+/* Start with mobile sizes, scale up */
+.mobile-text {
+  font-size: 16px;  /* Minimum for mobile readability */
+  line-height: 1.5; /* Comfortable reading */
+}
+
+@media (min-width: 768px) {
+  .mobile-text {
+    font-size: 18px; /* Scale up for larger screens */
+  }
+}
+```
+
+#### 4. Mobile Interactions
+- All buttons must be easily tappable (44px minimum)
+- Hover effects should also work on touch
+- Consider thumb reach zones
+- Avoid tiny click targets
+- Test on actual mobile devices
+
 ### Layout Principles
 
 #### 1. Spacing System
@@ -351,12 +397,13 @@ All interactive elements should follow this pattern:
 - Always use thick black borders (3-4px)
 - White backgrounds with black text
 - Subtle rotations for organic feel
-- Consistent padding (20-40px)
+- Consistent padding (20-40px on desktop, 16-24px on mobile)
 
 #### 3. Grid & Flexbox
 - Use CSS Grid for main layouts
 - Flexbox for component internals
 - Maintain sketch aesthetic in all breakpoints
+- **Mobile-first media queries**: Start with mobile styles, enhance for desktop
 
 ### Accessibility Considerations
 
@@ -377,20 +424,28 @@ All interactive elements should follow this pattern:
 ### Do's and Don'ts
 
 #### ✅ Do's
+- **Design mobile-first, enhance for desktop**
 - Use only black, white, and grayscale colors
 - Apply subtle rotations to elements
 - Use thick black borders consistently
 - Include hover/active states for all interactive elements
 - Maintain hand-drawn, imperfect aesthetic
 - Use sketch-style fonts throughout
+- **Ensure touch targets are minimum 44px**
+- **Test on actual mobile devices**
+- **Use mobile-first media queries**
 
 #### ❌ Don'ts
+- **Never design desktop-first**
 - Never use colors outside the black/white palette
 - Avoid perfect alignment - embrace slight imperfections
 - Don't use thin borders (less than 2px)
 - Avoid rounded corners - keep sharp edges
 - Don't use gradients or complex shadows
 - Never use system fonts - stick to sketch fonts
+- **Don't create tiny touch targets**
+- **Don't ignore mobile performance**
+- **Don't assume desktop behavior on mobile**
 
 ### Implementation Examples
 
@@ -402,12 +457,16 @@ See these components for reference:
 ### Testing Your Styles
 
 Before committing styles, ensure:
-1. Only black/white/gray colors used
-2. All interactive elements have hover/active states
-3. Borders are 2-4px thick and black
-4. Fonts are from the approved sketch font family
-5. Subtle rotations applied where appropriate
-6. Responsive design maintained across breakpoints
+1. **Mobile-first approach**: Test on mobile devices first
+2. **Touch targets**: All interactive elements are minimum 44px
+3. Only black/white/gray colors used
+4. All interactive elements have hover/active states
+5. Borders are 2-4px thick and black
+6. Fonts are from the approved sketch font family
+7. Subtle rotations applied where appropriate
+8. Responsive design maintained across breakpoints
+9. **Performance**: Styles don't impact mobile performance
+10. **Accessibility**: Works with mobile screen readers
 
 ## 🔧 Tech Stack
 

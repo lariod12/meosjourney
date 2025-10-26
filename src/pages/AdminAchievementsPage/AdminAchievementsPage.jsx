@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './AdminAchievementsPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfirmModal';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -11,11 +11,12 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('create');
+  const [activeTab, setActiveTab] = useState('create-achievement');
   const [achievements, setAchievements] = useState([]);
+  const [quests, setQuests] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '' });
+  const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '', type: '' });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,7 +24,9 @@ const AdminAchievementsPage = ({ onBack }) => {
     icon: '',
     xp: '',
     specialReward: '',
-    dueDate: ''
+    dueDate: '',
+    // Quest fields
+    title: ''
   });
 
   useEffect(() => {
@@ -33,8 +36,12 @@ const AdminAchievementsPage = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && activeTab === 'manage') {
-      loadAchievements();
+    if (isAuthenticated) {
+      if (activeTab === 'manage-achievements') {
+        loadAchievements();
+      } else if (activeTab === 'manage-quests') {
+        loadQuests();
+      }
     }
   }, [isAuthenticated, activeTab]);
 
@@ -44,6 +51,15 @@ const AdminAchievementsPage = ({ onBack }) => {
       setAchievements(data);
     } catch (error) {
       console.error('Error loading achievements:', error);
+    }
+  };
+
+  const loadQuests = async () => {
+    try {
+      const data = await fetchQuests(CHARACTER_ID);
+      setQuests(data);
+    } catch (error) {
+      console.error('Error loading quests:', error);
     }
   };
 
@@ -85,38 +101,66 @@ const AdminAchievementsPage = ({ onBack }) => {
 
     if (isSubmitting) return;
 
-    // Validate: must have either xp or specialReward
-    const hasXP = formData.xp && Number(formData.xp) > 0;
-    const hasSpecialReward = formData.specialReward.trim().length > 0;
-
-    if (!hasXP && !hasSpecialReward) {
-      alert('❌ Must provide either XP Reward or Special Reward');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const achievementData = {
-        name: formData.name.trim(),
-        desc: formData.desc.trim(),
-        icon: formData.icon.trim(),
-        xp: Number(formData.xp) || 0,
-        specialReward: formData.specialReward.trim(),
-        dueDate: formData.dueDate || null
-      };
+      if (activeTab === 'create-achievement') {
+        // Validate: must have either xp or specialReward
+        const hasXP = formData.xp && Number(formData.xp) > 0;
+        const hasSpecialReward = formData.specialReward.trim().length > 0;
 
-      const result = await saveAchievement(achievementData, CHARACTER_ID);
+        if (!hasXP && !hasSpecialReward) {
+          alert('❌ Must provide either XP Reward or Special Reward');
+          return;
+        }
 
-      if (result.success) {
-        alert('✓ Achievement created successfully!');
-        handleReset();
-        if (activeTab === 'manage') {
-          loadAchievements();
+        const achievementData = {
+          name: formData.name.trim(),
+          desc: formData.desc.trim(),
+          icon: formData.icon.trim(),
+          xp: Number(formData.xp) || 0,
+          specialReward: formData.specialReward.trim(),
+          dueDate: formData.dueDate || null
+        };
+
+        const result = await saveAchievement(achievementData, CHARACTER_ID);
+
+        if (result.success) {
+          alert('✓ Achievement created successfully!');
+          handleReset();
+          if (activeTab === 'manage-achievements') {
+            loadAchievements();
+          }
+        }
+      } else if (activeTab === 'create-quest') {
+        // Validate quest
+        if (!formData.title.trim()) {
+          alert('❌ Quest title is required');
+          return;
+        }
+
+        if (!formData.xp || Number(formData.xp) <= 0) {
+          alert('❌ XP reward must be greater than 0');
+          return;
+        }
+
+        const questData = {
+          title: formData.title.trim(),
+          xp: Number(formData.xp)
+        };
+
+        const result = await saveQuest(questData, CHARACTER_ID);
+
+        if (result.success) {
+          alert('✓ Quest created successfully!');
+          handleReset();
+          if (activeTab === 'manage-quests') {
+            loadQuests();
+          }
         }
       }
     } catch (error) {
-      console.error('❌ Error creating achievement:', error);
+      console.error('❌ Error creating:', error);
       alert('✕ Error: ' + error.message);
     } finally {
       setIsSubmitting(false);
@@ -130,7 +174,8 @@ const AdminAchievementsPage = ({ onBack }) => {
       icon: '',
       xp: '',
       specialReward: '',
-      dueDate: ''
+      dueDate: '',
+      title: ''
     });
   };
 
@@ -183,8 +228,40 @@ const AdminAchievementsPage = ({ onBack }) => {
     }
   };
 
-  const handleDeleteClick = (achievementId, achievementName) => {
-    setDeleteTarget({ id: achievementId, name: achievementName });
+  const handleUpdateQuest = async (questId) => {
+    if (!formData.title.trim()) {
+      alert('❌ Quest title is required');
+      return;
+    }
+
+    if (!formData.xp || Number(formData.xp) <= 0) {
+      alert('❌ XP reward must be greater than 0');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const questData = {
+        title: formData.title.trim(),
+        xp: Number(formData.xp)
+      };
+
+      await updateQuest(questId, questData, CHARACTER_ID);
+      alert('✓ Quest updated successfully!');
+      setEditingId(null);
+      handleReset();
+      loadQuests();
+    } catch (error) {
+      console.error('❌ Error updating quest:', error);
+      alert('✕ Error: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClick = (id, name, type = 'achievement') => {
+    setDeleteTarget({ id, name, type });
     setShowDeleteModal(true);
   };
 
@@ -193,21 +270,27 @@ const AdminAchievementsPage = ({ onBack }) => {
     setShowDeleteModal(false);
 
     try {
-      await deleteAchievement(deleteTarget.id, CHARACTER_ID);
-      alert('✓ Achievement deleted successfully!');
-      loadAchievements();
+      if (deleteTarget.type === 'quest') {
+        await deleteQuest(deleteTarget.id, CHARACTER_ID);
+        alert('✓ Quest deleted successfully!');
+        loadQuests();
+      } else {
+        await deleteAchievement(deleteTarget.id, CHARACTER_ID);
+        alert('✓ Achievement deleted successfully!');
+        loadAchievements();
+      }
     } catch (error) {
-      console.error('❌ Error deleting achievement:', error);
+      console.error('❌ Error deleting:', error);
       alert('✕ Error: ' + error.message);
     } finally {
       setIsSubmitting(false);
-      setDeleteTarget({ id: null, name: '' });
+      setDeleteTarget({ id: null, name: '', type: '' });
     }
   };
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
-    setDeleteTarget({ id: null, name: '' });
+    setDeleteTarget({ id: null, name: '', type: '' });
   };
 
 
@@ -218,25 +301,49 @@ const AdminAchievementsPage = ({ onBack }) => {
     <div className="admin-container">
       <header className="admin-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
-        <h1>⚙️ Admin - Achievements</h1>
+        <h1>⚙️ Admin - Meos05</h1>
       </header>
 
       <nav className="admin-tabs">
         <button
-          className={`tab ${activeTab === 'create' ? 'active' : ''}`}
-          onClick={() => setActiveTab('create')}
+          className={`tab ${activeTab === 'create-achievement' ? 'active' : ''}`}
+          onClick={() => {
+            console.log('Switched to Create Achievement tab');
+            setActiveTab('create-achievement');
+          }}
         >
-          ➕ Create
+          🏆 Create Achievement
         </button>
         <button
-          className={`tab ${activeTab === 'manage' ? 'active' : ''}`}
-          onClick={() => setActiveTab('manage')}
+          className={`tab ${activeTab === 'create-quest' ? 'active' : ''}`}
+          onClick={() => {
+            console.log('Switched to Create Quest tab');
+            setActiveTab('create-quest');
+          }}
         >
-          📋 Manage
+          ⚔️ Create Quest
+        </button>
+        <button
+          className={`tab ${activeTab === 'manage-achievements' ? 'active' : ''}`}
+          onClick={() => {
+            console.log('Switched to Manage Achievements tab');
+            setActiveTab('manage-achievements');
+          }}
+        >
+          📋 Manage Achievements
+        </button>
+        <button
+          className={`tab ${activeTab === 'manage-quests' ? 'active' : ''}`}
+          onClick={() => {
+            console.log('Switched to Manage Quests tab');
+            setActiveTab('manage-quests');
+          }}
+        >
+          📝 Manage Quests
         </button>
       </nav>
 
-      <main className="admin-form">{activeTab === 'create' ? (
+      <main className="admin-form">{activeTab === 'create-achievement' ? (
         <form onSubmit={handleSubmit}>
           <div className="form-section">
             <h2>▸ Create Achievement</h2>
@@ -325,7 +432,49 @@ const AdminAchievementsPage = ({ onBack }) => {
             </button>
           </div>
         </form>
-      ) : (
+      ) : activeTab === 'create-quest' ? (
+        <form onSubmit={handleSubmit}>
+          <div className="form-section">
+            <h2>▸ Create Daily Quest</h2>
+
+            <div className="form-group">
+              <label htmlFor="title">Quest Title *</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="e.g., Complete 3 drawings today"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="xp">XP Reward *</label>
+              <input
+                type="number"
+                id="xp"
+                name="xp"
+                value={formData.xp}
+                onChange={handleChange}
+                min="1"
+                placeholder="e.g., 50"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Quest'}
+            </button>
+            <button type="button" onClick={handleReset} className="btn-secondary" disabled={isSubmitting}>
+              ✕ Reset
+            </button>
+          </div>
+        </form>
+      ) : activeTab === 'manage-achievements' ? (
         <div className="achievements-list">
           <h2>▸ Manage Achievements</h2>
           {achievements.length === 0 ? (
@@ -470,7 +619,113 @@ const AdminAchievementsPage = ({ onBack }) => {
             </div>
           )}
         </div>
-      )}
+      ) : activeTab === 'manage-quests' ? (
+        <div className="quests-list">
+          <h2>▸ Manage Daily Quests</h2>
+          {quests.length === 0 ? (
+            <p className="empty-message">No quests found</p>
+          ) : (
+            <div className="quests-table">
+              {quests.map(quest => {
+                const isEditing = editingId === quest.id;
+
+                return (
+                  <div key={quest.id} className="quest-row">
+                    <div className="quest-cell icon-cell">
+                      <span className="quest-icon">⚔️</span>
+                    </div>
+
+                    <div className="quest-cell main-cell">
+                      {isEditing ? (
+                        <div className="quest-edit-form">
+                          <div className="form-group">
+                            <label>Quest Title *</label>
+                            <input
+                              type="text"
+                              name="title"
+                              value={formData.title}
+                              onChange={handleChange}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>XP Reward *</label>
+                            <input
+                              type="number"
+                              name="xp"
+                              value={formData.xp}
+                              onChange={handleChange}
+                              min="1"
+                              required
+                            />
+                          </div>
+                          <div className="quest-actions">
+                            <button
+                              onClick={() => handleUpdateQuest(quest.id)}
+                              className="btn-primary"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? 'Updating...' : 'Update'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingId(null);
+                                handleReset();
+                              }}
+                              className="btn-secondary"
+                              disabled={isSubmitting}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="quest-view-row">
+                          <div className="quest-info">
+                            <h3>{quest.title}</h3>
+                            <div className="quest-details">
+                              <span>XP: {quest.xp}</span>
+                              <span>Status: {quest.completed ? '✅ Completed' : '⏳ Pending'}</span>
+                              {quest.completedAt && (
+                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="quest-status-cell">
+                            <div className="quest-buttons">
+                              <button
+                                onClick={() => {
+                                  setEditingId(quest.id);
+                                  setFormData({
+                                    ...formData,
+                                    title: quest.title,
+                                    xp: quest.xp || ''
+                                  });
+                                }}
+                                className="btn-edit"
+                                disabled={isSubmitting}
+                              >
+                                ✎ Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(quest.id, quest.title, 'quest')}
+                                className="btn-delete"
+                                disabled={isSubmitting}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
       </main>
 
       <DeleteConfirmModal
