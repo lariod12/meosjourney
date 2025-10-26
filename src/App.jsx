@@ -33,7 +33,7 @@ const HomePage = () => {
 
 const App = () => {
   const basename = import.meta.env.MODE === 'production' ? '/meosjourney' : '/';
-  
+
   return (
     <Router basename={basename}>
       <Routes>
