@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdatePage.css';
-import { fetchConfig, saveStatus, saveJournal, fetchQuests, CHARACTER_ID } from '../../services/firestore';
+import { 
+  fetchConfig, 
+  saveStatus, 
+  saveJournal, 
+  fetchQuests, 
+  updateQuest,
+  saveQuestConfirmation,
+  CHARACTER_ID 
+} from '../../services/firestore';
+import { uploadQuestConfirmImage } from '../../services/storage';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 
@@ -26,6 +35,7 @@ const DailyUpdate = ({ onBack }) => {
   const questDropdownRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingQuestIndex, setUploadingQuestIndex] = useState(-1);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: 'info',
@@ -171,13 +181,65 @@ const DailyUpdate = ({ onBack }) => {
         }
       }
 
+      // Submit Quest Confirmations (if has submissions)
+      if (selectedQuestSubmissions.length > 0) {
+        console.log('🎯 Processing quest submissions:', selectedQuestSubmissions.length);
+        
+        for (let i = 0; i < selectedQuestSubmissions.length; i++) {
+          const submission = selectedQuestSubmissions[i];
+          setUploadingQuestIndex(i);
+          
+          try {
+            let imgUrl = '';
+            
+            // 1. Upload image to Storage if exists
+            if (submission.image) {
+              console.log(`📤 [${i + 1}/${selectedQuestSubmissions.length}] Uploading quest confirmation image for:`, submission.questTitle);
+              const uploadResult = await uploadQuestConfirmImage(
+                submission.image,
+                submission.questTitle
+              );
+              imgUrl = uploadResult.url;
+              console.log('✅ Image uploaded to:', uploadResult.path);
+              console.log('🔗 Image URL:', imgUrl);
+            }
+            
+            // 2. Save confirmation to quests-confirm collection
+            console.log('💾 Saving quest confirmation to Firestore...');
+            await saveQuestConfirmation({
+              name: submission.questTitle,
+              desc: submission.description || '',
+              imgUrl: imgUrl
+            }, CHARACTER_ID);
+            console.log('✅ Quest confirmation saved for:', submission.questTitle);
+            
+            // 3. Mark quest as completed in quests collection
+            console.log('✓ Marking quest as completed...');
+            await updateQuest(submission.questId, {
+              completed: true,
+              completedAt: new Date()
+            }, CHARACTER_ID);
+            console.log('✅ Quest marked as completed:', submission.questId);
+            
+            results.push(`Quest: ${submission.questTitle}`);
+            
+          } catch (error) {
+            console.error('❌ Error processing quest submission:', submission.questTitle, error);
+            // Continue with other quests even if one fails
+            results.push(`Quest: ${submission.questTitle} (failed)`);
+          }
+        }
+        
+        setUploadingQuestIndex(-1);
+      }
+
       // Show success message
       if (results.length > 0) {
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: `${results.join(' & ')} saved successfully!`,
+          message: `${results.join(', ')} saved successfully!`,
           confirmText: 'OK',
           onConfirm: () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -189,6 +251,14 @@ const DailyUpdate = ({ onBack }) => {
               mood: moodOptions[0] || '',
               journalEntry: ''
             }));
+            // Clear quest submissions
+            setSelectedQuestSubmissions([]);
+            // Reload quests to update available list
+            fetchQuests(CHARACTER_ID).then(quests => {
+              const incompleteQuests = quests.filter(q => !q.completed);
+              setAvailableQuests(incompleteQuests);
+              console.log('🔄 Reloaded quests, incomplete:', incompleteQuests.length);
+            });
           }
         });
       } else {
@@ -253,20 +323,51 @@ const DailyUpdate = ({ onBack }) => {
     ));
   };
 
-  const handleQuestImageChange = (index, file) => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
-          i === index ? { 
-            ...submission, 
-            image: file,
-            imagePreview: reader.result 
-          } : submission
-        ));
-      };
-      reader.readAsDataURL(file);
+  const handleQuestImageChange = async (index, file) => {
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Invalid File',
+        message: 'Please select an image file (jpg, png, gif, etc.)',
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
     }
+
+    // Check file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'File Too Large',
+        message: 'Image size must be less than 5MB. Please choose a smaller image.',
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
+        i === index ? { 
+          ...submission, 
+          image: file,
+          imagePreview: reader.result,
+          isUploading: false
+        } : submission
+      ));
+    };
+    reader.readAsDataURL(file);
+
+    console.log('📷 Image selected:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
   };
 
   const handleRemoveQuestImage = (index) => {
@@ -543,7 +644,11 @@ const DailyUpdate = ({ onBack }) => {
           {/* Action Buttons */}
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit'}
+              {isSubmitting ? (
+                uploadingQuestIndex >= 0 
+                  ? `Uploading quest ${uploadingQuestIndex + 1}/${selectedQuestSubmissions.length}...`
+                  : 'Submitting...'
+              ) : 'Submit'}
             </button>
             <button type="button" onClick={handleReset} className="btn-secondary" disabled={isSubmitting}>
               ✕ Reset

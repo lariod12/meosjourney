@@ -480,3 +480,184 @@ const updateTodayHistory = async (characterId, journalId) => {
     // Don't throw error here - journal was saved successfully
   }
 };
+
+// ========================================
+// Quest Confirmation Functions
+// ========================================
+
+/**
+ * Save quest confirmation to Firestore
+ * Document ID = quest name (sanitized)
+ * 
+ * @param {Object} confirmData - Confirmation data
+ * @param {string} confirmData.name - Quest name (used as document ID)
+ * @param {string} confirmData.desc - Description of completion
+ * @param {string} confirmData.imgUrl - Image URL from Storage
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean, id: string}>}
+ */
+export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER_ID) => {
+  try {
+    // Validate data
+    if (!confirmData.name || !confirmData.name.trim()) {
+      throw new Error('Quest name is required');
+    }
+
+    // Sanitize quest name for document ID
+    const docId = confirmData.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 100);
+
+    if (!docId) {
+      throw new Error('Quest name must contain at least one alphanumeric character');
+    }
+
+    const dataToSave = {
+      name: confirmData.name.trim(),
+      desc: confirmData.desc?.trim() || '',
+      imgUrl: confirmData.imgUrl || '',
+      createdAt: serverTimestamp()
+    };
+
+    console.log('💾 Saving quest confirmation with ID:', docId);
+    console.log('📝 Data:', dataToSave);
+    console.log('📍 Path: main/' + characterId + '/quests-confirm/' + docId);
+
+    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    await setDoc(confirmRef, dataToSave);
+
+    console.log('✅ Quest confirmation saved:', docId);
+
+    return { success: true, id: docId };
+
+  } catch (error) {
+    console.error('❌ Error saving quest confirmation:', error);
+    throw new Error(`Failed to save quest confirmation: ${error.message}`);
+  }
+};
+
+/**
+ * Fetch all quest confirmations
+ * 
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Array>} Array of quest confirmations
+ */
+export const fetchQuestConfirmations = async (characterId = CHARACTER_ID) => {
+  try {
+    const confirmRef = collection(db, 'main', characterId, 'quests-confirm');
+    const snapshot = await getDocs(confirmRef);
+
+    const confirmations = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    console.log('📋 Fetched quest confirmations:', confirmations.length);
+    return confirmations;
+
+  } catch (error) {
+    console.error('❌ Error fetching quest confirmations:', error);
+    return [];
+  }
+};
+
+/**
+ * Get single quest confirmation by quest name
+ * 
+ * @param {string} questName - Quest name (will be sanitized to match document ID)
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Object|null>} Quest confirmation data or null
+ */
+export const getQuestConfirmation = async (questName, characterId = CHARACTER_ID) => {
+  try {
+    const docId = questName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 100);
+
+    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    const snapshot = await getDoc(confirmRef);
+
+    if (snapshot.exists()) {
+      return { id: snapshot.id, ...snapshot.data() };
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error('❌ Error getting quest confirmation:', error);
+    return null;
+  }
+};
+
+/**
+ * Delete quest confirmation
+ * 
+ * @param {string} questName - Quest name
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean}>}
+ */
+export const deleteQuestConfirmation = async (questName, characterId = CHARACTER_ID) => {
+  try {
+    const docId = questName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 100);
+
+    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    await deleteDoc(confirmRef);
+
+    console.log('✅ Quest confirmation deleted:', docId);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error deleting quest confirmation:', error);
+    throw new Error(`Failed to delete quest confirmation: ${error.message}`);
+  }
+};
+
+// ========================================
+// Achievement Confirmation Functions (for future use)
+// ========================================
+
+/**
+ * Save achievement confirmation to Firestore
+ * Similar structure to quest confirmation
+ * 
+ * @param {Object} confirmData - Confirmation data
+ * @param {string} confirmData.name - Achievement name
+ * @param {string} confirmData.desc - Description
+ * @param {string} confirmData.imgUrl - Image URL
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean, id: string}>}
+ */
+export const saveAchievementConfirmation = async (confirmData, characterId = CHARACTER_ID) => {
+  try {
+    const docId = confirmData.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 100);
+
+    const dataToSave = {
+      name: confirmData.name.trim(),
+      desc: confirmData.desc?.trim() || '',
+      imgUrl: confirmData.imgUrl || '',
+      createdAt: serverTimestamp()
+    };
+
+    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    await setDoc(confirmRef, dataToSave);
+
+    console.log('✅ Achievement confirmation saved:', docId);
+    return { success: true, id: docId };
+
+  } catch (error) {
+    console.error('❌ Error saving achievement confirmation:', error);
+    throw new Error(`Failed to save achievement confirmation: ${error.message}`);
+  }
+};

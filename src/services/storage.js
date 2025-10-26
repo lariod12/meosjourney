@@ -1,7 +1,5 @@
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { app } from './firebase';
-
-const storage = getStorage(app);
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage } from './firebase';
 
 /**
  * Upload image to Firebase Storage
@@ -178,5 +176,123 @@ export const uploadAvatarImage = async (file, characterId) => {
   } catch (error) {
     console.error('❌ Error uploading avatar:', error);
     throw new Error(`Failed to upload avatar: ${error.message}`);
+  }
+};
+
+/**
+ * Upload quest confirmation image to Firebase Storage
+ * Images are stored in quests-confirm/ folder with quest name prefix
+ * 
+ * @param {File} file - Image file to upload
+ * @param {string} questName - Name of the quest (used as prefix)
+ * @returns {Promise<{url: string, path: string, questNamePrefix: string}>}
+ */
+export const uploadQuestConfirmImage = async (file, questName) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Sanitize quest name for filename
+    const sanitizedQuestName = questName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${sanitizedQuestName}_${timestamp}.${fileExtension}`;
+    
+    // Storage path: quests-confirm/{questName}_{timestamp}.jpg
+    const storagePath = `quests-confirm/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    console.log('📤 Uploading quest confirmation image to:', storagePath);
+    console.log('🎯 Quest name prefix:', sanitizedQuestName);
+
+    const snapshot = await uploadBytes(storageRef, file);
+    console.log('✅ Quest confirmation image uploaded successfully');
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('🔗 Download URL:', downloadURL);
+
+    return {
+      url: downloadURL,
+      path: storagePath,
+      questNamePrefix: sanitizedQuestName
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading quest confirmation image:', error);
+    throw new Error(`Failed to upload quest confirmation image: ${error.message}`);
+  }
+};
+
+/**
+ * Upload achievement confirmation image to Firebase Storage
+ * Images are stored in achievements-confirm/ folder with achievement name prefix
+ * 
+ * @param {File} file - Image file to upload
+ * @param {string} achievementName - Name of the achievement (used as prefix)
+ * @returns {Promise<{url: string, path: string, achievementNamePrefix: string}>}
+ */
+export const uploadAchievementConfirmImage = async (file, achievementName) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Sanitize achievement name for filename
+    const sanitizedAchievementName = achievementName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${sanitizedAchievementName}_${timestamp}.${fileExtension}`;
+    
+    // Storage path: achievements-confirm/{achievementName}_{timestamp}.jpg
+    const storagePath = `achievements-confirm/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    console.log('📤 Uploading achievement confirmation image to:', storagePath);
+    console.log('🏆 Achievement name prefix:', sanitizedAchievementName);
+
+    const snapshot = await uploadBytes(storageRef, file);
+    console.log('✅ Achievement confirmation image uploaded successfully');
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('🔗 Download URL:', downloadURL);
+
+    return {
+      url: downloadURL,
+      path: storagePath,
+      achievementNamePrefix: sanitizedAchievementName
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading achievement confirmation image:', error);
+    throw new Error(`Failed to upload achievement confirmation image: ${error.message}`);
   }
 };
