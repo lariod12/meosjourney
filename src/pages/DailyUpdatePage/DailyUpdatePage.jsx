@@ -30,6 +30,10 @@ const DailyUpdate = ({ onBack }) => {
 
   const moodRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
+  
+  // Collapse/expand states - collapsed by default
+  const [statusExpanded, setStatusExpanded] = useState(false);
+  const [journalExpanded, setJournalExpanded] = useState(false);
 
   useEffect(() => {
     // Load config from Firestore
@@ -237,88 +241,112 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Status Update */}
           <div className="form-section">
-            <h2>▸ Status Update</h2>
+            <h2 
+              className="section-title clickable" 
+              onClick={() => {
+                console.log('Status Update section clicked');
+                setStatusExpanded(!statusExpanded);
+              }}
+            >
+              {statusExpanded ? '▼' : '▸'} Status Update
+            </h2>
 
-            <div className="form-group">
-              <label htmlFor="doing">Current Activity</label>
-              <input
-                type="text"
-                id="doing"
-                name="doing"
-                value={formData.doing}
-                onChange={handleChange}
-                placeholder="e.g., Studying character design"
-              />
-            </div>
+            {statusExpanded && (
+              <div className="section-content">
+                <div className="form-group">
+                  <label htmlFor="doing">Current Activity</label>
+                  <input
+                    type="text"
+                    id="doing"
+                    name="doing"
+                    value={formData.doing}
+                    onChange={handleChange}
+                    placeholder="e.g., Studying character design"
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="location">Location</label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="e.g., Home, Coffee shop, Office"
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="location">Location</label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., Home, Coffee shop, Office"
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="mood">Mood</label>
-              <div className="select-wrap" ref={moodRef}>
-                <button
-                  type="button"
-                  id="mood"
-                  className="select-display"
-                  aria-haspopup="listbox"
-                  aria-expanded={moodOpen}
-                  onClick={() => setMoodOpen(o => !o)}
-                >
-                  {formData.mood || 'Select mood'}
-                  <span className="select-caret">▾</span>
-                </button>
-                {moodOpen && (
-                  <div className="select-options" role="listbox">
-                    {moodOptions.map(opt => (
-                      <div
-                        key={opt}
-                        role="option"
-                        aria-selected={formData.mood === opt}
-                        className={`select-option${formData.mood === opt ? ' selected' : ''}`}
-                        onMouseDown={() => {
-                          setFormData(prev => ({ ...prev, mood: opt }));
-                          setMoodOpen(false);
-                        }}
-                      >
-                        {opt}
+                <div className="form-group">
+                  <label htmlFor="mood">Mood</label>
+                  <div className="select-wrap" ref={moodRef}>
+                    <button
+                      type="button"
+                      id="mood"
+                      className="select-display"
+                      aria-haspopup="listbox"
+                      aria-expanded={moodOpen}
+                      onClick={() => setMoodOpen(o => !o)}
+                    >
+                      {formData.mood || 'Select mood'}
+                      <span className="select-caret">▾</span>
+                    </button>
+                    {moodOpen && (
+                      <div className="select-options" role="listbox">
+                        {moodOptions.map(opt => (
+                          <div
+                            key={opt}
+                            role="option"
+                            aria-selected={formData.mood === opt}
+                            className={`select-option${formData.mood === opt ? ' selected' : ''}`}
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, mood: opt }));
+                              setMoodOpen(false);
+                            }}
+                          >
+                            {opt}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Daily Journal */}
           <div className="form-section">
-            <h2>▸ Daily Journal</h2>
+            <h2 
+              className="section-title clickable" 
+              onClick={() => {
+                console.log('Daily Journal section clicked');
+                setJournalExpanded(!journalExpanded);
+              }}
+            >
+              {journalExpanded ? '▼' : '▸'} Daily Journal
+            </h2>
 
-            <div className="form-group">
-              <label htmlFor="journalEntry">Current Journal</label>
-              <textarea
-                id="journalEntry"
-                name="journalEntry"
-                rows="12"
-                value={formData.journalEntry}
-                onChange={handleChange}
-                placeholder={`Viết về ngày hôm nay của bạn...
+            {journalExpanded && (
+              <div className="section-content">
+                <div className="form-group">
+                  <label htmlFor="journalEntry">Current Journal</label>
+                  <textarea
+                    id="journalEntry"
+                    name="journalEntry"
+                    rows="12"
+                    value={formData.journalEntry}
+                    onChange={handleChange}
+                    placeholder={`Viết về ngày hôm nay của bạn...
 
 ◆ Đã làm gì?
 ◆ Cảm xúc, suy nghĩ?
 ◆ Điều đáng nhớ?
 ◆ Bài học rút ra?`}
-              />
-            </div>
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
