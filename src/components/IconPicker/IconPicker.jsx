@@ -93,6 +93,14 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
     setDisplayCount(ICONS_PER_PAGE); // Reset to initial count
   };
 
+  const handleClear = () => {
+    console.log('Clear icon');
+    onChange({ target: { name: 'icon', value: '' } });
+    setSearchTerm('');
+    setIsOpen(false);
+    setShowAll(false);
+  };
+
   const renderIcon = (iconName) => {
     const IconComponent = allIcons[iconName];
     return IconComponent ? <IconComponent size={24} /> : null;
@@ -101,18 +109,35 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
   return (
     <div className="icon-picker" ref={containerRef}>
       <div className="icon-picker-input-wrapper">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setShowAll(false);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          className="icon-picker-input"
-        />
+        <div className="icon-picker-input-container">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setShowAll(false);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
+            placeholder={value ? '' : placeholder}
+            className={`icon-picker-input ${value ? 'has-icon' : ''}`}
+          />
+          {value && (
+            <div className="icon-picker-selected-preview">
+              {renderIcon(value)}
+            </div>
+          )}
+        </div>
+        {value && (
+          <button
+            type="button"
+            className="icon-picker-clear-btn"
+            onClick={handleClear}
+            title="Clear icon"
+          >
+            ✕
+          </button>
+        )}
         <button
           type="button"
           className="icon-picker-all-btn"
@@ -121,16 +146,11 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
         >
           All
         </button>
-        {value && (
-          <div className="icon-picker-preview">
-            {renderIcon(value)}
-          </div>
-        )}
       </div>
 
       {isOpen && filteredIcons.length > 0 && (
-        <div 
-          className="icon-picker-dropdown" 
+        <div
+          className="icon-picker-dropdown"
           ref={dropdownRef}
           onScroll={handleScroll}
         >

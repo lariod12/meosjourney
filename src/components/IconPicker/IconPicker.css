@@ -4,22 +4,29 @@
 }
 
 .icon-picker-input-wrapper {
-  position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
 }
 
-.icon-picker-input {
+.icon-picker-input-container {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.icon-picker-input {
+  width: 100%;
   padding: 12px;
-  padding-right: 50px;
+  height: 48px;
   border: 2px solid #000;
   background: #fff;
   font-family: 'Courier New', monospace;
   font-size: 14px;
   outline: none;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .icon-picker-input:focus {
@@ -27,8 +34,53 @@
   box-shadow: 3px 3px 0 #000;
 }
 
+.icon-picker-input.has-icon {
+  padding-left: 50px;
+}
+
+.icon-picker-selected-preview {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.icon-picker-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid #000;
+  background: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.icon-picker-clear-btn:hover {
+  background: #000;
+  color: #fff;
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.icon-picker-clear-btn:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
 .icon-picker-all-btn {
-  padding: 12px 20px;
+  height: 48px;
+  padding: 0 20px;
   border: 2px solid #000;
   background: #fff;
   font-family: 'Courier New', monospace;
@@ -37,6 +89,9 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-picker-all-btn:hover {
@@ -49,15 +104,6 @@
 .icon-picker-all-btn:active {
   transform: translate(0, 0);
   box-shadow: none;
-}
-
-.icon-picker-preview {
-  position: absolute;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
 }
 
 .icon-picker-dropdown {
