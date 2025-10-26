@@ -26,7 +26,37 @@ const AchievementModal = ({ achievement, onClose }) => {
         )}
         <div className="achievement-modal-icon">{achievement.icon}</div>
         <div className="achievement-modal-title">{achievement.name}</div>
-        <div className="achievement-modal-description">{achievement.description || achievement.desc}</div>
+        <div className="achievement-modal-description">
+          {achievement.description || achievement.desc}
+          {achievement.dueDate && (
+            <div className="achievement-modal-due-date">
+              Due Date: {(() => {
+                try {
+                  // Handle different date formats
+                  let date;
+                  if (typeof achievement.dueDate === 'string') {
+                    date = new Date(achievement.dueDate);
+                  } else if (achievement.dueDate.toDate) {
+                    // Firestore Timestamp
+                    date = achievement.dueDate.toDate();
+                  } else {
+                    date = new Date(achievement.dueDate);
+                  }
+                  
+                  // Check if date is valid
+                  if (isNaN(date.getTime())) {
+                    return achievement.dueDate; // Return original if can't parse
+                  }
+                  
+                  return date.toLocaleDateString('vi-VN');
+                } catch (error) {
+                  console.error('Error parsing due date:', error);
+                  return achievement.dueDate; // Return original on error
+                }
+              })()}
+            </div>
+          )}
+        </div>
         <div className="achievement-modal-rewards-box">
           <div className="rewards-box-title">REWARDS</div>
           <div className="rewards-box-list">

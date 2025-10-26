@@ -1091,6 +1091,18 @@ body {
     );
 }
 
+.achievement-modal-due-date {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--black);
+    text-align: center;
+    font-family: 'Kalam', cursive;
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: var(--black);
+    font-style: italic;
+}
+
 .achievement-modal-rewards-box {
     border: 3px solid var(--black);
     background: var(--black);
@@ -1353,6 +1365,12 @@ body {
 
     .achievement-modal-description {
         font-size: 1.1rem;
+    }
+
+    .achievement-modal-due-date {
+        margin-top: 12px;
+        padding-top: 12px;
+        font-size: 0.85rem;
     }
 }
 
@@ -1756,6 +1774,12 @@ body {
         margin-bottom: 12px;
     }
 
+    .achievement-modal-due-date {
+        margin-top: 10px;
+        padding-top: 10px;
+        font-size: 0.8rem;
+    }
+
     .achievement-modal-rewards-box {
         border-width: 2px;
     }
@@ -1922,6 +1946,12 @@ body {
     .achievement-modal-description {
         font-size: 0.9rem;
         padding: 8px;
+    }
+
+    .achievement-modal-due-date {
+        margin-top: 8px;
+        padding-top: 8px;
+        font-size: 0.7rem;
     }
 
     .achievement-modal-rewards-box {

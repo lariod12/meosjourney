@@ -2,43 +2,39 @@
 inclusion: always
 ---
 
----
-inclusion: always
----
-
 ## Git Conventions
-- Commit messages MUST follow format: `update: <clean and concise message>`
-- Keep commits small and descriptive
-- All commit only use English
+- Commit messages: `update: <clean and concise message>`
+- Use English for all commits
+- Remove debug console.log statements after commits (keep error handling logs)
 
 ## Language Standards
 - Code and comments: English only
 - User responses: Vietnamese
-- Be direct and concise in all communications
+- Be direct and concise
 
 ## File Organization
-- All `.md` files go in `local/` folder (except root `README.md`)
-- Follow React folder structure conventions for maintainability
+- Documentation files: `local/` folder (except root `README.md`)
+- Follow React folder structure conventions
+- Maintain component-based architecture
 
 ## Design System
-- Theme: Black and white color palette only
-- Style: Sketch-based aesthetic
-- Maintain consistent visual language across components
+- Color palette: Black and white only
+- Aesthetic: Sketch-based design
+- Consistent visual language across components
 
 ## Development Standards
-- Follow README.md at first time
-- Follow React conventions and best practices
-- Add `console.log` statements for UI interactions to aid debugging
-- Structure components for scalability and maintenance
+- Follow README.md guidelines first
+- Add console.log for UI interactions (debugging aid)
+- React best practices and conventions
+- Component scalability and maintainability focus
 
-
-## Database Context
-- Review `local/DatabaseArchitecture.md` for schema understanding
+## Database Operations
+- Reference `local/DatabaseArchitecture.md` for schema
 - Check `local/firestore_data_*.json` for current data structure
-- Use Firebase MCP tools for database operations and queries
+- Use Firebase MCP tools for database operations
 
 ## Architecture Patterns
 - Component-based React structure
-- Separation of concerns between UI and data layers
-- Consistent naming conventions following React standards
+- Separation of UI and data layers
+- Consistent React naming conventions
 
