@@ -9,6 +9,7 @@ inclusion: always
 ## Git Conventions
 - Commit messages MUST follow format: `update: <clean and concise message>`
 - Keep commits small and descriptive
+- All commit only use English
 
 ## Language Standards
 - Code and comments: English only
