@@ -234,6 +234,7 @@ const DailyUpdate = ({ onBack }) => {
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
       questTitle: quest.title,
+      questXp: quest.xp,
       description: '',
       image: null,
       imagePreview: null
@@ -476,7 +477,9 @@ const DailyUpdate = ({ onBack }) => {
                 {selectedQuestSubmissions.map((submission, index) => (
                   <div key={index} className="quest-submission-form">
                     <div className="quest-submission-header">
-                      <h3 className="quest-submission-title">⚔️ {submission.questTitle}</h3>
+                      <h3 className="quest-submission-title">
+                        ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
+                      </h3>
                       <button
                         type="button"
                         className="btn-remove-quest"
@@ -531,24 +534,6 @@ const DailyUpdate = ({ onBack }) => {
                         )}
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      className="btn-submit-quest"
-                      onClick={() => {
-                        console.log('🎯 Quest submission (no logic yet):', submission);
-                        setConfirmModal({
-                          isOpen: true,
-                          type: 'info',
-                          title: 'Coming Soon',
-                          message: 'Quest submission logic will be implemented after database structure is designed.',
-                          confirmText: 'OK',
-                          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-                        });
-                      }}
-                    >
-                      Submit Quest
-                    </button>
                   </div>
                 ))}
               </div>

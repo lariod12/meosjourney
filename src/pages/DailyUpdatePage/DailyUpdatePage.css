@@ -471,6 +471,21 @@ body {
     font-size: 22px;
     color: #000000;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.quest-xp-badge {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 4px 12px;
+    border: 2px solid #000000;
+    display: inline-block;
 }
 
 .btn-remove-quest {
@@ -553,27 +568,7 @@ body {
     color: #ffffff;
 }
 
-.btn-submit-quest {
-    width: 100%;
-    padding: 14px 24px;
-    margin-top: 20px;
-    border: 3px solid #000000;
-    background-color: #000000;
-    color: #ffffff;
-    font-family: 'Patrick Hand', cursive;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-    text-transform: uppercase;
-}
 
-.btn-submit-quest:hover {
-    background-color: #ffffff;
-    color: #000000;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 0 #000000;
-}
 
 /* Responsive adjustments for quest section */
 @media (max-width: 768px) {
@@ -583,6 +578,11 @@ body {
 
     .quest-submission-title {
         font-size: 20px;
+    }
+
+    .quest-xp-badge {
+        font-size: 14px;
+        padding: 3px 10px;
     }
 
     .image-preview {
@@ -603,5 +603,10 @@ body {
 
     .quest-submission-title {
         font-size: 18px;
+    }
+
+    .quest-xp-badge {
+        font-size: 13px;
+        padding: 2px 8px;
     }
 }
