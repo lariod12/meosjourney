@@ -25,11 +25,13 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
 };
 
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
-  const [profile, config, status] = await Promise.all([
-    fetchProfile(characterId), 
-    fetchConfig(characterId),
-    fetchStatus(characterId)
-  ]);
+  try {
+    const [profile, config, status, achievements] = await Promise.all([
+      fetchProfile(characterId), 
+      fetchConfig(characterId),
+      fetchStatus(characterId),
+      fetchAchievements(characterId)
+    ]);
 
   const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
   const interests = Array.isArray(profile?.interests) ? profile.interests.map((n) => ({ name: n })) : base.interests || [];
@@ -66,20 +68,32 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     timestamp: statusTimestamp
   } : base.status || {};
 
-  return {
-    ...base,
-    name,
-    caption,
-    currentXP: Number.parseInt(profile?.currentXP, 10) || 0,
-    level: Number.parseInt(profile?.level, 10) || 0,
-    maxXP: typeof config?.maxXP === 'number' ? config.maxXP : base.maxXP,
-    skills,
-    interests,
-    introduce,
-    status: statusData,
-    moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
-    locationOptions: Array.isArray(config?.locationOptions) ? config.locationOptions : [],
-  };
+    // Process achievements data - use database achievements if available, otherwise fallback to base
+    const achievementsData = achievements && achievements.length > 0 ? achievements : base.achievements || [];
+
+    return {
+      ...base,
+      name,
+      caption,
+      currentXP: Number.parseInt(profile?.currentXP, 10) || 0,
+      level: Number.parseInt(profile?.level, 10) || 0,
+      maxXP: typeof config?.maxXP === 'number' ? config.maxXP : base.maxXP,
+      skills,
+      interests,
+      introduce,
+      status: statusData,
+      achievements: achievementsData,
+      moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
+      locationOptions: Array.isArray(config?.locationOptions) ? config.locationOptions : [],
+    };
+  } catch (error) {
+    console.error('❌ Error in fetchCharacterViewData:', error);
+    // Return base data with fallback achievements on error
+    return {
+      ...base,
+      achievements: base.achievements || []
+    };
+  }
 };
 
 export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
@@ -202,10 +216,12 @@ export const fetchAchievements = async (characterId = CHARACTER_ID) => {
       ...doc.data()
     }));
     
+    console.log('🏆 Fetched achievements from database:', achievements.length, 'items');
     return achievements;
   } catch (error) {
     console.error('❌ Error fetching achievements:', error);
-    throw new Error(`Firestore error: ${error.message}`);
+    // Return empty array instead of throwing to prevent app crash
+    return [];
   }
 };
 

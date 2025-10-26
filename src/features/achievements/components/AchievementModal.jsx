@@ -26,17 +26,17 @@ const AchievementModal = ({ achievement, onClose }) => {
         )}
         <div className="achievement-modal-icon">{achievement.icon}</div>
         <div className="achievement-modal-title">{achievement.name}</div>
-        <div className="achievement-modal-description">{achievement.description}</div>
+        <div className="achievement-modal-description">{achievement.description || achievement.desc}</div>
         <div className="achievement-modal-rewards-box">
           <div className="rewards-box-title">REWARDS</div>
           <div className="rewards-box-list">
             {achievement.specialReward ? (
               <>
                 <div className="reward-special">{achievement.specialReward}</div>
-                <div className="reward-exp">+{achievement.exp} EXP</div>
+                <div className="reward-exp">+{achievement.exp || achievement.xp} EXP</div>
               </>
             ) : (
-              <div className="reward-exp-only">+{achievement.exp} EXP</div>
+              <div className="reward-exp-only">+{achievement.exp || achievement.xp} EXP</div>
             )}
           </div>
         </div>

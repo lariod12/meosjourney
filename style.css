@@ -895,6 +895,25 @@ body {
     z-index: 1;
 }
 
+.loading-message, .empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray-dark);
+    font-style: italic;
+    border: 2px dashed var(--gray-medium);
+    background: var(--gray-light);
+}
+
+.loading-message {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
 .achievement-item::before {
     content: '';
     position: absolute;
