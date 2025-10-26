@@ -6,6 +6,7 @@ inclusion: always
 - Commit messages: `update: <clean and concise message>`
 - Use English for all commits
 - Remove debug console.log statements after commits (keep error handling logs)
+- Do not auto commit before user command or request
 
 ## Language Standards
 - Code and comments: English only
