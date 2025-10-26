@@ -38,9 +38,7 @@ const AdminAchievementsPage = ({ onBack }) => {
     icon: '',
     xp: '',
     specialReward: '',
-    dueDate: '',
-    // Quest fields
-    title: ''
+    dueDate: ''
   });
 
   useEffect(() => {
@@ -172,12 +170,12 @@ const AdminAchievementsPage = ({ onBack }) => {
 
     } else if (activeTab === 'create-quest') {
       // Validate quest
-      if (!formData.title.trim()) {
+      if (!formData.name.trim()) {
         setConfirmModal({
           isOpen: true,
           type: 'warning',
           title: 'Validation Error',
-          message: 'Quest title is required',
+          message: 'Quest name is required',
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
@@ -205,7 +203,7 @@ const AdminAchievementsPage = ({ onBack }) => {
         isOpen: true,
         type: 'info',
         title: 'Confirm Creation',
-        message: `Are you sure you want to create quest "${formData.title.trim()}" with ${formData.xp} XP reward?`,
+        message: `Are you sure you want to create quest "${formData.name.trim()}" with ${formData.xp} XP reward?`,
         confirmText: 'Create',
         cancelText: 'Cancel',
         onConfirm: () => {
@@ -272,7 +270,7 @@ const AdminAchievementsPage = ({ onBack }) => {
 
     try {
       const questData = {
-        title: formData.title.trim(),
+        name: formData.name.trim(),
         xp: Number(formData.xp)
       };
 
@@ -320,8 +318,7 @@ const AdminAchievementsPage = ({ onBack }) => {
       icon: '',
       xp: '',
       specialReward: '',
-      dueDate: '',
-      title: ''
+      dueDate: ''
     });
   };
 
@@ -409,12 +406,12 @@ const AdminAchievementsPage = ({ onBack }) => {
   };
 
   const handleUpdateQuest = async (questId) => {
-    if (!formData.title.trim()) {
+    if (!formData.name.trim()) {
       setConfirmModal({
         isOpen: true,
         type: 'warning',
         title: 'Validation Error',
-        message: 'Quest title is required',
+        message: 'Quest name is required',
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
@@ -441,7 +438,7 @@ const AdminAchievementsPage = ({ onBack }) => {
 
     try {
       const questData = {
-        title: formData.title.trim(),
+        name: formData.name.trim(),
         xp: Number(formData.xp)
       };
 
@@ -707,12 +704,12 @@ const AdminAchievementsPage = ({ onBack }) => {
             <h2>▸ Create Daily Quest</h2>
 
             <div className="form-group">
-              <label htmlFor="title">Quest Title *</label>
+              <label htmlFor="name">Quest Name *</label>
               <input
                 type="text"
-                id="title"
-                name="title"
-                value={formData.title}
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g., Complete 3 drawings today"
                 required
@@ -908,11 +905,11 @@ const AdminAchievementsPage = ({ onBack }) => {
                       {isEditing ? (
                         <div className="quest-edit-form">
                           <div className="form-group">
-                            <label>Quest Title *</label>
+                            <label>Quest Name *</label>
                             <input
                               type="text"
-                              name="title"
-                              value={formData.title}
+                              name="name"
+                              value={formData.name}
                               onChange={handleChange}
                               required
                             />
@@ -951,10 +948,10 @@ const AdminAchievementsPage = ({ onBack }) => {
                       ) : (
                         <div className="quest-view-row">
                           <div className="quest-info">
-                            <h3>{quest.title}</h3>
+                            <h3>{quest.name}</h3>
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {quest.completed ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {quest.isFinish ? '✅ Completed' : '⏳ Pending'}</span>
                               {quest.completedAt && (
                                 <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString()}</span>
                               )}
@@ -967,7 +964,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                                   setEditingId(quest.id);
                                   setFormData({
                                     ...formData,
-                                    title: quest.title,
+                                    name: quest.name,
                                     xp: quest.xp || ''
                                   });
                                 }}
@@ -977,7 +974,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                                 ✎ Edit
                               </button>
                               <button
-                                onClick={() => handleDeleteClick(quest.id, quest.title, 'quest')}
+                                onClick={() => handleDeleteClick(quest.id, quest.name, 'quest')}
                                 className="btn-delete"
                                 disabled={isSubmitting}
                               >

@@ -300,10 +300,10 @@ const DailyUpdate = ({ onBack }) => {
 
   // Quest submission handlers
   const handleAddQuestSubmission = (quest) => {
-    console.log('➕ Adding quest submission:', quest.title);
+    console.log('➕ Adding quest submission:', quest.name);
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
-      questTitle: quest.title,
+      questTitle: quest.name,
       questXp: quest.xp,
       description: '',
       image: null,
@@ -561,7 +561,7 @@ const DailyUpdate = ({ onBack }) => {
                             className="quest-dropdown-item"
                             onClick={() => handleAddQuestSubmission(quest)}
                           >
-                            <span className="quest-dropdown-title">{quest.title}</span>
+                            <span className="quest-dropdown-title">{quest.name}</span>
                             <span className="quest-dropdown-xp">+{quest.xp} XP</span>
                           </div>
                         ))}

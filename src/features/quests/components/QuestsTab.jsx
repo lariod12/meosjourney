@@ -2,7 +2,7 @@ import { useCharacter } from '../../../contexts';
 
 const QuestsTab = () => {
   const data = useCharacter();
-  const completed = data.quests.filter(q => q.completed).length;
+  const completed = data.quests.filter(q => q.isFinish).length;
   const total = data.quests.length;
 
   return (
@@ -12,8 +12,8 @@ const QuestsTab = () => {
       </div>
       <div className="quests-list">
         {data.quests.map(quest => (
-          <div key={quest.id} className={`quest-item ${quest.completed ? 'completed' : ''}`}>
-            <div className="quest-text">{quest.title}</div>
+          <div key={quest.id} className={`quest-item ${quest.isFinish ? 'completed' : ''}`}>
+            <div className="quest-text">{quest.name}</div>
             <div className="quest-xp">+{quest.xp} XP</div>
           </div>
         ))}

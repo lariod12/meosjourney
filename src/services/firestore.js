@@ -5,7 +5,7 @@ import { CHARACTER_ID } from '../config/constants';
 export { CHARACTER_ID };
 
 export const fetchFirstDocData = async (colPath, fromServer = false) => {
-  const snap = fromServer 
+  const snap = fromServer
     ? await getDocsFromServer(collection(db, ...colPath))
     : await getDocs(collection(db, ...colPath));
   const first = snap.docs[0];
@@ -27,46 +27,46 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
   try {
     const [profile, config, status, achievements] = await Promise.all([
-      fetchProfile(characterId), 
+      fetchProfile(characterId),
       fetchConfig(characterId),
       fetchStatus(characterId),
       fetchAchievements(characterId)
     ]);
 
-  const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
-  const interests = Array.isArray(profile?.interests) ? profile.interests.map((n) => ({ name: n })) : base.interests || [];
-  const introduce = typeof profile?.introduce === 'string' && profile.introduce.trim() ? profile.introduce : base.introduce || '';
-  const name = typeof profile?.name === 'string' && profile.name.trim() ? profile.name : base.name;
-  const caption = typeof profile?.caption === 'string' && profile.caption.trim() ? profile.caption : base.caption;
+    const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
+    const interests = Array.isArray(profile?.interests) ? profile.interests.map((n) => ({ name: n })) : base.interests || [];
+    const introduce = typeof profile?.introduce === 'string' && profile.introduce.trim() ? profile.introduce : base.introduce || '';
+    const name = typeof profile?.name === 'string' && profile.name.trim() ? profile.name : base.name;
+    const caption = typeof profile?.caption === 'string' && profile.caption.trim() ? profile.caption : base.caption;
 
-  // Process status data
-  let statusTimestamp = new Date();
-  
-  if (status?.timestamp) {
-    // Firestore Timestamp object
-    if (typeof status.timestamp.toDate === 'function') {
-      statusTimestamp = status.timestamp.toDate();
-    } 
-    // Already a Date object
-    else if (status.timestamp instanceof Date) {
-      statusTimestamp = status.timestamp;
+    // Process status data
+    let statusTimestamp = new Date();
+
+    if (status?.timestamp) {
+      // Firestore Timestamp object
+      if (typeof status.timestamp.toDate === 'function') {
+        statusTimestamp = status.timestamp.toDate();
+      }
+      // Already a Date object
+      else if (status.timestamp instanceof Date) {
+        statusTimestamp = status.timestamp;
+      }
+      // ISO string or timestamp number
+      else {
+        statusTimestamp = new Date(status.timestamp);
+      }
+    } else if (base.status?.timestamp) {
+      statusTimestamp = base.status.timestamp instanceof Date
+        ? base.status.timestamp
+        : new Date(base.status.timestamp);
     }
-    // ISO string or timestamp number
-    else {
-      statusTimestamp = new Date(status.timestamp);
-    }
-  } else if (base.status?.timestamp) {
-    statusTimestamp = base.status.timestamp instanceof Date 
-      ? base.status.timestamp 
-      : new Date(base.status.timestamp);
-  }
-  
-  const statusData = status ? {
-    doing: status.doing || base.status?.doing || '',
-    location: status.location || base.status?.location || '',
-    mood: status.mood || base.status?.mood || '',
-    timestamp: statusTimestamp
-  } : base.status || {};
+
+    const statusData = status ? {
+      doing: status.doing || base.status?.doing || '',
+      location: status.location || base.status?.location || '',
+      mood: status.mood || base.status?.mood || '',
+      timestamp: statusTimestamp
+    } : base.status || {};
 
     // Process achievements data - use database achievements if available, otherwise fallback to base
     const achievementsData = achievements && achievements.length > 0 ? achievements : base.achievements || [];
@@ -100,50 +100,50 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
   try {
     // Fetch current status document to get its ID
     const currentStatus = await fetchStatus(characterId);
-    
+
     if (!currentStatus || !currentStatus.id) {
       throw new Error('No status document found. Please create one first.');
     }
-    
+
     // Build data object with only non-empty fields (merge behavior)
     const dataToSave = {};
-    
+
     if (statusData.doing && statusData.doing.trim()) {
       dataToSave.doing = statusData.doing.trim();
     }
-    
+
     if (statusData.location && statusData.location.trim()) {
       dataToSave.location = statusData.location.trim();
     }
-    
+
     if (statusData.mood && statusData.mood.trim()) {
       dataToSave.mood = statusData.mood.trim();
     }
-    
+
     // Always add timestamp
     dataToSave.timestamp = serverTimestamp();
-    
+
     console.log('💾 Attempting to merge status:', dataToSave);
     console.log('📍 Document: main/' + characterId + '/status/' + currentStatus.id);
-    
+
     // Only save if there's at least one field besides timestamp
     if (Object.keys(dataToSave).length > 1) {
       const statusDocRef = doc(db, 'main', characterId, 'status', currentStatus.id);
       await setDoc(statusDocRef, dataToSave, { merge: true });
-      
+
       console.log('✅ Status merged successfully to:', currentStatus.id);
-      
+
       return { success: true, id: currentStatus.id, data: dataToSave };
     }
-    
+
     console.warn('⚠️ No data to save (all fields empty)');
     return { success: false, message: 'No data to save' };
-    
+
   } catch (error) {
     console.error('❌ Firestore Error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
-    
+
     throw new Error(`Firestore error: ${error.message}`);
   }
 };
@@ -169,11 +169,11 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
     // Check if achievement with this ID already exists
     const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
     const existingDoc = await getDoc(achievementDocRef);
-    
+
     if (existingDoc.exists()) {
       throw new Error(`Achievement with name "${achievementData.name}" already exists`);
     }
-    
+
     const dataToSave = {
       name: achievementData.name,
       desc: achievementData.desc,
@@ -185,23 +185,23 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       completedAt: null,
       createdAt: serverTimestamp()
     };
-    
+
     console.log('💾 Creating achievement with name-based ID:', achievementId);
     console.log('🏆 Data:', dataToSave);
     console.log('📍 Document: main/' + characterId + '/achievements/' + achievementId);
-    
+
     // Use setDoc with achievement name as document ID instead of addDoc
     await setDoc(achievementDocRef, dataToSave);
-    
+
     console.log('✅ Achievement created with name-based ID:', achievementId);
-    
+
     return { success: true, id: achievementId, data: dataToSave };
-    
+
   } catch (error) {
     console.error('❌ Firestore Error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
-    
+
     throw new Error(`Firestore error: ${error.message}`);
   }
 };
@@ -210,12 +210,12 @@ export const fetchAchievements = async (characterId = CHARACTER_ID) => {
   try {
     const achievementsRef = collection(db, 'main', characterId, 'achievements');
     const snapshot = await getDocs(achievementsRef);
-    
+
     const achievements = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
+
     console.log('🏆 Fetched achievements from database:', achievements.length, 'items');
     return achievements;
   } catch (error) {
@@ -267,16 +267,16 @@ export const updateAchievement = async (achievementId, achievementData, characte
 
       // Create new document with updated data
       await setDoc(newAchievementRef, updatedData);
-      
+
       // Delete old document
       await deleteDoc(oldAchievementRef);
-      
+
       console.log('✅ Achievement updated with new ID:', newAchievementId, '(old ID:', achievementId, ')');
       return { success: true, id: newAchievementId, nameChanged: true };
     } else {
       // Name didn't change, just update existing document
       await setDoc(oldAchievementRef, achievementData, { merge: true });
-      
+
       console.log('✅ Achievement updated:', achievementId);
       return { success: true, id: achievementId, nameChanged: false };
     }
@@ -290,7 +290,7 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
   try {
     const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
     await deleteDoc(achievementRef);
-    
+
     console.log('✅ Achievement deleted:', achievementId);
     return { success: true, id: achievementId };
   } catch (error) {
@@ -306,52 +306,62 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
 export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
   try {
     // Validate quest data
-    if (!questData.title || !questData.title.trim()) {
-      throw new Error('Quest title cannot be empty');
+    if (!questData.name || !questData.name.trim()) {
+      throw new Error('Quest name cannot be empty');
     }
 
     if (!questData.xp || questData.xp <= 0) {
       throw new Error('Quest XP must be greater than 0');
     }
 
-    // Generate datetime-based document ID using Vietnam timezone (UTC+7) - same as journal
+    // Sanitize quest name
+    const sanitizedName = questData.name.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .substring(0, 50); // Limit length to 50 characters
+
+    if (!sanitizedName) {
+      throw new Error('Quest name must contain at least one alphanumeric character');
+    }
+
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
     const now = new Date();
-    const datetimeId = now.toLocaleString('sv-SE', { 
+    const dateSuffix = now.toLocaleString('sv-SE', {
       timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }).replace(' ', '_').replace(/:/g, '-'); // Format: YYYY-MM-DD_HH-MM-SS (Vietnam time)
-    
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, ''); // Format: YYMMDD
+
+    // Combine name with date: name_YYMMDD
+    const questId = `${sanitizedName}_${dateSuffix}`;
+
     const dataToSave = {
-      title: questData.title.trim(),
+      name: questData.name.trim(),
       xp: questData.xp,
-      completed: false,
+      isFinish: false,
       completedAt: null,
       createdAt: serverTimestamp()
     };
-    
-    console.log('💾 Creating quest with Vietnam timezone ID:', datetimeId);
+
+    console.log('💾 Creating quest with ID:', questId);
     console.log('⚔️ Data:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/quests/' + datetimeId);
+    console.log('📍 Document: main/' + characterId + '/quests/' + questId);
     console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-    
-    // Use setDoc with custom document ID instead of addDoc
-    const questDocRef = doc(db, 'main', characterId, 'quests', datetimeId);
+
+    const questDocRef = doc(db, 'main', characterId, 'quests', questId);
     await setDoc(questDocRef, dataToSave);
-    
-    console.log('✅ Quest created with Vietnam timezone ID:', datetimeId);
-    
-    return { success: true, id: datetimeId, data: dataToSave };
-    
+
+    console.log('✅ Quest created with ID:', questId);
+
+    return { success: true, id: questId, data: dataToSave };
+
   } catch (error) {
     console.error('❌ Firestore Error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
-    
+
     throw new Error(`Firestore error: ${error.message}`);
   }
 };
@@ -360,12 +370,12 @@ export const fetchQuests = async (characterId = CHARACTER_ID) => {
   try {
     const questsRef = collection(db, 'main', characterId, 'quests');
     const snapshot = await getDocs(questsRef);
-    
+
     const quests = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
+
     return quests;
   } catch (error) {
     console.error('❌ Error fetching quests:', error);
@@ -377,7 +387,7 @@ export const updateQuest = async (questId, questData, characterId = CHARACTER_ID
   try {
     const questRef = doc(db, 'main', characterId, 'quests', questId);
     await setDoc(questRef, questData, { merge: true });
-    
+
     console.log('✅ Quest updated:', questId);
     return { success: true, id: questId };
   } catch (error) {
@@ -390,7 +400,7 @@ export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
   try {
     const questRef = doc(db, 'main', characterId, 'quests', questId);
     await deleteDoc(questRef);
-    
+
     console.log('✅ Quest deleted:', questId);
     return { success: true, id: questId };
   } catch (error) {
@@ -408,42 +418,42 @@ export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
 
     // Generate datetime-based document ID using Vietnam timezone (UTC+7)
     const now = new Date();
-    const datetimeId = now.toLocaleString('sv-SE', { 
+    const datetimeId = now.toLocaleString('sv-SE', {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
-      month: '2-digit', 
+      month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     }).replace(' ', '_').replace(/:/g, '-'); // Format: YYYY-MM-DD_HH-MM-SS (Vietnam time)
-    
+
     const dataToSave = {
       caption: journalData.caption.trim(),
       createAt: serverTimestamp() // Note: keeping original typo from DB schema
     };
-    
+
     console.log('💾 Creating journal entry with Vietnam timezone ID:', datetimeId);
     console.log('📝 Data:', dataToSave);
     console.log('📍 Document: main/' + characterId + '/journal/' + datetimeId);
     console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-    
+
     // Use setDoc with custom document ID instead of addDoc
     const journalDocRef = doc(db, 'main', characterId, 'journal', datetimeId);
     await setDoc(journalDocRef, dataToSave);
-    
+
     console.log('✅ Journal entry created with Vietnam timezone ID:', datetimeId);
-    
+
     // Update history collection with journal reference
     await updateTodayHistory(characterId, datetimeId);
-    
+
     return { success: true, id: datetimeId, data: dataToSave };
-    
+
   } catch (error) {
     console.error('❌ Firestore Error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
-    
+
     throw new Error(`Firestore error: ${error.message}`);
   }
 };
@@ -453,20 +463,20 @@ const updateTodayHistory = async (characterId, journalId) => {
     // Get today's date as document ID (YYYY-MM-DD format)
     const today = new Date().toISOString().split('T')[0];
     const journalPath = `/main/${characterId}/journal/${journalId}`;
-    
+
     console.log('📅 Updating history for date:', today);
     console.log('📝 Adding journal path:', journalPath);
-    
+
     const historyRef = doc(db, 'main', characterId, 'history', today);
-    
+
     // Check if history document exists for today
     const historySnap = await getDoc(historyRef);
-    
+
     if (historySnap.exists()) {
       // Add to existing journals array
       const currentJournals = historySnap.data().journals || [];
       const updatedJournals = [...currentJournals, journalPath];
-      
+
       await setDoc(historyRef, { journals: updatedJournals }, { merge: true });
       console.log('✅ Updated existing history document');
     } else {
@@ -474,7 +484,7 @@ const updateTodayHistory = async (characterId, journalId) => {
       await setDoc(historyRef, { journals: [journalPath] });
       console.log('✅ Created new history document');
     }
-    
+
   } catch (error) {
     console.error('❌ Error updating history:', error);
     // Don't throw error here - journal was saved successfully
