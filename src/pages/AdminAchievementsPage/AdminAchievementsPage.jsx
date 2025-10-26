@@ -3,6 +3,8 @@ import './AdminAchievementsPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfirmModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
+import IconPicker from '../../components/IconPicker/IconPicker';
+import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -647,14 +649,10 @@ const AdminAchievementsPage = ({ onBack }) => {
 
             <div className="form-group">
               <label htmlFor="icon">Icon *</label>
-              <input
-                type="text"
-                id="icon"
-                name="icon"
+              <IconPicker
                 value={formData.icon}
                 onChange={handleChange}
-                placeholder="e.g., 🎨"
-                required
+                placeholder="Search icons... (e.g., trophy, star, medal)"
               />
             </div>
 
@@ -758,7 +756,9 @@ const AdminAchievementsPage = ({ onBack }) => {
                 return (
                   <div key={achievement.id} className="achievement-row">
                     <div className="achievement-cell icon-cell">
-                      <span className="achievement-icon">{achievement.icon}</span>
+                      <span className="achievement-icon">
+                        <IconRenderer iconName={achievement.icon} size={32} />
+                      </span>
                     </div>
 
                     <div className="achievement-cell main-cell">
@@ -786,12 +786,10 @@ const AdminAchievementsPage = ({ onBack }) => {
                           </div>
                           <div className="form-group">
                             <label>Icon *</label>
-                            <input
-                              type="text"
-                              name="icon"
+                            <IconPicker
                               value={formData.icon}
                               onChange={handleChange}
-                              required
+                              placeholder="Search icons..."
                             />
                           </div>
                           <div className="form-group">

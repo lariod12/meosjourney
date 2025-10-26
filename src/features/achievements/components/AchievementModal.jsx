@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 
 const AchievementModal = ({ achievement, onClose }) => {
   useEffect(() => {
@@ -24,7 +25,9 @@ const AchievementModal = ({ achievement, onClose }) => {
         {achievement.completed && (
           <div className="achievement-modal-status completed">✓ COMPLETED</div>
         )}
-        <div className="achievement-modal-icon">{achievement.icon}</div>
+        <div className="achievement-modal-icon">
+          <IconRenderer iconName={achievement.icon} size={48} />
+        </div>
         <div className="achievement-modal-title">{achievement.name}</div>
         <div className="achievement-modal-description">
           {achievement.description || achievement.desc}

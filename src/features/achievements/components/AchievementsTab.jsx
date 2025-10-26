@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCharacter } from '../../../contexts';
 import AchievementModal from './AchievementModal';
+import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 
 const AchievementsTab = () => {
   const data = useCharacter();
@@ -39,7 +40,9 @@ const AchievementsTab = () => {
             }}
           >
             {achievement.completed && <div className="achievement-check">✓</div>}
-            <div className="achievement-icon">{achievement.icon}</div>
+            <div className="achievement-icon">
+              <IconRenderer iconName={achievement.icon} size={32} />
+            </div>
             <div className="achievement-name">{achievement.name}</div>
           </div>
         ))}
