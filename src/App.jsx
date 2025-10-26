@@ -25,7 +25,7 @@ const HomePage = () => {
     <CharacterProvider data={data}>
       <div className="bg-pattern"></div>
       <div className="container">
-        <CharacterSheet onNavigateToNotes={() => navigate('/notes/meos05')} />
+        <CharacterSheet onNavigateToNotes={() => navigate('/user/meos05')} />
       </div>
     </CharacterProvider>
   );
@@ -38,7 +38,7 @@ const App = () => {
     <Router basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/notes/meos05" element={<DailyUpdatePage onBack={() => window.history.back()} />} />
+        <Route path="/user/meos05" element={<DailyUpdatePage onBack={() => window.history.back()} />} />
         <Route path="/admin/meos05" element={<AdminAchievementsPage onBack={() => window.history.back()} />} />
       </Routes>
     </Router>
