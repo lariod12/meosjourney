@@ -73,17 +73,13 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
     const { scrollTop, scrollHeight, clientHeight } = dropdown;
     const scrollBottom = scrollHeight - scrollTop - clientHeight;
 
-    console.log('Scroll event:', { scrollTop, scrollHeight, clientHeight, scrollBottom });
-
     // Load more when near bottom (within 100px)
     if (scrollBottom < 100 && displayCount < ALL_ICON_NAMES.length) {
-      console.log('Loading more icons...', displayCount, '->', displayCount + ICONS_PER_PAGE);
       setDisplayCount(prev => Math.min(prev + ICONS_PER_PAGE, ALL_ICON_NAMES.length));
     }
   };
 
   const handleIconSelect = (iconName) => {
-    console.log('Icon selected:', iconName);
     onChange({ target: { name: 'icon', value: iconName } });
     setSearchTerm('');
     setIsOpen(false);
@@ -91,7 +87,6 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
   };
 
   const handleShowAll = () => {
-    console.log('Show all icons clicked');
     setShowAll(true);
     setIsOpen(true);
     setSearchTerm('');
