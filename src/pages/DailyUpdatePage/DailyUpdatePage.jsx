@@ -15,6 +15,7 @@ import {
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage } from '../../services/storage';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
+import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 const SESSION_KEY = 'meos05_access';
 
@@ -486,8 +487,10 @@ const DailyUpdate = ({ onBack }) => {
       achievementId: achievement.id,
       achievementTitle: achievement.name,
       achievementDesc: achievement.desc || '',
+      achievementIcon: achievement.icon || '',
       achievementXp: achievement.xp,
       achievementSpecialReward: achievement.specialReward || '',
+      achievementDueDate: achievement.dueDate || null,
       description: '',
       image: null,
       imagePreview: null
@@ -896,8 +899,12 @@ const DailyUpdate = ({ onBack }) => {
                               onClick={() => handleAddAchievementSubmission(achievement)}
                             >
                               <span className="quest-dropdown-title">
-                                {achievement.name}
+                                {achievement.icon && (
+                                  <IconRenderer iconName={achievement.icon} size={20} />
+                                )}
+                                {' '}{achievement.name}
                                 {hasConfirm && <span className="confirmation-badge">📝 Pending</span>}
+                                {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
                               </span>
                               <span className="quest-dropdown-xp">
                                 {achievement.xp > 0 && `+${achievement.xp} XP`}
@@ -923,13 +930,19 @@ const DailyUpdate = ({ onBack }) => {
                       <div className="quest-submission-header">
                         <div className="quest-submission-info">
                           <h3 className="quest-submission-title">
-                            🏆 {submission.achievementTitle}
+                            {submission.achievementIcon && (
+                              <IconRenderer iconName={submission.achievementIcon} size={24} />
+                            )}
+                            {' '}{submission.achievementTitle}
                             {submission.achievementXp > 0 && <span className="quest-xp-badge">+{submission.achievementXp} XP</span>}
                             {submission.achievementSpecialReward && <span className="quest-xp-badge">🎁 {submission.achievementSpecialReward}</span>}
                             {hasConfirm && <span className="quest-status-badge pending">📝 Pending Review</span>}
                           </h3>
                           {submission.achievementDesc && (
                             <p className="quest-submission-desc">{submission.achievementDesc}</p>
+                          )}
+                          {submission.achievementDueDate && (
+                            <p className="quest-submission-desc">📅 Due: {submission.achievementDueDate}</p>
                           )}
                         </div>
                         <button

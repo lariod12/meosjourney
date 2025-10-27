@@ -24,7 +24,7 @@ inclusion: always
 - Consistent visual language across components
 
 ## Development Standards
-- Follow README.md guidelines first
+- read file README.md guidelines first to know context and conventions in this project
 - Add console.log for UI interactions (debugging aid)
 - React best practices and conventions
 - Component scalability and maintainability focus
