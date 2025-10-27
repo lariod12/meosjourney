@@ -98,7 +98,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       caption,
       currentXP: Number.parseInt(profile?.currentXP, 10) || 0,
       level: Number.parseInt(profile?.level, 10) || 0,
-      maxXP: typeof config?.maxXP === 'number' ? config.maxXP : base.maxXP,
+      maxXP: Number.parseInt(profile?.maxXP, 10) || base.maxXP,
       skills,
       interests,
       introduce,
