@@ -909,6 +909,18 @@ body {
     padding-bottom: 0;
 }
 
+.history-empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Kalam', cursive;
+    font-size: 1.1rem;
+    padding: 60px 20px;
+    min-height: 250px;
+    color: var(--gray-medium);
+}
+
 /* === ACHIEVEMENT TAB === */
 .achievements-grid {
     display: grid;

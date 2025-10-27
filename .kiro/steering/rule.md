@@ -52,3 +52,6 @@ Meo's Journey is a React-based RPG character sheet with a black & white sketch a
 - Test on mobile devices and various screen sizes
 - Maintain sketch aesthetic in all interactive states (hover, active, focus)
 
+## Notes
+- Current System Info Window 11 
+- Do not run dev because server is already running 
