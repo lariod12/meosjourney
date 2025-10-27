@@ -104,8 +104,9 @@ blog-art-minimal/
 │   └── avatars/           # Custom avatar images
 ├── src/
 │   ├── assets/
-│   │   └── styles/
-│   │       └── global.css # Global styles
+│   │   └── images/        # Static images, icons, fonts
+│   ├── styles/
+│   │   └── global.css     # Global styles
 │   ├── components/        # React components
 │   │   ├── Avatar.jsx
 │   │   ├── StatusBox.jsx
@@ -164,7 +165,7 @@ Edit `src/components/Footer.jsx` to change social media links.
 
 ### Styling
 
-Global styles are in `src/assets/styles/global.css`. The project uses:
+Global styles are in `src/styles/global.css`. The project uses:
 - **Fonts**: Architects Daughter, Kalam, Patrick Hand (via Google Fonts)
 - **Colors**: Pure black (#000000), white (#ffffff), and grayscale
 - **Layout**: CSS Grid for responsive two-column layout
@@ -464,9 +465,9 @@ All interactive elements should follow this pattern:
    .quest-modal-header { }
    ```
 
-2. **Global Classes**: Only define in `global.css`
+2. **Global Classes**: Only define in `src/styles/global.css`
    ```css
-   /* In global.css - safe to use anywhere */
+   /* In src/styles/global.css - safe to use anywhere */
    .btn-primary { }
    .text-center { }
    .container { }

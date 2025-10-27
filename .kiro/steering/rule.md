@@ -29,14 +29,15 @@ Meo's Journey is a React-based RPG character sheet with a black & white sketch a
 
 ## CSS Class Naming Convention
 - **Component-specific classes**: Always prefix with component name (e.g., `.admin-container`, `.quest-modal-header`)
-- **Global classes**: Only define in `src/assets/styles/global.css`
+- **Global classes**: Only define in `src/styles/global.css`
 - **Never reuse generic names** like `.empty-message`, `.container` in component CSS files
 - Use BEM-like naming: `.component-element-modifier`
 
 ## File Organization
 - Documentation: `local/` folder (except root README.md)
 - Component CSS: Co-located with components, use prefixed class names
-- Global styles: Single file `src/assets/styles/global.css` (imported in App.jsx)
+- Global styles: Single file `src/styles/global.css` (imported in App.jsx)
+- Static assets: `src/assets/` for images, fonts, icons only
 - Firebase data: Reference `local/firestore_data_*.json` for current structure
 
 ## Database Operations

@@ -6,7 +6,7 @@ import { fetchCharacterViewData, CHARACTER_ID } from './services';
 import CharacterSheet from './pages/HomePage';
 import DailyUpdatePage from './pages/DailyUpdatePage';
 import AdminAchievementsPage from './pages/AdminAchievementsPage';
-import './assets/styles/global.css';
+import './styles/global.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
