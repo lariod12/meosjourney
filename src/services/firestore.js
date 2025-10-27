@@ -226,7 +226,7 @@ export const updateAchievement = async (achievementId, achievementData, characte
     // Just update existing document, don't change ID
     // Achievement ID includes date suffix and should not be changed
     const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
-    
+
     // Get the old document to check if it exists
     const oldDoc = await getDoc(achievementRef);
     if (!oldDoc.exists()) {

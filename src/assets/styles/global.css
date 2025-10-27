@@ -856,6 +856,35 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 20px;
     padding: 15px;
+    min-height: 300px;
+}
+
+/* Empty and Loading States - Centered */
+.achievements-grid .loading-message,
+.achievements-grid .empty-message {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Kalam', cursive;
+    font-size: 1.1rem;
+    color: var(--gray-medium);
+    padding: 60px 20px;
+    min-height: 250px;
+}
+
+.achievements-grid .loading-message {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 .achievement-item {

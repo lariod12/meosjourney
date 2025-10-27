@@ -22,7 +22,7 @@ const AchievementsTab = () => {
   if (data.achievements.length === 0) {
     return (
       <div className="achievements-grid">
-        <div className="empty-message">No achievements found. Create some achievements in the admin panel!</div>
+        <div className="empty-message">No achievements found.</div>
       </div>
     );
   }
