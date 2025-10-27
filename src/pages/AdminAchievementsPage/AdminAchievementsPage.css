@@ -880,6 +880,7 @@
   border: 3px solid #000000;
   cursor: pointer;
   transition: all 0.3s;
+  min-height: 48px;
 }
 
 .btn-pass {
@@ -908,6 +909,33 @@
 
 .btn-pass:disabled,
 .btn-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Cancel button in review actions */
+.review-actions .btn-secondary {
+  background-color: #ffffff;
+  color: #000000;
+  border: 3px solid #000000;
+  padding: 14px 25px;
+  font-size: 18px;
+  font-family: 'Kalam', cursive;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-height: 48px;
+}
+
+.review-actions .btn-secondary:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 #666666;
+}
+
+.review-actions .btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
@@ -1173,4 +1201,138 @@
   border: 3px solid #000000;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+
+/* ========================================
+   Mobile Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 16px;
+  }
+
+  .admin-header {
+    padding: 24px 16px;
+  }
+
+  .admin-header .back-link {
+    left: 12px;
+    top: 12px;
+    font-size: 16px;
+    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .admin-header .refresh-button {
+    right: 12px;
+    top: 12px;
+    font-size: 20px;
+    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .admin-header h1 {
+    font-size: 36px;
+  }
+
+  .dropdown-toggle {
+    padding: 14px 16px;
+    font-size: 17px;
+    min-height: 48px;
+  }
+
+  /* Form elements */
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    padding: 12px 14px !important;
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+
+  /* Buttons */
+  button {
+    padding: 14px 16px !important;
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+
+  /* Action buttons */
+  .form-actions,
+  .modal-actions,
+  .button-group,
+  .review-actions {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .form-actions button,
+  .modal-actions button,
+  .button-group button,
+  .review-actions button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-container {
+    padding: 12px;
+  }
+
+  .admin-header {
+    padding: 20px 12px;
+  }
+
+  .admin-header .back-link {
+    left: 8px;
+    top: 8px;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .admin-header .refresh-button {
+    right: 8px;
+    top: 8px;
+    font-size: 18px;
+    padding: 6px 10px;
+  }
+
+  .admin-header h1 {
+    font-size: 28px;
+  }
+
+  .dropdown-toggle {
+    padding: 12px 14px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  button {
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    min-height: 44px;
+  }
+
+  .form-actions,
+  .modal-actions,
+  .button-group,
+  .review-actions {
+    gap: 10px !important;
+  }
 }

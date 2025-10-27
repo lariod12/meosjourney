@@ -698,3 +698,291 @@ body {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+
+/* ========================================
+   Mobile Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .notes-container {
+    padding: 16px;
+  }
+
+  .notes-header {
+    padding: 24px 16px;
+  }
+
+  .back-link {
+    left: 12px;
+    top: 12px;
+    font-size: 16px;
+    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .refresh-button {
+    right: 12px;
+    top: 12px;
+    font-size: 20px;
+    padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .update-form {
+    padding: 24px 16px;
+  }
+
+  .form-section h2,
+  .section-title {
+    font-size: 24px;
+  }
+
+  .quest-submission-form {
+    padding: 20px 15px;
+  }
+
+  .quest-submission-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .quest-submission-info {
+    width: 100%;
+  }
+
+  .quest-submission-title {
+    font-size: 20px;
+    flex-wrap: wrap;
+  }
+
+  .quest-xp-badge {
+    font-size: 14px;
+    padding: 3px 10px;
+  }
+
+  .btn-remove-quest {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .image-preview {
+    max-height: 300px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 18px;
+  }
+
+  /* Dropdown improvements */
+  .quest-dropdown {
+    max-height: 250px;
+  }
+
+  .quest-dropdown-item {
+    padding: 14px 16px;
+    min-height: 48px;
+  }
+
+  .btn-add-quest {
+    min-height: 48px;
+    font-size: 17px;
+  }
+
+  .btn-upload-image {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .btn-remove-image {
+    min-height: 44px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .notes-container {
+    padding: 12px;
+  }
+
+  .notes-header {
+    padding: 20px 12px;
+  }
+
+  .back-link {
+    left: 8px;
+    top: 8px;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .refresh-button {
+    right: 8px;
+    top: 8px;
+    font-size: 18px;
+    padding: 6px 10px;
+  }
+
+  .update-form {
+    padding: 20px 12px;
+  }
+
+  .form-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+  }
+
+  .form-section h2,
+  .section-title {
+    font-size: 22px;
+    padding: 8px 0;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group input[type="number"],
+  .form-group select,
+  .form-group textarea {
+    padding: 12px 14px;
+    font-size: 16px;
+    border-width: 2px;
+  }
+
+  .form-group textarea {
+    min-height: 150px;
+  }
+
+  .select-display {
+    padding: 12px 14px;
+    font-size: 16px;
+    border-width: 2px;
+  }
+
+  .select-options {
+    border-width: 2px;
+    max-height: 200px;
+  }
+
+  .select-option {
+    padding: 10px 14px;
+  }
+
+  .quest-dropdown {
+    max-height: 200px;
+    border-width: 2px;
+  }
+
+  .quest-dropdown-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .quest-dropdown-title {
+    font-size: 15px;
+    width: 100%;
+  }
+
+  .quest-dropdown-xp {
+    margin-left: 0;
+    font-size: 13px;
+  }
+
+  .quest-submission-form {
+    padding: 16px 12px;
+    border-width: 2px;
+  }
+
+  .quest-submission-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .quest-submission-title {
+    font-size: 18px;
+    gap: 6px;
+  }
+
+  .quest-xp-badge,
+  .quest-status-badge {
+    font-size: 13px;
+    padding: 2px 8px;
+  }
+
+  .btn-remove-quest {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+
+  .btn-add-quest {
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .btn-upload-image {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+
+  .btn-remove-image {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .image-upload-placeholder {
+    padding: 30px 16px;
+    border-width: 2px;
+  }
+
+  .image-preview-container {
+    padding: 8px;
+    border-width: 2px;
+  }
+
+  .image-preview {
+    max-height: 250px;
+  }
+
+  .form-actions {
+    gap: 10px;
+    margin-top: 30px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 20px;
+    font-size: 17px;
+    border-width: 2px;
+  }
+
+  .confirmation-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .no-quests-message {
+    font-size: 15px;
+    padding: 16px;
+  }
+}

@@ -127,23 +127,117 @@
   box-shadow: 0 2px 0 #666666;
 }
 
-@media (max-width: 480px) {
-  .delete-modal-container {
-    margin: 10px;
-    max-width: none;
+@media (max-width: 768px) {
+  .delete-modal-overlay {
+    padding: 16px;
   }
-  
+
+  .delete-modal-container {
+    max-width: 100%;
+    transform: rotate(0deg);
+    box-shadow: 4px 4px 0 #000000;
+  }
+
+  .delete-modal-header {
+    transform: rotate(0deg);
+    padding: 16px 20px;
+  }
+
+  .delete-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .delete-modal-content {
+    padding: 24px 20px;
+  }
+
+  .delete-warning {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+
+  .delete-achievement-name {
+    font-size: 19px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    transform: rotate(0deg);
+  }
+
+  .delete-notice {
+    font-size: 15px;
+  }
+
   .delete-modal-actions {
     flex-direction: column;
+    padding: 0 20px 20px 20px;
+    gap: 12px;
   }
   
   .delete-btn-cancel,
   .delete-btn-confirm {
+    width: 100%;
     transform: rotate(0deg);
+    font-size: 17px;
+    padding: 14px 16px;
+    min-height: 48px;
   }
   
   .delete-btn-cancel:hover,
   .delete-btn-confirm:hover {
     transform: translateY(-2px);
+  }
+
+  .delete-btn-cancel:active,
+  .delete-btn-confirm:active {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .delete-modal-overlay {
+    padding: 12px;
+  }
+
+  .delete-modal-container {
+    box-shadow: 3px 3px 0 #000000;
+  }
+
+  .delete-modal-header {
+    padding: 14px 16px;
+  }
+
+  .delete-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .delete-modal-content {
+    padding: 20px 16px;
+  }
+
+  .delete-warning {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .delete-achievement-name {
+    font-size: 18px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+  }
+
+  .delete-notice {
+    font-size: 14px;
+  }
+
+  .delete-modal-actions {
+    padding: 0 16px 16px 16px;
+    gap: 10px;
+  }
+
+  .delete-btn-cancel,
+  .delete-btn-confirm {
+    font-size: 16px;
+    padding: 12px 14px;
+    min-height: 44px;
   }
 }

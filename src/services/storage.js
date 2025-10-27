@@ -60,7 +60,7 @@ export const uploadQuestImage = async (file, characterId, questId) => {
     // Generate unique filename with timestamp
     const timestamp = Date.now();
     const fileName = `${timestamp}.webp`; // Always use .webp extension
-    
+
     // Create storage path
     const storagePath = `quest-images/${characterId}/${questId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
@@ -102,7 +102,7 @@ export const deleteQuestImage = async (storagePath) => {
       console.warn('⚠️ Image not found, may have been deleted already:', storagePath);
       return;
     }
-    
+
     console.error('❌ Error deleting image:', error);
     throw new Error(`Failed to delete image: ${error.message}`);
   }
@@ -135,7 +135,7 @@ export const uploadJournalImage = async (file, characterId, journalId) => {
 
     const timestamp = Date.now();
     const fileName = `${timestamp}.webp`; // Always use .webp extension
-    
+
     const storagePath = `journal-images/${characterId}/${journalId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
@@ -176,14 +176,14 @@ export const uploadAvatarImage = async (file, characterId) => {
     }
 
     // Compress avatar with smaller size and dimensions
-    const compressedFile = await compressImage(file, { 
+    const compressedFile = await compressImage(file, {
       maxSizeMB: 0.5,           // Smaller size for avatars
       maxWidthOrHeight: 512     // Avatars don't need to be large
     });
 
     const timestamp = Date.now();
     const fileName = `avatar_${timestamp}.webp`; // Always use .webp extension
-    
+
     const storagePath = `avatars/${characterId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
@@ -238,17 +238,17 @@ export const uploadQuestConfirmImage = async (file, questName) => {
 
     // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
     const now = new Date();
-    const dateSuffix = now.toLocaleString('sv-SE', { 
+    const dateSuffix = now.toLocaleString('sv-SE', {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: '2-digit',
-      month: '2-digit', 
+      month: '2-digit',
       day: '2-digit'
     }).replace(/-/g, ''); // Format: YYMMDD
 
     // Generate filename: name_YYMMDD_{timestamp}.webp
     const timestamp = Date.now();
     const fileName = `${sanitizedQuestName}_${dateSuffix}_${timestamp}.webp`;
-    
+
     // Storage path: quests-confirm/{name_YYMMDD_{timestamp}.webp}
     const storagePath = `quests-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
@@ -305,7 +305,7 @@ export const uploadAchievementConfirmImage = async (file, achievementName) => {
 
     const timestamp = Date.now();
     const fileName = `${sanitizedAchievementName}_${timestamp}.webp`;
-    
+
     // Storage path: achievements-confirm/{achievementName}_{timestamp}.webp
     const storagePath = `achievements-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
@@ -342,10 +342,10 @@ export const getStoragePathFromUrl = (url) => {
 
     // Firebase Storage URL format:
     // https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?alt=media&token={token}
-    
+
     const urlObj = new URL(url);
     const pathMatch = urlObj.pathname.match(/\/o\/(.+)/);
-    
+
     if (pathMatch && pathMatch[1]) {
       // Decode the path (Firebase encodes it)
       const encodedPath = pathMatch[1].split('?')[0];
@@ -368,7 +368,7 @@ export const getStoragePathFromUrl = (url) => {
 export const deleteImageByUrl = async (downloadUrl) => {
   try {
     const storagePath = getStoragePathFromUrl(downloadUrl);
-    
+
     if (!storagePath) {
       throw new Error('Could not extract storage path from URL');
     }
