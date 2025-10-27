@@ -7,6 +7,8 @@ const AchievementsTab = () => {
   const data = useCharacter();
   const [selectedAchievement, setSelectedAchievement] = useState(null);
 
+  console.log('🎮 AchievementsTab - Total achievements:', data.achievements?.length || 0);
+
   // Handle loading state
   if (!data.achievements) {
     return (
@@ -29,7 +31,9 @@ const AchievementsTab = () => {
     <>
       <div className="achievements-grid">
         {data.achievements.map(achievement => {
-          const isCompleted = achievement.completedAt !== null;
+          // Check completion status from completedAt field
+          const isCompleted = achievement.completedAt !== null && achievement.completedAt !== undefined;
+          
           return (
             <div
               key={achievement.id}

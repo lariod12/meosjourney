@@ -68,8 +68,12 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       timestamp: statusTimestamp
     } : base.status || {};
 
-    // Process achievements data - use database achievements if available, otherwise fallback to base
-    const achievementsData = achievements && achievements.length > 0 ? achievements : base.achievements || [];
+    // Process achievements data - ALWAYS use database achievements
+    // Map achievements to include completedAt status
+    const achievementsData = achievements.map(achievement => ({
+      ...achievement,
+      completed: achievement.completedAt !== null
+    }));
 
     return {
       ...base,
@@ -88,10 +92,10 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     };
   } catch (error) {
     console.error('❌ Error in fetchCharacterViewData:', error);
-    // Return base data with fallback achievements on error
+    // Return base data with empty achievements on error
     return {
       ...base,
-      achievements: base.achievements || []
+      achievements: []
     };
   }
 };
@@ -187,8 +191,6 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
     // Use setDoc with achievement name + date as document ID
     const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
     await setDoc(achievementDocRef, dataToSave);
-
-    console.log('✅ Achievement created with ID:', achievementId);
 
     return { success: true, id: achievementId, data: dataToSave };
 
@@ -301,8 +303,6 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
 
     const questDocRef = doc(db, 'main', characterId, 'quests', questId);
     await setDoc(questDocRef, dataToSave);
-
-    console.log('✅ Quest created with ID:', questId);
 
     return { success: true, id: questId, data: dataToSave };
 
