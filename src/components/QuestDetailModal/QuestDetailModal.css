@@ -1,0 +1,354 @@
+/* ========================================
+   Quest Detail Modal - Black & White Theme
+   ======================================== */
+
+.quest-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.quest-detail-modal {
+  background: #ffffff;
+  border: 4px solid #000000;
+  max-width: 600px;
+  width: 100%;
+  font-family: 'Kalam', cursive;
+  position: relative;
+  transform: rotate(-0.5deg);
+  box-shadow: 8px 8px 0 #000000;
+  animation: questModalSlide 0.3s ease-out;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes questModalSlide {
+  from {
+    opacity: 0;
+    transform: rotate(-0.5deg) translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-0.5deg) translateY(0) scale(1);
+  }
+}
+
+.quest-detail-header {
+  background: #000000;
+  color: #ffffff;
+  padding: 20px 25px;
+  border-bottom: 3px solid #000000;
+  transform: rotate(0.5deg);
+  margin: -4px -4px 0 -4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quest-detail-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-family: 'Patrick Hand', cursive;
+}
+
+.quest-detail-close {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.quest-detail-close:hover {
+  transform: scale(1.2) rotate(90deg);
+}
+
+.quest-detail-content {
+  padding: 30px 25px;
+  background: #ffffff;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.quest-detail-section {
+  margin-bottom: 25px;
+}
+
+.quest-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.quest-detail-label {
+  display: block;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 16px;
+  font-weight: bold;
+  color: #666666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quest-detail-value {
+  font-size: 18px;
+  color: #000000;
+  line-height: 1.5;
+}
+
+.quest-title {
+  font-family: 'Architects Daughter', cursive;
+  font-size: 22px;
+  font-weight: bold;
+  padding: 12px 16px;
+  border: 3px solid #000000;
+  background-color: #f8f8f8;
+  transform: rotate(-0.5deg);
+}
+
+.quest-description {
+  padding: 15px 18px;
+  border: 2px dashed #000000;
+  background-color: #ffffff;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.quest-xp-value {
+  display: flex;
+  align-items: center;
+}
+
+.xp-badge {
+  display: inline-block;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 8px 16px;
+  border: 3px solid #000000;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 20px;
+  font-weight: bold;
+  transform: rotate(1deg);
+}
+
+.quest-date {
+  font-family: 'Kalam', cursive;
+  font-size: 17px;
+  padding: 10px 14px;
+  border: 2px solid #000000;
+  background-color: #f8f8f8;
+  display: inline-block;
+}
+
+.completed-date {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.quest-detail-footer {
+  padding: 20px 25px;
+  border-top: 2px dashed #cccccc;
+  background: #ffffff;
+}
+
+.btn-close-modal {
+  width: 100%;
+  padding: 15px 20px;
+  font-size: 18px;
+  font-family: 'Patrick Hand', cursive;
+  font-weight: bold;
+  background-color: #ffffff;
+  color: #000000;
+  border: 3px solid #000000;
+  cursor: pointer;
+  transition: all 0.3s;
+  transform: rotate(0.5deg);
+}
+
+.btn-close-modal:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: rotate(0.5deg) translateY(-2px);
+  box-shadow: 0 4px 0 #666666;
+}
+
+.btn-close-modal:active {
+  transform: rotate(0.5deg) translateY(0);
+  box-shadow: 0 2px 0 #666666;
+}
+
+/* ========================================
+   Mobile Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+  .quest-detail-overlay {
+    padding: 16px;
+  }
+
+  .quest-detail-modal {
+    max-width: 100%;
+    transform: rotate(0deg);
+    box-shadow: 4px 4px 0 #000000;
+    max-height: 95vh;
+  }
+
+  .quest-detail-header {
+    transform: rotate(0deg);
+    padding: 16px 20px;
+  }
+
+  .quest-detail-header h2 {
+    font-size: 22px;
+  }
+
+  .quest-detail-close {
+    font-size: 24px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .quest-detail-content {
+    padding: 24px 20px;
+  }
+
+  .quest-detail-section {
+    margin-bottom: 20px;
+  }
+
+  .quest-detail-label {
+    font-size: 15px;
+  }
+
+  .quest-detail-value {
+    font-size: 17px;
+  }
+
+  .quest-title {
+    font-size: 20px;
+    padding: 10px 14px;
+    transform: rotate(0deg);
+  }
+
+  .quest-description {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .xp-badge {
+    font-size: 18px;
+    padding: 6px 14px;
+    transform: rotate(0deg);
+  }
+
+  .quest-date {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+
+  .quest-detail-footer {
+    padding: 16px 20px;
+  }
+
+  .btn-close-modal {
+    font-size: 17px;
+    padding: 14px 16px;
+    min-height: 48px;
+    transform: rotate(0deg);
+  }
+
+  .btn-close-modal:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-close-modal:active {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .quest-detail-overlay {
+    padding: 12px;
+  }
+
+  .quest-detail-modal {
+    box-shadow: 3px 3px 0 #000000;
+  }
+
+  .quest-detail-header {
+    padding: 14px 16px;
+  }
+
+  .quest-detail-header h2 {
+    font-size: 20px;
+  }
+
+  .quest-detail-close {
+    font-size: 22px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .quest-detail-content {
+    padding: 20px 16px;
+  }
+
+  .quest-detail-section {
+    margin-bottom: 18px;
+  }
+
+  .quest-detail-label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .quest-detail-value {
+    font-size: 16px;
+  }
+
+  .quest-title {
+    font-size: 19px;
+    padding: 10px 12px;
+  }
+
+  .quest-description {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .xp-badge {
+    font-size: 17px;
+    padding: 6px 12px;
+  }
+
+  .quest-date {
+    font-size: 15px;
+    padding: 8px 10px;
+  }
+
+  .quest-detail-footer {
+    padding: 14px 16px;
+  }
+
+  .btn-close-modal {
+    font-size: 16px;
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+}

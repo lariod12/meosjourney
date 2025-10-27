@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useCharacter } from '../../../contexts';
+import QuestDetailModal from '../../../components/QuestDetailModal/QuestDetailModal';
 
 const QuestsTab = () => {
   const data = useCharacter();
+  const [selectedQuest, setSelectedQuest] = useState(null);
 
   console.log('🎯 QuestsTab - Total quests:', data.quests?.length || 0);
 
@@ -26,6 +29,16 @@ const QuestsTab = () => {
   const completed = data.quests.filter(q => q.completedAt !== null).length;
   const total = data.quests.length;
 
+  const handleQuestClick = (quest) => {
+    console.log('🎯 Quest clicked:', quest.name);
+    setSelectedQuest(quest);
+  };
+
+  const handleCloseModal = () => {
+    console.log('❌ Closing quest detail modal');
+    setSelectedQuest(null);
+  };
+
   return (
     <>
       <div className="quest-progress">
@@ -35,13 +48,25 @@ const QuestsTab = () => {
         {data.quests.map(quest => {
           const isCompleted = quest.completedAt !== null;
           return (
-            <div key={quest.id} className={`quest-item ${isCompleted ? 'completed' : ''}`}>
+            <div 
+              key={quest.id} 
+              className={`quest-item ${isCompleted ? 'completed' : ''}`}
+              onClick={() => handleQuestClick(quest)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="quest-text">{quest.name}</div>
               <div className="quest-xp">+{quest.xp} XP</div>
             </div>
           );
         })}
       </div>
+
+      {selectedQuest && (
+        <QuestDetailModal 
+          quest={selectedQuest}
+          onClose={handleCloseModal}
+        />
+      )}
     </>
   );
 };

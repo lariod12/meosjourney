@@ -698,11 +698,32 @@ body {
     padding: 12px;
     border: 2px solid var(--black);
     background: var(--white);
-    /* Loại bỏ tất cả tính năng tương tác - chỉ hiển thị read-only */
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-/* Loại bỏ hover effects - quest list chỉ để xem, không tương tác */
-/* .quest-item:hover { ... } - REMOVED */
+/* Hover effect - clickable to view details */
+.quest-item:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--black);
+}
+
+.quest-item:hover .quest-text {
+    color: var(--white);
+}
+
+.quest-item:hover .quest-xp {
+    background: var(--white);
+    color: var(--black);
+    border-color: var(--white);
+}
+
+.quest-item:active {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 var(--black);
+}
 
 .quest-item.completed {
     background: repeating-linear-gradient(
@@ -714,6 +735,11 @@ body {
     );
     text-decoration: line-through;
     opacity: 0.7;
+}
+
+.quest-item.completed:hover {
+    opacity: 0.9;
+    background: var(--black);
 }
 
 /* Checkbox styles - REMOVED (không cần checkbox nữa) */
