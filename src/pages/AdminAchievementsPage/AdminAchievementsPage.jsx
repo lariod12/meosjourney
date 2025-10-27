@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, CHARACTER_ID } from '../../services/firestore';
+import { deleteImageByUrl } from '../../services/storage';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -588,13 +589,11 @@ const AdminAchievementsPage = ({ onBack }) => {
         throw new Error('Quest confirmation not found');
       }
 
-      // 1. Update quest completedAt
+      // Pass: Only update quest completedAt
+      // Keep image and confirmation for record
       await updateQuest(quest.id, {
         completedAt: new Date()
       }, CHARACTER_ID);
-
-      // 2. Delete quest confirmation
-      await deleteQuestConfirmation(quest.name, CHARACTER_ID);
 
       setConfirmModal({
         isOpen: true,
@@ -637,7 +636,19 @@ const AdminAchievementsPage = ({ onBack }) => {
         throw new Error('Quest confirmation not found');
       }
 
-      // Delete quest confirmation only (don't update completedAt)
+      // 1. Delete image from Storage if exists
+      if (confirmation.imgUrl) {
+        try {
+          console.log('🗑️ Deleting quest confirmation image...');
+          await deleteImageByUrl(confirmation.imgUrl);
+          console.log('✅ Image deleted from Storage');
+        } catch (imgError) {
+          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
+          // Continue even if image deletion fails
+        }
+      }
+
+      // 2. Delete quest confirmation from Firestore (don't update completedAt)
       await deleteQuestConfirmation(quest.name, CHARACTER_ID);
 
       setConfirmModal({

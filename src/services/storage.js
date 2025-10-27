@@ -308,3 +308,54 @@ export const uploadAchievementConfirmImage = async (file, achievementName) => {
     throw new Error(`Failed to upload achievement confirmation image: ${error.message}`);
   }
 };
+
+/**
+ * Extract storage path from Firebase Storage URL
+ * @param {string} url - Firebase Storage download URL
+ * @returns {string|null} - Storage path or null if invalid
+ */
+export const getStoragePathFromUrl = (url) => {
+  try {
+    if (!url) return null;
+
+    // Firebase Storage URL format:
+    // https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?alt=media&token={token}
+    
+    const urlObj = new URL(url);
+    const pathMatch = urlObj.pathname.match(/\/o\/(.+)/);
+    
+    if (pathMatch && pathMatch[1]) {
+      // Decode the path (Firebase encodes it)
+      const encodedPath = pathMatch[1].split('?')[0];
+      const decodedPath = decodeURIComponent(encodedPath);
+      return decodedPath;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('❌ Error extracting storage path from URL:', error);
+    return null;
+  }
+};
+
+/**
+ * Delete image from Firebase Storage using download URL
+ * @param {string} downloadUrl - Firebase Storage download URL
+ * @returns {Promise<void>}
+ */
+export const deleteImageByUrl = async (downloadUrl) => {
+  try {
+    const storagePath = getStoragePathFromUrl(downloadUrl);
+    
+    if (!storagePath) {
+      throw new Error('Could not extract storage path from URL');
+    }
+
+    await deleteQuestImage(storagePath);
+    console.log('✅ Image deleted by URL:', downloadUrl);
+
+  } catch (error) {
+    console.error('❌ Error deleting image by URL:', error);
+    throw error;
+  }
+};

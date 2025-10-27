@@ -5,7 +5,6 @@ import {
   saveStatus, 
   saveJournal, 
   fetchQuests, 
-  fetchQuestConfirmations,
   saveQuestConfirmation,
   CHARACTER_ID 
 } from '../../services/firestore';
@@ -53,42 +52,18 @@ const DailyUpdate = ({ onBack }) => {
   const [questsExpanded, setQuestsExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config, quests, and quest confirmations from Firestore
+    // Load config and quests from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
-      fetchQuests(CHARACTER_ID),
-      fetchQuestConfirmations(CHARACTER_ID)
+      fetchQuests(CHARACTER_ID)
     ])
-      .then(([cfg, quests, confirmations]) => {
+      .then(([cfg, quests]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
         
-        // Create a Set of quest names that have confirmations (today)
-        // Quest confirmation ID format: {sanitized_name}_{YYMMDD}
-        const today = new Date();
-        const todaySuffix = today.toLocaleString('sv-SE', {
-          timeZone: 'Asia/Ho_Chi_Minh',
-          year: '2-digit',
-          month: '2-digit',
-          day: '2-digit'
-        }).replace(/-/g, '');
-        
-        const confirmedQuestNames = new Set(
-          confirmations
-            .filter(c => c.id.endsWith(`_${todaySuffix}`))
-            .map(c => c.name)
-        );
-        
-        console.log('📋 Quest confirmations today:', confirmedQuestNames.size);
-        
-        // Filter quests that:
-        // 1. Don't have confirmation yet today
-        // 2. Are not completed (completedAt === null)
-        const availableQuests = quests.filter(q => 
-          !confirmedQuestNames.has(q.name) && q.completedAt === null
-        );
+        // Filter only incomplete quests (completedAt === null)
+        const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
-        console.log('📋 Available quests (not confirmed today & not completed):', availableQuests.length);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
@@ -268,30 +243,10 @@ const DailyUpdate = ({ onBack }) => {
             }));
             // Clear quest submissions
             setSelectedQuestSubmissions([]);
-            // Reload quests and confirmations to update available list
-            Promise.all([
-              fetchQuests(CHARACTER_ID),
-              fetchQuestConfirmations(CHARACTER_ID)
-            ]).then(([quests, confirmations]) => {
-              // Filter quests that don't have confirmation today
-              const today = new Date();
-              const todaySuffix = today.toLocaleString('sv-SE', {
-                timeZone: 'Asia/Ho_Chi_Minh',
-                year: '2-digit',
-                month: '2-digit',
-                day: '2-digit'
-              }).replace(/-/g, '');
-              
-              const confirmedQuestNames = new Set(
-                confirmations
-                  .filter(c => c.id.endsWith(`_${todaySuffix}`))
-                  .map(c => c.name)
-              );
-              
-              // Filter quests that don't have confirmation today AND are not completed
-              const availableQuests = quests.filter(q => 
-                !confirmedQuestNames.has(q.name) && q.completedAt === null
-              );
+            // Reload quests to update available list
+            fetchQuests(CHARACTER_ID).then(quests => {
+              // Filter only incomplete quests
+              const availableQuests = quests.filter(q => q.completedAt === null);
               setAvailableQuests(availableQuests);
               console.log('🔄 Reloaded quests, available:', availableQuests.length);
             });

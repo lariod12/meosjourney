@@ -488,7 +488,10 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
     };
 
     const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    // setDoc will overwrite if document already exists (same quest submitted multiple times today)
     await setDoc(confirmRef, dataToSave);
+
+    console.log('✅ Quest confirmation saved (overwritten if existed):', docId);
 
     return { success: true, id: docId };
 
