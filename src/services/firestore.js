@@ -26,12 +26,13 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
 
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
   try {
-    const [profile, config, status, achievements, quests] = await Promise.all([
+    const [profile, config, status, achievements, quests, journals] = await Promise.all([
       fetchProfile(characterId),
       fetchConfig(characterId),
       fetchStatus(characterId),
       fetchAchievements(characterId),
-      fetchQuests(characterId)
+      fetchQuests(characterId),
+      fetchJournals(characterId)
     ]);
 
     const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
@@ -87,6 +88,10 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
 
     console.log(`✅ Loaded ${questsData.length} quests from database`);
 
+    // Process journals data - ALWAYS use database journals
+    const journalsData = journals || [];
+    console.log(`✅ Loaded ${journalsData.length} journal entries from database`);
+
     return {
       ...base,
       name,
@@ -100,6 +105,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       status: statusData,
       achievements: achievementsData,
       quests: questsData,
+      journal: journalsData,
       moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
       locationOptions: Array.isArray(config?.locationOptions) ? config.locationOptions : [],
     };
@@ -109,7 +115,8 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     return {
       ...base,
       achievements: [],
-      quests: []
+      quests: [],
+      journal: []
     };
   }
 };
@@ -368,6 +375,48 @@ export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
   } catch (error) {
     console.error('❌ Error deleting quest:', error);
     throw new Error(`Firestore error: ${error.message}`);
+  }
+};
+
+export const fetchJournals = async (characterId = CHARACTER_ID) => {
+  try {
+    const journalsRef = collection(db, 'main', characterId, 'journal');
+    const snapshot = await getDocs(journalsRef);
+
+    const journals = snapshot.docs.map(doc => {
+      const data = doc.data();
+      let timestamp = new Date();
+
+      // Handle Firestore Timestamp
+      if (data.createAt) {
+        if (typeof data.createAt.toDate === 'function') {
+          timestamp = data.createAt.toDate();
+        } else if (data.createAt instanceof Date) {
+          timestamp = data.createAt;
+        } else {
+          timestamp = new Date(data.createAt);
+        }
+      }
+
+      return {
+        id: doc.id,
+        entry: data.caption || '',
+        time: timestamp.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+        timestamp: timestamp
+      };
+    });
+
+    // Sort by timestamp descending (newest first)
+    journals.sort((a, b) => b.timestamp - a.timestamp);
+
+    return journals;
+  } catch (error) {
+    console.error('❌ Error fetching journals:', error);
+    return [];
   }
 };
 

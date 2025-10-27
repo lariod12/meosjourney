@@ -37,52 +37,7 @@ export const characterData = {
 
     quests: [],
     
-    journal: [
-        {
-            time: "07:00 AM",
-            entry: "Woke up early feeling energized. Morning coffee and planning out today's tasks."
-        },
-        {
-            time: "08:30 AM",
-            entry: "Quest Completed: Exercise for 30 minutes (+80 XP)"
-        },
-        {
-            time: "09:30 AM",
-            entry: "Started working on coding challenges. Currently on challenge 1 of 3. Focus mode activated!"
-        },
-        {
-            time: "11:00 AM",
-            entry: "Quest Completed: Review 5 pull requests (+100 XP)"
-        },
-        {
-            time: "12:30 PM",
-            entry: "Lunch break! Tried a new recipe today. Cooking is just another form of creativity."
-        },
-        {
-            time: "02:15 PM",
-            entry: "Working on coding challenge #2. This one is tricky but I'm making progress. Learning a lot about optimization."
-        },
-        {
-            time: "03:45 PM",
-            entry: "Took a break to sketch some character designs. Playing around with different styles and expressions for inspiration."
-        },
-        {
-            time: "05:00 PM",
-            entry: "Started researching new algorithms for today's learning quest. Binary search trees are fascinating!"
-        },
-        {
-            time: "06:30 PM",
-            entry: "Attempted to write documentation for the new feature. Need more clarity on requirements before finishing this quest."
-        },
-        {
-            time: "08:00 PM",
-            entry: "Taking a breather with some gaming. Nothing beats unwinding after a productive day of coding and learning."
-        },
-        {
-            time: "09:30 PM",
-            entry: "Planning to finish that tech book chapter before bed. Almost done with today's reading goal!"
-        }
-    ],
+    journal: [],
 
     achievements: [],
 

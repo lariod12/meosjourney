@@ -21,7 +21,7 @@ const QuestsTab = () => {
   if (data.quests.length === 0) {
     return (
       <div className="quests-list">
-        <div className="empty-message">No quests found. Create some quests in the admin panel!</div>
+        <div className="empty-message">No quests found.</div>
       </div>
     );
   }

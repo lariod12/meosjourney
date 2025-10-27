@@ -788,6 +788,21 @@ body {
     border: 2px dashed var(--black);
     background: var(--white);
     min-height: 150px;
+    display: flex;
+    flex-direction: column;
+}
+
+.journal-content .empty-message {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray-dark);
+    font-style: italic;
+    border: none;
+    background: transparent;
 }
 
 .journal-entry {
