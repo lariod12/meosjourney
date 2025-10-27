@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, CHARACTER_ID } from '../../services/firestore';
+import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -774,17 +775,30 @@ const AdminAchievementsPage = ({ onBack }) => {
         throw new Error('Quest confirmation not found');
       }
 
-      // Pass: Only update quest completedAt
+      // Pass: Update quest completedAt and create journal entry
       // Keep image and confirmation for record
       await updateQuest(quest.id, {
         completedAt: new Date()
       }, CHARACTER_ID);
 
+      // Create automatic journal entry for quest completion
+      try {
+        await saveQuestCompletionJournal({
+          name: quest.name,
+          desc: quest.desc,
+          xp: quest.xp
+        }, CHARACTER_ID);
+        console.log('✅ Quest completion journal created for:', quest.name);
+      } catch (journalError) {
+        console.warn('⚠️ Could not create quest completion journal:', journalError.message);
+        // Continue even if journal creation fails - quest is still marked as completed
+      }
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Quest Passed',
-        message: `Quest "${quest.name}" has been marked as completed!`,
+        message: `Quest "${quest.name}" has been marked as completed and added to journal!`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
@@ -877,17 +891,31 @@ const AdminAchievementsPage = ({ onBack }) => {
         throw new Error('Achievement confirmation not found');
       }
 
-      // Pass: Only update achievement completedAt
+      // Pass: Update achievement completedAt and create journal entry
       // Keep image and confirmation for record
       await updateAchievement(achievement.id, {
         completedAt: new Date()
       }, CHARACTER_ID);
 
+      // Create automatic journal entry for achievement completion
+      try {
+        await saveAchievementCompletionJournal({
+          name: achievement.name,
+          desc: achievement.desc,
+          xp: achievement.xp,
+          specialReward: achievement.specialReward
+        }, CHARACTER_ID);
+        console.log('✅ Achievement completion journal created for:', achievement.name);
+      } catch (journalError) {
+        console.warn('⚠️ Could not create achievement completion journal:', journalError.message);
+        // Continue even if journal creation fails - achievement is still marked as completed
+      }
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Achievement Passed',
-        message: `Achievement "${achievement.name}" has been marked as completed!`,
+        message: `Achievement "${achievement.name}" has been marked as completed and added to journal!`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
