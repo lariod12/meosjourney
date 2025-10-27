@@ -36,7 +36,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         repeating-linear-gradient(0deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px),
         repeating-linear-gradient(90deg, transparent, transparent 2px, var(--black) 2px, var(--black) 3px);
     background-size: 50px 50px;
@@ -77,6 +77,7 @@ body {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -99,11 +100,27 @@ body {
 }
 
 @keyframes glitch {
-    0%, 100% { transform: translate(0); }
-    20% { transform: translate(-2px, 2px); }
-    40% { transform: translate(-2px, -2px); }
-    60% { transform: translate(2px, 2px); }
-    80% { transform: translate(2px, -2px); }
+
+    0%,
+    100% {
+        transform: translate(0);
+    }
+
+    20% {
+        transform: translate(-2px, 2px);
+    }
+
+    40% {
+        transform: translate(-2px, -2px);
+    }
+
+    60% {
+        transform: translate(2px, 2px);
+    }
+
+    80% {
+        transform: translate(2px, -2px);
+    }
 }
 
 .decorative-line {
@@ -214,7 +231,8 @@ body {
     font-weight: 700;
 }
 
-.character-title, .caption {
+.character-title,
+.caption {
     font-family: 'Patrick Hand', cursive;
     font-size: 1.1rem;
     font-style: italic;
@@ -297,7 +315,7 @@ body {
     justify-content: center;
     z-index: 2;
     font-weight: 700;
-    text-shadow: 
+    text-shadow:
         -1px -1px 0 var(--black),
         1px -1px 0 var(--black),
         -1px 1px 0 var(--black),
@@ -318,13 +336,11 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.1) 10px,
-        rgba(255, 255, 255, 0.1) 20px
-    );
+    background: repeating-linear-gradient(90deg,
+            transparent,
+            transparent 10px,
+            rgba(255, 255, 255, 0.1) 10px,
+            rgba(255, 255, 255, 0.1) 20px);
 }
 
 .avatar-container .xp-text {
@@ -340,8 +356,14 @@ body {
     white-space: nowrap;
 }
 
-.avatar-container .xp-text::after { content: ' XP'; }
-.avatar-container .xp-text .xp-max::before { content: '/'; margin-right: 2px; }
+.avatar-container .xp-text::after {
+    content: ' XP';
+}
+
+.avatar-container .xp-text .xp-max::before {
+    content: '/';
+    margin-right: 2px;
+}
 
 /* === TABBED SECTION (Skills & Hobbies Combined) === */
 .tabbed-section {
@@ -416,7 +438,8 @@ body {
     position: relative;
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;  /* Ngăn scroll ngang khi hover quest items */
+    overflow-x: hidden;
+    /* Ngăn scroll ngang khi hover quest items */
     min-height: 0;
 }
 
@@ -435,6 +458,7 @@ body {
         opacity: 0;
         transform: translateY(-5px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -534,13 +558,11 @@ body {
     gap: 6px;
     padding: 15px;
     border: 2px dashed var(--black);
-    background: repeating-linear-gradient(
-        45deg,
-        var(--white),
-        var(--white) 10px,
-        #f9f9f9 10px,
-        #f9f9f9 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
 }
 
 .status-indicator {
@@ -562,8 +584,15 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
 }
 
 .status-location,
@@ -600,13 +629,11 @@ body {
 .introduce-content {
     padding: 15px;
     border: 2px dashed var(--black);
-    background: repeating-linear-gradient(
-        45deg,
-        var(--white),
-        var(--white) 10px,
-        #f9f9f9 10px,
-        #f9f9f9 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
 }
 
 .introduce-content p {
@@ -622,13 +649,11 @@ body {
 .hobbies-content {
     padding: 15px;
     border: 2px dashed var(--black);
-    background: repeating-linear-gradient(
-        45deg,
-        var(--white),
-        var(--white) 10px,
-        #f9f9f9 10px,
-        #f9f9f9 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
 }
 
 
@@ -637,13 +662,11 @@ body {
 .status-content {
     padding: 15px;
     border: 2px dashed var(--black);
-    background: repeating-linear-gradient(
-        45deg,
-        var(--white),
-        var(--white) 10px,
-        #f9f9f9 10px,
-        #f9f9f9 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
 }
 
 .status-indicator {
@@ -663,8 +686,15 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
 }
 
 .status-time {
@@ -689,6 +719,25 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    min-height: 200px;
+}
+
+/* Empty and Loading States for Quests - Centered */
+.quests-list .loading-message,
+.quests-list .empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Kalam', cursive;
+    font-size: 1.1rem;
+    color: var(--gray-medium);
+    padding: 60px 20px;
+    min-height: 180px;
+}
+
+.quests-list .loading-message {
+    animation: pulse 2s ease-in-out infinite;
 }
 
 .quest-item {
@@ -705,13 +754,11 @@ body {
 /* .quest-item:hover { ... } - REMOVED */
 
 .quest-item.completed {
-    background: repeating-linear-gradient(
-        45deg,
-        #f0f0f0,
-        #f0f0f0 10px,
-        #e0e0e0 10px,
-        #e0e0e0 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            #f0f0f0,
+            #f0f0f0 10px,
+            #e0e0e0 10px,
+            #e0e0e0 20px);
     text-decoration: line-through;
     opacity: 0.7;
 }
@@ -879,9 +926,12 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.6;
     }
+
     50% {
         opacity: 1;
     }
@@ -1010,6 +1060,7 @@ body {
         opacity: 0;
         transform: translateY(50px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1068,8 +1119,15 @@ body {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
 }
 
 .achievement-modal-title {
@@ -1092,13 +1150,11 @@ body {
     margin-bottom: 20px;
     padding: 15px;
     border: 2px dashed var(--black);
-    background: repeating-linear-gradient(
-        45deg,
-        var(--white),
-        var(--white) 10px,
-        #f9f9f9 10px,
-        #f9f9f9 20px
-    );
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
 }
 
 .achievement-modal-rewards-box {
@@ -1301,7 +1357,8 @@ body {
         font-size: 1.2rem;
     }
 
-    .character-title, .caption {
+    .character-title,
+    .caption {
         font-size: 1.1rem;
     }
 
@@ -1435,7 +1492,8 @@ body {
         margin-bottom: 4px;
     }
 
-    .character-title, .caption {
+    .character-title,
+    .caption {
         font-size: 0.95rem;
         margin-bottom: 8px;
     }
@@ -1841,7 +1899,8 @@ body {
         font-size: 0.95rem;
     }
 
-    .character-title, .caption {
+    .character-title,
+    .caption {
         font-size: 0.85rem;
     }
 
@@ -1968,4 +2027,3 @@ body {
         margin-top: 5px;
     }
 }
-

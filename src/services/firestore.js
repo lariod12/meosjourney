@@ -26,11 +26,12 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
 
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
   try {
-    const [profile, config, status, achievements] = await Promise.all([
+    const [profile, config, status, achievements, quests] = await Promise.all([
       fetchProfile(characterId),
       fetchConfig(characterId),
       fetchStatus(characterId),
-      fetchAchievements(characterId)
+      fetchAchievements(characterId),
+      fetchQuests(characterId)
     ]);
 
     const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
@@ -75,6 +76,17 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       completed: achievement.completedAt !== null
     }));
 
+    console.log(`✅ Loaded ${achievementsData.length} achievements from database`);
+
+    // Process quests data - ALWAYS use database quests
+    // Map quests to include completedAt status
+    const questsData = quests.map(quest => ({
+      ...quest,
+      completed: quest.completedAt !== null
+    }));
+
+    console.log(`✅ Loaded ${questsData.length} quests from database`);
+
     return {
       ...base,
       name,
@@ -87,15 +99,17 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       introduce,
       status: statusData,
       achievements: achievementsData,
+      quests: questsData,
       moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
       locationOptions: Array.isArray(config?.locationOptions) ? config.locationOptions : [],
     };
   } catch (error) {
     console.error('❌ Error in fetchCharacterViewData:', error);
-    // Return base data with empty achievements on error
+    // Return base data with empty arrays on error
     return {
       ...base,
-      achievements: []
+      achievements: [],
+      quests: []
     };
   }
 };
@@ -328,7 +342,8 @@ export const fetchQuests = async (characterId = CHARACTER_ID) => {
     return quests;
   } catch (error) {
     console.error('❌ Error fetching quests:', error);
-    throw new Error(`Firestore error: ${error.message}`);
+    // Return empty array instead of throwing to prevent app crash
+    return [];
   }
 };
 

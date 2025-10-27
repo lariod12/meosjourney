@@ -1,8 +1,8 @@
 export const characterData = {
     name: "MÉO",
     caption: "Forever Curious",
-    level: 25,
-    currentXP: 6500,
+    level: 0,
+    currentXP: 0,
     maxXP: 10000,
     
     skills: [
@@ -35,14 +35,7 @@ export const characterData = {
 
     introduce: "A creative artist who brings imagination to life through drawing. Passionate about exploring the world, discovering new cultures, and savoring delicious food. Every sketch tells a story, every journey sparks inspiration, and every meal brings pure happiness.",
 
-    quests: [
-        { id: 1, title: "Complete 3 coding challenges", completed: false, xp: 150 },
-        { id: 2, title: "Review 5 pull requests", completed: true, xp: 100 },
-        { id: 3, title: "Write documentation for new feature", completed: false, xp: 120 },
-        { id: 4, title: "Learn a new algorithm", completed: false, xp: 200 },
-        { id: 5, title: "Exercise for 30 minutes", completed: true, xp: 80 },
-        { id: 6, title: "Read 1 chapter of tech book", completed: false, xp: 100 }
-    ],
+    quests: [],
     
     journal: [
         {
@@ -91,95 +84,7 @@ export const characterData = {
         }
     ],
 
-    achievements: [
-        {
-            id: 1,
-            name: "First Steps",
-            icon: "★",
-            description: "Complete your first daily quest and begin your journey",
-            specialReward: "Unlock 'Beginner' title",
-            exp: 50,
-            completed: true
-        },
-        {
-            id: 2,
-            name: "Code Master",
-            icon: "⚛",
-            description: "Successfully complete 100 coding challenges",
-            specialReward: "Unlock 'Code Wizard' badge",
-            exp: 200,
-            completed: true
-        },
-        {
-            id: 3,
-            name: "Team Player",
-            icon: "◆",
-            description: "Review 50 pull requests and help your teammates grow",
-            specialReward: "Unlock 'Mentor' role",
-            exp: 150,
-            completed: false
-        },
-        {
-            id: 4,
-            name: "Knowledge Seeker",
-            icon: "✎",
-            description: "Read 10 technical books from cover to cover",
-            specialReward: "Unlock 'Scholar' title + Reading List feature",
-            exp: 300,
-            completed: true
-        },
-        {
-            id: 5,
-            name: "Health Warrior",
-            icon: "⚔",
-            description: "Exercise for 30 consecutive days without missing a day",
-            exp: 250,
-            completed: false
-        },
-        {
-            id: 6,
-            name: "Creative Mind",
-            icon: "♪",
-            description: "Create 20 unique character designs or artworks",
-            specialReward: "Unlock 'Artist' badge + Gallery feature",
-            exp: 180,
-            completed: false
-        },
-        {
-            id: 7,
-            name: "Level Up",
-            icon: "▲",
-            description: "Reach Level 25 through dedication and hard work",
-            specialReward: "Unlock 'Veteran' title + Special avatar frame",
-            exp: 500,
-            completed: false
-        },
-        {
-            id: 8,
-            name: "Night Owl",
-            icon: "◐",
-            description: "Complete 5 quests after midnight while the world sleeps",
-            exp: 100,
-            completed: false
-        },
-        {
-            id: 9,
-            name: "Early Bird",
-            icon: "◑",
-            description: "Complete 10 quests before 6 AM and start your day right",
-            exp: 120,
-            completed: true
-        },
-        {
-            id: 10,
-            name: "Perfectionist",
-            icon: "◈",
-            description: "Complete 20 quests with 100% accuracy and zero mistakes",
-            specialReward: "Unlock 'Flawless' badge + Accuracy tracker",
-            exp: 350,
-            completed: false
-        }
-    ],
+    achievements: [],
 
     history: [
         {

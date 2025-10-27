@@ -2,6 +2,27 @@ import { useCharacter } from '../../../contexts';
 
 const QuestsTab = () => {
   const data = useCharacter();
+
+  console.log('🎯 QuestsTab - Total quests:', data.quests?.length || 0);
+
+  // Handle loading state
+  if (!data.quests) {
+    return (
+      <div className="quests-list">
+        <div className="loading-message">Loading quests...</div>
+      </div>
+    );
+  }
+
+  // Handle empty state
+  if (data.quests.length === 0) {
+    return (
+      <div className="quests-list">
+        <div className="empty-message">No quests found. Create some quests in the admin panel!</div>
+      </div>
+    );
+  }
+
   const completed = data.quests.filter(q => q.completedAt !== null).length;
   const total = data.quests.length;
 
