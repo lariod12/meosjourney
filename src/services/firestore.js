@@ -152,24 +152,28 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       throw new Error('Achievement name cannot be empty');
     }
 
-    // Use achievement name as document ID (sanitized)
-    const achievementId = achievementData.name.trim()
+    // Sanitize achievement name
+    const sanitizedName = achievementData.name.trim()
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
       .replace(/\s+/g, '_') // Replace spaces with underscores
       .substring(0, 50); // Limit length to 50 characters
 
-    if (!achievementId) {
+    if (!sanitizedName) {
       throw new Error('Achievement name must contain at least one alphanumeric character');
     }
 
-    // Check if achievement with this ID already exists
-    const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
-    const existingDoc = await getDoc(achievementDocRef);
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, ''); // Format: YYMMDD
 
-    if (existingDoc.exists()) {
-      throw new Error(`Achievement with name "${achievementData.name}" already exists`);
-    }
+    // Combine name with date: name_YYMMDD
+    const achievementId = `${sanitizedName}_${dateSuffix}`;
 
     const dataToSave = {
       name: achievementData.name,
@@ -183,8 +187,16 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       createdAt: serverTimestamp()
     };
 
-    // Use setDoc with achievement name as document ID instead of addDoc
+    console.log('💾 Creating achievement with ID:', achievementId);
+    console.log('🏆 Data:', dataToSave);
+    console.log('📍 Document: main/' + characterId + '/achievements/' + achievementId);
+    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
+
+    // Use setDoc with achievement name + date as document ID
+    const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
     await setDoc(achievementDocRef, dataToSave);
+
+    console.log('✅ Achievement created with ID:', achievementId);
 
     return { success: true, id: achievementId, data: dataToSave };
 
@@ -217,58 +229,21 @@ export const fetchAchievements = async (characterId = CHARACTER_ID) => {
 
 export const updateAchievement = async (achievementId, achievementData, characterId = CHARACTER_ID) => {
   try {
-    // Generate new ID based on updated name
-    const newAchievementId = achievementData.name.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .substring(0, 50); // Limit length to 50 characters
-
-    if (!newAchievementId) {
-      throw new Error('Achievement name must contain at least one alphanumeric character');
+    // Just update existing document, don't change ID
+    // Achievement ID includes date suffix and should not be changed
+    const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    
+    // Get the old document to check if it exists
+    const oldDoc = await getDoc(achievementRef);
+    if (!oldDoc.exists()) {
+      throw new Error('Achievement not found');
     }
 
-    const oldAchievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
-    const newAchievementRef = doc(db, 'main', characterId, 'achievements', newAchievementId);
+    // Merge new data with existing document
+    await setDoc(achievementRef, achievementData, { merge: true });
 
-    // If the name changed (and thus the ID changed), we need to create new doc and delete old one
-    if (achievementId !== newAchievementId) {
-      // Check if new ID already exists (but not the same as current document)
-      const existingDoc = await getDoc(newAchievementRef);
-      if (existingDoc.exists()) {
-        throw new Error(`Achievement with name "${achievementData.name}" already exists`);
-      }
-
-      // Get the old document data to preserve fields like createdAt, completed, etc.
-      const oldDoc = await getDoc(oldAchievementRef);
-      if (!oldDoc.exists()) {
-        throw new Error('Original achievement not found');
-      }
-
-      const oldData = oldDoc.data();
-      const updatedData = {
-        ...oldData,
-        ...achievementData,
-        // Preserve important fields
-        createdAt: oldData.createdAt,
-        completed: oldData.completed,
-        completedAt: oldData.completedAt
-      };
-
-      // Create new document with updated data
-      await setDoc(newAchievementRef, updatedData);
-
-      // Delete old document
-      await deleteDoc(oldAchievementRef);
-
-      return { success: true, id: newAchievementId, nameChanged: true };
-    } else {
-      // Name didn't change, just update existing document
-      await setDoc(oldAchievementRef, achievementData, { merge: true });
-
-      console.log('✅ Achievement updated:', achievementId);
-      return { success: true, id: achievementId, nameChanged: false };
-    }
+    console.log('✅ Achievement updated:', achievementId);
+    return { success: true, id: achievementId, nameChanged: false };
   } catch (error) {
     console.error('❌ Error updating achievement:', error);
     throw new Error(`Firestore error: ${error.message}`);
@@ -632,7 +607,8 @@ export const deleteQuestConfirmation = async (questName, characterId = CHARACTER
 
 /**
  * Save achievement confirmation to Firestore
- * Similar structure to quest confirmation
+ * Document ID = achievement name (sanitized) + date suffix (YYMMDD)
+ * Follows same convention as saveAchievement: name_YYMMDD
  * 
  * @param {Object} confirmData - Confirmation data
  * @param {string} confirmData.name - Achievement name
@@ -643,11 +619,28 @@ export const deleteQuestConfirmation = async (questName, characterId = CHARACTER
  */
 export const saveAchievementConfirmation = async (confirmData, characterId = CHARACTER_ID) => {
   try {
-    const docId = confirmData.name
+    // Sanitize achievement name
+    const sanitizedName = confirmData.name.trim()
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
-      .substring(0, 100);
+      .substring(0, 50);
+
+    if (!sanitizedName) {
+      throw new Error('Achievement name must contain at least one alphanumeric character');
+    }
+
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    // Combine name with date: name_YYMMDD
+    const docId = `${sanitizedName}_${dateSuffix}`;
 
     const dataToSave = {
       name: confirmData.name.trim(),
@@ -656,8 +649,15 @@ export const saveAchievementConfirmation = async (confirmData, characterId = CHA
       createdAt: serverTimestamp()
     };
 
+    console.log('💾 Saving achievement confirmation with ID:', docId);
+    console.log('🏆 Data:', dataToSave);
+    console.log('📍 Path: main/' + characterId + '/achievements-confirm/' + docId);
+    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
+
     const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
     await setDoc(confirmRef, dataToSave);
+
+    console.log('✅ Achievement confirmation saved:', docId);
 
     return { success: true, id: docId };
 

@@ -22,7 +22,7 @@ const DailyActivities = () => {
     },
     {
       id: 'achievements',
-      label: 'ACHIEVEMENT',
+      label: 'ACHIEVEMENTS',
       content: <AchievementsTab />
     }
   ];

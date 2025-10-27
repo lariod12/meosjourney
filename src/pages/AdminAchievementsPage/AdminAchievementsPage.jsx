@@ -368,11 +368,11 @@ const AdminAchievementsPage = ({ onBack }) => {
       };
 
       const result = await updateAchievement(achievementId, achievementData, CHARACTER_ID);
-      
-      const successMessage = result.nameChanged 
+
+      const successMessage = result.nameChanged
         ? 'Achievement updated successfully! Document ID changed due to name change.'
         : 'Achievement updated successfully!';
-      
+
       setConfirmModal({
         isOpen: true,
         type: 'success',

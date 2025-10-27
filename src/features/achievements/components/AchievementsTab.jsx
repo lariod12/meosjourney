@@ -7,8 +7,6 @@ const AchievementsTab = () => {
   const data = useCharacter();
   const [selectedAchievement, setSelectedAchievement] = useState(null);
 
-  console.log('🏆 AchievementsTab - Achievements data:', data.achievements);
-
   // Handle loading state
   if (!data.achievements) {
     return (
