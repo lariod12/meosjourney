@@ -731,13 +731,25 @@ body {
     text-align: center;
     font-family: 'Kalam', cursive;
     font-size: 1.1rem;
-    color: var(--black);
     padding: 60px 20px;
     min-height: 180px;
 }
 
 .quests-list .loading-message {
     animation: pulse 2s ease-in-out infinite;
+}
+
+/* Empty and Loading States for Journal - Centered */
+.journal-content .loading-message,
+.journal-content .empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Kalam', cursive;
+    font-size: 1.1rem;
+    padding: 60px 20px;
+    min-height: 180px;
 }
 
 .quest-item {
@@ -916,7 +928,6 @@ body {
     text-align: center;
     font-family: 'Kalam', cursive;
     font-size: 1.1rem;
-    color: var(--gray-medium);
     padding: 60px 20px;
     min-height: 250px;
 }

@@ -464,9 +464,9 @@ All interactive elements should follow this pattern:
    .quest-modal-header { }
    ```
 
-2. **Global Classes**: Only define in `style.css` or `global.css`
+2. **Global Classes**: Only define in `global.css`
    ```css
-   /* In style.css - safe to use anywhere */
+   /* In global.css - safe to use anywhere */
    .btn-primary { }
    .text-center { }
    .container { }
