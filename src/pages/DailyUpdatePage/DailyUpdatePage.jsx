@@ -47,6 +47,7 @@ const DailyUpdate = ({ onBack }) => {
   const achievementDropdownRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [uploadingQuestIndex, setUploadingQuestIndex] = useState(-1);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -98,6 +99,61 @@ const DailyUpdate = ({ onBack }) => {
         setAchievementConfirmations([]);
       });
   }, []);
+
+  // Refresh data from database
+  const handleRefresh = async () => {
+    if (isRefreshing || isSubmitting) return;
+
+    console.log('🔄 Refreshing data from database...');
+    setIsRefreshing(true);
+
+    try {
+      const [cfg, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
+        fetchConfig(CHARACTER_ID),
+        fetchQuests(CHARACTER_ID),
+        fetchQuestConfirmations(CHARACTER_ID),
+        fetchAchievements(CHARACTER_ID),
+        fetchAchievementConfirmations(CHARACTER_ID)
+      ]);
+
+      setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
+
+      // Filter only incomplete quests
+      const availableQuests = quests.filter(q => q.completedAt === null);
+      setAvailableQuests(availableQuests);
+      setQuestConfirmations(questConfirms);
+      console.log('✅ Reloaded quests:', availableQuests.length, 'available');
+
+      // Filter only incomplete achievements
+      const availableAchievements = achievements.filter(a => a.completedAt === null);
+      setAvailableAchievements(availableAchievements);
+      setAchievementConfirmations(achievementConfirms);
+      console.log('✅ Reloaded achievements:', availableAchievements.length, 'available');
+
+      // Show success notification
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Refreshed',
+        message: 'Data updated successfully!',
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Refresh Failed',
+        message: `Failed to refresh data: ${error.message}`,
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     // Wait until password is loaded from config
@@ -615,6 +671,14 @@ const DailyUpdate = ({ onBack }) => {
       <header className="notes-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
         <h1>✎ Daily Update</h1>
+        <button 
+          onClick={handleRefresh} 
+          className="refresh-button"
+          disabled={isRefreshing || isSubmitting}
+          title="Refresh data from database"
+        >
+          {isRefreshing ? '⟳' : '↻'}
+        </button>
         <div className="subtitle">
           {formattedDate}
         </div>

@@ -49,6 +49,35 @@ body {
     transition: all 0.3s;
 }
 
+.refresh-button {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    color: #000000;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 8px 15px;
+    border: 2px solid #000000;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.refresh-button:active:not(:disabled) {
+    transform: rotate(180deg);
+}
+
 .back-link:hover {
     background-color: #000000;
     color: #ffffff;
