@@ -673,3 +673,126 @@ export const deleteQuestConfirmationById = async (confirmationId, characterId = 
     throw new Error(`Failed to delete quest confirmation: ${error.message}`);
   }
 };
+
+/**
+ * Fetch all achievement confirmations
+ * 
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Array>} Array of achievement confirmations
+ */
+export const fetchAchievementConfirmations = async (characterId = CHARACTER_ID) => {
+  try {
+    const confirmRef = collection(db, 'main', characterId, 'achievements-confirm');
+    const snapshot = await getDocs(confirmRef);
+
+    const confirmations = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return confirmations;
+
+  } catch (error) {
+    console.error('❌ Error fetching achievement confirmations:', error);
+    return [];
+  }
+};
+
+/**
+ * Get single achievement confirmation by achievement name and date
+ * 
+ * @param {string} achievementName - Achievement name (will be sanitized to match document ID)
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Object|null>} Achievement confirmation data or null
+ */
+export const getAchievementConfirmation = async (achievementName, characterId = CHARACTER_ID) => {
+  try {
+    const sanitizedName = achievementName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Generate today's date suffix
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const docId = `${sanitizedName}_${dateSuffix}`;
+
+    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    const snapshot = await getDoc(confirmRef);
+
+    if (snapshot.exists()) {
+      return { id: snapshot.id, ...snapshot.data() };
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error('❌ Error getting achievement confirmation:', error);
+    return null;
+  }
+};
+
+/**
+ * Delete achievement confirmation
+ * 
+ * @param {string} achievementName - Achievement name
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean}>}
+ */
+export const deleteAchievementConfirmation = async (achievementName, characterId = CHARACTER_ID) => {
+  try {
+    const sanitizedName = achievementName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Generate today's date suffix
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const docId = `${sanitizedName}_${dateSuffix}`;
+
+    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    await deleteDoc(confirmRef);
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error deleting achievement confirmation:', error);
+    throw new Error(`Failed to delete achievement confirmation: ${error.message}`);
+  }
+};
+
+/**
+ * Delete achievement confirmation by document ID
+ * 
+ * @param {string} confirmationId - Confirmation document ID
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean}>}
+ */
+export const deleteAchievementConfirmationById = async (confirmationId, characterId = CHARACTER_ID) => {
+  try {
+    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', confirmationId);
+    await deleteDoc(confirmRef);
+
+    console.log('✅ Achievement confirmation deleted by ID:', confirmationId);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error deleting achievement confirmation by ID:', error);
+    throw new Error(`Failed to delete achievement confirmation: ${error.message}`);
+  }
+};

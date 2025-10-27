@@ -7,9 +7,12 @@ import {
   fetchQuests,
   fetchQuestConfirmations,
   saveQuestConfirmation,
+  fetchAchievements,
+  fetchAchievementConfirmations,
+  saveAchievementConfirmation,
   CHARACTER_ID
 } from '../../services/firestore';
-import { uploadQuestConfirmImage } from '../../services/storage';
+import { uploadQuestConfirmImage, uploadAchievementConfirmImage } from '../../services/storage';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 
@@ -35,6 +38,13 @@ const DailyUpdate = ({ onBack }) => {
   const [showQuestDropdown, setShowQuestDropdown] = useState(false);
   const questDropdownRef = useRef(null);
 
+  // Achievements Update states
+  const [availableAchievements, setAvailableAchievements] = useState([]);
+  const [achievementConfirmations, setAchievementConfirmations] = useState([]);
+  const [selectedAchievementSubmissions, setSelectedAchievementSubmissions] = useState([]);
+  const [showAchievementDropdown, setShowAchievementDropdown] = useState(false);
+  const achievementDropdownRef = useRef(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingQuestIndex, setUploadingQuestIndex] = useState(-1);
   const [confirmModal, setConfirmModal] = useState({
@@ -52,22 +62,30 @@ const DailyUpdate = ({ onBack }) => {
   const [statusExpanded, setStatusExpanded] = useState(false);
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
+  const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config, quests, and confirmations from Firestore
+    // Load config, quests, achievements, and confirmations from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
       fetchQuests(CHARACTER_ID),
-      fetchQuestConfirmations(CHARACTER_ID)
+      fetchQuestConfirmations(CHARACTER_ID),
+      fetchAchievements(CHARACTER_ID),
+      fetchAchievementConfirmations(CHARACTER_ID)
     ])
-      .then(([cfg, quests, confirmations]) => {
+      .then(([cfg, quests, questConfirms, achievements, achievementConfirms]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
 
         // Filter only incomplete quests (completedAt === null)
         const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
-        setQuestConfirmations(confirmations);
+        setQuestConfirmations(questConfirms);
+
+        // Filter only incomplete achievements (completedAt === null)
+        const availableAchievements = achievements.filter(a => a.completedAt === null);
+        setAvailableAchievements(availableAchievements);
+        setAchievementConfirmations(achievementConfirms);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
@@ -75,6 +93,8 @@ const DailyUpdate = ({ onBack }) => {
         setCorrectPassword(null);
         setAvailableQuests([]);
         setQuestConfirmations([]);
+        setAvailableAchievements([]);
+        setAchievementConfirmations([]);
       });
   }, []);
 
@@ -130,6 +150,9 @@ const DailyUpdate = ({ onBack }) => {
       }
       if (questDropdownRef.current && !questDropdownRef.current.contains(e.target)) {
         setShowQuestDropdown(false);
+      }
+      if (achievementDropdownRef.current && !achievementDropdownRef.current.contains(e.target)) {
+        setShowAchievementDropdown(false);
       }
     };
     document.addEventListener('click', handleClickOutside);
@@ -228,6 +251,50 @@ const DailyUpdate = ({ onBack }) => {
         setUploadingQuestIndex(-1);
       }
 
+      // Submit Achievement Confirmations (if has submissions)
+      if (selectedAchievementSubmissions.length > 0) {
+        console.log('🏆 Processing achievement submissions:', selectedAchievementSubmissions.length);
+
+        for (let i = 0; i < selectedAchievementSubmissions.length; i++) {
+          const submission = selectedAchievementSubmissions[i];
+          setUploadingQuestIndex(i); // Reuse same state for progress indicator
+
+          try {
+            let imgUrl = '';
+
+            // 1. Upload image to Storage if exists
+            if (submission.image) {
+              console.log(`📤 [${i + 1}/${selectedAchievementSubmissions.length}] Uploading achievement confirmation image for:`, submission.achievementTitle);
+              const uploadResult = await uploadAchievementConfirmImage(
+                submission.image,
+                submission.achievementTitle
+              );
+              imgUrl = uploadResult.url;
+              console.log('✅ Image uploaded to:', uploadResult.path);
+              console.log('🔗 Image URL:', imgUrl);
+            }
+
+            // 2. Save confirmation to achievements-confirm collection
+            console.log('💾 Saving achievement confirmation to Firestore...');
+            await saveAchievementConfirmation({
+              name: submission.achievementTitle,
+              desc: submission.description || '',
+              imgUrl: imgUrl
+            }, CHARACTER_ID);
+            console.log('✅ Achievement confirmation saved for:', submission.achievementTitle);
+
+            results.push(`Achievement: ${submission.achievementTitle}`);
+
+          } catch (error) {
+            console.error('❌ Error processing achievement submission:', submission.achievementTitle, error);
+            // Continue with other achievements even if one fails
+            results.push(`Achievement: ${submission.achievementTitle} (failed)`);
+          }
+        }
+
+        setUploadingQuestIndex(-1);
+      }
+
       // Show success message
       if (results.length > 0) {
         setConfirmModal({
@@ -246,14 +313,23 @@ const DailyUpdate = ({ onBack }) => {
               mood: moodOptions[0] || '',
               journalEntry: ''
             }));
-            // Clear quest submissions
+            // Clear quest and achievement submissions
             setSelectedQuestSubmissions([]);
-            // Reload quests to update available list
-            fetchQuests(CHARACTER_ID).then(quests => {
+            setSelectedAchievementSubmissions([]);
+            // Reload quests and achievements to update available lists
+            Promise.all([
+              fetchQuests(CHARACTER_ID),
+              fetchAchievements(CHARACTER_ID)
+            ]).then(([quests, achievements]) => {
               // Filter only incomplete quests
               const availableQuests = quests.filter(q => q.completedAt === null);
               setAvailableQuests(availableQuests);
               console.log('🔄 Reloaded quests, available:', availableQuests.length);
+              
+              // Filter only incomplete achievements
+              const availableAchievements = achievements.filter(a => a.completedAt === null);
+              setAvailableAchievements(availableAchievements);
+              console.log('🔄 Reloaded achievements, available:', availableAchievements.length);
             });
           }
         });
@@ -292,6 +368,7 @@ const DailyUpdate = ({ onBack }) => {
       journalEntry: ''
     });
     setSelectedQuestSubmissions([]);
+    setSelectedAchievementSubmissions([]);
   };
 
   // Quest submission handlers
@@ -400,6 +477,115 @@ const DailyUpdate = ({ onBack }) => {
 
     const expectedId = `${sanitizedName}_${todaySuffix}`;
     return questConfirmations.some(c => c.id === expectedId);
+  };
+
+  // Achievement submission handlers
+  const handleAddAchievementSubmission = (achievement) => {
+    console.log('➕ Adding achievement submission:', achievement.name);
+    setSelectedAchievementSubmissions(prev => [...prev, {
+      achievementId: achievement.id,
+      achievementTitle: achievement.name,
+      achievementDesc: achievement.desc || '',
+      achievementXp: achievement.xp,
+      achievementSpecialReward: achievement.specialReward || '',
+      description: '',
+      image: null,
+      imagePreview: null
+    }]);
+    setShowAchievementDropdown(false);
+  };
+
+  const handleRemoveAchievementSubmission = (index) => {
+    console.log('➖ Removing achievement submission at index:', index);
+    setSelectedAchievementSubmissions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAchievementDescriptionChange = (index, value) => {
+    setSelectedAchievementSubmissions(prev => prev.map((submission, i) =>
+      i === index ? { ...submission, description: value } : submission
+    ));
+  };
+
+  const handleAchievementImageChange = async (index, file) => {
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Invalid File',
+        message: 'Please select an image file (jpg, png, gif, etc.)',
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
+    }
+
+    // Check file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'File Too Large',
+        message: 'Image size must be less than 5MB. Please choose a smaller image.',
+        confirmText: 'OK',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedAchievementSubmissions(prev => prev.map((submission, i) =>
+        i === index ? {
+          ...submission,
+          image: file,
+          imagePreview: reader.result,
+          isUploading: false
+        } : submission
+      ));
+    };
+    reader.readAsDataURL(file);
+
+    console.log('📷 Image selected:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
+  };
+
+  const handleRemoveAchievementImage = (index) => {
+    setSelectedAchievementSubmissions(prev => prev.map((submission, i) =>
+      i === index ? {
+        ...submission,
+        image: null,
+        imagePreview: null
+      } : submission
+    ));
+  };
+
+  const getAvailableAchievementsForDropdown = () => {
+    const selectedAchievementIds = selectedAchievementSubmissions.map(s => s.achievementId);
+    return availableAchievements.filter(a => !selectedAchievementIds.includes(a.id));
+  };
+
+  // Check if achievement has confirmation today
+  const hasAchievementConfirmation = (achievementName) => {
+    const today = new Date();
+    const todaySuffix = today.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const sanitizedName = achievementName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    return achievementConfirmations.some(c => c.id === expectedId);
   };
 
   if (showPasswordModal) {
@@ -673,12 +859,146 @@ const DailyUpdate = ({ onBack }) => {
             )}
           </div>
 
+          {/* Achievements Update */}
+          <div className="form-section">
+            <h2
+              className="section-title clickable"
+              onClick={() => {
+                console.log('Achievements Update section clicked');
+                setAchievementsExpanded(!achievementsExpanded);
+              }}
+            >
+              {achievementsExpanded ? '▼' : '▸'} Achievements Update
+            </h2>
+
+            {achievementsExpanded && (
+              <div className="section-content">
+                {/* Add Achievement Button */}
+                <div className="quest-add-section">
+                  <div className="select-wrap" ref={achievementDropdownRef}>
+                    <button
+                      type="button"
+                      className="btn-add-quest"
+                      onClick={() => setShowAchievementDropdown(!showAchievementDropdown)}
+                      disabled={getAvailableAchievementsForDropdown().length === 0}
+                    >
+                      ➕ Add Completed Achievement
+                    </button>
+
+                    {showAchievementDropdown && getAvailableAchievementsForDropdown().length > 0 && (
+                      <div className="quest-dropdown">
+                        {getAvailableAchievementsForDropdown().map(achievement => {
+                          const hasConfirm = hasAchievementConfirmation(achievement.name);
+                          return (
+                            <div
+                              key={achievement.id}
+                              className={`quest-dropdown-item ${hasConfirm ? 'has-confirmation' : ''}`}
+                              onClick={() => handleAddAchievementSubmission(achievement)}
+                            >
+                              <span className="quest-dropdown-title">
+                                {achievement.name}
+                                {hasConfirm && <span className="confirmation-badge">📝 Pending</span>}
+                              </span>
+                              <span className="quest-dropdown-xp">
+                                {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && (
+                    <p className="no-quests-message">No incomplete achievements available</p>
+                  )}
+                </div>
+
+                {/* Achievement Submission Forms */}
+                {selectedAchievementSubmissions.map((submission, index) => {
+                  const hasConfirm = hasAchievementConfirmation(submission.achievementTitle);
+                  return (
+                    <div key={index} className="quest-submission-form">
+                      <div className="quest-submission-header">
+                        <div className="quest-submission-info">
+                          <h3 className="quest-submission-title">
+                            🏆 {submission.achievementTitle}
+                            {submission.achievementXp > 0 && <span className="quest-xp-badge">+{submission.achievementXp} XP</span>}
+                            {submission.achievementSpecialReward && <span className="quest-xp-badge">🎁 {submission.achievementSpecialReward}</span>}
+                            {hasConfirm && <span className="quest-status-badge pending">📝 Pending Review</span>}
+                          </h3>
+                          {submission.achievementDesc && (
+                            <p className="quest-submission-desc">{submission.achievementDesc}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-remove-quest"
+                          onClick={() => handleRemoveAchievementSubmission(index)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor={`achievement-desc-${index}`}>Description</label>
+                        <textarea
+                          id={`achievement-desc-${index}`}
+                          rows="4"
+                          value={submission.description}
+                          onChange={(e) => handleAchievementDescriptionChange(index, e.target.value)}
+                          placeholder="Describe how you achieved this..."
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor={`achievement-image-${index}`}>Attach Image</label>
+                        <div className="image-upload-section">
+                          {!submission.imagePreview ? (
+                            <div className="image-upload-placeholder">
+                              <input
+                                type="file"
+                                id={`achievement-image-${index}`}
+                                accept="image/*"
+                                onChange={(e) => handleAchievementImageChange(index, e.target.files[0])}
+                                style={{ display: 'none' }}
+                              />
+                              <label htmlFor={`achievement-image-${index}`} className="btn-upload-image">
+                                📷 Choose Image or Take Photo
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="image-preview-container">
+                              <img
+                                src={submission.imagePreview}
+                                alt="Achievement completion"
+                                className="image-preview"
+                              />
+                              <button
+                                type="button"
+                                className="btn-remove-image"
+                                onClick={() => handleRemoveAchievementImage(index)}
+                              >
+                                ✕ Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? (
                 uploadingQuestIndex >= 0
-                  ? `Uploading quest ${uploadingQuestIndex + 1}/${selectedQuestSubmissions.length}...`
+                  ? `Uploading ${uploadingQuestIndex + 1}/${selectedQuestSubmissions.length + selectedAchievementSubmissions.length}...`
                   : 'Submitting...'
               ) : 'Submit'}
             </button>

@@ -39,3 +39,6 @@ inclusion: always
 - Separation of UI and data layers
 - Consistent React naming conventions
 
+## Management package
+- Use pnpm command for all pacakage management
+

@@ -5,7 +5,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, CHARACTER_ID } from '../../services/firestore';
 import { deleteImageByUrl } from '../../services/storage';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -19,6 +19,7 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [achievements, setAchievements] = useState([]);
   const [quests, setQuests] = useState([]);
   const [questConfirmations, setQuestConfirmations] = useState([]);
+  const [achievementConfirmations, setAchievementConfirmations] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [reviewingId, setReviewingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
@@ -73,8 +74,12 @@ const AdminAchievementsPage = ({ onBack }) => {
 
   const loadAchievements = async () => {
     try {
-      const data = await fetchAchievements(CHARACTER_ID);
-      setAchievements(data);
+      const [achievementsData, confirmationsData] = await Promise.all([
+        fetchAchievements(CHARACTER_ID),
+        fetchAchievementConfirmations(CHARACTER_ID)
+      ]);
+      setAchievements(achievementsData);
+      setAchievementConfirmations(confirmationsData);
     } catch (error) {
       console.error('Error loading achievements:', error);
     }
@@ -541,12 +546,43 @@ const AdminAchievementsPage = ({ onBack }) => {
           onCancel: null
         });
       } else {
+        // Delete achievement with confirmations
+        // 1. Get all confirmations for this achievement
+        const allConfirmations = getAchievementConfirmations(deleteTarget.name);
+        console.log(`🗑️ Deleting achievement "${deleteTarget.name}" with ${allConfirmations.length} confirmations`);
+
+        // 2. Delete all images from Storage
+        for (const conf of allConfirmations) {
+          if (conf.imgUrl) {
+            try {
+              console.log('🗑️ Deleting confirmation image:', conf.id);
+              await deleteImageByUrl(conf.imgUrl);
+            } catch (imgError) {
+              console.warn('⚠️ Could not delete image:', imgError.message);
+              // Continue even if image deletion fails
+            }
+          }
+        }
+
+        // 3. Delete all achievement confirmations from Firestore
+        for (const conf of allConfirmations) {
+          try {
+            console.log('🗑️ Deleting confirmation:', conf.id);
+            await deleteAchievementConfirmationById(conf.id, CHARACTER_ID);
+          } catch (confError) {
+            console.warn('⚠️ Could not delete confirmation:', confError.message);
+            // Continue even if confirmation deletion fails
+          }
+        }
+
+        // 4. Delete the achievement itself
         await deleteAchievement(deleteTarget.id, CHARACTER_ID);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: 'Achievement deleted successfully!',
+          message: `Achievement deleted successfully! (${allConfirmations.length} confirmations removed)`,
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => {
@@ -621,6 +657,48 @@ const AdminAchievementsPage = ({ onBack }) => {
       });
   };
 
+  // Helper function to get achievement confirmation for an achievement
+  const getAchievementConfirmation = (achievementName) => {
+    // Generate today's date suffix
+    const today = new Date();
+    const todaySuffix = today.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    // Sanitize achievement name to match confirmation ID format
+    const sanitizedName = achievementName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    
+    return achievementConfirmations.find(c => c.id === expectedId);
+  };
+
+  // Get all confirmations for an achievement (all dates)
+  const getAchievementConfirmations = (achievementName) => {
+    const sanitizedName = achievementName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Find all confirmations that start with the sanitized achievement name
+    return achievementConfirmations
+      .filter(c => c.id.startsWith(`${sanitizedName}_`))
+      .sort((a, b) => {
+        // Sort by date (newest first) - extract date from ID
+        const dateA = a.id.split('_').pop();
+        const dateB = b.id.split('_').pop();
+        return dateB.localeCompare(dateA);
+      });
+  };
+
   const handleReviewQuest = (quest) => {
     console.log('👁️ Reviewing quest:', quest.name);
     setReviewingId(quest.id);
@@ -631,6 +709,20 @@ const AdminAchievementsPage = ({ onBack }) => {
   const handleViewQuest = (quest) => {
     console.log('📖 Viewing quest history:', quest.name);
     setViewingId(quest.id);
+    setEditingId(null);
+    setReviewingId(null);
+  };
+
+  const handleReviewAchievement = (achievement) => {
+    console.log('👁️ Reviewing achievement:', achievement.name);
+    setReviewingId(achievement.id);
+    setEditingId(null);
+    setViewingId(null);
+  };
+
+  const handleViewAchievement = (achievement) => {
+    console.log('📖 Viewing achievement history:', achievement.name);
+    setViewingId(achievement.id);
     setEditingId(null);
     setReviewingId(null);
   };
@@ -728,6 +820,109 @@ const AdminAchievementsPage = ({ onBack }) => {
         type: 'error',
         title: 'Error',
         message: `Failed to reject quest: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePassAchievementConfirmation = async (achievement) => {
+    setIsSubmitting(true);
+
+    try {
+      const confirmation = getAchievementConfirmation(achievement.name);
+      
+      if (!confirmation) {
+        throw new Error('Achievement confirmation not found');
+      }
+
+      // Pass: Only update achievement completedAt
+      // Keep image and confirmation for record
+      await updateAchievement(achievement.id, {
+        completedAt: new Date()
+      }, CHARACTER_ID);
+
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Achievement Passed',
+        message: `Achievement "${achievement.name}" has been marked as completed!`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setReviewingId(null);
+          loadAchievements();
+        },
+        onCancel: null
+      });
+    } catch (error) {
+      console.error('❌ Error passing achievement:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to pass achievement: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRejectAchievementConfirmation = async (achievement) => {
+    setIsSubmitting(true);
+
+    try {
+      const confirmation = getAchievementConfirmation(achievement.name);
+      
+      if (!confirmation) {
+        throw new Error('Achievement confirmation not found');
+      }
+
+      // 1. Delete image from Storage if exists
+      if (confirmation.imgUrl) {
+        try {
+          console.log('🗑️ Deleting achievement confirmation image...');
+          await deleteImageByUrl(confirmation.imgUrl);
+          console.log('✅ Image deleted from Storage');
+        } catch (imgError) {
+          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
+          // Continue even if image deletion fails
+        }
+      }
+
+      // 2. Delete achievement confirmation from Firestore (don't update completedAt)
+      await deleteAchievementConfirmation(achievement.name, CHARACTER_ID);
+
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Achievement Rejected',
+        message: `Achievement confirmation for "${achievement.name}" has been rejected and removed.`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setReviewingId(null);
+          loadAchievements();
+        },
+        onCancel: null
+      });
+    } catch (error) {
+      console.error('❌ Error rejecting achievement:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to reject achievement: ${error.message}`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
@@ -956,6 +1151,12 @@ const AdminAchievementsPage = ({ onBack }) => {
             <div className="achievements-table">
               {achievements.map(achievement => {
                 const isEditing = editingId === achievement.id;
+                const isReviewing = reviewingId === achievement.id;
+                const isViewing = viewingId === achievement.id;
+                const confirmation = getAchievementConfirmation(achievement.name);
+                const hasConfirmation = !!confirmation;
+                const isCompleted = achievement.completedAt !== null;
+                const allConfirmations = getAchievementConfirmations(achievement.name);
 
                 return (
                   <div key={achievement.id} className="achievement-row">
@@ -966,7 +1167,157 @@ const AdminAchievementsPage = ({ onBack }) => {
                     </div>
 
                     <div className="achievement-cell main-cell">
-                      {isEditing ? (
+                      {isViewing ? (
+                        <div className="quest-view-history">
+                          <h3 className="view-title">📖 Achievement History</h3>
+                          
+                          {/* Achievement Info */}
+                          <div className="view-quest-info">
+                            <h4>{achievement.name}</h4>
+                            {achievement.desc && <p className="quest-desc">{achievement.desc}</p>}
+                            <div className="quest-details">
+                              {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
+                              {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
+                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              {achievement.createdAt && (
+                                <span>Created: {new Date(achievement.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                              )}
+                              {achievement.completedAt && (
+                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Confirmations History */}
+                          <div className="view-confirmations">
+                            <h4 className="confirmations-title">Submission History ({allConfirmations.length})</h4>
+                            {allConfirmations.length === 0 ? (
+                              <p className="no-confirmations">No submissions yet</p>
+                            ) : (
+                              <div className="confirmations-list">
+                                {allConfirmations.map((conf, index) => {
+                                  // Extract date from ID (format: name_YYMMDD)
+                                  const datePart = conf.id.split('_').pop();
+                                  const year = '20' + datePart.substring(0, 2);
+                                  const month = datePart.substring(2, 4);
+                                  const day = datePart.substring(4, 6);
+                                  const dateStr = `${day}/${month}/${year}`;
+
+                                  // Format createdAt timestamp
+                                  let createdAtStr = '';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? 
+                                        conf.createdAt.toDate() : 
+                                        new Date(conf.createdAt);
+                                      createdAtStr = createdDate.toLocaleString('vi-VN', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      });
+                                    } catch (e) {
+                                      console.error('Error parsing createdAt:', e);
+                                    }
+                                  }
+
+                                  return (
+                                    <div key={conf.id} className="confirmation-item">
+                                      <div className="confirmation-header">
+                                        <span className="confirmation-date">📅 {dateStr}</span>
+                                        <span className="confirmation-id">{conf.id}</span>
+                                      </div>
+                                      {createdAtStr && (
+                                        <div className="confirmation-created">
+                                          <span className="created-label">Submitted at:</span>
+                                          <span className="created-time">{createdAtStr}</span>
+                                        </div>
+                                      )}
+                                      {conf.desc && (
+                                        <div className="confirmation-desc">
+                                          <strong>Description:</strong>
+                                          <p>{conf.desc}</p>
+                                        </div>
+                                      )}
+                                      {conf.imgUrl && (
+                                        <div className="confirmation-image">
+                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="view-actions">
+                            <button
+                              onClick={() => setViewingId(null)}
+                              className="btn-secondary"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      ) : isReviewing ? (
+                        <div className="quest-review-form">
+                          <h3 className="review-title">📋 Review Achievement Confirmation</h3>
+                          <div className="review-quest-info">
+                            <h4>{achievement.name}</h4>
+                            {achievement.desc && <p className="quest-desc">{achievement.desc}</p>}
+                            {achievement.xp > 0 && <span className="quest-xp-badge">+{achievement.xp} XP</span>}
+                            {achievement.specialReward && <span className="quest-xp-badge">🎁 {achievement.specialReward}</span>}
+                          </div>
+                          
+                          {confirmation && (
+                            <div className="review-confirmation-content">
+                              <div className="form-group">
+                                <label>User Description:</label>
+                                <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
+                              </div>
+                              
+                              {confirmation.imgUrl && (
+                                <div className="form-group">
+                                  <label>Attached Image:</label>
+                                  <div className="confirmation-image-container">
+                                    <img 
+                                      src={confirmation.imgUrl} 
+                                      alt="Achievement confirmation" 
+                                      className="confirmation-image"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="review-actions">
+                                <button
+                                  onClick={() => handlePassAchievementConfirmation(achievement)}
+                                  className="btn-pass"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Processing...' : '✓ Pass'}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectAchievementConfirmation(achievement)}
+                                  className="btn-reject"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Processing...' : '✗ Reject'}
+                                </button>
+                                <button
+                                  onClick={() => setReviewingId(null)}
+                                  className="btn-secondary"
+                                  disabled={isSubmitting}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : isEditing ? (
                         <div className="achievement-edit-form">
                           <div className="form-group">
                             <label>Name *</label>
@@ -1053,27 +1404,59 @@ const AdminAchievementsPage = ({ onBack }) => {
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
                               {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
+                              <span>Status: {achievement.completedAt !== null ? '✅ Completed' : '⏳ Pending'}</span>
+                              {achievement.completedAt && (
+                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString()}</span>
+                              )}
                             </div>
                           </div>
                           <div className="achievement-status-cell">
                             <div className="achievement-buttons">
-                              <button
-                                onClick={() => {
-                                  setEditingId(achievement.id);
-                                  setFormData({
-                                    name: achievement.name,
-                                    desc: achievement.desc,
-                                    icon: achievement.icon,
-                                    xp: achievement.xp || '',
-                                    specialReward: achievement.specialReward || '',
-                                    dueDate: achievement.dueDate || ''
-                                  });
-                                }}
-                                className="btn-edit"
-                                disabled={isSubmitting}
-                              >
-                                ✎ Edit
-                              </button>
+                              {/* Show Review button if has confirmation and not completed */}
+                              {hasConfirmation && !isCompleted && (
+                                <button
+                                  onClick={() => handleReviewAchievement(achievement)}
+                                  className="btn-review"
+                                  disabled={isSubmitting}
+                                >
+                                  ◆ Review
+                                </button>
+                              )}
+                              
+                              {/* Show View button if completed */}
+                              {isCompleted && (
+                                <button
+                                  onClick={() => handleViewAchievement(achievement)}
+                                  className="btn-view"
+                                  disabled={isSubmitting}
+                                >
+                                  📖 View
+                                </button>
+                              )}
+                              
+                              {/* Show Edit button only if NOT completed AND NO confirmation pending */}
+                              {!isCompleted && !hasConfirmation && (
+                                <button
+                                  onClick={() => {
+                                    setEditingId(achievement.id);
+                                    setReviewingId(null);
+                                    setViewingId(null);
+                                    setFormData({
+                                      name: achievement.name,
+                                      desc: achievement.desc,
+                                      icon: achievement.icon,
+                                      xp: achievement.xp || '',
+                                      specialReward: achievement.specialReward || '',
+                                      dueDate: achievement.dueDate || ''
+                                    });
+                                  }}
+                                  className="btn-edit"
+                                  disabled={isSubmitting}
+                                >
+                                  ✎ Edit
+                                </button>
+                              )}
+                              
                               <button
                                 onClick={() => handleDeleteClick(achievement.id, achievement.name)}
                                 className="btn-delete"
@@ -1330,6 +1713,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                           </div>
                           <div className="quest-status-cell">
                             <div className="quest-buttons">
+                              {/* Show Review button if has confirmation and not completed */}
                               {hasConfirmation && !isCompleted && (
                                 <button
                                   onClick={() => handleReviewQuest(quest)}
@@ -1339,7 +1723,9 @@ const AdminAchievementsPage = ({ onBack }) => {
                                   ◆ Review
                                 </button>
                               )}
-                              {isCompleted ? (
+                              
+                              {/* Show View button if completed */}
+                              {isCompleted && (
                                 <button
                                   onClick={() => handleViewQuest(quest)}
                                   className="btn-view"
@@ -1347,7 +1733,10 @@ const AdminAchievementsPage = ({ onBack }) => {
                                 >
                                   📖 View
                                 </button>
-                              ) : (
+                              )}
+                              
+                              {/* Show Edit button only if NOT completed AND NO confirmation pending */}
+                              {!isCompleted && !hasConfirmation && (
                                 <button
                                   onClick={() => {
                                     setEditingId(quest.id);
@@ -1366,6 +1755,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                                   ✎ Edit
                                 </button>
                               )}
+                              
                               <button
                                 onClick={() => handleDeleteClick(quest.id, quest.name, 'quest')}
                                 className="btn-delete"
