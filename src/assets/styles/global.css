@@ -731,7 +731,7 @@ body {
     text-align: center;
     font-family: 'Kalam', cursive;
     font-size: 1.1rem;
-    color: var(--gray-medium);
+    color: var(--black);
     padding: 60px 20px;
     min-height: 180px;
 }
@@ -806,7 +806,7 @@ body {
     font-size: 1.2rem;
     line-height: 1.8;
     padding: 15px;
-    border: 2px dashed var(--black);
+    border: 2px var(--black);
     background: var(--white);
     min-height: 150px;
 }

@@ -1191,7 +1191,7 @@ const AdminAchievementsPage = ({ onBack }) => {
         <div className="achievements-list">
           <h2>▸ Manage Achievements</h2>
           {achievements.length === 0 ? (
-            <p className="empty-message">No achievements found</p>
+            <p className="admin-empty-message">No achievements found</p>
           ) : (
             <div className="achievements-table">
               {achievements.map(achievement => {
@@ -1524,7 +1524,7 @@ const AdminAchievementsPage = ({ onBack }) => {
         <div className="quests-list">
           <h2>▸ Manage Daily Quests</h2>
           {quests.length === 0 ? (
-            <p className="empty-message">No quests found</p>
+            <p className="admin-empty-message">No quests found</p>
           ) : (
             <div className="quests-table">
               {quests.map(quest => {

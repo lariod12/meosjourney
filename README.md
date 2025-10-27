@@ -421,10 +421,100 @@ All interactive elements should follow this pattern:
 - Keep animations subtle and optional
 - Respect `prefers-reduced-motion`
 
+### CSS Class Naming & Specificity
+
+#### ⚠️ Critical: Avoid Global Class Name Conflicts
+
+**Problem**: Component-specific CSS files can override global styles due to CSS specificity rules. Once a class name is defined in a specific component's CSS file, it cannot be reused globally without conflicts.
+
+**Example of the Issue**:
+```css
+/* ❌ BAD: In AdminAchievementsPage.css */
+.empty-message {
+  padding: 40px;
+  color: #666666;
+}
+
+/* This will override ALL .empty-message classes in other components! */
+/* QuestsTab.jsx, JournalTab.jsx, etc. will be affected */
+```
+
+**Solution**: Use component-prefixed class names for specific components:
+```css
+/* ✅ GOOD: In AdminAchievementsPage.css */
+.admin-empty-message {
+  padding: 40px;
+  color: #666666;
+}
+
+/* Now it only affects AdminAchievementsPage */
+```
+
+#### Naming Convention Rules
+
+1. **Component-Specific Classes**: Always prefix with component name
+   ```css
+   /* In AdminAchievementsPage.css */
+   .admin-container { }
+   .admin-header { }
+   .admin-empty-message { }
+   
+   /* In QuestDetailModal.css */
+   .quest-modal-container { }
+   .quest-modal-header { }
+   ```
+
+2. **Global Classes**: Only define in `style.css` or `global.css`
+   ```css
+   /* In style.css - safe to use anywhere */
+   .btn-primary { }
+   .text-center { }
+   .container { }
+   ```
+
+3. **Shared Component Classes**: Use descriptive, unique names
+   ```css
+   /* In DeleteConfirmModal.css */
+   .delete-confirm-modal { }
+   .delete-confirm-title { }
+   ```
+
+#### Best Practices
+
+✅ **Do's**:
+- Prefix all classes with component/page name
+- Use BEM-like naming: `.component-element-modifier`
+- Check if class name exists globally before creating
+- Document component-specific classes in comments
+
+❌ **Don'ts**:
+- Never reuse generic class names like `.empty-message`, `.container`, `.header` in component CSS
+- Don't assume your component CSS won't affect others
+- Don't create global-sounding names in specific components
+- Don't override global classes in component files
+
+#### Migration Guide
+
+If you find conflicting class names:
+1. Identify the specific component causing the issue
+2. Rename the class with component prefix
+3. Update all references in the component's JSX
+4. Test to ensure no other components are affected
+
+**Example Migration**:
+```jsx
+// Before (causes conflicts)
+<p className="empty-message">No data</p>
+
+// After (component-specific)
+<p className="admin-empty-message">No data</p>
+```
+
 ### Do's and Don'ts
 
 #### ✅ Do's
 - **Design mobile-first, enhance for desktop**
+- **Use component-prefixed class names in specific CSS files**
 - Use only black, white, and grayscale colors
 - Apply subtle rotations to elements
 - Use thick black borders consistently
@@ -437,6 +527,7 @@ All interactive elements should follow this pattern:
 
 #### ❌ Don'ts
 - **Never design desktop-first**
+- **Never reuse generic class names in component-specific CSS files**
 - Never use colors outside the black/white palette
 - Avoid perfect alignment - embrace slight imperfections
 - Don't use thin borders (less than 2px)
