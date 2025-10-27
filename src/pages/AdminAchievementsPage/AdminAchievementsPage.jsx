@@ -5,7 +5,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, CHARACTER_ID } from '../../services/firestore';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -17,7 +17,9 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('create-achievement');
   const [achievements, setAchievements] = useState([]);
   const [quests, setQuests] = useState([]);
+  const [questConfirmations, setQuestConfirmations] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [reviewingId, setReviewingId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '', type: '' });
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -78,8 +80,14 @@ const AdminAchievementsPage = ({ onBack }) => {
 
   const loadQuests = async () => {
     try {
-      const data = await fetchQuests(CHARACTER_ID);
-      setQuests(data);
+      const [questsData, confirmationsData] = await Promise.all([
+        fetchQuests(CHARACTER_ID),
+        fetchQuestConfirmations(CHARACTER_ID)
+      ]);
+      setQuests(questsData);
+      setQuestConfirmations(confirmationsData);
+      console.log('📋 Loaded quests:', questsData.length);
+      console.log('✅ Loaded confirmations:', confirmationsData.length);
     } catch (error) {
       console.error('Error loading quests:', error);
     }
@@ -541,9 +549,127 @@ const AdminAchievementsPage = ({ onBack }) => {
     setDeleteTarget({ id: null, name: '', type: '' });
   };
 
+  // Helper function to get quest confirmation for a quest
+  const getQuestConfirmation = (questName) => {
+    // Generate today's date suffix
+    const today = new Date();
+    const todaySuffix = today.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
 
+    // Sanitize quest name to match confirmation ID format
+    const sanitizedName = questName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
 
+    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    
+    return questConfirmations.find(c => c.id === expectedId);
+  };
 
+  const handleReviewQuest = (quest) => {
+    console.log('👁️ Reviewing quest:', quest.name);
+    setReviewingId(quest.id);
+    setEditingId(null); // Close edit mode if open
+  };
+
+  const handlePassQuestConfirmation = async (quest) => {
+    setIsSubmitting(true);
+
+    try {
+      const confirmation = getQuestConfirmation(quest.name);
+      
+      if (!confirmation) {
+        throw new Error('Quest confirmation not found');
+      }
+
+      // 1. Update quest completedAt
+      await updateQuest(quest.id, {
+        completedAt: new Date()
+      }, CHARACTER_ID);
+
+      // 2. Delete quest confirmation
+      await deleteQuestConfirmation(quest.name, CHARACTER_ID);
+
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Quest Passed',
+        message: `Quest "${quest.name}" has been marked as completed!`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setReviewingId(null);
+          loadQuests();
+        },
+        onCancel: null
+      });
+    } catch (error) {
+      console.error('❌ Error passing quest:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to pass quest: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRejectQuestConfirmation = async (quest) => {
+    setIsSubmitting(true);
+
+    try {
+      const confirmation = getQuestConfirmation(quest.name);
+      
+      if (!confirmation) {
+        throw new Error('Quest confirmation not found');
+      }
+
+      // Delete quest confirmation only (don't update completedAt)
+      await deleteQuestConfirmation(quest.name, CHARACTER_ID);
+
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Quest Rejected',
+        message: `Quest confirmation for "${quest.name}" has been rejected and removed.`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          setReviewingId(null);
+          loadQuests();
+        },
+        onCancel: null
+      });
+    } catch (error) {
+      console.error('❌ Error rejecting quest:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: `Failed to reject quest: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="admin-container">
@@ -908,6 +1034,9 @@ const AdminAchievementsPage = ({ onBack }) => {
             <div className="quests-table">
               {quests.map(quest => {
                 const isEditing = editingId === quest.id;
+                const isReviewing = reviewingId === quest.id;
+                const confirmation = getQuestConfirmation(quest.name);
+                const hasConfirmation = !!confirmation;
 
                 return (
                   <div key={quest.id} className="quest-row">
@@ -916,7 +1045,62 @@ const AdminAchievementsPage = ({ onBack }) => {
                     </div>
 
                     <div className="quest-cell main-cell">
-                      {isEditing ? (
+                      {isReviewing ? (
+                        <div className="quest-review-form">
+                          <h3 className="review-title">📋 Review Quest Confirmation</h3>
+                          <div className="review-quest-info">
+                            <h4>{quest.name}</h4>
+                            {quest.desc && <p className="quest-desc">{quest.desc}</p>}
+                            <span className="quest-xp-badge">+{quest.xp} XP</span>
+                          </div>
+                          
+                          {confirmation && (
+                            <div className="review-confirmation-content">
+                              <div className="form-group">
+                                <label>User Description:</label>
+                                <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
+                              </div>
+                              
+                              {confirmation.imgUrl && (
+                                <div className="form-group">
+                                  <label>Attached Image:</label>
+                                  <div className="confirmation-image-container">
+                                    <img 
+                                      src={confirmation.imgUrl} 
+                                      alt="Quest confirmation" 
+                                      className="confirmation-image"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="review-actions">
+                                <button
+                                  onClick={() => handlePassQuestConfirmation(quest)}
+                                  className="btn-pass"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Processing...' : '✓ Pass'}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectQuestConfirmation(quest)}
+                                  className="btn-reject"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? 'Processing...' : '✗ Reject'}
+                                </button>
+                                <button
+                                  onClick={() => setReviewingId(null)}
+                                  className="btn-secondary"
+                                  disabled={isSubmitting}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : isEditing ? (
                         <div className="quest-edit-form">
                           <div className="form-group">
                             <label>Quest Name *</label>
@@ -983,9 +1167,19 @@ const AdminAchievementsPage = ({ onBack }) => {
                           </div>
                           <div className="quest-status-cell">
                             <div className="quest-buttons">
+                              {hasConfirmation && (
+                                <button
+                                  onClick={() => handleReviewQuest(quest)}
+                                  className="btn-review"
+                                  disabled={isSubmitting}
+                                >
+                                  ◆ Review
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setEditingId(quest.id);
+                                  setReviewingId(null);
                                   setFormData({
                                     ...formData,
                                     name: quest.name,
