@@ -612,26 +612,27 @@ body {
 }
 
 
+
 /* ========================================
-   Quest Confirmation Indicators
+   Quest Confirmation Indicators - Black & White Theme
    ======================================== */
 
 /* Dropdown item with confirmation */
 .quest-dropdown-item.has-confirmation {
-  background-color: #fff8e1;
-  border-left: 4px solid #ffa726;
+  background-color: #f0f0f0;
+  border-left: 4px solid #000000;
 }
 
 .quest-dropdown-item.has-confirmation:hover {
-  background-color: #ffecb3;
+  background-color: #e0e0e0;
 }
 
 .confirmation-badge {
   display: inline-block;
   margin-left: 10px;
   padding: 2px 8px;
-  background-color: #ffa726;
-  color: #000000;
+  background-color: #000000;
+  color: #ffffff;
   font-size: 12px;
   font-weight: bold;
   border: 2px solid #000000;
@@ -652,8 +653,8 @@ body {
 }
 
 .quest-status-badge.pending {
-  background-color: #ffa726;
-  color: #000000;
+  background-color: #000000;
+  color: #ffffff;
 }
 
 .quest-submission-title {
