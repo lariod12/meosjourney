@@ -10,22 +10,14 @@ import { saveJournal } from '../services/firestore';
  * @returns {string} Formatted journal entry content
  */
 export const generateQuestJournalEntry = (quest) => {
-  const currentTime = new Date().toLocaleTimeString('en-US', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+  // Create journal entry template following the specified format
+  let journalContent = `[Quest Completed] ${quest.name}`;
 
-  // Create journal entry template
-  let journalContent = `🎯 Quest Completed: ${quest.name}`;
-  
   if (quest.desc && quest.desc.trim()) {
-    journalContent += `\n📝 ${quest.desc}`;
+    journalContent += `: ${quest.desc}`;
   }
-  
-  journalContent += `\n⭐ Reward: +${quest.xp} XP`;
-  journalContent += `\n⏰ Completed at: ${currentTime}`;
+
+  journalContent += ` (+${quest.xp} XP)`;
 
   return journalContent;
 };
@@ -36,34 +28,25 @@ export const generateQuestJournalEntry = (quest) => {
  * @returns {string} Formatted journal entry content
  */
 export const generateAchievementJournalEntry = (achievement) => {
-  const currentTime = new Date().toLocaleTimeString('en-US', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+  // Create journal entry template following the specified format
+  let journalContent = `[Achievement Unlocked] ${achievement.name}`;
 
-  // Create journal entry template
-  let journalContent = `🏆 Achievement Unlocked: ${achievement.name}`;
-  
   if (achievement.desc && achievement.desc.trim()) {
-    journalContent += `\n📝 ${achievement.desc}`;
+    journalContent += `: ${achievement.desc}`;
   }
-  
+
   // Add rewards
   const rewards = [];
   if (achievement.xp > 0) {
     rewards.push(`+${achievement.xp} XP`);
   }
   if (achievement.specialReward && achievement.specialReward.trim()) {
-    rewards.push(`🎁 ${achievement.specialReward}`);
+    rewards.push(achievement.specialReward);
   }
-  
+
   if (rewards.length > 0) {
-    journalContent += `\n⭐ Rewards: ${rewards.join(', ')}`;
+    journalContent += ` (${rewards.join(', ')})`;
   }
-  
-  journalContent += `\n⏰ Achieved at: ${currentTime}`;
 
   return journalContent;
 };
@@ -77,7 +60,7 @@ export const generateAchievementJournalEntry = (achievement) => {
 export const saveQuestCompletionJournal = async (quest, characterId) => {
   try {
     const journalContent = generateQuestJournalEntry(quest);
-    
+
     const result = await saveJournal({
       caption: journalContent
     }, characterId);
@@ -99,7 +82,7 @@ export const saveQuestCompletionJournal = async (quest, characterId) => {
 export const saveAchievementCompletionJournal = async (achievement, characterId) => {
   try {
     const journalContent = generateAchievementJournalEntry(achievement);
-    
+
     const result = await saveJournal({
       caption: journalContent
     }, characterId);
