@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import './ConfirmModal.css';
 
 const ConfirmModal = ({
@@ -8,7 +9,8 @@ const ConfirmModal = ({
   cancelText = "Cancel",
   onConfirm,
   onCancel,
-  type = "info" // "info", "success", "warning", "error"
+  type = "info", // "info", "success", "warning", "error"
+  canClose = true // Can close by clicking overlay or ESC
 }) => {
   if (!isOpen) return null;
 
@@ -35,8 +37,33 @@ const ConfirmModal = ({
     }
   };
 
+  const handleOverlayClick = (e) => {
+    // Only close if clicking on overlay (not modal content) and canClose is true
+    if (e.target === e.currentTarget && canClose && onCancel) {
+      handleCancel();
+    }
+  };
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape' && canClose && onCancel) {
+        console.log('❌ User pressed ESC');
+        onCancel();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, canClose, onCancel]);
+
   return (
-    <div className="confirm-modal-overlay">
+    <div className="confirm-modal-overlay" onClick={handleOverlayClick}>
       <div className={`confirm-modal confirm-modal-${type}`}>
         <div className="confirm-modal-header">
           <h2>

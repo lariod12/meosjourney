@@ -109,12 +109,10 @@ const AdminAchievementsPage = ({ onBack }) => {
     try {
       if (activeTab === 'manage-achievements' || activeTab === 'create-achievement') {
         await loadAchievements();
-        console.log('✅ Reloaded achievements');
       }
       
       if (activeTab === 'manage-quests' || activeTab === 'create-quest') {
         await loadQuests();
-        console.log('✅ Reloaded quests');
       }
 
       // Show success notification
@@ -557,7 +555,6 @@ const AdminAchievementsPage = ({ onBack }) => {
         for (const conf of allConfirmations) {
           if (conf.imgUrl) {
             try {
-              console.log('🗑️ Deleting confirmation image:', conf.id);
               await deleteImageByUrl(conf.imgUrl);
             } catch (imgError) {
               console.warn('⚠️ Could not delete image:', imgError.message);
@@ -569,7 +566,6 @@ const AdminAchievementsPage = ({ onBack }) => {
         // 3. Delete all quest confirmations from Firestore
         for (const conf of allConfirmations) {
           try {
-            console.log('🗑️ Deleting confirmation:', conf.id);
             await deleteQuestConfirmationById(conf.id, CHARACTER_ID);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
@@ -597,13 +593,11 @@ const AdminAchievementsPage = ({ onBack }) => {
         // Delete achievement with confirmations
         // 1. Get all confirmations for this achievement
         const allConfirmations = getAchievementConfirmations(deleteTarget.name);
-        console.log(`🗑️ Deleting achievement "${deleteTarget.name}" with ${allConfirmations.length} confirmations`);
 
         // 2. Delete all images from Storage
         for (const conf of allConfirmations) {
           if (conf.imgUrl) {
             try {
-              console.log('🗑️ Deleting confirmation image:', conf.id);
               await deleteImageByUrl(conf.imgUrl);
             } catch (imgError) {
               console.warn('⚠️ Could not delete image:', imgError.message);
@@ -615,7 +609,6 @@ const AdminAchievementsPage = ({ onBack }) => {
         // 3. Delete all achievement confirmations from Firestore
         for (const conf of allConfirmations) {
           try {
-            console.log('🗑️ Deleting confirmation:', conf.id);
             await deleteAchievementConfirmationById(conf.id, CHARACTER_ID);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
@@ -748,28 +741,24 @@ const AdminAchievementsPage = ({ onBack }) => {
   };
 
   const handleReviewQuest = (quest) => {
-    console.log('👁️ Reviewing quest:', quest.name);
     setReviewingId(quest.id);
     setEditingId(null);
     setViewingId(null);
   };
 
   const handleViewQuest = (quest) => {
-    console.log('📖 Viewing quest history:', quest.name);
     setViewingId(quest.id);
     setEditingId(null);
     setReviewingId(null);
   };
 
   const handleReviewAchievement = (achievement) => {
-    console.log('👁️ Reviewing achievement:', achievement.name);
     setReviewingId(achievement.id);
     setEditingId(null);
     setViewingId(null);
   };
 
   const handleViewAchievement = (achievement) => {
-    console.log('📖 Viewing achievement history:', achievement.name);
     setViewingId(achievement.id);
     setEditingId(null);
     setReviewingId(null);

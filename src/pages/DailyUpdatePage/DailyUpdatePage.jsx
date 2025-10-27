@@ -56,7 +56,11 @@ const DailyUpdate = ({ onBack }) => {
     type: 'info',
     title: '',
     message: '',
-    onConfirm: null
+    confirmText: 'OK',
+    cancelText: null,
+    onConfirm: null,
+    onCancel: null,
+    canClose: true
   });
 
   const moodRef = useRef(null);
@@ -106,7 +110,6 @@ const DailyUpdate = ({ onBack }) => {
   const handleRefresh = async () => {
     if (isRefreshing || isSubmitting) return;
 
-    console.log('🔄 Refreshing data from database...');
     setIsRefreshing(true);
 
     try {
@@ -124,13 +127,11 @@ const DailyUpdate = ({ onBack }) => {
       const availableQuests = quests.filter(q => q.completedAt === null);
       setAvailableQuests(availableQuests);
       setQuestConfirmations(questConfirms);
-      console.log('✅ Reloaded quests:', availableQuests.length, 'available');
 
       // Filter only incomplete achievements
       const availableAchievements = achievements.filter(a => a.completedAt === null);
       setAvailableAchievements(availableAchievements);
       setAchievementConfirmations(achievementConfirms);
-      console.log('✅ Reloaded achievements:', availableAchievements.length, 'available');
 
       // Show success notification
       setConfirmModal({
@@ -139,6 +140,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'Refreshed',
         message: 'Data updated successfully!',
         confirmText: 'OK',
+        cancelText: null, // No cancel button for success
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
 
@@ -150,6 +152,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'Refresh Failed',
         message: `Failed to refresh data: ${error.message}`,
         confirmText: 'OK',
+        cancelText: null, // No cancel button for error
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
     } finally {
@@ -231,9 +234,29 @@ const DailyUpdate = ({ onBack }) => {
 
     if (isSubmitting) return;
 
+    // Show confirmation dialog first
+    setConfirmModal({
+      isOpen: true,
+      type: 'info',
+      title: 'Confirm Submission',
+      message: 'Are you sure you want to submit your data?',
+      confirmText: 'Submit',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        // Start actual submission after user confirms
+        performSubmit();
+      },
+      onCancel: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const performSubmit = async () => {
     setIsSubmitting(true);
 
-    // Show processing dialog
+    // Show processing dialog (no buttons, cannot close)
     setConfirmModal({
       isOpen: true,
       type: 'info',
@@ -242,7 +265,8 @@ const DailyUpdate = ({ onBack }) => {
       confirmText: null, // No button while processing
       cancelText: null,
       onConfirm: null,
-      onCancel: null
+      onCancel: null,
+      canClose: false // Cannot close while processing
     });
 
     try {
@@ -259,7 +283,6 @@ const DailyUpdate = ({ onBack }) => {
         }, CHARACTER_ID);
 
         if (statusResult.success) {
-          console.log('✅ Status saved:', statusResult.id);
           results.push('Status Update');
         } else {
           console.warn('⚠️ Status not saved:', statusResult.message);
@@ -273,14 +296,12 @@ const DailyUpdate = ({ onBack }) => {
         }, CHARACTER_ID);
 
         if (journalResult.success) {
-          console.log('✅ Journal saved:', journalResult.id);
           results.push('Journal Entry');
         }
       }
 
       // Submit Quest Confirmations (if has submissions)
       if (selectedQuestSubmissions.length > 0) {
-        console.log('🎯 Processing quest submissions:', selectedQuestSubmissions.length);
 
         for (let i = 0; i < selectedQuestSubmissions.length; i++) {
           const submission = selectedQuestSubmissions[i];
@@ -293,9 +314,9 @@ const DailyUpdate = ({ onBack }) => {
             const existingConfirmation = await getQuestConfirmation(submission.questTitle, CHARACTER_ID);
             if (existingConfirmation && existingConfirmation.imgUrl) {
               try {
-                console.log('🗑️ Deleting old quest confirmation image...');
+
                 await deleteImageByUrl(existingConfirmation.imgUrl);
-                console.log('✅ Old image deleted');
+
               } catch (deleteError) {
                 console.warn('⚠️ Could not delete old image:', deleteError.message);
                 // Continue even if deletion fails
@@ -304,24 +325,19 @@ const DailyUpdate = ({ onBack }) => {
 
             // 2. Upload new image to Storage if exists
             if (submission.image) {
-              console.log(`📤 [${i + 1}/${selectedQuestSubmissions.length}] Uploading quest confirmation image for:`, submission.questTitle);
               const uploadResult = await uploadQuestConfirmImage(
                 submission.image,
                 submission.questTitle
               );
               imgUrl = uploadResult.url;
-              console.log('✅ Image uploaded to:', uploadResult.path);
-              console.log('🔗 Image URL:', imgUrl);
             }
 
             // 3. Save confirmation to quests-confirm collection (will override if exists)
-            console.log('💾 Saving quest confirmation to Firestore...');
             await saveQuestConfirmation({
               name: submission.questTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
-            console.log('✅ Quest confirmation saved for:', submission.questTitle);
 
             results.push(`Quest: ${submission.questTitle}`);
 
@@ -337,7 +353,6 @@ const DailyUpdate = ({ onBack }) => {
 
       // Submit Achievement Confirmations (if has submissions)
       if (selectedAchievementSubmissions.length > 0) {
-        console.log('🏆 Processing achievement submissions:', selectedAchievementSubmissions.length);
 
         for (let i = 0; i < selectedAchievementSubmissions.length; i++) {
           const submission = selectedAchievementSubmissions[i];
@@ -350,9 +365,7 @@ const DailyUpdate = ({ onBack }) => {
             const existingConfirmation = await getAchievementConfirmation(submission.achievementTitle, CHARACTER_ID);
             if (existingConfirmation && existingConfirmation.imgUrl) {
               try {
-                console.log('🗑️ Deleting old achievement confirmation image...');
                 await deleteImageByUrl(existingConfirmation.imgUrl);
-                console.log('✅ Old image deleted');
               } catch (deleteError) {
                 console.warn('⚠️ Could not delete old image:', deleteError.message);
                 // Continue even if deletion fails
@@ -361,24 +374,19 @@ const DailyUpdate = ({ onBack }) => {
 
             // 2. Upload new image to Storage if exists
             if (submission.image) {
-              console.log(`📤 [${i + 1}/${selectedAchievementSubmissions.length}] Uploading achievement confirmation image for:`, submission.achievementTitle);
               const uploadResult = await uploadAchievementConfirmImage(
                 submission.image,
                 submission.achievementTitle
               );
               imgUrl = uploadResult.url;
-              console.log('✅ Image uploaded to:', uploadResult.path);
-              console.log('🔗 Image URL:', imgUrl);
             }
 
             // 3. Save confirmation to achievements-confirm collection (will override if exists)
-            console.log('💾 Saving achievement confirmation to Firestore...');
             await saveAchievementConfirmation({
               name: submission.achievementTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
-            console.log('✅ Achievement confirmation saved for:', submission.achievementTitle);
 
             results.push(`Achievement: ${submission.achievementTitle}`);
 
@@ -400,6 +408,7 @@ const DailyUpdate = ({ onBack }) => {
           title: 'Success',
           message: `${results.join(', ')} saved successfully!`,
           confirmText: 'OK',
+          cancelText: null, // No cancel button for success
           onConfirm: () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
             // Reset form after successful submit
@@ -421,12 +430,10 @@ const DailyUpdate = ({ onBack }) => {
               // Filter only incomplete quests
               const availableQuests = quests.filter(q => q.completedAt === null);
               setAvailableQuests(availableQuests);
-              console.log('🔄 Reloaded quests, available:', availableQuests.length);
 
               // Filter only incomplete achievements
               const availableAchievements = achievements.filter(a => a.completedAt === null);
               setAvailableAchievements(availableAchievements);
-              console.log('🔄 Reloaded achievements, available:', availableAchievements.length);
             });
           }
         });
@@ -437,6 +444,7 @@ const DailyUpdate = ({ onBack }) => {
           title: 'No Data',
           message: 'No data to save. Please fill in at least one field.',
           confirmText: 'OK',
+          cancelText: null, // No cancel button for warning
           onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
         });
       }
@@ -449,6 +457,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'Error',
         message: `Failed to save: ${error.message}`,
         confirmText: 'OK',
+        cancelText: null, // No cancel button for error
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
     } finally {
@@ -484,7 +493,6 @@ const DailyUpdate = ({ onBack }) => {
   };
 
   const handleRemoveQuestSubmission = (index) => {
-    console.log('➖ Removing quest submission at index:', index);
     setSelectedQuestSubmissions(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -505,6 +513,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'Invalid File',
         message: 'Please select an image file (jpg, png, gif, etc.)',
         confirmText: 'OK',
+        cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
       return;
@@ -519,6 +528,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'File Too Large',
         message: 'Image size must be less than 5MB. Please choose a smaller image.',
         confirmText: 'OK',
+        cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
       return;
@@ -616,6 +626,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'Invalid File',
         message: 'Please select an image file (jpg, png, gif, etc.)',
         confirmText: 'OK',
+        cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
       return;
@@ -630,6 +641,7 @@ const DailyUpdate = ({ onBack }) => {
         title: 'File Too Large',
         message: 'Image size must be less than 5MB. Please choose a smaller image.',
         confirmText: 'OK',
+        cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
       });
       return;
@@ -1143,13 +1155,15 @@ const DailyUpdate = ({ onBack }) => {
         type={confirmModal.type}
         title={confirmModal.title}
         message={confirmModal.message}
-        confirmText={confirmModal.confirmText || 'OK'}
-        cancelText="Cancel"
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
         onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onCancel={confirmModal.onCancel}
+        canClose={confirmModal.canClose !== false} // Default true, only false when explicitly set
       />
     </div>
   );
 };
 
 export default DailyUpdate;
+
