@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import './DailyUpdatePage.css';
-import { 
-  fetchConfig, 
-  saveStatus, 
-  saveJournal, 
-  fetchQuests, 
+import {
+  fetchConfig,
+  saveStatus,
+  saveJournal,
+  fetchQuests,
   saveQuestConfirmation,
-  CHARACTER_ID 
+  CHARACTER_ID
 } from '../../services/firestore';
 import { uploadQuestConfirmImage } from '../../services/storage';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
@@ -45,7 +45,7 @@ const DailyUpdate = ({ onBack }) => {
 
   const moodRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
-  
+
   // Collapse/expand states - collapsed by default
   const [statusExpanded, setStatusExpanded] = useState(false);
   const [journalExpanded, setJournalExpanded] = useState(false);
@@ -60,7 +60,7 @@ const DailyUpdate = ({ onBack }) => {
       .then(([cfg, quests]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
-        
+
         // Filter only incomplete quests (completedAt === null)
         const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
@@ -148,10 +148,10 @@ const DailyUpdate = ({ onBack }) => {
 
     try {
       const results = [];
-      
+
       // Submit Status Update (if has data)
       const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.mood.trim();
-      
+
       if (hasStatusData) {
         const statusResult = await saveStatus({
           doing: formData.doing,
@@ -182,14 +182,14 @@ const DailyUpdate = ({ onBack }) => {
       // Submit Quest Confirmations (if has submissions)
       if (selectedQuestSubmissions.length > 0) {
         console.log('🎯 Processing quest submissions:', selectedQuestSubmissions.length);
-        
+
         for (let i = 0; i < selectedQuestSubmissions.length; i++) {
           const submission = selectedQuestSubmissions[i];
           setUploadingQuestIndex(i);
-          
+
           try {
             let imgUrl = '';
-            
+
             // 1. Upload image to Storage if exists
             if (submission.image) {
               console.log(`📤 [${i + 1}/${selectedQuestSubmissions.length}] Uploading quest confirmation image for:`, submission.questTitle);
@@ -201,7 +201,7 @@ const DailyUpdate = ({ onBack }) => {
               console.log('✅ Image uploaded to:', uploadResult.path);
               console.log('🔗 Image URL:', imgUrl);
             }
-            
+
             // 2. Save confirmation to quests-confirm collection
             console.log('💾 Saving quest confirmation to Firestore...');
             await saveQuestConfirmation({
@@ -210,16 +210,16 @@ const DailyUpdate = ({ onBack }) => {
               imgUrl: imgUrl
             }, CHARACTER_ID);
             console.log('✅ Quest confirmation saved for:', submission.questTitle);
-            
+
             results.push(`Quest: ${submission.questTitle}`);
-            
+
           } catch (error) {
             console.error('❌ Error processing quest submission:', submission.questTitle, error);
             // Continue with other quests even if one fails
             results.push(`Quest: ${submission.questTitle} (failed)`);
           }
         }
-        
+
         setUploadingQuestIndex(-1);
       }
 
@@ -310,7 +310,7 @@ const DailyUpdate = ({ onBack }) => {
   };
 
   const handleQuestDescriptionChange = (index, value) => {
-    setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
+    setSelectedQuestSubmissions(prev => prev.map((submission, i) =>
       i === index ? { ...submission, description: value } : submission
     ));
   };
@@ -348,9 +348,9 @@ const DailyUpdate = ({ onBack }) => {
     // Show preview immediately
     const reader = new FileReader();
     reader.onloadend = () => {
-      setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
-        i === index ? { 
-          ...submission, 
+      setSelectedQuestSubmissions(prev => prev.map((submission, i) =>
+        i === index ? {
+          ...submission,
           image: file,
           imagePreview: reader.result,
           isUploading: false
@@ -363,11 +363,11 @@ const DailyUpdate = ({ onBack }) => {
   };
 
   const handleRemoveQuestImage = (index) => {
-    setSelectedQuestSubmissions(prev => prev.map((submission, i) => 
-      i === index ? { 
-        ...submission, 
+    setSelectedQuestSubmissions(prev => prev.map((submission, i) =>
+      i === index ? {
+        ...submission,
         image: null,
-        imagePreview: null 
+        imagePreview: null
       } : submission
     ));
   };
@@ -411,8 +411,8 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Status Update */}
           <div className="form-section">
-            <h2 
-              className="section-title clickable" 
+            <h2
+              className="section-title clickable"
               onClick={() => {
                 console.log('Status Update section clicked');
                 setStatusExpanded(!statusExpanded);
@@ -487,8 +487,8 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Daily Journal */}
           <div className="form-section">
-            <h2 
-              className="section-title clickable" 
+            <h2
+              className="section-title clickable"
               onClick={() => {
                 console.log('Daily Journal section clicked');
                 setJournalExpanded(!journalExpanded);
@@ -521,8 +521,8 @@ const DailyUpdate = ({ onBack }) => {
 
           {/* Daily Quests Update */}
           <div className="form-section">
-            <h2 
-              className="section-title clickable" 
+            <h2
+              className="section-title clickable"
               onClick={() => {
                 console.log('Daily Quests Update section clicked');
                 setQuestsExpanded(!questsExpanded);
@@ -544,7 +544,7 @@ const DailyUpdate = ({ onBack }) => {
                     >
                       ➕ Add Completed Quest
                     </button>
-                    
+
                     {showQuestDropdown && getAvailableQuestsForDropdown().length > 0 && (
                       <div className="quest-dropdown">
                         {getAvailableQuestsForDropdown().map(quest => (
@@ -560,7 +560,7 @@ const DailyUpdate = ({ onBack }) => {
                       </div>
                     )}
                   </div>
-                  
+
                   {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && (
                     <p className="no-quests-message">No incomplete quests available</p>
                   )}
@@ -616,9 +616,9 @@ const DailyUpdate = ({ onBack }) => {
                           </div>
                         ) : (
                           <div className="image-preview-container">
-                            <img 
-                              src={submission.imagePreview} 
-                              alt="Quest completion" 
+                            <img
+                              src={submission.imagePreview}
+                              alt="Quest completion"
                               className="image-preview"
                             />
                             <button
@@ -642,7 +642,7 @@ const DailyUpdate = ({ onBack }) => {
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? (
-                uploadingQuestIndex >= 0 
+                uploadingQuestIndex >= 0
                   ? `Uploading quest ${uploadingQuestIndex + 1}/${selectedQuestSubmissions.length}...`
                   : 'Submitting...'
               ) : 'Submit'}

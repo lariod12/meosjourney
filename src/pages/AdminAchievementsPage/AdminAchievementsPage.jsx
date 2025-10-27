@@ -21,6 +21,7 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [questConfirmations, setQuestConfirmations] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [reviewingId, setReviewingId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState({ id: null, name: '', type: '' });
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -573,10 +574,37 @@ const AdminAchievementsPage = ({ onBack }) => {
     return questConfirmations.find(c => c.id === expectedId);
   };
 
+  // Get all confirmations for a quest (all dates)
+  const getQuestConfirmations = (questName) => {
+    const sanitizedName = questName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Find all confirmations that start with the sanitized quest name
+    return questConfirmations
+      .filter(c => c.id.startsWith(`${sanitizedName}_`))
+      .sort((a, b) => {
+        // Sort by date (newest first) - extract date from ID
+        const dateA = a.id.split('_').pop();
+        const dateB = b.id.split('_').pop();
+        return dateB.localeCompare(dateA);
+      });
+  };
+
   const handleReviewQuest = (quest) => {
     console.log('👁️ Reviewing quest:', quest.name);
     setReviewingId(quest.id);
-    setEditingId(null); // Close edit mode if open
+    setEditingId(null);
+    setViewingId(null);
+  };
+
+  const handleViewQuest = (quest) => {
+    console.log('📖 Viewing quest history:', quest.name);
+    setViewingId(quest.id);
+    setEditingId(null);
+    setReviewingId(null);
   };
 
   const handlePassQuestConfirmation = async (quest) => {
@@ -1046,8 +1074,11 @@ const AdminAchievementsPage = ({ onBack }) => {
               {quests.map(quest => {
                 const isEditing = editingId === quest.id;
                 const isReviewing = reviewingId === quest.id;
+                const isViewing = viewingId === quest.id;
                 const confirmation = getQuestConfirmation(quest.name);
                 const hasConfirmation = !!confirmation;
+                const isCompleted = quest.completedAt !== null;
+                const allConfirmations = getQuestConfirmations(quest.name);
 
                 return (
                   <div key={quest.id} className="quest-row">
@@ -1056,7 +1087,100 @@ const AdminAchievementsPage = ({ onBack }) => {
                     </div>
 
                     <div className="quest-cell main-cell">
-                      {isReviewing ? (
+                      {isViewing ? (
+                        <div className="quest-view-history">
+                          <h3 className="view-title">📖 Quest History</h3>
+                          
+                          {/* Quest Info */}
+                          <div className="view-quest-info">
+                            <h4>{quest.name}</h4>
+                            {quest.desc && <p className="quest-desc">{quest.desc}</p>}
+                            <div className="quest-details">
+                              <span>XP: {quest.xp}</span>
+                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              {quest.createdAt && (
+                                <span>Created: {new Date(quest.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                              )}
+                              {quest.completedAt && (
+                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Confirmations History */}
+                          <div className="view-confirmations">
+                            <h4 className="confirmations-title">Submission History ({allConfirmations.length})</h4>
+                            {allConfirmations.length === 0 ? (
+                              <p className="no-confirmations">No submissions yet</p>
+                            ) : (
+                              <div className="confirmations-list">
+                                {allConfirmations.map((conf, index) => {
+                                  // Extract date from ID (format: name_YYMMDD)
+                                  const datePart = conf.id.split('_').pop();
+                                  const year = '20' + datePart.substring(0, 2);
+                                  const month = datePart.substring(2, 4);
+                                  const day = datePart.substring(4, 6);
+                                  const dateStr = `${day}/${month}/${year}`;
+
+                                  // Format createdAt timestamp
+                                  let createdAtStr = '';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? 
+                                        conf.createdAt.toDate() : 
+                                        new Date(conf.createdAt);
+                                      createdAtStr = createdDate.toLocaleString('vi-VN', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      });
+                                    } catch (e) {
+                                      console.error('Error parsing createdAt:', e);
+                                    }
+                                  }
+
+                                  return (
+                                    <div key={conf.id} className="confirmation-item">
+                                      <div className="confirmation-header">
+                                        <span className="confirmation-date">📅 {dateStr}</span>
+                                        <span className="confirmation-id">{conf.id}</span>
+                                      </div>
+                                      {createdAtStr && (
+                                        <div className="confirmation-created">
+                                          <span className="created-label">Submitted at:</span>
+                                          <span className="created-time">{createdAtStr}</span>
+                                        </div>
+                                      )}
+                                      {conf.desc && (
+                                        <div className="confirmation-desc">
+                                          <strong>Description:</strong>
+                                          <p>{conf.desc}</p>
+                                        </div>
+                                      )}
+                                      {conf.imgUrl && (
+                                        <div className="confirmation-image">
+                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="view-actions">
+                            <button
+                              onClick={() => setViewingId(null)}
+                              className="btn-secondary"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      ) : isReviewing ? (
                         <div className="quest-review-form">
                           <h3 className="review-title">📋 Review Quest Confirmation</h3>
                           <div className="review-quest-info">
@@ -1178,7 +1302,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                           </div>
                           <div className="quest-status-cell">
                             <div className="quest-buttons">
-                              {hasConfirmation && (
+                              {hasConfirmation && !isCompleted && (
                                 <button
                                   onClick={() => handleReviewQuest(quest)}
                                   className="btn-review"
@@ -1187,22 +1311,33 @@ const AdminAchievementsPage = ({ onBack }) => {
                                   ◆ Review
                                 </button>
                               )}
-                              <button
-                                onClick={() => {
-                                  setEditingId(quest.id);
-                                  setReviewingId(null);
-                                  setFormData({
-                                    ...formData,
-                                    name: quest.name,
-                                    desc: quest.desc || '',
-                                    xp: quest.xp || ''
-                                  });
-                                }}
-                                className="btn-edit"
-                                disabled={isSubmitting}
-                              >
-                                ✎ Edit
-                              </button>
+                              {isCompleted ? (
+                                <button
+                                  onClick={() => handleViewQuest(quest)}
+                                  className="btn-view"
+                                  disabled={isSubmitting}
+                                >
+                                  📖 View
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingId(quest.id);
+                                    setReviewingId(null);
+                                    setViewingId(null);
+                                    setFormData({
+                                      ...formData,
+                                      name: quest.name,
+                                      desc: quest.desc || '',
+                                      xp: quest.xp || ''
+                                    });
+                                  }}
+                                  className="btn-edit"
+                                  disabled={isSubmitting}
+                                >
+                                  ✎ Edit
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDeleteClick(quest.id, quest.name, 'quest')}
                                 className="btn-delete"
