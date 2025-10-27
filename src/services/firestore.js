@@ -182,7 +182,6 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       xp: achievementData.xp,
       specialReward: achievementData.specialReward,
       dueDate: achievementData.dueDate,
-      completed: false,
       completedAt: null,
       createdAt: serverTimestamp()
     };
@@ -302,8 +301,8 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
 
     const dataToSave = {
       name: questData.name.trim(),
+      desc: questData.desc?.trim() || '',
       xp: questData.xp,
-      isFinish: false,
       completedAt: null,
       createdAt: serverTimestamp()
     };

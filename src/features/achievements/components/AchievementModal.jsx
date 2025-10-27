@@ -18,11 +18,13 @@ const AchievementModal = ({ achievement, onClose }) => {
     }
   };
 
+  const isCompleted = achievement.completedAt !== null;
+
   return (
     <div className="achievement-modal active" onClick={handleBackdropClick}>
       <div className="achievement-modal-content">
         <div className="achievement-modal-close" onClick={onClose}>✕</div>
-        {achievement.completed && (
+        {isCompleted && (
           <div className="achievement-modal-status completed">✓ COMPLETED</div>
         )}
         <div className="achievement-modal-icon">

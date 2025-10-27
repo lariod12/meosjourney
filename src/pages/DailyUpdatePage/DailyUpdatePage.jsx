@@ -304,6 +304,7 @@ const DailyUpdate = ({ onBack }) => {
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
       questTitle: quest.name,
+      questDesc: quest.desc || '',
       questXp: quest.xp,
       description: '',
       image: null,
@@ -578,9 +579,14 @@ const DailyUpdate = ({ onBack }) => {
                 {selectedQuestSubmissions.map((submission, index) => (
                   <div key={index} className="quest-submission-form">
                     <div className="quest-submission-header">
-                      <h3 className="quest-submission-title">
-                        ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
-                      </h3>
+                      <div className="quest-submission-info">
+                        <h3 className="quest-submission-title">
+                          ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
+                        </h3>
+                        {submission.questDesc && (
+                          <p className="quest-submission-desc">{submission.questDesc}</p>
+                        )}
+                      </div>
                       <button
                         type="button"
                         className="btn-remove-quest"

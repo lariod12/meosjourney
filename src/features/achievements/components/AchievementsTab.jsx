@@ -28,22 +28,25 @@ const AchievementsTab = () => {
   return (
     <>
       <div className="achievements-grid">
-        {data.achievements.map(achievement => (
-          <div
-            key={achievement.id}
-            className={`achievement-item ${achievement.completed ? 'completed' : ''}`}
-            onClick={() => {
-              console.log('🎯 Achievement clicked:', achievement.name);
-              setSelectedAchievement(achievement);
-            }}
-          >
-            {achievement.completed && <div className="achievement-check">✓</div>}
-            <div className="achievement-icon">
-              <IconRenderer iconName={achievement.icon} size={32} />
+        {data.achievements.map(achievement => {
+          const isCompleted = achievement.completedAt !== null;
+          return (
+            <div
+              key={achievement.id}
+              className={`achievement-item ${isCompleted ? 'completed' : ''}`}
+              onClick={() => {
+                console.log('🎯 Achievement clicked:', achievement.name);
+                setSelectedAchievement(achievement);
+              }}
+            >
+              {isCompleted && <div className="achievement-check">✓</div>}
+              <div className="achievement-icon">
+                <IconRenderer iconName={achievement.icon} size={32} />
+              </div>
+              <div className="achievement-name">{achievement.name}</div>
             </div>
-            <div className="achievement-name">{achievement.name}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {selectedAchievement && (
         <AchievementModal

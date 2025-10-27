@@ -271,6 +271,7 @@ const AdminAchievementsPage = ({ onBack }) => {
     try {
       const questData = {
         name: formData.name.trim(),
+        desc: formData.desc.trim(),
         xp: Number(formData.xp)
       };
 
@@ -439,6 +440,7 @@ const AdminAchievementsPage = ({ onBack }) => {
     try {
       const questData = {
         name: formData.name.trim(),
+        desc: formData.desc.trim(),
         xp: Number(formData.xp)
       };
 
@@ -717,6 +719,18 @@ const AdminAchievementsPage = ({ onBack }) => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="desc">Description</label>
+              <textarea
+                id="desc"
+                name="desc"
+                rows="3"
+                value={formData.desc}
+                onChange={handleChange}
+                placeholder="Describe the quest..."
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="xp">XP Reward *</label>
               <input
                 type="number"
@@ -915,6 +929,15 @@ const AdminAchievementsPage = ({ onBack }) => {
                             />
                           </div>
                           <div className="form-group">
+                            <label>Description</label>
+                            <textarea
+                              name="desc"
+                              rows="3"
+                              value={formData.desc}
+                              onChange={handleChange}
+                            />
+                          </div>
+                          <div className="form-group">
                             <label>XP Reward *</label>
                             <input
                               type="number"
@@ -949,9 +972,10 @@ const AdminAchievementsPage = ({ onBack }) => {
                         <div className="quest-view-row">
                           <div className="quest-info">
                             <h3>{quest.name}</h3>
+                            {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {quest.isFinish ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {quest.completedAt !== null ? '✅ Completed' : '⏳ Pending'}</span>
                               {quest.completedAt && (
                                 <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString()}</span>
                               )}
@@ -965,6 +989,7 @@ const AdminAchievementsPage = ({ onBack }) => {
                                   setFormData({
                                     ...formData,
                                     name: quest.name,
+                                    desc: quest.desc || '',
                                     xp: quest.xp || ''
                                   });
                                 }}
