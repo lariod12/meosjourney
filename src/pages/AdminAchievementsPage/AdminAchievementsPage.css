@@ -1083,3 +1083,64 @@
   color: #666666;
   font-family: monospace;
 }
+
+
+/* ========================================
+   Quest Row Layout - Consistent Button Position
+   ======================================== */
+
+.quest-view-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.quest-info {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.quest-status-cell {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.quest-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.quest-buttons button {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* Ensure edit/review forms also maintain layout */
+.quest-edit-form,
+.quest-review-form,
+.quest-view-history {
+  width: 100%;
+}
+
+/* Quest actions within forms */
+.quest-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.quest-actions button {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-family: 'Kalam', cursive;
+  font-weight: bold;
+  border: 3px solid #000000;
+  cursor: pointer;
+  transition: all 0.3s;
+}
