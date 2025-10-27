@@ -1,9 +1,20 @@
+import { useMemo } from 'react';
 import { useCharacter } from '../../../contexts';
 import { formatDate } from '../../../utils/dateUtils';
+import { filterTodayItems } from '../../../utils/dateFilter';
 
 const JournalTab = () => {
   const data = useCharacter();
   const today = new Date();
+
+  // Filter journal entries to show only today's entries (Vietnam timezone)
+  const todayJournals = useMemo(() => {
+    if (!data.journal) return null;
+    return filterTodayItems(data.journal);
+  }, [data.journal]);
+
+  console.log('📝 JournalTab - Total journals:', data.journal?.length || 0);
+  console.log('📝 JournalTab - Today\'s journals:', todayJournals?.length || 0);
 
   // Handle loading state
   if (!data.journal) {
@@ -17,13 +28,13 @@ const JournalTab = () => {
     );
   }
 
-  // Handle empty state
-  if (data.journal.length === 0) {
+  // Handle empty state - no journal entries for today
+  if (todayJournals.length === 0) {
     return (
       <>
         <div className="journal-date">{formatDate(today)}</div>
         <div className="journal-content">
-          <div className="empty-message">No journal entries yet.</div>
+          <div className="empty-message">No journal entries for today.</div>
         </div>
       </>
     );
@@ -33,7 +44,7 @@ const JournalTab = () => {
     <>
       <div className="journal-date">{formatDate(today)}</div>
       <div className="journal-content">
-        {data.journal.map((entry, index) => (
+        {todayJournals.map((entry, index) => (
           <div key={entry.id || index} className="journal-entry">
             <div className="journal-time">{entry.time}</div>
             <div className="journal-text">{entry.entry}</div>

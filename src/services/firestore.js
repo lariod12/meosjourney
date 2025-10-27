@@ -387,7 +387,7 @@ export const fetchJournals = async (characterId = CHARACTER_ID) => {
       const data = doc.data();
       let timestamp = new Date();
 
-      // Handle Firestore Timestamp
+      // Handle Firestore Timestamp (note: DB uses 'createAt' typo)
       if (data.createAt) {
         if (typeof data.createAt.toDate === 'function') {
           timestamp = data.createAt.toDate();
@@ -406,7 +406,8 @@ export const fetchJournals = async (characterId = CHARACTER_ID) => {
           minute: '2-digit',
           hour12: true 
         }),
-        timestamp: timestamp
+        timestamp: timestamp,
+        createdAt: data.createAt || timestamp // Include createdAt for filtering
       };
     });
 

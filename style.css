@@ -691,6 +691,24 @@ body {
     gap: 10px;
 }
 
+/* Empty/Loading state for quests - match journal style exactly */
+.quests-list .empty-message,
+.quests-list .loading-message {
+    font-size: 1.2rem !important;
+    line-height: 1.8 !important;
+    padding: 15px !important;
+    border: 2px dashed var(--black) !important;
+    background: var(--white) !important;
+    min-height: 150px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    color: var(--gray-dark) !important;
+    font-style: italic !important;
+    grid-column: unset !important;
+}
+
 .quest-item {
     display: flex;
     align-items: center;

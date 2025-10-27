@@ -1,33 +1,51 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCharacter } from '../../../contexts';
 import QuestDetailModal from '../../../components/QuestDetailModal/QuestDetailModal';
+import { filterTodayItems } from '../../../utils/dateFilter';
 
 const QuestsTab = () => {
   const data = useCharacter();
   const [selectedQuest, setSelectedQuest] = useState(null);
 
+  // Filter quests to show only today's quests (Vietnam timezone)
+  const todayQuests = useMemo(() => {
+    if (!data.quests) return null;
+    return filterTodayItems(data.quests);
+  }, [data.quests]);
+
   console.log('🎯 QuestsTab - Total quests:', data.quests?.length || 0);
+  console.log('🎯 QuestsTab - Today\'s quests:', todayQuests?.length || 0);
 
   // Handle loading state
   if (!data.quests) {
     return (
-      <div className="quests-list">
-        <div className="loading-message">Loading quests...</div>
-      </div>
+      <>
+        <div className="quest-progress">
+          <span>0/0</span> Completed
+        </div>
+        <div className="quests-list">
+          <div className="loading-message">Loading quests...</div>
+        </div>
+      </>
     );
   }
 
-  // Handle empty state
-  if (data.quests.length === 0) {
+  // Handle empty state - no quests for today
+  if (todayQuests.length === 0) {
     return (
-      <div className="quests-list">
-        <div className="empty-message">No quests found.</div>
-      </div>
+      <>
+        <div className="quest-progress">
+          <span>0/0</span> Completed
+        </div>
+        <div className="quests-list">
+          <div className="empty-message">No quests for today.</div>
+        </div>
+      </>
     );
   }
 
-  const completed = data.quests.filter(q => q.completedAt !== null).length;
-  const total = data.quests.length;
+  const completed = todayQuests.filter(q => q.completedAt !== null).length;
+  const total = todayQuests.length;
 
   const handleQuestClick = (quest) => {
     console.log('🎯 Quest clicked:', quest.name);
@@ -45,11 +63,11 @@ const QuestsTab = () => {
         <span>{completed}/{total}</span> Completed
       </div>
       <div className="quests-list">
-        {data.quests.map(quest => {
+        {todayQuests.map(quest => {
           const isCompleted = quest.completedAt !== null;
           return (
-            <div 
-              key={quest.id} 
+            <div
+              key={quest.id}
               className={`quest-item ${isCompleted ? 'completed' : ''}`}
               onClick={() => handleQuestClick(quest)}
               style={{ cursor: 'pointer' }}
@@ -62,7 +80,7 @@ const QuestsTab = () => {
       </div>
 
       {selectedQuest && (
-        <QuestDetailModal 
+        <QuestDetailModal
           quest={selectedQuest}
           onClose={handleCloseModal}
         />
