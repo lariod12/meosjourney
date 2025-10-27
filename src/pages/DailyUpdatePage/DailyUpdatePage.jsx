@@ -81,10 +81,14 @@ const DailyUpdate = ({ onBack }) => {
         
         console.log('📋 Quest confirmations today:', confirmedQuestNames.size);
         
-        // Filter quests that don't have confirmation yet today
-        const availableQuests = quests.filter(q => !confirmedQuestNames.has(q.name));
+        // Filter quests that:
+        // 1. Don't have confirmation yet today
+        // 2. Are not completed (completedAt === null)
+        const availableQuests = quests.filter(q => 
+          !confirmedQuestNames.has(q.name) && q.completedAt === null
+        );
         setAvailableQuests(availableQuests);
-        console.log('📋 Available quests (not confirmed today):', availableQuests.length);
+        console.log('📋 Available quests (not confirmed today & not completed):', availableQuests.length);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
@@ -284,7 +288,10 @@ const DailyUpdate = ({ onBack }) => {
                   .map(c => c.name)
               );
               
-              const availableQuests = quests.filter(q => !confirmedQuestNames.has(q.name));
+              // Filter quests that don't have confirmation today AND are not completed
+              const availableQuests = quests.filter(q => 
+                !confirmedQuestNames.has(q.name) && q.completedAt === null
+              );
               setAvailableQuests(availableQuests);
               console.log('🔄 Reloaded quests, available:', availableQuests.length);
             });
