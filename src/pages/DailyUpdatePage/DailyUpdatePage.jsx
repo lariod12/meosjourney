@@ -68,7 +68,6 @@ const DailyUpdate = ({ onBack }) => {
         const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
         setQuestConfirmations(confirmations);
-        console.log('📋 Loaded confirmations:', confirmations.length);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);

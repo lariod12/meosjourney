@@ -35,15 +35,11 @@ export const uploadQuestImage = async (file, characterId, questId) => {
     const storagePath = `quest-images/${characterId}/${questId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    console.log('📤 Uploading image to:', storagePath);
-
     // Upload file
     const snapshot = await uploadBytes(storageRef, file);
-    console.log('✅ Image uploaded successfully');
 
     // Get download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('🔗 Download URL:', downloadURL);
 
     return {
       url: downloadURL,
@@ -69,8 +65,6 @@ export const deleteQuestImage = async (storagePath) => {
 
     const storageRef = ref(storage, storagePath);
     await deleteObject(storageRef);
-    
-    console.log('✅ Image deleted successfully:', storagePath);
 
   } catch (error) {
     // If file doesn't exist, don't throw error
@@ -113,13 +107,9 @@ export const uploadJournalImage = async (file, characterId, journalId) => {
     const storagePath = `journal-images/${characterId}/${journalId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    console.log('📤 Uploading journal image to:', storagePath);
-
     const snapshot = await uploadBytes(storageRef, file);
-    console.log('✅ Journal image uploaded successfully');
 
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('🔗 Download URL:', downloadURL);
 
     return {
       url: downloadURL,
@@ -160,13 +150,9 @@ export const uploadAvatarImage = async (file, characterId) => {
     const storagePath = `avatars/${characterId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    console.log('📤 Uploading avatar to:', storagePath);
-
     const snapshot = await uploadBytes(storageRef, file);
-    console.log('✅ Avatar uploaded successfully');
 
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('🔗 Download URL:', downloadURL);
 
     return {
       url: downloadURL,
@@ -228,12 +214,7 @@ export const uploadQuestConfirmImage = async (file, questName) => {
     const storagePath = `quests-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    console.log('📤 Uploading quest confirmation image to:', storagePath);
-    console.log('🎯 Quest name prefix:', `${sanitizedQuestName}_${dateSuffix}`);
-    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
     const snapshot = await uploadBytes(storageRef, file);
-    console.log('✅ Quest confirmation image uploaded successfully');
 
     const downloadURL = await getDownloadURL(snapshot.ref);
     console.log('🔗 Download URL:', downloadURL);

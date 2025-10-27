@@ -128,8 +128,6 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       const statusDocRef = doc(db, 'main', characterId, 'status', currentStatus.id);
       await setDoc(statusDocRef, dataToSave, { merge: true });
 
-      console.log('✅ Status merged successfully to:', currentStatus.id);
-
       return { success: true, id: currentStatus.id, data: dataToSave };
     }
 
@@ -186,11 +184,6 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       createdAt: serverTimestamp()
     };
 
-    console.log('💾 Creating achievement with ID:', achievementId);
-    console.log('🏆 Data:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/achievements/' + achievementId);
-    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
     // Use setDoc with achievement name + date as document ID
     const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
     await setDoc(achievementDocRef, dataToSave);
@@ -241,7 +234,6 @@ export const updateAchievement = async (achievementId, achievementData, characte
     // Merge new data with existing document
     await setDoc(achievementRef, achievementData, { merge: true });
 
-    console.log('✅ Achievement updated:', achievementId);
     return { success: true, id: achievementId, nameChanged: false };
   } catch (error) {
     console.error('❌ Error updating achievement:', error);
@@ -491,8 +483,6 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
     // setDoc will overwrite if document already exists (same quest submitted multiple times today)
     await setDoc(confirmRef, dataToSave);
 
-    console.log('✅ Quest confirmation saved (overwritten if existed):', docId);
-
     return { success: true, id: docId };
 
   } catch (error) {
@@ -651,20 +641,35 @@ export const saveAchievementConfirmation = async (confirmData, characterId = CHA
       createdAt: serverTimestamp()
     };
 
-    console.log('💾 Saving achievement confirmation with ID:', docId);
-    console.log('🏆 Data:', dataToSave);
-    console.log('📍 Path: main/' + characterId + '/achievements-confirm/' + docId);
-    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
     const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
     await setDoc(confirmRef, dataToSave);
-
-    console.log('✅ Achievement confirmation saved:', docId);
 
     return { success: true, id: docId };
 
   } catch (error) {
     console.error('❌ Error saving achievement confirmation:', error);
     throw new Error(`Failed to save achievement confirmation: ${error.message}`);
+  }
+};
+
+
+/**
+ * Delete quest confirmation by document ID
+ * 
+ * @param {string} confirmationId - Confirmation document ID
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{success: boolean}>}
+ */
+export const deleteQuestConfirmationById = async (confirmationId, characterId = CHARACTER_ID) => {
+  try {
+    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', confirmationId);
+    await deleteDoc(confirmRef);
+
+    console.log('✅ Quest confirmation deleted by ID:', confirmationId);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error deleting quest confirmation by ID:', error);
+    throw new Error(`Failed to delete quest confirmation: ${error.message}`);
   }
 };

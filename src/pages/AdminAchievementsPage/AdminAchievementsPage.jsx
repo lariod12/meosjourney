@@ -5,7 +5,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, CHARACTER_ID } from '../../services/firestore';
 import { deleteImageByUrl } from '../../services/storage';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -88,8 +88,6 @@ const AdminAchievementsPage = ({ onBack }) => {
       ]);
       setQuests(questsData);
       setQuestConfirmations(confirmationsData);
-      console.log('📋 Loaded quests:', questsData.length);
-      console.log('✅ Loaded confirmations:', confirmationsData.length);
     } catch (error) {
       console.error('Error loading quests:', error);
     }
@@ -498,12 +496,42 @@ const AdminAchievementsPage = ({ onBack }) => {
 
     try {
       if (deleteTarget.type === 'quest') {
+        // 1. Get all confirmations for this quest
+        const allConfirmations = getQuestConfirmations(deleteTarget.name);
+        console.log(`🗑️ Deleting quest "${deleteTarget.name}" with ${allConfirmations.length} confirmations`);
+
+        // 2. Delete all images from Storage
+        for (const conf of allConfirmations) {
+          if (conf.imgUrl) {
+            try {
+              console.log('🗑️ Deleting confirmation image:', conf.id);
+              await deleteImageByUrl(conf.imgUrl);
+            } catch (imgError) {
+              console.warn('⚠️ Could not delete image:', imgError.message);
+              // Continue even if image deletion fails
+            }
+          }
+        }
+
+        // 3. Delete all quest confirmations from Firestore
+        for (const conf of allConfirmations) {
+          try {
+            console.log('🗑️ Deleting confirmation:', conf.id);
+            await deleteQuestConfirmationById(conf.id, CHARACTER_ID);
+          } catch (confError) {
+            console.warn('⚠️ Could not delete confirmation:', confError.message);
+            // Continue even if confirmation deletion fails
+          }
+        }
+
+        // 4. Delete the quest itself
         await deleteQuest(deleteTarget.id, CHARACTER_ID);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: 'Quest deleted successfully!',
+          message: `Quest deleted successfully! (${allConfirmations.length} confirmations removed)`,
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => {
