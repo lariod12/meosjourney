@@ -1,5 +1,33 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from './firebase';
+import imageCompression from 'browser-image-compression';
+
+/**
+ * Compress image before upload
+ * @param {File} file - Original image file
+ * @param {Object} options - Compression options
+ * @returns {Promise<File>} - Compressed image file
+ */
+const compressImage = async (file, options = {}) => {
+  const defaultOptions = {
+    maxSizeMB: 1,              // Max file size 1MB
+    maxWidthOrHeight: 1920,    // Max dimension 1920px
+    useWebWorker: true,        // Use web worker for better performance
+    fileType: 'image/webp',    // Convert to WebP (best compression)
+    ...options
+  };
+
+  try {
+    console.log('📦 Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+    const compressedFile = await imageCompression(file, defaultOptions);
+    console.log('✅ Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('💾 Size reduction:', ((1 - compressedFile.size / file.size) * 100).toFixed(1), '%');
+    return compressedFile;
+  } catch (error) {
+    console.error('❌ Compression failed, using original file:', error);
+    return file; // Fallback to original if compression fails
+  }
+};
 
 /**
  * Upload image to Firebase Storage
@@ -26,17 +54,19 @@ export const uploadQuestImage = async (file, characterId, questId) => {
       throw new Error('Image size must be less than 5MB');
     }
 
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
     // Generate unique filename with timestamp
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${timestamp}.${fileExtension}`;
+    const fileName = `${timestamp}.webp`; // Always use .webp extension
     
     // Create storage path
     const storagePath = `quest-images/${characterId}/${questId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    // Upload file
-    const snapshot = await uploadBytes(storageRef, file);
+    // Upload compressed file
+    const snapshot = await uploadBytes(storageRef, compressedFile);
 
     // Get download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
@@ -100,14 +130,16 @@ export const uploadJournalImage = async (file, characterId, journalId) => {
       throw new Error('Image size must be less than 5MB');
     }
 
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${timestamp}.${fileExtension}`;
+    const fileName = `${timestamp}.webp`; // Always use .webp extension
     
     const storagePath = `journal-images/${characterId}/${journalId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await uploadBytes(storageRef, compressedFile);
 
     const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -143,14 +175,19 @@ export const uploadAvatarImage = async (file, characterId) => {
       throw new Error('Avatar image size must be less than 2MB');
     }
 
+    // Compress avatar with smaller size and dimensions
+    const compressedFile = await compressImage(file, { 
+      maxSizeMB: 0.5,           // Smaller size for avatars
+      maxWidthOrHeight: 512     // Avatars don't need to be large
+    });
+
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `avatar_${timestamp}.${fileExtension}`;
+    const fileName = `avatar_${timestamp}.webp`; // Always use .webp extension
     
     const storagePath = `avatars/${characterId}/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await uploadBytes(storageRef, compressedFile);
 
     const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -189,6 +226,9 @@ export const uploadQuestConfirmImage = async (file, questName) => {
       throw new Error('Image size must be less than 5MB');
     }
 
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
     // Sanitize quest name for filename
     const sanitizedQuestName = questName
       .toLowerCase()
@@ -205,16 +245,15 @@ export const uploadQuestConfirmImage = async (file, questName) => {
       day: '2-digit'
     }).replace(/-/g, ''); // Format: YYMMDD
 
-    // Generate filename: name_YYMMDD_{timestamp}.ext
+    // Generate filename: name_YYMMDD_{timestamp}.webp
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${sanitizedQuestName}_${dateSuffix}_${timestamp}.${fileExtension}`;
+    const fileName = `${sanitizedQuestName}_${dateSuffix}_${timestamp}.webp`;
     
-    // Storage path: quests-confirm/{name_YYMMDD_{timestamp}.jpg}
+    // Storage path: quests-confirm/{name_YYMMDD_{timestamp}.webp}
     const storagePath = `quests-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await uploadBytes(storageRef, compressedFile);
 
     const downloadURL = await getDownloadURL(snapshot.ref);
     console.log('🔗 Download URL:', downloadURL);
@@ -254,6 +293,9 @@ export const uploadAchievementConfirmImage = async (file, achievementName) => {
       throw new Error('Image size must be less than 5MB');
     }
 
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
     // Sanitize achievement name for filename
     const sanitizedAchievementName = achievementName
       .toLowerCase()
@@ -262,17 +304,16 @@ export const uploadAchievementConfirmImage = async (file, achievementName) => {
       .substring(0, 50);
 
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${sanitizedAchievementName}_${timestamp}.${fileExtension}`;
+    const fileName = `${sanitizedAchievementName}_${timestamp}.webp`;
     
-    // Storage path: achievements-confirm/{achievementName}_{timestamp}.jpg
+    // Storage path: achievements-confirm/{achievementName}_{timestamp}.webp
     const storagePath = `achievements-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
     console.log('📤 Uploading achievement confirmation image to:', storagePath);
     console.log('🏆 Achievement name prefix:', sanitizedAchievementName);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await uploadBytes(storageRef, compressedFile);
     console.log('✅ Achievement confirmation image uploaded successfully');
 
     const downloadURL = await getDownloadURL(snapshot.ref);
