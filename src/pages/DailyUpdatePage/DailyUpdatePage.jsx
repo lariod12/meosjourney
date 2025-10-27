@@ -7,12 +7,14 @@ import {
   fetchQuests,
   fetchQuestConfirmations,
   saveQuestConfirmation,
+  getQuestConfirmation,
   fetchAchievements,
   fetchAchievementConfirmations,
   saveAchievementConfirmation,
+  getAchievementConfirmation,
   CHARACTER_ID
 } from '../../services/firestore';
-import { uploadQuestConfirmImage, uploadAchievementConfirmImage } from '../../services/storage';
+import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
@@ -287,7 +289,20 @@ const DailyUpdate = ({ onBack }) => {
           try {
             let imgUrl = '';
 
-            // 1. Upload image to Storage if exists
+            // 1. Check if confirmation already exists and delete old image
+            const existingConfirmation = await getQuestConfirmation(submission.questTitle, CHARACTER_ID);
+            if (existingConfirmation && existingConfirmation.imgUrl) {
+              try {
+                console.log('🗑️ Deleting old quest confirmation image...');
+                await deleteImageByUrl(existingConfirmation.imgUrl);
+                console.log('✅ Old image deleted');
+              } catch (deleteError) {
+                console.warn('⚠️ Could not delete old image:', deleteError.message);
+                // Continue even if deletion fails
+              }
+            }
+
+            // 2. Upload new image to Storage if exists
             if (submission.image) {
               console.log(`📤 [${i + 1}/${selectedQuestSubmissions.length}] Uploading quest confirmation image for:`, submission.questTitle);
               const uploadResult = await uploadQuestConfirmImage(
@@ -299,7 +314,7 @@ const DailyUpdate = ({ onBack }) => {
               console.log('🔗 Image URL:', imgUrl);
             }
 
-            // 2. Save confirmation to quests-confirm collection
+            // 3. Save confirmation to quests-confirm collection (will override if exists)
             console.log('💾 Saving quest confirmation to Firestore...');
             await saveQuestConfirmation({
               name: submission.questTitle,
@@ -331,7 +346,20 @@ const DailyUpdate = ({ onBack }) => {
           try {
             let imgUrl = '';
 
-            // 1. Upload image to Storage if exists
+            // 1. Check if confirmation already exists and delete old image
+            const existingConfirmation = await getAchievementConfirmation(submission.achievementTitle, CHARACTER_ID);
+            if (existingConfirmation && existingConfirmation.imgUrl) {
+              try {
+                console.log('🗑️ Deleting old achievement confirmation image...');
+                await deleteImageByUrl(existingConfirmation.imgUrl);
+                console.log('✅ Old image deleted');
+              } catch (deleteError) {
+                console.warn('⚠️ Could not delete old image:', deleteError.message);
+                // Continue even if deletion fails
+              }
+            }
+
+            // 2. Upload new image to Storage if exists
             if (submission.image) {
               console.log(`📤 [${i + 1}/${selectedAchievementSubmissions.length}] Uploading achievement confirmation image for:`, submission.achievementTitle);
               const uploadResult = await uploadAchievementConfirmImage(
@@ -343,7 +371,7 @@ const DailyUpdate = ({ onBack }) => {
               console.log('🔗 Image URL:', imgUrl);
             }
 
-            // 2. Save confirmation to achievements-confirm collection
+            // 3. Save confirmation to achievements-confirm collection (will override if exists)
             console.log('💾 Saving achievement confirmation to Firestore...');
             await saveAchievementConfirmation({
               name: submission.achievementTitle,
@@ -394,7 +422,7 @@ const DailyUpdate = ({ onBack }) => {
               const availableQuests = quests.filter(q => q.completedAt === null);
               setAvailableQuests(availableQuests);
               console.log('🔄 Reloaded quests, available:', availableQuests.length);
-              
+
               // Filter only incomplete achievements
               const availableAchievements = achievements.filter(a => a.completedAt === null);
               setAvailableAchievements(availableAchievements);
@@ -683,8 +711,8 @@ const DailyUpdate = ({ onBack }) => {
       <header className="notes-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
         <h1>✎ Daily Update</h1>
-        <button 
-          onClick={handleRefresh} 
+        <button
+          onClick={handleRefresh}
           className="refresh-button"
           disabled={isRefreshing || isSubmitting}
           title="Refresh data from database"

@@ -15,6 +15,7 @@ const AdminAchievementsPage = ({ onBack }) => {
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('create-achievement');
   const [achievements, setAchievements] = useState([]);
   const [quests, setQuests] = useState([]);
@@ -95,6 +96,53 @@ const AdminAchievementsPage = ({ onBack }) => {
       setQuestConfirmations(confirmationsData);
     } catch (error) {
       console.error('Error loading quests:', error);
+    }
+  };
+
+  // Refresh all data from database
+  const handleRefresh = async () => {
+    if (isRefreshing || isSubmitting) return;
+
+    console.log('🔄 Refreshing admin data from database...');
+    setIsRefreshing(true);
+
+    try {
+      if (activeTab === 'manage-achievements' || activeTab === 'create-achievement') {
+        await loadAchievements();
+        console.log('✅ Reloaded achievements');
+      }
+      
+      if (activeTab === 'manage-quests' || activeTab === 'create-quest') {
+        await loadQuests();
+        console.log('✅ Reloaded quests');
+      }
+
+      // Show success notification
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Refreshed',
+        message: 'Data updated successfully!',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error);
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Refresh Failed',
+        message: `Failed to refresh data: ${error.message}`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -938,6 +986,14 @@ const AdminAchievementsPage = ({ onBack }) => {
       <header className="admin-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
         <h1>⚙️ Admin - Meos05</h1>
+        <button 
+          onClick={handleRefresh} 
+          className="refresh-button"
+          disabled={isRefreshing || isSubmitting}
+          title="Refresh data from database"
+        >
+          {isRefreshing ? '⟳' : '↻'}
+        </button>
       </header>
 
       <nav className="admin-dropdown">

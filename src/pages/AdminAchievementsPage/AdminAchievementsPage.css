@@ -37,6 +37,36 @@
   color: #ffffff;
 }
 
+.admin-header .refresh-button {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  color: #000000;
+  font-size: 24px;
+  font-weight: bold;
+  padding: 8px 15px;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  border-radius: 5px;
+}
+
+.admin-header .refresh-button:hover:not(:disabled) {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.admin-header .refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-header .refresh-button:active:not(:disabled) {
+  transform: rotate(180deg);
+}
+
 .admin-header h1 {
   margin: 0;
   font-size: 42px;
