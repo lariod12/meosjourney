@@ -62,8 +62,8 @@ const DailyUpdate = ({ onBack }) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
         
-        // Filter only incomplete quests
-        const incompleteQuests = quests.filter(q => !q.completed);
+        // Filter only incomplete quests (completedAt === null)
+        const incompleteQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(incompleteQuests);
         console.log('📋 Loaded incomplete quests:', incompleteQuests.length);
       })
@@ -216,7 +216,6 @@ const DailyUpdate = ({ onBack }) => {
             // 3. Mark quest as completed in quests collection
             console.log('✓ Marking quest as completed...');
             await updateQuest(submission.questId, {
-              completed: true,
               completedAt: new Date()
             }, CHARACTER_ID);
             console.log('✅ Quest marked as completed:', submission.questId);
@@ -255,7 +254,7 @@ const DailyUpdate = ({ onBack }) => {
             setSelectedQuestSubmissions([]);
             // Reload quests to update available list
             fetchQuests(CHARACTER_ID).then(quests => {
-              const incompleteQuests = quests.filter(q => !q.completed);
+              const incompleteQuests = quests.filter(q => q.completedAt === null);
               setAvailableQuests(incompleteQuests);
               console.log('🔄 Reloaded quests, incomplete:', incompleteQuests.length);
             });
