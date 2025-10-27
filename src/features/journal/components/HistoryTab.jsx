@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useCharacter } from '../../../contexts';
 import { formatDate } from '../../../utils/dateUtils';
 import { groupJournalsByDate } from '../../../utils/journalUtils';
@@ -13,9 +13,9 @@ const HistoryTab = () => {
     return groupJournalsByDate(data.journal);
   }, [data.journal]);
 
-  const toggleExpand = (index) => {
-    setExpandedIndex(expandedIndex === index ? null : index);
-  };
+  const toggleExpand = useCallback((index) => {
+    setExpandedIndex(current => current === index ? null : index);
+  }, []);
 
   console.log('📚 HistoryTab - Total journal entries:', data.journal?.length || 0);
   console.log('📚 HistoryTab - Grouped by dates:', historyData.length);

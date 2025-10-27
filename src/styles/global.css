@@ -874,27 +874,43 @@ body {
 
 .history-arrow {
     font-size: 1rem;
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
     margin-left: 10px;
 }
 
 .history-entries-wrapper {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.15s cubic-bezier(0.4, 0, 1, 1),
+                opacity 0.1s ease,
+                transform 0.15s ease;
     font-size: 1.2rem;
     line-height: 1.8;
     padding: 0;
     border: 0;
     background: var(--white);
+    opacity: 0;
+    transform: translateY(-8px);
 }
 
 .history-item.expanded .history-entries-wrapper {
-    max-height: 2000px;
+    max-height: 600px;
     padding: 15px;
     border: 2px dashed var(--black);
     margin-top: 10px;
     min-height: 150px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: max-height 0.2s cubic-bezier(0, 0, 0.2, 1), 
+                opacity 0.15s ease 0.02s,
+                transform 0.15s ease 0.02s;
+}
+
+/* Optimize collapse performance */
+.history-item:not(.expanded) .history-entries-wrapper {
+    transition: max-height 0.12s cubic-bezier(0.4, 0, 1, 1),
+                opacity 0.08s ease,
+                transform 0.1s ease;
 }
 
 .history-entries-wrapper .journal-entry {
