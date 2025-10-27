@@ -231,6 +231,18 @@ const DailyUpdate = ({ onBack }) => {
 
     setIsSubmitting(true);
 
+    // Show processing dialog
+    setConfirmModal({
+      isOpen: true,
+      type: 'info',
+      title: 'Processing...',
+      message: 'Submitting your data. Please wait...',
+      confirmText: null, // No button while processing
+      cancelText: null,
+      onConfirm: null,
+      onCancel: null
+    });
+
     try {
       const results = [];
 
@@ -818,7 +830,7 @@ const DailyUpdate = ({ onBack }) => {
                       type="button"
                       className="btn-add-quest"
                       onClick={() => setShowQuestDropdown(!showQuestDropdown)}
-                      disabled={getAvailableQuestsForDropdown().length === 0}
+                      disabled={isSubmitting || getAvailableQuestsForDropdown().length === 0}
                     >
                       ➕ Add Completed Quest
                     </button>
@@ -869,6 +881,7 @@ const DailyUpdate = ({ onBack }) => {
                           type="button"
                           className="btn-remove-quest"
                           onClick={() => handleRemoveQuestSubmission(index)}
+                          disabled={isSubmitting}
                         >
                           ✕
                         </button>
@@ -882,6 +895,7 @@ const DailyUpdate = ({ onBack }) => {
                           value={submission.description}
                           onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
                           placeholder="Describe how you completed this quest..."
+                          disabled={isSubmitting}
                         />
                       </div>
 
@@ -896,8 +910,9 @@ const DailyUpdate = ({ onBack }) => {
                                 accept="image/*"
                                 onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
                                 style={{ display: 'none' }}
+                                disabled={isSubmitting}
                               />
-                              <label htmlFor={`quest-image-${index}`} className="btn-upload-image">
+                              <label htmlFor={`quest-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
                                 📷 Choose Image or Take Photo
                               </label>
                             </div>
@@ -912,6 +927,7 @@ const DailyUpdate = ({ onBack }) => {
                                 type="button"
                                 className="btn-remove-image"
                                 onClick={() => handleRemoveQuestImage(index)}
+                                disabled={isSubmitting}
                               >
                                 ✕ Remove
                               </button>
@@ -947,7 +963,7 @@ const DailyUpdate = ({ onBack }) => {
                       type="button"
                       className="btn-add-quest"
                       onClick={() => setShowAchievementDropdown(!showAchievementDropdown)}
-                      disabled={getAvailableAchievementsForDropdown().length === 0}
+                      disabled={isSubmitting || getAvailableAchievementsForDropdown().length === 0}
                     >
                       ➕ Add Completed Achievement
                     </button>
@@ -1013,6 +1029,7 @@ const DailyUpdate = ({ onBack }) => {
                           type="button"
                           className="btn-remove-quest"
                           onClick={() => handleRemoveAchievementSubmission(index)}
+                          disabled={isSubmitting}
                         >
                           ✕
                         </button>
@@ -1026,6 +1043,7 @@ const DailyUpdate = ({ onBack }) => {
                           value={submission.description}
                           onChange={(e) => handleAchievementDescriptionChange(index, e.target.value)}
                           placeholder="Describe how you achieved this..."
+                          disabled={isSubmitting}
                         />
                       </div>
 
@@ -1040,8 +1058,9 @@ const DailyUpdate = ({ onBack }) => {
                                 accept="image/*"
                                 onChange={(e) => handleAchievementImageChange(index, e.target.files[0])}
                                 style={{ display: 'none' }}
+                                disabled={isSubmitting}
                               />
-                              <label htmlFor={`achievement-image-${index}`} className="btn-upload-image">
+                              <label htmlFor={`achievement-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
                                 📷 Choose Image or Take Photo
                               </label>
                             </div>
@@ -1056,6 +1075,7 @@ const DailyUpdate = ({ onBack }) => {
                                 type="button"
                                 className="btn-remove-image"
                                 onClick={() => handleRemoveAchievementImage(index)}
+                                disabled={isSubmitting}
                               >
                                 ✕ Remove
                               </button>

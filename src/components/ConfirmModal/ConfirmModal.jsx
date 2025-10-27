@@ -23,12 +23,16 @@ const ConfirmModal = ({
 
   const handleConfirm = () => {
     console.log('✅ User confirmed action');
-    onConfirm();
+    if (onConfirm) {
+      onConfirm();
+    }
   };
 
   const handleCancel = () => {
     console.log('❌ User cancelled action');
-    onCancel();
+    if (onCancel) {
+      onCancel();
+    }
   };
 
   return (
@@ -45,7 +49,7 @@ const ConfirmModal = ({
           <p className="confirm-message">{message}</p>
         </div>
 
-        <div className={`confirm-modal-actions ${!cancelText ? 'single-button' : ''}`}>
+        <div className={`confirm-modal-actions ${!cancelText && !confirmText ? 'no-buttons' : !cancelText ? 'single-button' : ''}`}>
           {cancelText && (
             <button
               type="button"
@@ -55,13 +59,15 @@ const ConfirmModal = ({
               {cancelText}
             </button>
           )}
-          <button
-            type="button"
-            className="confirm-btn-confirm"
-            onClick={handleConfirm}
-          >
-            {confirmText}
-          </button>
+          {confirmText && (
+            <button
+              type="button"
+              className="confirm-btn-confirm"
+              onClick={handleConfirm}
+            >
+              {confirmText}
+            </button>
+          )}
         </div>
       </div>
     </div>

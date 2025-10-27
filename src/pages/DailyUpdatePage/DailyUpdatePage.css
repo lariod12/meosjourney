@@ -564,6 +564,12 @@ body {
     color: #ffffff;
 }
 
+.btn-upload-image.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .image-preview-container {
     position: relative;
     border: 3px solid #000000;

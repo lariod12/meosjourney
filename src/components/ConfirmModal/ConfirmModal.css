@@ -92,6 +92,11 @@
   max-width: 200px;
 }
 
+/* No buttons layout (processing state) */
+.confirm-modal-actions.no-buttons {
+  display: none;
+}
+
 .confirm-btn-cancel,
 .confirm-btn-confirm {
   flex: 1;
