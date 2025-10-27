@@ -610,3 +610,55 @@ body {
         padding: 2px 8px;
     }
 }
+
+
+/* ========================================
+   Quest Confirmation Indicators
+   ======================================== */
+
+/* Dropdown item with confirmation */
+.quest-dropdown-item.has-confirmation {
+  background-color: #fff8e1;
+  border-left: 4px solid #ffa726;
+}
+
+.quest-dropdown-item.has-confirmation:hover {
+  background-color: #ffecb3;
+}
+
+.confirmation-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  background-color: #ffa726;
+  color: #000000;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid #000000;
+  border-radius: 3px;
+  transform: rotate(-2deg);
+}
+
+/* Quest status badge on submission header */
+.quest-status-badge {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid #000000;
+  border-radius: 4px;
+  transform: rotate(-1deg);
+}
+
+.quest-status-badge.pending {
+  background-color: #ffa726;
+  color: #000000;
+}
+
+.quest-submission-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}

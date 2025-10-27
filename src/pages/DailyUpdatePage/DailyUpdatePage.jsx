@@ -5,6 +5,7 @@ import {
   saveStatus,
   saveJournal,
   fetchQuests,
+  fetchQuestConfirmations,
   saveQuestConfirmation,
   CHARACTER_ID
 } from '../../services/firestore';
@@ -29,6 +30,7 @@ const DailyUpdate = ({ onBack }) => {
 
   // Daily Quests Update states
   const [availableQuests, setAvailableQuests] = useState([]);
+  const [questConfirmations, setQuestConfirmations] = useState([]);
   const [selectedQuestSubmissions, setSelectedQuestSubmissions] = useState([]);
   const [showQuestDropdown, setShowQuestDropdown] = useState(false);
   const questDropdownRef = useRef(null);
@@ -52,24 +54,28 @@ const DailyUpdate = ({ onBack }) => {
   const [questsExpanded, setQuestsExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config and quests from Firestore
+    // Load config, quests, and confirmations from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
-      fetchQuests(CHARACTER_ID)
+      fetchQuests(CHARACTER_ID),
+      fetchQuestConfirmations(CHARACTER_ID)
     ])
-      .then(([cfg, quests]) => {
+      .then(([cfg, quests, confirmations]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
 
         // Filter only incomplete quests (completedAt === null)
         const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
+        setQuestConfirmations(confirmations);
+        console.log('📋 Loaded confirmations:', confirmations.length);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
         setMoodOptions([]);
         setCorrectPassword(null);
         setAvailableQuests([]);
+        setQuestConfirmations([]);
       });
   }, []);
 
@@ -377,6 +383,26 @@ const DailyUpdate = ({ onBack }) => {
     return availableQuests.filter(q => !selectedQuestIds.includes(q.id));
   };
 
+  // Check if quest has confirmation today
+  const hasQuestConfirmation = (questName) => {
+    const today = new Date();
+    const todaySuffix = today.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const sanitizedName = questName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    return questConfirmations.some(c => c.id === expectedId);
+  };
+
   if (showPasswordModal) {
     return (
       <PasswordModal
@@ -547,16 +573,22 @@ const DailyUpdate = ({ onBack }) => {
 
                     {showQuestDropdown && getAvailableQuestsForDropdown().length > 0 && (
                       <div className="quest-dropdown">
-                        {getAvailableQuestsForDropdown().map(quest => (
-                          <div
-                            key={quest.id}
-                            className="quest-dropdown-item"
-                            onClick={() => handleAddQuestSubmission(quest)}
-                          >
-                            <span className="quest-dropdown-title">{quest.name}</span>
-                            <span className="quest-dropdown-xp">+{quest.xp} XP</span>
-                          </div>
-                        ))}
+                        {getAvailableQuestsForDropdown().map(quest => {
+                          const hasConfirm = hasQuestConfirmation(quest.name);
+                          return (
+                            <div
+                              key={quest.id}
+                              className={`quest-dropdown-item ${hasConfirm ? 'has-confirmation' : ''}`}
+                              onClick={() => handleAddQuestSubmission(quest)}
+                            >
+                              <span className="quest-dropdown-title">
+                                {quest.name}
+                                {hasConfirm && <span className="confirmation-badge">📝 Pending</span>}
+                              </span>
+                              <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -567,73 +599,77 @@ const DailyUpdate = ({ onBack }) => {
                 </div>
 
                 {/* Quest Submission Forms */}
-                {selectedQuestSubmissions.map((submission, index) => (
-                  <div key={index} className="quest-submission-form">
-                    <div className="quest-submission-header">
-                      <div className="quest-submission-info">
-                        <h3 className="quest-submission-title">
-                          ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
-                        </h3>
-                        {submission.questDesc && (
-                          <p className="quest-submission-desc">{submission.questDesc}</p>
-                        )}
+                {selectedQuestSubmissions.map((submission, index) => {
+                  const hasConfirm = hasQuestConfirmation(submission.questTitle);
+                  return (
+                    <div key={index} className="quest-submission-form">
+                      <div className="quest-submission-header">
+                        <div className="quest-submission-info">
+                          <h3 className="quest-submission-title">
+                            ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
+                            {hasConfirm && <span className="quest-status-badge pending">📝 Pending Review</span>}
+                          </h3>
+                          {submission.questDesc && (
+                            <p className="quest-submission-desc">{submission.questDesc}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-remove-quest"
+                          onClick={() => handleRemoveQuestSubmission(index)}
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="btn-remove-quest"
-                        onClick={() => handleRemoveQuestSubmission(index)}
-                      >
-                        ✕
-                      </button>
-                    </div>
 
-                    <div className="form-group">
-                      <label htmlFor={`quest-desc-${index}`}>Description</label>
-                      <textarea
-                        id={`quest-desc-${index}`}
-                        rows="4"
-                        value={submission.description}
-                        onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
-                        placeholder="Describe how you completed this quest..."
-                      />
-                    </div>
+                      <div className="form-group">
+                        <label htmlFor={`quest-desc-${index}`}>Description</label>
+                        <textarea
+                          id={`quest-desc-${index}`}
+                          rows="4"
+                          value={submission.description}
+                          onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
+                          placeholder="Describe how you completed this quest..."
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label htmlFor={`quest-image-${index}`}>Attach Image</label>
-                      <div className="image-upload-section">
-                        {!submission.imagePreview ? (
-                          <div className="image-upload-placeholder">
-                            <input
-                              type="file"
-                              id={`quest-image-${index}`}
-                              accept="image/*"
-                              onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
-                              style={{ display: 'none' }}
-                            />
-                            <label htmlFor={`quest-image-${index}`} className="btn-upload-image">
-                              📷 Choose Image or Take Photo
-                            </label>
-                          </div>
-                        ) : (
-                          <div className="image-preview-container">
-                            <img
-                              src={submission.imagePreview}
-                              alt="Quest completion"
-                              className="image-preview"
-                            />
-                            <button
-                              type="button"
-                              className="btn-remove-image"
-                              onClick={() => handleRemoveQuestImage(index)}
-                            >
-                              ✕ Remove
-                            </button>
-                          </div>
-                        )}
+                      <div className="form-group">
+                        <label htmlFor={`quest-image-${index}`}>Attach Image</label>
+                        <div className="image-upload-section">
+                          {!submission.imagePreview ? (
+                            <div className="image-upload-placeholder">
+                              <input
+                                type="file"
+                                id={`quest-image-${index}`}
+                                accept="image/*"
+                                onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
+                                style={{ display: 'none' }}
+                              />
+                              <label htmlFor={`quest-image-${index}`} className="btn-upload-image">
+                                📷 Choose Image or Take Photo
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="image-preview-container">
+                              <img
+                                src={submission.imagePreview}
+                                alt="Quest completion"
+                                className="image-preview"
+                              />
+                              <button
+                                type="button"
+                                className="btn-remove-image"
+                                onClick={() => handleRemoveQuestImage(index)}
+                              >
+                                ✕ Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
