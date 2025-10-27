@@ -123,9 +123,6 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Always add timestamp
     dataToSave.timestamp = serverTimestamp();
 
-    console.log('💾 Attempting to merge status:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/status/' + currentStatus.id);
-
     // Only save if there's at least one field besides timestamp
     if (Object.keys(dataToSave).length > 1) {
       const statusDocRef = doc(db, 'main', characterId, 'status', currentStatus.id);
@@ -186,14 +183,8 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
       createdAt: serverTimestamp()
     };
 
-    console.log('💾 Creating achievement with name-based ID:', achievementId);
-    console.log('🏆 Data:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/achievements/' + achievementId);
-
     // Use setDoc with achievement name as document ID instead of addDoc
     await setDoc(achievementDocRef, dataToSave);
-
-    console.log('✅ Achievement created with name-based ID:', achievementId);
 
     return { success: true, id: achievementId, data: dataToSave };
 
@@ -216,7 +207,6 @@ export const fetchAchievements = async (characterId = CHARACTER_ID) => {
       ...doc.data()
     }));
 
-    console.log('🏆 Fetched achievements from database:', achievements.length, 'items');
     return achievements;
   } catch (error) {
     console.error('❌ Error fetching achievements:', error);
@@ -271,7 +261,6 @@ export const updateAchievement = async (achievementId, achievementData, characte
       // Delete old document
       await deleteDoc(oldAchievementRef);
 
-      console.log('✅ Achievement updated with new ID:', newAchievementId, '(old ID:', achievementId, ')');
       return { success: true, id: newAchievementId, nameChanged: true };
     } else {
       // Name didn't change, just update existing document
@@ -291,7 +280,6 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
     const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
     await deleteDoc(achievementRef);
 
-    console.log('✅ Achievement deleted:', achievementId);
     return { success: true, id: achievementId };
   } catch (error) {
     console.error('❌ Error deleting achievement:', error);
@@ -345,11 +333,6 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
       createdAt: serverTimestamp()
     };
 
-    console.log('💾 Creating quest with ID:', questId);
-    console.log('⚔️ Data:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/quests/' + questId);
-    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
     const questDocRef = doc(db, 'main', characterId, 'quests', questId);
     await setDoc(questDocRef, dataToSave);
 
@@ -388,7 +371,6 @@ export const updateQuest = async (questId, questData, characterId = CHARACTER_ID
     const questRef = doc(db, 'main', characterId, 'quests', questId);
     await setDoc(questRef, questData, { merge: true });
 
-    console.log('✅ Quest updated:', questId);
     return { success: true, id: questId };
   } catch (error) {
     console.error('❌ Error updating quest:', error);
@@ -401,7 +383,6 @@ export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
     const questRef = doc(db, 'main', characterId, 'quests', questId);
     await deleteDoc(questRef);
 
-    console.log('✅ Quest deleted:', questId);
     return { success: true, id: questId };
   } catch (error) {
     console.error('❌ Error deleting quest:', error);
@@ -433,16 +414,9 @@ export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
       createAt: serverTimestamp() // Note: keeping original typo from DB schema
     };
 
-    console.log('💾 Creating journal entry with Vietnam timezone ID:', datetimeId);
-    console.log('📝 Data:', dataToSave);
-    console.log('📍 Document: main/' + characterId + '/journal/' + datetimeId);
-    console.log('🕐 Vietnam time (UTC+7):', now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }));
-
     // Use setDoc with custom document ID instead of addDoc
     const journalDocRef = doc(db, 'main', characterId, 'journal', datetimeId);
     await setDoc(journalDocRef, dataToSave);
-
-    console.log('✅ Journal entry created with Vietnam timezone ID:', datetimeId);
 
     // Update history collection with journal reference
     await updateTodayHistory(characterId, datetimeId);
@@ -464,9 +438,6 @@ const updateTodayHistory = async (characterId, journalId) => {
     const today = new Date().toISOString().split('T')[0];
     const journalPath = `/main/${characterId}/journal/${journalId}`;
 
-    console.log('📅 Updating history for date:', today);
-    console.log('📝 Adding journal path:', journalPath);
-
     const historyRef = doc(db, 'main', characterId, 'history', today);
 
     // Check if history document exists for today
@@ -478,11 +449,9 @@ const updateTodayHistory = async (characterId, journalId) => {
       const updatedJournals = [...currentJournals, journalPath];
 
       await setDoc(historyRef, { journals: updatedJournals }, { merge: true });
-      console.log('✅ Updated existing history document');
     } else {
       // Create new history document
       await setDoc(historyRef, { journals: [journalPath] });
-      console.log('✅ Created new history document');
     }
 
   } catch (error) {
@@ -497,7 +466,8 @@ const updateTodayHistory = async (characterId, journalId) => {
 
 /**
  * Save quest confirmation to Firestore
- * Document ID = quest name (sanitized)
+ * Document ID = quest name (sanitized) + date suffix (YYMMDD)
+ * Follows same convention as saveQuest: name_YYMMDD
  * 
  * @param {Object} confirmData - Confirmation data
  * @param {string} confirmData.name - Quest name (used as document ID)
@@ -513,16 +483,28 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
       throw new Error('Quest name is required');
     }
 
-    // Sanitize quest name for document ID
-    const docId = confirmData.name
+    // Sanitize quest name for document ID (same as saveQuest)
+    const sanitizedName = confirmData.name.trim()
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 100);
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .substring(0, 50); // Limit length to 50 characters
 
-    if (!docId) {
+    if (!sanitizedName) {
       throw new Error('Quest name must contain at least one alphanumeric character');
     }
+
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, ''); // Format: YYMMDD
+
+    // Combine name with date: name_YYMMDD (same as saveQuest)
+    const docId = `${sanitizedName}_${dateSuffix}`;
 
     const dataToSave = {
       name: confirmData.name.trim(),
@@ -531,14 +513,8 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
       createdAt: serverTimestamp()
     };
 
-    console.log('💾 Saving quest confirmation with ID:', docId);
-    console.log('📝 Data:', dataToSave);
-    console.log('📍 Path: main/' + characterId + '/quests-confirm/' + docId);
-
     const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
     await setDoc(confirmRef, dataToSave);
-
-    console.log('✅ Quest confirmation saved:', docId);
 
     return { success: true, id: docId };
 
@@ -564,7 +540,6 @@ export const fetchQuestConfirmations = async (characterId = CHARACTER_ID) => {
       ...doc.data()
     }));
 
-    console.log('📋 Fetched quest confirmations:', confirmations.length);
     return confirmations;
 
   } catch (error) {
@@ -574,7 +549,7 @@ export const fetchQuestConfirmations = async (characterId = CHARACTER_ID) => {
 };
 
 /**
- * Get single quest confirmation by quest name
+ * Get single quest confirmation by quest name and date
  * 
  * @param {string} questName - Quest name (will be sanitized to match document ID)
  * @param {string} characterId - Character ID
@@ -582,11 +557,22 @@ export const fetchQuestConfirmations = async (characterId = CHARACTER_ID) => {
  */
 export const getQuestConfirmation = async (questName, characterId = CHARACTER_ID) => {
   try {
-    const docId = questName
+    const sanitizedName = questName
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
-      .substring(0, 100);
+      .substring(0, 50);
+
+    // Generate today's date suffix
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const docId = `${sanitizedName}_${dateSuffix}`;
 
     const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
     const snapshot = await getDoc(confirmRef);
@@ -612,16 +598,26 @@ export const getQuestConfirmation = async (questName, characterId = CHARACTER_ID
  */
 export const deleteQuestConfirmation = async (questName, characterId = CHARACTER_ID) => {
   try {
-    const docId = questName
+    const sanitizedName = questName
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
-      .substring(0, 100);
+      .substring(0, 50);
+
+    // Generate today's date suffix
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, '');
+
+    const docId = `${sanitizedName}_${dateSuffix}`;
 
     const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
     await deleteDoc(confirmRef);
 
-    console.log('✅ Quest confirmation deleted:', docId);
     return { success: true };
 
   } catch (error) {
@@ -663,7 +659,6 @@ export const saveAchievementConfirmation = async (confirmData, characterId = CHA
     const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
     await setDoc(confirmRef, dataToSave);
 
-    console.log('✅ Achievement confirmation saved:', docId);
     return { success: true, id: docId };
 
   } catch (error) {
