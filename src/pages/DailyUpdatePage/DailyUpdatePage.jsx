@@ -5,7 +5,7 @@ import {
   saveStatus, 
   saveJournal, 
   fetchQuests, 
-  updateQuest,
+  fetchQuestConfirmations,
   saveQuestConfirmation,
   CHARACTER_ID 
 } from '../../services/firestore';
@@ -53,19 +53,38 @@ const DailyUpdate = ({ onBack }) => {
   const [questsExpanded, setQuestsExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config and quests from Firestore
+    // Load config, quests, and quest confirmations from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
-      fetchQuests(CHARACTER_ID)
+      fetchQuests(CHARACTER_ID),
+      fetchQuestConfirmations(CHARACTER_ID)
     ])
-      .then(([cfg, quests]) => {
+      .then(([cfg, quests, confirmations]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
         
-        // Filter only incomplete quests (completedAt === null)
-        const incompleteQuests = quests.filter(q => q.completedAt === null);
-        setAvailableQuests(incompleteQuests);
-        console.log('📋 Loaded incomplete quests:', incompleteQuests.length);
+        // Create a Set of quest names that have confirmations (today)
+        // Quest confirmation ID format: {sanitized_name}_{YYMMDD}
+        const today = new Date();
+        const todaySuffix = today.toLocaleString('sv-SE', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit'
+        }).replace(/-/g, '');
+        
+        const confirmedQuestNames = new Set(
+          confirmations
+            .filter(c => c.id.endsWith(`_${todaySuffix}`))
+            .map(c => c.name)
+        );
+        
+        console.log('📋 Quest confirmations today:', confirmedQuestNames.size);
+        
+        // Filter quests that don't have confirmation yet today
+        const availableQuests = quests.filter(q => !confirmedQuestNames.has(q.name));
+        setAvailableQuests(availableQuests);
+        console.log('📋 Available quests (not confirmed today):', availableQuests.length);
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
@@ -213,13 +232,6 @@ const DailyUpdate = ({ onBack }) => {
             }, CHARACTER_ID);
             console.log('✅ Quest confirmation saved for:', submission.questTitle);
             
-            // 3. Mark quest as completed in quests collection
-            console.log('✓ Marking quest as completed...');
-            await updateQuest(submission.questId, {
-              completedAt: new Date()
-            }, CHARACTER_ID);
-            console.log('✅ Quest marked as completed:', submission.questId);
-            
             results.push(`Quest: ${submission.questTitle}`);
             
           } catch (error) {
@@ -252,11 +264,29 @@ const DailyUpdate = ({ onBack }) => {
             }));
             // Clear quest submissions
             setSelectedQuestSubmissions([]);
-            // Reload quests to update available list
-            fetchQuests(CHARACTER_ID).then(quests => {
-              const incompleteQuests = quests.filter(q => q.completedAt === null);
-              setAvailableQuests(incompleteQuests);
-              console.log('🔄 Reloaded quests, incomplete:', incompleteQuests.length);
+            // Reload quests and confirmations to update available list
+            Promise.all([
+              fetchQuests(CHARACTER_ID),
+              fetchQuestConfirmations(CHARACTER_ID)
+            ]).then(([quests, confirmations]) => {
+              // Filter quests that don't have confirmation today
+              const today = new Date();
+              const todaySuffix = today.toLocaleString('sv-SE', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                year: '2-digit',
+                month: '2-digit',
+                day: '2-digit'
+              }).replace(/-/g, '');
+              
+              const confirmedQuestNames = new Set(
+                confirmations
+                  .filter(c => c.id.endsWith(`_${todaySuffix}`))
+                  .map(c => c.name)
+              );
+              
+              const availableQuests = quests.filter(q => !confirmedQuestNames.has(q.name));
+              setAvailableQuests(availableQuests);
+              console.log('🔄 Reloaded quests, available:', availableQuests.length);
             });
           }
         });
