@@ -13,6 +13,10 @@ const QuestsTab = () => {
     return filterTodayItems(data.quests);
   }, [data.quests]);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> c173da743d3f8556addf92d0e5bfd2d2d54fa380
   // Handle loading state
   if (!data.quests) {
     return (

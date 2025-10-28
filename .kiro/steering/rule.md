@@ -6,7 +6,7 @@ inclusion: always
 Meo's Journey is a React-based RPG character sheet with a black & white sketch aesthetic. Always read README.md first to understand project conventions before making code changes.
 
 ## Git & Development Workflow
-- Commit messages: `update: <clean and concise message>`
+- Commit messages sort and clean: `update: <clean and concise message>`
 - Use English for all code and commits
 - Remove debug console.log statements after commits (keep error handling logs)
 - Use pnpm for all package management operations
@@ -39,6 +39,7 @@ Meo's Journey is a React-based RPG character sheet with a black & white sketch a
 - Global styles: Single file `src/styles/global.css` (imported in App.jsx)
 - Static assets: `src/assets/` for images, fonts, icons only
 - Firebase data: Reference `local/firestore_data_*.json` for current structure
+- All file .md need to be place in docs/ and only use Vietnamese in all file .md except README.md use English and place at root
 
 ## Database Operations
 - Reference `local/DatabaseArchitecture.md` for schema understanding

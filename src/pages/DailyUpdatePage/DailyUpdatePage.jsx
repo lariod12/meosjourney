@@ -72,6 +72,9 @@ const DailyUpdate = ({ onBack }) => {
   const [questsExpanded, setQuestsExpanded] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
+  // Pending review visibility state - hidden by default
+  const [pendingReviewExpanded, setPendingReviewExpanded] = useState(false);
+
   useEffect(() => {
     // Load config, quests, achievements, and confirmations from Firestore
     Promise.all([
@@ -276,27 +279,40 @@ const DailyUpdate = ({ onBack }) => {
       const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.mood.trim();
 
       if (hasStatusData) {
-        const statusResult = await saveStatus({
-          doing: formData.doing,
-          location: formData.location,
-          mood: formData.mood
-        }, CHARACTER_ID);
+        try {
+          const statusResult = await saveStatus({
+            doing: formData.doing,
+            location: formData.location,
+            mood: formData.mood
+          }, CHARACTER_ID);
 
-        if (statusResult.success) {
-          results.push('Status Update');
-        } else {
-          console.warn('⚠️ Status not saved:', statusResult.message);
+          if (statusResult.success) {
+            results.push({ type: 'success', item: 'Status Update' });
+          } else {
+            console.warn('⚠️ Status not saved:', statusResult.message);
+            results.push({ type: 'failed', item: 'Status Update' });
+          }
+        } catch (error) {
+          console.error('❌ Error saving status:', error);
+          results.push({ type: 'failed', item: 'Status Update' });
         }
       }
 
       // Submit Journal Entry (if has content)
       if (formData.journalEntry.trim()) {
-        const journalResult = await saveJournal({
-          caption: formData.journalEntry
-        }, CHARACTER_ID);
+        try {
+          const journalResult = await saveJournal({
+            caption: formData.journalEntry
+          }, CHARACTER_ID);
 
-        if (journalResult.success) {
-          results.push('Journal Entry');
+          if (journalResult.success) {
+            results.push({ type: 'success', item: 'Journal Entry' });
+          } else {
+            results.push({ type: 'failed', item: 'Journal Entry' });
+          }
+        } catch (error) {
+          console.error('❌ Error saving journal:', error);
+          results.push({ type: 'failed', item: 'Journal Entry' });
         }
       }
 
@@ -307,44 +323,51 @@ const DailyUpdate = ({ onBack }) => {
           const submission = selectedQuestSubmissions[i];
           setUploadingQuestIndex(i);
 
-          try {
-            let imgUrl = '';
+          let imgUrl = '';
+          let uploadWarning = '';
 
-            // 1. Check if confirmation already exists and delete old image
-            const existingConfirmation = await getQuestConfirmation(submission.questTitle, CHARACTER_ID);
-            if (existingConfirmation && existingConfirmation.imgUrl) {
-              try {
-
-                await deleteImageByUrl(existingConfirmation.imgUrl);
-
-              } catch (deleteError) {
-                console.warn('⚠️ Could not delete old image:', deleteError.message);
-                // Continue even if deletion fails
-              }
+          // 1. Check if confirmation already exists and delete old image
+          const existingConfirmation = await getQuestConfirmation(submission.questTitle, CHARACTER_ID);
+          if (existingConfirmation && existingConfirmation.imgUrl) {
+            try {
+              await deleteImageByUrl(existingConfirmation.imgUrl);
+            } catch (deleteError) {
+              console.warn('⚠️ Could not delete old image:', deleteError.message);
+              // Continue even if deletion fails
             }
+          }
 
-            // 2. Upload new image to Storage if exists
-            if (submission.image) {
+          // 2. Upload new image to Storage if exists (non-blocking)
+          if (submission.image) {
+            try {
               const uploadResult = await uploadQuestConfirmImage(
                 submission.image,
                 submission.questTitle
               );
               imgUrl = uploadResult.url;
+            } catch (uploadError) {
+              console.warn('⚠️ Image upload failed, saving without image:', uploadError.message);
+              uploadWarning = ' (image upload failed)';
+              // Continue to save data without image
             }
+          }
 
-            // 3. Save confirmation to quests-confirm collection (will override if exists)
+          // 3. Save confirmation to quests-confirm collection (will override if exists)
+          try {
             await saveQuestConfirmation({
               name: submission.questTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
-            results.push(`Quest: ${submission.questTitle}`);
+            results.push({
+              type: 'success',
+              item: `Quest: ${submission.questTitle}${uploadWarning}`
+            });
 
           } catch (error) {
-            console.error('❌ Error processing quest submission:', submission.questTitle, error);
-            // Continue with other quests even if one fails
-            results.push(`Quest: ${submission.questTitle} (failed)`);
+            console.error('❌ Error saving quest confirmation:', submission.questTitle, error);
+            results.push({ type: 'failed', item: `Quest: ${submission.questTitle}` });
           }
         }
 
@@ -358,83 +381,122 @@ const DailyUpdate = ({ onBack }) => {
           const submission = selectedAchievementSubmissions[i];
           setUploadingQuestIndex(i); // Reuse same state for progress indicator
 
-          try {
-            let imgUrl = '';
+          let imgUrl = '';
+          let uploadWarning = '';
 
-            // 1. Check if confirmation already exists and delete old image
-            const existingConfirmation = await getAchievementConfirmation(submission.achievementTitle, CHARACTER_ID);
-            if (existingConfirmation && existingConfirmation.imgUrl) {
-              try {
-                await deleteImageByUrl(existingConfirmation.imgUrl);
-              } catch (deleteError) {
-                console.warn('⚠️ Could not delete old image:', deleteError.message);
-                // Continue even if deletion fails
-              }
+          // 1. Check if confirmation already exists and delete old image
+          const existingConfirmation = await getAchievementConfirmation(submission.achievementTitle, CHARACTER_ID);
+          if (existingConfirmation && existingConfirmation.imgUrl) {
+            try {
+              await deleteImageByUrl(existingConfirmation.imgUrl);
+            } catch (deleteError) {
+              console.warn('⚠️ Could not delete old image:', deleteError.message);
+              // Continue even if deletion fails
             }
+          }
 
-            // 2. Upload new image to Storage if exists
-            if (submission.image) {
+          // 2. Upload new image to Storage if exists (non-blocking)
+          if (submission.image) {
+            try {
               const uploadResult = await uploadAchievementConfirmImage(
                 submission.image,
                 submission.achievementTitle
               );
               imgUrl = uploadResult.url;
+            } catch (uploadError) {
+              console.warn('⚠️ Image upload failed, saving without image:', uploadError.message);
+              uploadWarning = ' (image upload failed)';
+              // Continue to save data without image
             }
+          }
 
-            // 3. Save confirmation to achievements-confirm collection (will override if exists)
+          // 3. Save confirmation to achievements-confirm collection (will override if exists)
+          try {
             await saveAchievementConfirmation({
               name: submission.achievementTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
-            results.push(`Achievement: ${submission.achievementTitle}`);
+            results.push({
+              type: 'success',
+              item: `Achievement: ${submission.achievementTitle}${uploadWarning}`
+            });
 
           } catch (error) {
-            console.error('❌ Error processing achievement submission:', submission.achievementTitle, error);
-            // Continue with other achievements even if one fails
-            results.push(`Achievement: ${submission.achievementTitle} (failed)`);
+            console.error('❌ Error saving achievement confirmation:', submission.achievementTitle, error);
+            results.push({ type: 'failed', item: `Achievement: ${submission.achievementTitle}` });
           }
         }
 
         setUploadingQuestIndex(-1);
       }
 
-      // Show success message
+      // Analyze results and show appropriate message
       if (results.length > 0) {
+        const successItems = results.filter(r => r.type === 'success');
+        const failedItems = results.filter(r => r.type === 'failed');
+
+        let modalType, modalTitle, modalMessage;
+
+        if (failedItems.length === 0) {
+          // All success
+          modalType = 'success';
+          modalTitle = 'Success';
+          modalMessage = `${successItems.map(r => r.item).join(', ')} saved successfully!`;
+        } else if (successItems.length === 0) {
+          // All failed
+          modalType = 'error';
+          modalTitle = 'Failed';
+          modalMessage = `Failed to save: ${failedItems.map(r => r.item).join(', ')}`;
+        } else {
+          // Partial success
+          modalType = 'warning';
+          modalTitle = 'Partially Completed';
+          modalMessage = `✓ Saved: ${successItems.map(r => r.item).join(', ')}\n\n✕ Failed: ${failedItems.map(r => r.item).join(', ')}`;
+        }
+
         setConfirmModal({
           isOpen: true,
-          type: 'success',
-          title: 'Success',
-          message: `${results.join(', ')} saved successfully!`,
+          type: modalType,
+          title: modalTitle,
+          message: modalMessage,
           confirmText: 'OK',
-          cancelText: null, // No cancel button for success
+          cancelText: null,
           onConfirm: () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
-            // Reset form after successful submit
-            setFormData(prev => ({
-              ...prev,
-              doing: '',
-              location: '',
-              mood: moodOptions[0] || '',
-              journalEntry: ''
-            }));
-            // Clear quest and achievement submissions
-            setSelectedQuestSubmissions([]);
-            setSelectedAchievementSubmissions([]);
-            // Reload quests and achievements to update available lists
-            Promise.all([
-              fetchQuests(CHARACTER_ID),
-              fetchAchievements(CHARACTER_ID)
-            ]).then(([quests, achievements]) => {
-              // Filter only incomplete quests
-              const availableQuests = quests.filter(q => q.completedAt === null);
-              setAvailableQuests(availableQuests);
 
-              // Filter only incomplete achievements
-              const availableAchievements = achievements.filter(a => a.completedAt === null);
-              setAvailableAchievements(availableAchievements);
-            });
+            // Only reset form if there were some successes
+            if (successItems.length > 0) {
+              // Reset form after successful submit
+              setFormData(prev => ({
+                ...prev,
+                doing: '',
+                location: '',
+                mood: moodOptions[0] || '',
+                journalEntry: ''
+              }));
+              // Clear quest and achievement submissions
+              setSelectedQuestSubmissions([]);
+              setSelectedAchievementSubmissions([]);
+              // Reload quests, achievements, and confirmations to update available lists and pending review
+              Promise.all([
+                fetchQuests(CHARACTER_ID),
+                fetchQuestConfirmations(CHARACTER_ID),
+                fetchAchievements(CHARACTER_ID),
+                fetchAchievementConfirmations(CHARACTER_ID)
+              ]).then(([quests, questConfirms, achievements, achievementConfirms]) => {
+                // Filter only incomplete quests
+                const availableQuests = quests.filter(q => q.completedAt === null);
+                setAvailableQuests(availableQuests);
+                setQuestConfirmations(questConfirms);
+
+                // Filter only incomplete achievements
+                const availableAchievements = achievements.filter(a => a.completedAt === null);
+                setAvailableAchievements(availableAchievements);
+                setAchievementConfirmations(achievementConfirms);
+              });
+            }
           }
         });
       } else {
@@ -444,7 +506,7 @@ const DailyUpdate = ({ onBack }) => {
           title: 'No Data',
           message: 'No data to save. Please fill in at least one field.',
           confirmText: 'OK',
-          cancelText: null, // No cancel button for warning
+          cancelText: null,
           onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
         });
       }
@@ -563,27 +625,49 @@ const DailyUpdate = ({ onBack }) => {
 
   const getAvailableQuestsForDropdown = () => {
     const selectedQuestIds = selectedQuestSubmissions.map(s => s.questId);
-    return availableQuests.filter(q => !selectedQuestIds.includes(q.id));
+    // Filter out quests that are already selected OR have pending confirmation
+    return availableQuests.filter(q => {
+      if (selectedQuestIds.includes(q.id)) return false;
+      return !hasQuestConfirmation(q.name);
+    });
   };
 
-  // Check if quest has confirmation today
+  // Check if quest has ANY confirmation (not just today)
   const hasQuestConfirmation = (questName) => {
-    const today = new Date();
-    const todaySuffix = today.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, '');
-
     const sanitizedName = questName.trim()
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    const expectedId = `${sanitizedName}_${todaySuffix}`;
-    return questConfirmations.some(c => c.id === expectedId);
+    // Check if any confirmation ID starts with this quest name
+    return questConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
+  };
+
+  // Get pending quest confirmations (quests that have confirmation but not completed)
+  const getPendingQuestConfirmations = () => {
+    return availableQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
+      const confirmation = getQuestConfirmationData(quest.name);
+      return {
+        ...quest,
+        confirmation
+      };
+    });
+  };
+
+  // Get quest confirmation data (get the most recent one if multiple exist)
+  const getQuestConfirmationData = (questName) => {
+    const sanitizedName = questName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Find all confirmations for this quest
+    const matchingConfirmations = questConfirmations.filter(c => c.id.startsWith(sanitizedName + '_'));
+
+    // Return the most recent one (last in array, assuming sorted by date in ID)
+    return matchingConfirmations.length > 0 ? matchingConfirmations[matchingConfirmations.length - 1] : null;
   };
 
   // Achievement submission handlers
@@ -676,27 +760,49 @@ const DailyUpdate = ({ onBack }) => {
 
   const getAvailableAchievementsForDropdown = () => {
     const selectedAchievementIds = selectedAchievementSubmissions.map(s => s.achievementId);
-    return availableAchievements.filter(a => !selectedAchievementIds.includes(a.id));
+    // Filter out achievements that are already selected OR have pending confirmation
+    return availableAchievements.filter(a => {
+      if (selectedAchievementIds.includes(a.id)) return false;
+      return !hasAchievementConfirmation(a.name);
+    });
   };
 
-  // Check if achievement has confirmation today
+  // Check if achievement has ANY confirmation (not just today)
   const hasAchievementConfirmation = (achievementName) => {
-    const today = new Date();
-    const todaySuffix = today.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, '');
-
     const sanitizedName = achievementName.trim()
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '')
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    const expectedId = `${sanitizedName}_${todaySuffix}`;
-    return achievementConfirmations.some(c => c.id === expectedId);
+    // Check if any confirmation ID starts with this achievement name
+    return achievementConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
+  };
+
+  // Get pending achievement confirmations (achievements that have confirmation but not completed)
+  const getPendingAchievementConfirmations = () => {
+    return availableAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
+      const confirmation = getAchievementConfirmationData(achievement.name);
+      return {
+        ...achievement,
+        confirmation
+      };
+    });
+  };
+
+  // Get achievement confirmation data (get the most recent one if multiple exist)
+  const getAchievementConfirmationData = (achievementName) => {
+    const sanitizedName = achievementName.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Find all confirmations for this achievement
+    const matchingConfirmations = achievementConfirmations.filter(c => c.id.startsWith(sanitizedName + '_'));
+
+    // Return the most recent one (last in array, assuming sorted by date in ID)
+    return matchingConfirmations.length > 0 ? matchingConfirmations[matchingConfirmations.length - 1] : null;
   };
 
   if (showPasswordModal) {
@@ -877,27 +983,21 @@ const DailyUpdate = ({ onBack }) => {
 
                     {showQuestDropdown && getAvailableQuestsForDropdown().length > 0 && (
                       <div className="quest-dropdown">
-                        {getAvailableQuestsForDropdown().map(quest => {
-                          const hasConfirm = hasQuestConfirmation(quest.name);
-                          return (
-                            <div
-                              key={quest.id}
-                              className={`quest-dropdown-item ${hasConfirm ? 'has-confirmation' : ''}`}
-                              onClick={() => handleAddQuestSubmission(quest)}
-                            >
-                              <span className="quest-dropdown-title">
-                                {quest.name}
-                                {hasConfirm && <span className="confirmation-badge">📝 Pending</span>}
-                              </span>
-                              <span className="quest-dropdown-xp">+{quest.xp} XP</span>
-                            </div>
-                          );
-                        })}
+                        {getAvailableQuestsForDropdown().map(quest => (
+                          <div
+                            key={quest.id}
+                            className="quest-dropdown-item"
+                            onClick={() => handleAddQuestSubmission(quest)}
+                          >
+                            <span className="quest-dropdown-title">{quest.name}</span>
+                            <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
 
-                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && (
+                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && getPendingQuestConfirmations().length === 0 && (
                     <p className="no-quests-message">No incomplete quests available</p>
                   )}
                 </div>
@@ -1010,34 +1110,30 @@ const DailyUpdate = ({ onBack }) => {
 
                     {showAchievementDropdown && getAvailableAchievementsForDropdown().length > 0 && (
                       <div className="quest-dropdown">
-                        {getAvailableAchievementsForDropdown().map(achievement => {
-                          const hasConfirm = hasAchievementConfirmation(achievement.name);
-                          return (
-                            <div
-                              key={achievement.id}
-                              className={`quest-dropdown-item ${hasConfirm ? 'has-confirmation' : ''}`}
-                              onClick={() => handleAddAchievementSubmission(achievement)}
-                            >
-                              <span className="quest-dropdown-title">
-                                {achievement.icon && (
-                                  <IconRenderer iconName={achievement.icon} size={20} />
-                                )}
-                                {' '}{achievement.name}
-                                {hasConfirm && <span className="confirmation-badge">📝 Pending</span>}
-                                {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
-                              </span>
-                              <span className="quest-dropdown-xp">
-                                {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                              </span>
-                            </div>
-                          );
-                        })}
+                        {getAvailableAchievementsForDropdown().map(achievement => (
+                          <div
+                            key={achievement.id}
+                            className="quest-dropdown-item"
+                            onClick={() => handleAddAchievementSubmission(achievement)}
+                          >
+                            <span className="quest-dropdown-title">
+                              {achievement.icon && (
+                                <IconRenderer iconName={achievement.icon} size={20} />
+                              )}
+                              {' '}{achievement.name}
+                              {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
+                            </span>
+                            <span className="quest-dropdown-xp">
+                              {achievement.xp > 0 && `+${achievement.xp} XP`}
+                              {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
 
-                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && (
+                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && getPendingAchievementConfirmations().length === 0 && (
                     <p className="no-quests-message">No incomplete achievements available</p>
                   )}
                 </div>
@@ -1129,6 +1225,124 @@ const DailyUpdate = ({ onBack }) => {
               </div>
             )}
           </div>
+
+          {/* Pending Review Section */}
+          {(getPendingQuestConfirmations().length > 0 || getPendingAchievementConfirmations().length > 0) && (
+            <div className="form-section">
+              <h2
+                className="section-title clickable"
+                onClick={() => {
+                  console.log('Pending Review section clicked');
+                  setPendingReviewExpanded(!pendingReviewExpanded);
+                }}
+              >
+                {pendingReviewExpanded ? '▼' : '▸'} Pending Review ({getPendingQuestConfirmations().length + getPendingAchievementConfirmations().length})
+              </h2>
+
+              {pendingReviewExpanded && (
+                <div className="section-content">
+                  {/* Pending Quests */}
+                  {getPendingQuestConfirmations().length > 0 && (
+                    <div className="pending-category">
+                      <h3 className="pending-category-title">⚔️ Quests ({getPendingQuestConfirmations().length})</h3>
+                      <div className="pending-items-list">
+                        {getPendingQuestConfirmations().map(quest => {
+                          const createdAt = quest.confirmation?.createdAt;
+                          const formattedDate = createdAt
+                            ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                            : null;
+
+                          return (
+                            <div key={quest.id} className="pending-item">
+                              <div className="pending-item-header">
+                                <span className="pending-item-title">⚔️ {quest.name}</span>
+                                <span className="pending-item-badge">Pending</span>
+                              </div>
+                              <div className="pending-item-details">
+                                <span className="pending-item-xp">+{quest.xp} XP</span>
+                                {formattedDate && (
+                                  <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                )}
+                                {quest.confirmation?.desc && (
+                                  <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                                )}
+                                {quest.confirmation?.imgUrl && (
+                                  <div className="pending-item-image">
+                                    <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Achievements */}
+                  {getPendingAchievementConfirmations().length > 0 && (
+                    <div className="pending-category">
+                      <h3 className="pending-category-title">🏆 Achievements ({getPendingAchievementConfirmations().length})</h3>
+                      <div className="pending-items-list">
+                        {getPendingAchievementConfirmations().map(achievement => {
+                          const createdAt = achievement.confirmation?.createdAt;
+                          const formattedDate = createdAt
+                            ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                            : null;
+
+                          return (
+                            <div key={achievement.id} className="pending-item">
+                              <div className="pending-item-header">
+                                <span className="pending-item-title">
+                                  {achievement.icon && (
+                                    <IconRenderer iconName={achievement.icon} size={20} />
+                                  )}
+                                  {' '}{achievement.name}
+                                </span>
+                                <span className="pending-item-badge">Pending</span>
+                              </div>
+                              <div className="pending-item-details">
+                                <span className="pending-item-xp">
+                                  {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                  {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                </span>
+                                {formattedDate && (
+                                  <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                )}
+                                {achievement.dueDate && (
+                                  <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                )}
+                                {achievement.confirmation?.desc && (
+                                  <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                                )}
+                                {achievement.confirmation?.imgUrl && (
+                                  <div className="pending-item-image">
+                                    <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="form-actions">
