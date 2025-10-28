@@ -549,6 +549,17 @@
   color: #666666;
 }
 
+.achievement-details .submission-date,
+.quest-details .submission-date {
+  font-family: 'Patrick Hand', cursive;
+  font-weight: bold;
+  color: #000000;
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border: 2px solid #000000;
+  border-radius: 4px;
+}
+
 .achievement-buttons {
   display: flex;
   gap: 10px;

@@ -1477,7 +1477,18 @@ const AdminAchievementsPage = ({ onBack }) => {
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
                               {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
-                              <span>Status: {achievement.completedAt !== null ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {achievement.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              {hasConfirmation && confirmation?.createdAt && (
+                                <span className="submission-date">
+                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              )}
                               {achievement.completedAt && (
                                 <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString()}</span>
                               )}
@@ -1778,7 +1789,18 @@ const AdminAchievementsPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {quest.completedAt !== null ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {quest.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              {hasConfirmation && confirmation?.createdAt && (
+                                <span className="submission-date">
+                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              )}
                               {quest.completedAt && (
                                 <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString()}</span>
                               )}

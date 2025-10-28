@@ -1246,25 +1246,41 @@ const DailyUpdate = ({ onBack }) => {
                     <div className="pending-category">
                       <h3 className="pending-category-title">⚔️ Quests ({getPendingQuestConfirmations().length})</h3>
                       <div className="pending-items-list">
-                        {getPendingQuestConfirmations().map(quest => (
-                          <div key={quest.id} className="pending-item">
-                            <div className="pending-item-header">
-                              <span className="pending-item-title">⚔️ {quest.name}</span>
-                              <span className="pending-item-badge">Pending</span>
+                        {getPendingQuestConfirmations().map(quest => {
+                          const createdAt = quest.confirmation?.createdAt;
+                          const formattedDate = createdAt
+                            ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                            : null;
+
+                          return (
+                            <div key={quest.id} className="pending-item">
+                              <div className="pending-item-header">
+                                <span className="pending-item-title">⚔️ {quest.name}</span>
+                                <span className="pending-item-badge">Pending</span>
+                              </div>
+                              <div className="pending-item-details">
+                                <span className="pending-item-xp">+{quest.xp} XP</span>
+                                {formattedDate && (
+                                  <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                )}
+                                {quest.confirmation?.desc && (
+                                  <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                                )}
+                                {quest.confirmation?.imgUrl && (
+                                  <div className="pending-item-image">
+                                    <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="pending-item-details">
-                              <span className="pending-item-xp">+{quest.xp} XP</span>
-                              {quest.confirmation?.desc && (
-                                <p className="pending-item-desc">{quest.confirmation.desc}</p>
-                              )}
-                              {quest.confirmation?.imgUrl && (
-                                <div className="pending-item-image">
-                                  <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1274,36 +1290,52 @@ const DailyUpdate = ({ onBack }) => {
                     <div className="pending-category">
                       <h3 className="pending-category-title">🏆 Achievements ({getPendingAchievementConfirmations().length})</h3>
                       <div className="pending-items-list">
-                        {getPendingAchievementConfirmations().map(achievement => (
-                          <div key={achievement.id} className="pending-item">
-                            <div className="pending-item-header">
-                              <span className="pending-item-title">
-                                {achievement.icon && (
-                                  <IconRenderer iconName={achievement.icon} size={20} />
+                        {getPendingAchievementConfirmations().map(achievement => {
+                          const createdAt = achievement.confirmation?.createdAt;
+                          const formattedDate = createdAt
+                            ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                            : null;
+
+                          return (
+                            <div key={achievement.id} className="pending-item">
+                              <div className="pending-item-header">
+                                <span className="pending-item-title">
+                                  {achievement.icon && (
+                                    <IconRenderer iconName={achievement.icon} size={20} />
+                                  )}
+                                  {' '}{achievement.name}
+                                </span>
+                                <span className="pending-item-badge">Pending</span>
+                              </div>
+                              <div className="pending-item-details">
+                                <span className="pending-item-xp">
+                                  {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                  {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                </span>
+                                {formattedDate && (
+                                  <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
                                 )}
-                                {' '}{achievement.name}
-                              </span>
-                              <span className="pending-item-badge">Pending</span>
+                                {achievement.dueDate && (
+                                  <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                )}
+                                {achievement.confirmation?.desc && (
+                                  <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                                )}
+                                {achievement.confirmation?.imgUrl && (
+                                  <div className="pending-item-image">
+                                    <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="pending-item-details">
-                              <span className="pending-item-xp">
-                                {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                              </span>
-                              {achievement.dueDate && (
-                                <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
-                              )}
-                              {achievement.confirmation?.desc && (
-                                <p className="pending-item-desc">{achievement.confirmation.desc}</p>
-                              )}
-                              {achievement.confirmation?.imgUrl && (
-                                <div className="pending-item-image">
-                                  <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

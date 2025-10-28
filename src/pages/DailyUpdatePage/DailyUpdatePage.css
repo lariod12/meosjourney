@@ -1081,6 +1081,14 @@ body {
     font-weight: bold;
 }
 
+.pending-item-date {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 14px;
+    color: #666666;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
 .pending-item-desc {
     font-family: 'Kalam', cursive;
     font-size: 14px;
