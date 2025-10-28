@@ -13,9 +13,6 @@ const QuestsTab = () => {
     return filterTodayItems(data.quests);
   }, [data.quests]);
 
-  console.log('🎯 QuestsTab - Total quests:', data.quests?.length || 0);
-  console.log('🎯 QuestsTab - Today\'s quests:', todayQuests?.length || 0);
-
   // Handle loading state
   if (!data.quests) {
     return (

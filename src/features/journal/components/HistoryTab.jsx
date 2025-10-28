@@ -17,9 +17,6 @@ const HistoryTab = () => {
     setExpandedIndex(current => current === index ? null : index);
   }, []);
 
-  console.log('📚 HistoryTab - Total journal entries:', data.journal?.length || 0);
-  console.log('📚 HistoryTab - Grouped by dates:', historyData.length);
-
   // Handle loading state
   if (!data.journal) {
     return (
