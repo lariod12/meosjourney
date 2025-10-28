@@ -986,3 +986,127 @@ body {
     padding: 16px;
   }
 }
+
+/* ========================================
+   Pending Confirmations Section
+   ======================================== */
+
+.pending-confirmations-section {
+    margin-top: 20px;
+    padding: 15px;
+    border: 2px dashed #000000;
+    background-color: #f9f9f9;
+}
+
+.pending-section-title {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000000;
+}
+
+.pending-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Scrollbar styling for pending list */
+.pending-items-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pending-items-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border: 1px solid #000000;
+}
+
+.pending-items-list::-webkit-scrollbar-thumb {
+    background: #000000;
+    border: 1px solid #000000;
+}
+
+.pending-items-list::-webkit-scrollbar-thumb:hover {
+    background: #333333;
+}
+
+.pending-item {
+    border: 2px solid #000000;
+    padding: 15px;
+    background-color: #ffffff;
+}
+
+.pending-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cccccc;
+}
+
+.pending-item-title {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pending-item-badge {
+    font-family: 'Kalam', cursive;
+    font-size: 14px;
+    padding: 4px 12px;
+    background-color: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+}
+
+.pending-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pending-item-xp {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.pending-item-desc {
+    font-family: 'Kalam', cursive;
+    font-size: 14px;
+    color: #333333;
+    margin: 5px 0;
+}
+
+.pending-item-image {
+    margin-top: 10px;
+    border: 2px solid #000000;
+    overflow: hidden;
+}
+
+.pending-item-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .pending-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .pending-item-badge {
+        align-self: flex-start;
+    }
+}

@@ -6,7 +6,7 @@ inclusion: always
 Meo's Journey is a React-based RPG character sheet with a black & white sketch aesthetic. Always read README.md first to understand project conventions before making code changes.
 
 ## Git & Development Workflow
-- Commit messages: `update: <clean and concise message>`
+- Commit messages sort and clean: `update: <clean and concise message>`
 - Use English for all code and commits
 - Remove debug console.log statements after commits (keep error handling logs)
 - Use pnpm for all package management operations
