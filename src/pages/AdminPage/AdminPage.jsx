@@ -111,7 +111,7 @@ const AdminPage = ({ onBack }) => {
       if (activeTab === 'manage-achievements' || activeTab === 'create-achievement') {
         await loadAchievements();
       }
-      
+
       if (activeTab === 'manage-quests' || activeTab === 'create-quest') {
         await loadQuests();
       }
@@ -676,7 +676,7 @@ const AdminPage = ({ onBack }) => {
       .substring(0, 50);
 
     const expectedId = `${sanitizedName}_${todaySuffix}`;
-    
+
     return questConfirmations.find(c => c.id === expectedId);
   };
 
@@ -718,7 +718,7 @@ const AdminPage = ({ onBack }) => {
       .substring(0, 50);
 
     const expectedId = `${sanitizedName}_${todaySuffix}`;
-    
+
     return achievementConfirmations.find(c => c.id === expectedId);
   };
 
@@ -770,7 +770,7 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const confirmation = getQuestConfirmation(quest.name);
-      
+
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
       }
@@ -830,7 +830,7 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const confirmation = getQuestConfirmation(quest.name);
-      
+
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
       }
@@ -886,7 +886,7 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const confirmation = getAchievementConfirmation(achievement.name);
-      
+
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
       }
@@ -947,7 +947,7 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const confirmation = getAchievementConfirmation(achievement.name);
-      
+
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
       }
@@ -1003,8 +1003,8 @@ const AdminPage = ({ onBack }) => {
       <header className="admin-header">
         <button onClick={onBack} className="back-link">◄ Back</button>
         <h1>⚙️ Admin - Meos05</h1>
-        <button 
-          onClick={handleRefresh} 
+        <button
+          onClick={handleRefresh}
           className="refresh-button"
           disabled={isRefreshing || isSubmitting}
           title="Refresh data from database"
@@ -1017,7 +1017,6 @@ const AdminPage = ({ onBack }) => {
         <button
           className="dropdown-toggle"
           onClick={() => {
-            console.log('Dropdown toggle clicked');
             setDropdownOpen(!dropdownOpen);
           }}
         >
@@ -1055,7 +1054,6 @@ const AdminPage = ({ onBack }) => {
             <button
               className={`dropdown-item ${activeTab === 'manage-achievements' ? 'active' : ''}`}
               onClick={() => {
-                console.log('Switched to Manage Achievements');
                 setActiveTab('manage-achievements');
                 setDropdownOpen(false);
               }}
@@ -1065,7 +1063,6 @@ const AdminPage = ({ onBack }) => {
             <button
               className={`dropdown-item ${activeTab === 'manage-quests' ? 'active' : ''}`}
               onClick={() => {
-                console.log('Switched to Manage Quests');
                 setActiveTab('manage-quests');
                 setDropdownOpen(false);
               }}
@@ -1243,7 +1240,7 @@ const AdminPage = ({ onBack }) => {
                       {isViewing ? (
                         <div className="quest-view-history">
                           <h3 className="view-title">📖 Achievement History</h3>
-                          
+
                           {/* Achievement Info */}
                           <div className="view-quest-info">
                             <h4>{achievement.name}</h4>
@@ -1280,8 +1277,8 @@ const AdminPage = ({ onBack }) => {
                                   let createdAtStr = '';
                                   if (conf.createdAt) {
                                     try {
-                                      const createdDate = conf.createdAt.toDate ? 
-                                        conf.createdAt.toDate() : 
+                                      const createdDate = conf.createdAt.toDate ?
+                                        conf.createdAt.toDate() :
                                         new Date(conf.createdAt);
                                       createdAtStr = createdDate.toLocaleString('vi-VN', {
                                         year: 'numeric',
@@ -1343,27 +1340,27 @@ const AdminPage = ({ onBack }) => {
                             {achievement.xp > 0 && <span className="quest-xp-badge">+{achievement.xp} XP</span>}
                             {achievement.specialReward && <span className="quest-xp-badge">🎁 {achievement.specialReward}</span>}
                           </div>
-                          
+
                           {confirmation && (
                             <div className="review-confirmation-content">
                               <div className="form-group">
                                 <label>User Description:</label>
                                 <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
                               </div>
-                              
+
                               {confirmation.imgUrl && (
                                 <div className="form-group">
                                   <label>Attached Image:</label>
                                   <div className="confirmation-image-container">
-                                    <img 
-                                      src={confirmation.imgUrl} 
-                                      alt="Achievement confirmation" 
+                                    <img
+                                      src={confirmation.imgUrl}
+                                      alt="Achievement confirmation"
                                       className="confirmation-image"
                                     />
                                   </div>
                                 </div>
                               )}
-                              
+
                               <div className="review-actions">
                                 <button
                                   onClick={() => handlePassAchievementConfirmation(achievement)}
@@ -1506,7 +1503,7 @@ const AdminPage = ({ onBack }) => {
                                   ◆ Review
                                 </button>
                               )}
-                              
+
                               {/* Show View button if completed */}
                               {isCompleted && (
                                 <button
@@ -1517,7 +1514,7 @@ const AdminPage = ({ onBack }) => {
                                   📖 View
                                 </button>
                               )}
-                              
+
                               {/* Show Edit button only if NOT completed AND NO confirmation pending */}
                               {!isCompleted && !hasConfirmation && (
                                 <button
@@ -1540,7 +1537,7 @@ const AdminPage = ({ onBack }) => {
                                   ✎ Edit
                                 </button>
                               )}
-                              
+
                               <button
                                 onClick={() => handleDeleteClick(achievement.id, achievement.name)}
                                 className="btn-delete"
@@ -1585,7 +1582,7 @@ const AdminPage = ({ onBack }) => {
                       {isViewing ? (
                         <div className="quest-view-history">
                           <h3 className="view-title">📖 Quest History</h3>
-                          
+
                           {/* Quest Info */}
                           <div className="view-quest-info">
                             <h4>{quest.name}</h4>
@@ -1621,8 +1618,8 @@ const AdminPage = ({ onBack }) => {
                                   let createdAtStr = '';
                                   if (conf.createdAt) {
                                     try {
-                                      const createdDate = conf.createdAt.toDate ? 
-                                        conf.createdAt.toDate() : 
+                                      const createdDate = conf.createdAt.toDate ?
+                                        conf.createdAt.toDate() :
                                         new Date(conf.createdAt);
                                       createdAtStr = createdDate.toLocaleString('vi-VN', {
                                         year: 'numeric',
@@ -1683,27 +1680,27 @@ const AdminPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <span className="quest-xp-badge">+{quest.xp} XP</span>
                           </div>
-                          
+
                           {confirmation && (
                             <div className="review-confirmation-content">
                               <div className="form-group">
                                 <label>User Description:</label>
                                 <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
                               </div>
-                              
+
                               {confirmation.imgUrl && (
                                 <div className="form-group">
                                   <label>Attached Image:</label>
                                   <div className="confirmation-image-container">
-                                    <img 
-                                      src={confirmation.imgUrl} 
-                                      alt="Quest confirmation" 
+                                    <img
+                                      src={confirmation.imgUrl}
+                                      alt="Quest confirmation"
                                       className="confirmation-image"
                                     />
                                   </div>
                                 </div>
                               )}
-                              
+
                               <div className="review-actions">
                                 <button
                                   onClick={() => handlePassQuestConfirmation(quest)}
@@ -1818,7 +1815,7 @@ const AdminPage = ({ onBack }) => {
                                   ◆ Review
                                 </button>
                               )}
-                              
+
                               {/* Show View button if completed */}
                               {isCompleted && (
                                 <button
@@ -1829,7 +1826,7 @@ const AdminPage = ({ onBack }) => {
                                   📖 View
                                 </button>
                               )}
-                              
+
                               {/* Show Edit button only if NOT completed AND NO confirmation pending */}
                               {!isCompleted && !hasConfirmation && (
                                 <button
@@ -1850,7 +1847,7 @@ const AdminPage = ({ onBack }) => {
                                   ✎ Edit
                                 </button>
                               )}
-                              
+
                               <button
                                 onClick={() => handleDeleteClick(quest.id, quest.name, 'quest')}
                                 className="btn-delete"
