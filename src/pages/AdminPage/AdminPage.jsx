@@ -666,14 +666,8 @@ const AdminPage = ({ onBack }) => {
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    console.log(`🔍 Looking for quest confirmation: "${questName}" -> sanitized: "${sanitizedName}"`);
-    console.log(`📋 Available confirmations:`, questConfirmations.map(c => c.id));
-
     // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    const found = questConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
-    console.log(`${found ? '✅' : '❌'} Confirmation found:`, found?.id || 'none');
-
-    return found;
+    return questConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
   };
 
   // Get all confirmations for a quest (all dates)
@@ -704,14 +698,8 @@ const AdminPage = ({ onBack }) => {
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    console.log(`🔍 Looking for achievement confirmation: "${achievementName}" -> sanitized: "${sanitizedName}"`);
-    console.log(`📋 Available confirmations:`, achievementConfirmations.map(c => c.id));
-
     // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    const found = achievementConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
-    console.log(`${found ? '✅' : '❌'} Confirmation found:`, found?.id || 'none');
-
-    return found;
+    return achievementConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
   };
 
   // Get all confirmations for an achievement (all dates)
