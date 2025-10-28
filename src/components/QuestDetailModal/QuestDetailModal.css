@@ -147,19 +147,7 @@
   transform: rotate(1deg);
 }
 
-.quest-date {
-  font-family: 'Kalam', cursive;
-  font-size: 17px;
-  padding: 10px 14px;
-  border: 2px solid #000000;
-  background-color: #f8f8f8;
-  display: inline-block;
-}
 
-.completed-date {
-  background-color: #000000;
-  color: #ffffff;
-}
 
 .quest-detail-footer {
   padding: 20px 25px;
@@ -257,10 +245,7 @@
     transform: rotate(0deg);
   }
 
-  .quest-date {
-    font-size: 16px;
-    padding: 8px 12px;
-  }
+
 
   .quest-detail-footer {
     padding: 16px 20px;
@@ -337,10 +322,7 @@
     padding: 6px 12px;
   }
 
-  .quest-date {
-    font-size: 15px;
-    padding: 8px 10px;
-  }
+
 
   .quest-detail-footer {
     padding: 14px 16px;
