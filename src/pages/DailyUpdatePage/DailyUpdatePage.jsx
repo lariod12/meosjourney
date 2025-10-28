@@ -479,18 +479,22 @@ const DailyUpdate = ({ onBack }) => {
               // Clear quest and achievement submissions
               setSelectedQuestSubmissions([]);
               setSelectedAchievementSubmissions([]);
-              // Reload quests and achievements to update available lists
+              // Reload quests, achievements, and confirmations to update available lists and pending review
               Promise.all([
                 fetchQuests(CHARACTER_ID),
-                fetchAchievements(CHARACTER_ID)
-              ]).then(([quests, achievements]) => {
+                fetchQuestConfirmations(CHARACTER_ID),
+                fetchAchievements(CHARACTER_ID),
+                fetchAchievementConfirmations(CHARACTER_ID)
+              ]).then(([quests, questConfirms, achievements, achievementConfirms]) => {
                 // Filter only incomplete quests
                 const availableQuests = quests.filter(q => q.completedAt === null);
                 setAvailableQuests(availableQuests);
+                setQuestConfirmations(questConfirms);
 
                 // Filter only incomplete achievements
                 const availableAchievements = achievements.filter(a => a.completedAt === null);
                 setAvailableAchievements(availableAchievements);
+                setAchievementConfirmations(achievementConfirms);
               });
             }
           }
