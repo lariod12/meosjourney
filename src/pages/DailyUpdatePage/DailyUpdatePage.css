@@ -991,19 +991,21 @@ body {
    Pending Confirmations Section
    ======================================== */
 
-.pending-confirmations-section {
-    margin-top: 20px;
-    padding: 15px;
-    border: 2px dashed #000000;
-    background-color: #f9f9f9;
+.pending-category {
+    margin-bottom: 30px;
 }
 
-.pending-section-title {
-    font-family: 'Patrick Hand', cursive;
-    font-size: 18px;
+.pending-category:last-child {
+    margin-bottom: 0;
+}
+
+.pending-category-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 22px;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 2px solid #000000;
+    color: #000000;
 }
 
 .pending-items-list {
@@ -1100,6 +1102,10 @@ body {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+    .pending-category-title {
+        font-size: 20px;
+    }
+
     .pending-item-header {
         flex-direction: column;
         align-items: flex-start;
@@ -1108,5 +1114,16 @@ body {
 
     .pending-item-badge {
         align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .pending-category {
+        margin-bottom: 20px;
+    }
+
+    .pending-category-title {
+        font-size: 18px;
+        padding-bottom: 8px;
     }
 }

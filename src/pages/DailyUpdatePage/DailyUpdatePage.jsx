@@ -72,6 +72,9 @@ const DailyUpdate = ({ onBack }) => {
   const [questsExpanded, setQuestsExpanded] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
+  // Pending review visibility state - hidden by default
+  const [pendingReviewExpanded, setPendingReviewExpanded] = useState(false);
+
   useEffect(() => {
     // Load config, quests, achievements, and confirmations from Firestore
     Promise.all([
@@ -995,34 +998,6 @@ const DailyUpdate = ({ onBack }) => {
                   )}
                 </div>
 
-                {/* Pending Quest Confirmations */}
-                {getPendingQuestConfirmations().length > 0 && (
-                  <div className="pending-confirmations-section">
-                    <h4 className="pending-section-title">📝 Pending Review ({getPendingQuestConfirmations().length})</h4>
-                    <div className="pending-items-list">
-                      {getPendingQuestConfirmations().map(quest => (
-                        <div key={quest.id} className="pending-item">
-                          <div className="pending-item-header">
-                            <span className="pending-item-title">⚔️ {quest.name}</span>
-                            <span className="pending-item-badge">Pending</span>
-                          </div>
-                          <div className="pending-item-details">
-                            <span className="pending-item-xp">+{quest.xp} XP</span>
-                            {quest.confirmation?.desc && (
-                              <p className="pending-item-desc">{quest.confirmation.desc}</p>
-                            )}
-                            {quest.confirmation?.imgUrl && (
-                              <div className="pending-item-image">
-                                <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Quest Submission Forms */}
                 {selectedQuestSubmissions.map((submission, index) => {
                   const hasConfirm = hasQuestConfirmation(submission.questTitle);
@@ -1159,45 +1134,6 @@ const DailyUpdate = ({ onBack }) => {
                   )}
                 </div>
 
-                {/* Pending Achievement Confirmations */}
-                {getPendingAchievementConfirmations().length > 0 && (
-                  <div className="pending-confirmations-section">
-                    <h4 className="pending-section-title">📝 Pending Review ({getPendingAchievementConfirmations().length})</h4>
-                    <div className="pending-items-list">
-                      {getPendingAchievementConfirmations().map(achievement => (
-                        <div key={achievement.id} className="pending-item">
-                          <div className="pending-item-header">
-                            <span className="pending-item-title">
-                              {achievement.icon && (
-                                <IconRenderer iconName={achievement.icon} size={20} />
-                              )}
-                              {' '}{achievement.name}
-                            </span>
-                            <span className="pending-item-badge">Pending</span>
-                          </div>
-                          <div className="pending-item-details">
-                            <span className="pending-item-xp">
-                              {achievement.xp > 0 && `+${achievement.xp} XP`}
-                              {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                            </span>
-                            {achievement.dueDate && (
-                              <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
-                            )}
-                            {achievement.confirmation?.desc && (
-                              <p className="pending-item-desc">{achievement.confirmation.desc}</p>
-                            )}
-                            {achievement.confirmation?.imgUrl && (
-                              <div className="pending-item-image">
-                                <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Achievement Submission Forms */}
                 {selectedAchievementSubmissions.map((submission, index) => {
                   const hasConfirm = hasAchievementConfirmation(submission.achievementTitle);
@@ -1285,6 +1221,92 @@ const DailyUpdate = ({ onBack }) => {
               </div>
             )}
           </div>
+
+          {/* Pending Review Section */}
+          {(getPendingQuestConfirmations().length > 0 || getPendingAchievementConfirmations().length > 0) && (
+            <div className="form-section">
+              <h2
+                className="section-title clickable"
+                onClick={() => {
+                  console.log('Pending Review section clicked');
+                  setPendingReviewExpanded(!pendingReviewExpanded);
+                }}
+              >
+                {pendingReviewExpanded ? '▼' : '▸'} Pending Review ({getPendingQuestConfirmations().length + getPendingAchievementConfirmations().length})
+              </h2>
+
+              {pendingReviewExpanded && (
+                <div className="section-content">
+                  {/* Pending Quests */}
+                  {getPendingQuestConfirmations().length > 0 && (
+                    <div className="pending-category">
+                      <h3 className="pending-category-title">⚔️ Quests ({getPendingQuestConfirmations().length})</h3>
+                      <div className="pending-items-list">
+                        {getPendingQuestConfirmations().map(quest => (
+                          <div key={quest.id} className="pending-item">
+                            <div className="pending-item-header">
+                              <span className="pending-item-title">⚔️ {quest.name}</span>
+                              <span className="pending-item-badge">Pending</span>
+                            </div>
+                            <div className="pending-item-details">
+                              <span className="pending-item-xp">+{quest.xp} XP</span>
+                              {quest.confirmation?.desc && (
+                                <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                              )}
+                              {quest.confirmation?.imgUrl && (
+                                <div className="pending-item-image">
+                                  <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Achievements */}
+                  {getPendingAchievementConfirmations().length > 0 && (
+                    <div className="pending-category">
+                      <h3 className="pending-category-title">🏆 Achievements ({getPendingAchievementConfirmations().length})</h3>
+                      <div className="pending-items-list">
+                        {getPendingAchievementConfirmations().map(achievement => (
+                          <div key={achievement.id} className="pending-item">
+                            <div className="pending-item-header">
+                              <span className="pending-item-title">
+                                {achievement.icon && (
+                                  <IconRenderer iconName={achievement.icon} size={20} />
+                                )}
+                                {' '}{achievement.name}
+                              </span>
+                              <span className="pending-item-badge">Pending</span>
+                            </div>
+                            <div className="pending-item-details">
+                              <span className="pending-item-xp">
+                                {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                              </span>
+                              {achievement.dueDate && (
+                                <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                              )}
+                              {achievement.confirmation?.desc && (
+                                <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                              )}
+                              {achievement.confirmation?.imgUrl && (
+                                <div className="pending-item-image">
+                                  <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="form-actions">
