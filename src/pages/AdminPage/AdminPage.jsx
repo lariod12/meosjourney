@@ -1233,7 +1233,13 @@ const AdminPage = ({ onBack }) => {
                                 <span>Created: {new Date(achievement.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                             </div>
                           </div>
@@ -1467,7 +1473,13 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString()}</span>
+                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                             </div>
                           </div>
@@ -1574,7 +1586,13 @@ const AdminPage = ({ onBack }) => {
                                 <span>Created: {new Date(quest.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                             </div>
                           </div>
@@ -1779,7 +1797,13 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString()}</span>
+                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                             </div>
                           </div>
