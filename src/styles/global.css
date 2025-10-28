@@ -759,11 +759,14 @@ body {
     padding: 12px;
     border: 2px solid var(--black);
     background: var(--white);
-    /* Loại bỏ tất cả tính năng tương tác - chỉ hiển thị read-only */
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-/* Loại bỏ hover effects - quest list chỉ để xem, không tương tác */
-/* .quest-item:hover { ... } - REMOVED */
+.quest-item:hover {
+    box-shadow: 4px 4px 0 var(--black);
+    transform: translateY(-2px);
+}
 
 .quest-item.completed {
     background: repeating-linear-gradient(45deg,
