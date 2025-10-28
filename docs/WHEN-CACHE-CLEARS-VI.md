@@ -94,7 +94,7 @@ return {
 
 **Giải pháp:** Xóa cache sau khi update
 ```javascript
-// Trong DailyUpdatePage.jsx
+// Trong UserPage.jsx
 const handleSaveStatus = async () => {
   await saveStatus(statusData);
   clearCache(); // Xóa cache để home page load data mới
@@ -112,7 +112,7 @@ const handleSaveStatus = async () => {
 
 **Giải pháp:** Xóa cache sau khi admin update
 ```javascript
-// Trong AdminAchievementsPage.jsx
+// Trong AdminPage.jsx
 const handleSaveAchievement = async () => {
   await saveAchievement(data);
   clearCache(); // Xóa cache
@@ -196,7 +196,7 @@ const { data, loading, refetch } = useCharacterData(characterData);
 **Xóa cache tự động khi update data:**
 
 ```javascript
-// Trong DailyUpdatePage.jsx
+// Trong UserPage.jsx
 import { clearCache } from '../utils/cacheManager';
 
 const handleSave = async () => {
@@ -207,7 +207,7 @@ const handleSave = async () => {
 ```
 
 ```javascript
-// Trong AdminAchievementsPage.jsx
+// Trong AdminPage.jsx
 import { clearCache } from '../utils/cacheManager';
 
 const handleSaveAchievement = async () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import './AdminAchievementsPage.css';
+import './AdminPage.css';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfirmModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
@@ -11,7 +11,7 @@ import { deleteImageByUrl } from '../../services/storage';
 
 const SESSION_KEY = 'admin_meos05_access';
 
-const AdminAchievementsPage = ({ onBack }) => {
+const AdminPage = ({ onBack }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -1893,4 +1893,4 @@ const AdminAchievementsPage = ({ onBack }) => {
   );
 };
 
-export default AdminAchievementsPage;
+export default AdminPage;

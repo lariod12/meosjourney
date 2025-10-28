@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import './DailyUpdatePage.css';
+import './UserPage.css';
 import {
   fetchConfig,
   saveStatus,
@@ -21,7 +21,7 @@ import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 const SESSION_KEY = 'meos05_access';
 
-const DailyUpdate = ({ onBack }) => {
+const UserPage = ({ onBack }) => {
   const [moodOptions, setMoodOptions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [correctPassword, setCorrectPassword] = useState(null);
@@ -1379,5 +1379,5 @@ const DailyUpdate = ({ onBack }) => {
   );
 };
 
-export default DailyUpdate;
+export default UserPage;
 

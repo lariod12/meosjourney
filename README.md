@@ -430,7 +430,7 @@ All interactive elements should follow this pattern:
 
 **Example of the Issue**:
 ```css
-/* ❌ BAD: In AdminAchievementsPage.css */
+/* ❌ BAD: In AdminPage.css */
 .empty-message {
   padding: 40px;
   color: #666666;
@@ -442,20 +442,20 @@ All interactive elements should follow this pattern:
 
 **Solution**: Use component-prefixed class names for specific components:
 ```css
-/* ✅ GOOD: In AdminAchievementsPage.css */
+/* ✅ GOOD: In AdminPage.css */
 .admin-empty-message {
   padding: 40px;
   color: #666666;
 }
 
-/* Now it only affects AdminAchievementsPage */
+/* Now it only affects AdminPage */
 ```
 
 #### Naming Convention Rules
 
 1. **Component-Specific Classes**: Always prefix with component name
    ```css
-   /* In AdminAchievementsPage.css */
+   /* In AdminPage.css */
    .admin-container { }
    .admin-header { }
    .admin-empty-message { }
@@ -543,7 +543,7 @@ If you find conflicting class names:
 
 See these components for reference:
 - `DeleteConfirmModal` - Perfect modal implementation
-- `AdminAchievementsPage` - Button states and interactions
+- `AdminPage` - Button states and interactions
 - `PasswordModal` - Form styling and layout
 
 ### Testing Your Styles
