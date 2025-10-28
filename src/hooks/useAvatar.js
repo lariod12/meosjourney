@@ -20,7 +20,6 @@ export const useAvatar = () => {
           if (response.ok) {
             setAvatarUrl(avatarPath);
             avatarFound = true;
-            console.log(`✅ Avatar loaded: ${avatarPath}`);
             break;
           }
         } catch (err) {

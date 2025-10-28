@@ -13,9 +13,6 @@ const JournalTab = () => {
     return filterTodayItems(data.journal);
   }, [data.journal]);
 
-  console.log('📝 JournalTab - Total journals:', data.journal?.length || 0);
-  console.log('📝 JournalTab - Today\'s journals:', todayJournals?.length || 0);
-
   // Handle loading state
   if (!data.journal) {
     return (

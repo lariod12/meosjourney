@@ -39,6 +39,7 @@ Meo's Journey is a React-based RPG character sheet with a black & white sketch a
 - Global styles: Single file `src/styles/global.css` (imported in App.jsx)
 - Static assets: `src/assets/` for images, fonts, icons only
 - Firebase data: Reference `local/firestore_data_*.json` for current structure
+- All file .md need to be place in docs/ and only use Vietnamese in all file .md except README.md use English and place at root
 
 ## Database Operations
 - Reference `local/DatabaseArchitecture.md` for schema understanding

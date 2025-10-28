@@ -77,8 +77,6 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       completed: achievement.completedAt !== null
     }));
 
-    console.log(`✅ Loaded ${achievementsData.length} achievements from database`);
-
     // Process quests data - ALWAYS use database quests
     // Map quests to include completedAt status
     const questsData = quests.map(quest => ({
@@ -86,11 +84,8 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       completed: quest.completedAt !== null
     }));
 
-    console.log(`✅ Loaded ${questsData.length} quests from database`);
-
     // Process journals data - ALWAYS use database journals
     const journalsData = journals || [];
-    console.log(`✅ Loaded ${journalsData.length} journal entries from database`);
 
     return {
       ...base,

@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { CharacterProvider } from './contexts';
 import { characterData } from './data/characterData';
-import { fetchCharacterViewData, CHARACTER_ID } from './services';
+import { useCharacterData } from './hooks/useCharacterData';
 import CharacterSheet from './pages/HomePage';
 import DailyUpdatePage from './pages/DailyUpdatePage';
 import AdminAchievementsPage from './pages/AdminAchievementsPage';
@@ -10,16 +9,25 @@ import './styles/global.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { data, loading } = useCharacterData(characterData);
 
-  const [data, setData] = useState(characterData);
-
-  useEffect(() => {
-    let mounted = true;
-    fetchCharacterViewData(CHARACTER_ID, characterData)
-      .then((merged) => { if (mounted) setData(merged); })
-      .catch(() => { /* keep defaults on error */ });
-    return () => { mounted = false; };
-  }, []);
+  // Show loading state briefly (optional)
+  if (loading && !data.name) {
+    return (
+      <div className="bg-pattern">
+        <div className="container" style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '100vh',
+          fontFamily: 'Kalam, cursive',
+          fontSize: '18px'
+        }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <CharacterProvider data={data}>

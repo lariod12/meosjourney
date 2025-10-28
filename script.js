@@ -317,7 +317,6 @@ async function loadAvatar() {
                 if (response.ok) {
                     avatarImg.src = `./public/avatars/avatar.${ext}`;
                     avatarFound = true;
-                    console.log(`✅ Avatar loaded: avatar.${ext}`);
                     break;
                 }
             } catch (err) {

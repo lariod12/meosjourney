@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cache System Test</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border: 2px solid #000;
+      border-radius: 8px;
+    }
+    button {
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #333;
+    }
+    .log {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status.valid {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.expired {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status.empty {
+      background: #fff3cd;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Cache System Test</h1>
+  <p>Test the localStorage cache implementation for Meo's Journey</p>
+
+  <div class="test-section">
+    <h2>Cache Status</h2>
+    <div id="status" class="status empty">No cache found</div>
+    <div id="details"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Actions</h2>
+    <button onclick="createCache()">Create Cache</button>
+    <button onclick="checkCache()">Check Cache</button>
+    <button onclick="clearCache()">Clear Cache</button>
+    <button onclick="simulateExpired()">Simulate Expired Cache</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Log</h2>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    const CACHE_KEY = 'meo_journey_home_cache';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+      logDiv.innerHTML += `[${timestamp}] ${emoji} ${message}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    function updateStatus() {
+      const statusDiv = document.getElementById('status');
+      const detailsDiv = document.getElementById('details');
+      
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        
+        if (!cached) {
+          statusDiv.className = 'status empty';
+          statusDiv.textContent = 'No cache found';
+          detailsDiv.innerHTML = '';
+          return;
+        }
+
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        const age = Math.round((now - timestamp) / 1000);
+        const isValid = (now - timestamp) < CACHE_DURATION;
+
+        if (isValid) {
+          statusDiv.className = 'status valid';
+          statusDiv.textContent = `✅ Cache Valid (${age}s old)`;
+        } else {
+          statusDiv.className = 'status expired';
+          statusDiv.textContent = `⏰ Cache Expired (${age}s old)`;
+        }
+
+        detailsDiv.innerHTML = `
+          <p><strong>Timestamp:</strong> ${new Date(timestamp).toLocaleString()}</p>
+          <p><strong>Age:</strong> ${age} seconds</p>
+          <p><strong>Expires in:</strong> ${Math.max(0, 300 - age)} seconds</p>
+          <p><strong>Data size:</strong> ${JSON.stringify(data).length} bytes</p>
+        `;
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '❌ Error reading cache';
+        detailsDiv.innerHTML = `<p>${error.message}</p>`;
+      }
+    }
+
+    function createCache() {
+      const mockData = {
+        name: 'Meo',
+        level: 5,
+        currentXP: 1250,
+        maxXP: 2000,
+        skills: [{ name: 'Coding' }, { name: 'Design' }],
+        quests: [],
+        achievements: [],
+        journal: []
+      };
+
+      const cacheObject = {
+        data: mockData,
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObject));
+      log('Cache created successfully', 'success');
+      updateStatus();
+    }
+
+    function checkCache() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        
+        if (!cached) {
+          log('No cache found', 'warning');
+          updateStatus();
+          return;
+        }
+
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        const age = Math.round((now - timestamp) / 1000);
+        const isValid = (now - timestamp) < CACHE_DURATION;
+
+        if (isValid) {
+          log(`Cache is valid (${age}s old)`, 'success');
+        } else {
+          log(`Cache is expired (${age}s old)`, 'warning');
+        }
+
+        updateStatus();
+      } catch (error) {
+        log(`Error checking cache: ${error.message}`, 'error');
+      }
+    }
+
+    function clearCache() {
+      localStorage.removeItem(CACHE_KEY);
+      log('Cache cleared', 'success');
+      updateStatus();
+    }
+
+    function simulateExpired() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        
+        if (!cached) {
+          log('No cache to expire. Create cache first.', 'warning');
+          return;
+        }
+
+        const { data } = JSON.parse(cached);
+        const expiredTimestamp = Date.now() - (CACHE_DURATION + 1000); // 1 second past expiration
+
+        const expiredCache = {
+          data,
+          timestamp: expiredTimestamp
+        };
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify(expiredCache));
+        log('Cache set to expired state', 'success');
+        updateStatus();
+      } catch (error) {
+        log(`Error simulating expired cache: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-update status every 5 seconds
+    setInterval(updateStatus, 5000);
+
+    // Initial status check
+    updateStatus();
+    log('Cache test page loaded', 'info');
+  </script>
+</body>
+</html>
