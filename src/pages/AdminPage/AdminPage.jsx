@@ -659,15 +659,6 @@ const AdminPage = ({ onBack }) => {
 
   // Helper function to get quest confirmation for a quest
   const getQuestConfirmation = (questName) => {
-    // Generate today's date suffix
-    const today = new Date();
-    const todaySuffix = today.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, '');
-
     // Sanitize quest name to match confirmation ID format
     const sanitizedName = questName.trim()
       .toLowerCase()
@@ -675,9 +666,14 @@ const AdminPage = ({ onBack }) => {
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    console.log(`🔍 Looking for quest confirmation: "${questName}" -> sanitized: "${sanitizedName}"`);
+    console.log(`📋 Available confirmations:`, questConfirmations.map(c => c.id));
 
-    return questConfirmations.find(c => c.id === expectedId);
+    // Look for ANY confirmation that starts with the sanitized name (not just today's)
+    const found = questConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+    console.log(`${found ? '✅' : '❌'} Confirmation found:`, found?.id || 'none');
+
+    return found;
   };
 
   // Get all confirmations for a quest (all dates)
@@ -701,15 +697,6 @@ const AdminPage = ({ onBack }) => {
 
   // Helper function to get achievement confirmation for an achievement
   const getAchievementConfirmation = (achievementName) => {
-    // Generate today's date suffix
-    const today = new Date();
-    const todaySuffix = today.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, '');
-
     // Sanitize achievement name to match confirmation ID format
     const sanitizedName = achievementName.trim()
       .toLowerCase()
@@ -717,9 +704,14 @@ const AdminPage = ({ onBack }) => {
       .replace(/\s+/g, '_')
       .substring(0, 50);
 
-    const expectedId = `${sanitizedName}_${todaySuffix}`;
+    console.log(`🔍 Looking for achievement confirmation: "${achievementName}" -> sanitized: "${sanitizedName}"`);
+    console.log(`📋 Available confirmations:`, achievementConfirmations.map(c => c.id));
 
-    return achievementConfirmations.find(c => c.id === expectedId);
+    // Look for ANY confirmation that starts with the sanitized name (not just today's)
+    const found = achievementConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+    console.log(`${found ? '✅' : '❌'} Confirmation found:`, found?.id || 'none');
+
+    return found;
   };
 
   // Get all confirmations for an achievement (all dates)
