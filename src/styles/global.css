@@ -485,6 +485,67 @@ body {
     }
 }
 
+/* Mobile Tab Navigation */
+.tab-nav-mobile {
+    display: none; /* Hidden by default on desktop */
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    border: 3px solid var(--black);
+    background: var(--white);
+    padding: 0;
+    position: relative;
+}
+
+.tab-arrow-btn {
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    padding: 12px 16px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Architects Daughter', cursive;
+    font-weight: bold;
+    min-width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tab-arrow-btn:hover {
+    background: var(--gray-dark);
+    transform: scale(1.05);
+}
+
+.tab-arrow-btn:active {
+    transform: scale(0.95);
+}
+
+.tab-current {
+    flex: 1;
+    text-align: center;
+    padding: 12px 16px;
+    background: var(--black);
+    color: var(--white);
+    position: relative;
+}
+
+.tab-current-label {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: block;
+}
+
+/* Mobile touch area for swipe */
+@media (max-width: 768px) {
+    .tab-content-wrapper {
+        touch-action: pan-y;
+        user-select: none;
+    }
+}
+
 /* === TAGS CONTAINER (Skills & Hobbies) === */
 .tags-container {
     display: flex;
@@ -1418,10 +1479,35 @@ body {
     .main-layout,
     .left-sidebar,
     .right-content,
-    .tab-nav,
     .status-tab-nav {
         max-width: 100%;
         overflow-x: hidden;
+    }
+
+    /* Hide regular tab navigation on mobile */
+    .tab-nav {
+        display: none;
+    }
+
+    /* Show mobile tab navigation */
+    .tab-nav-mobile {
+        display: flex;
+        margin-bottom: 10px;
+        border-width: 2px;
+    }
+
+    .tab-arrow-btn {
+        padding: 10px 12px;
+        font-size: 1rem;
+        min-width: 44px;
+    }
+
+    .tab-current {
+        padding: 10px 12px;
+    }
+
+    .tab-current-label {
+        font-size: 0.85rem;
     }
 
     .title-sketch {
