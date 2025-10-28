@@ -74,7 +74,7 @@ const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn
             onClick={goToPrevTab}
             aria-label="Previous tab"
           >
-            ◀
+            ‹
           </button>
           <div className="tab-current">
             <span className="tab-current-label">{currentTab?.label}</span>
@@ -84,7 +84,7 @@ const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn
             onClick={goToNextTab}
             aria-label="Next tab"
           >
-            ▶
+            ›
           </button>
         </div>
       ) : (
