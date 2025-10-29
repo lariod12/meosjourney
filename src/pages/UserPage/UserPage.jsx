@@ -36,6 +36,7 @@ const UserPage = ({ onBack }) => {
 
   // Daily Quests Update states
   const [availableQuests, setAvailableQuests] = useState([]);
+  const [allQuests, setAllQuests] = useState([]); // Tất cả quests (bao gồm completed)
   const [questConfirmations, setQuestConfirmations] = useState([]);
   const [selectedQuestSubmissions, setSelectedQuestSubmissions] = useState([]);
   const [showQuestDropdown, setShowQuestDropdown] = useState(false);
@@ -43,6 +44,7 @@ const UserPage = ({ onBack }) => {
 
   // Achievements Update states
   const [availableAchievements, setAvailableAchievements] = useState([]);
+  const [allAchievements, setAllAchievements] = useState([]); // Tất cả achievements (bao gồm completed)
   const [achievementConfirmations, setAchievementConfirmations] = useState([]);
   const [selectedAchievementSubmissions, setSelectedAchievementSubmissions] = useState([]);
   const [showAchievementDropdown, setShowAchievementDropdown] = useState(false);
@@ -93,12 +95,14 @@ const UserPage = ({ onBack }) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
 
-        // Filter only incomplete quests (completedAt === null)
+        // Store all quests and filter incomplete ones
+        setAllQuests(quests);
         const availableQuests = quests.filter(q => q.completedAt === null);
         setAvailableQuests(availableQuests);
         setQuestConfirmations(questConfirms);
 
-        // Filter only incomplete achievements (completedAt === null)
+        // Store all achievements and filter incomplete ones
+        setAllAchievements(achievements);
         const availableAchievements = achievements.filter(a => a.completedAt === null);
         setAvailableAchievements(availableAchievements);
         setAchievementConfirmations(achievementConfirms);
@@ -107,8 +111,10 @@ const UserPage = ({ onBack }) => {
         console.error('❌ Error loading data:', error);
         setMoodOptions([]);
         setCorrectPassword(null);
+        setAllQuests([]);
         setAvailableQuests([]);
         setQuestConfirmations([]);
+        setAllAchievements([]);
         setAvailableAchievements([]);
         setAchievementConfirmations([]);
       });
@@ -131,12 +137,14 @@ const UserPage = ({ onBack }) => {
 
       setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
 
-      // Filter only incomplete quests
+      // Store all and filter incomplete quests
+      setAllQuests(quests);
       const availableQuests = quests.filter(q => q.completedAt === null);
       setAvailableQuests(availableQuests);
       setQuestConfirmations(questConfirms);
 
-      // Filter only incomplete achievements
+      // Store all and filter incomplete achievements
+      setAllAchievements(achievements);
       const availableAchievements = achievements.filter(a => a.completedAt === null);
       setAvailableAchievements(availableAchievements);
       setAchievementConfirmations(achievementConfirms);
@@ -491,12 +499,14 @@ const UserPage = ({ onBack }) => {
                 fetchAchievements(CHARACTER_ID),
                 fetchAchievementConfirmations(CHARACTER_ID)
               ]).then(([quests, questConfirms, achievements, achievementConfirms]) => {
-                // Filter only incomplete quests
+                // Store all and filter incomplete quests
+                setAllQuests(quests);
                 const availableQuests = quests.filter(q => q.completedAt === null);
                 setAvailableQuests(availableQuests);
                 setQuestConfirmations(questConfirms);
 
-                // Filter only incomplete achievements
+                // Store all and filter incomplete achievements
+                setAllAchievements(achievements);
                 const availableAchievements = achievements.filter(a => a.completedAt === null);
                 setAvailableAchievements(availableAchievements);
                 setAchievementConfirmations(achievementConfirms);
@@ -649,15 +659,23 @@ const UserPage = ({ onBack }) => {
     return questConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
   };
 
-  // Get pending quest confirmations (quests that have confirmation but not completed)
-  const getPendingQuestConfirmations = () => {
-    return availableQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
+  // Get all quest submissions (quests that have confirmation)
+  const getAllQuestSubmissions = () => {
+    const questsWithConfirmation = availableQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
       const confirmation = getQuestConfirmationData(quest.name);
       return {
         ...quest,
         confirmation
       };
     });
+    console.log('📋 All Quest Submissions:', questsWithConfirmation.length, questsWithConfirmation.map(q => ({
+      name: q.name,
+      dueDate: q.dueDate,
+      completedAt: q.completedAt,
+      hasConfirmation: !!q.confirmation
+    })));
+    
+    return questsWithConfirmation;
   };
 
   // Get quest confirmation data (get the most recent one if multiple exist)
@@ -784,15 +802,23 @@ const UserPage = ({ onBack }) => {
     return achievementConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
   };
 
-  // Get pending achievement confirmations (achievements that have confirmation but not completed)
-  const getPendingAchievementConfirmations = () => {
-    return availableAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
+  // Get all achievement submissions (achievements that have confirmation)
+  const getAllAchievementSubmissions = () => {
+    const achievementsWithConfirmation = availableAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
       const confirmation = getAchievementConfirmationData(achievement.name);
       return {
         ...achievement,
         confirmation
       };
     });
+    console.log('📋 All Achievement Submissions:', achievementsWithConfirmation.length, achievementsWithConfirmation.map(a => ({
+      name: a.name,
+      dueDate: a.dueDate,
+      completedAt: a.completedAt,
+      hasConfirmation: !!a.confirmation
+    })));
+    
+    return achievementsWithConfirmation;
   };
 
   // Get achievement confirmation data (get the most recent one if multiple exist)
@@ -811,41 +837,128 @@ const UserPage = ({ onBack }) => {
   };
 
   // Helper function to check if a submission is overdue
-  const isSubmissionOverdue = (item) => {
-    if (!item.dueDate) return false;
+  const isSubmissionOverdue = (item, itemType = 'unknown') => {
     const today = new Date();
-    const dueDate = new Date(item.dueDate);
-    return today > dueDate;
+    
+    if (itemType === 'quest') {
+      // For quests: Check createdAt vs today (if createdAt < today then overdue)
+      if (!item.createdAt) {
+        console.log('🔍 No createdAt for quest:', item.name, '→ Not overdue');
+        return false;
+      }
+      
+      const createdDate = new Date(item.createdAt.seconds ? item.createdAt.seconds * 1000 : item.createdAt);
+      const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+      const isOverdue = daysDiff > 0; // If created before today, it's overdue
+      
+      console.log('🔍 Checking quest overdue:', item.name, 'Created:', createdDate.toISOString().split('T')[0], 'Today:', today.toISOString().split('T')[0], 'Days diff:', daysDiff, 'Overdue:', isOverdue);
+      return isOverdue;
+    } else {
+      // For achievements: Only check dueDate if it exists
+      if (!item.dueDate) {
+        console.log('🔍 No dueDate for achievement:', item.name, '→ Not overdue');
+        return false;
+      }
+      
+      const dueDate = new Date(item.dueDate);
+      const isOverdue = today > dueDate;
+      console.log('🔍 Checking achievement overdue:', item.name, 'Due:', item.dueDate, 'Today:', today.toISOString().split('T')[0], 'Overdue:', isOverdue);
+      return isOverdue;
+    }
   };
 
-  // Get failed (overdue) quest confirmations
+  // Get failed (overdue) quest submissions - quá hạn createdAt
   const getFailedQuestConfirmations = () => {
-    return getPendingQuestConfirmations().filter(quest => isSubmissionOverdue(quest));
+    const allSubmissions = getAllQuestSubmissions();
+    const failed = allSubmissions.filter(quest => {
+      // Failed nếu createdAt < today (quest được tạo trước hôm nay)
+      return isSubmissionOverdue(quest, 'quest');
+    });
+    console.log('🔴 Failed Quests:', failed.length, failed.map(q => q.name));
+    return failed;
   };
 
-  // Get completed quest confirmations (not overdue and has completedAt)
+  // Get completed quest submissions - có completedAt != null trong quests collection VÀ có confirmation
   const getCompletedQuestConfirmations = () => {
-    return getPendingQuestConfirmations().filter(quest => !isSubmissionOverdue(quest) && quest.completedAt);
+    // Lấy tất cả quests có completedAt != null từ allQuests
+    const completedQuests = allQuests.filter(quest => {
+      const hasCompleted = quest.completedAt !== null && quest.completedAt !== undefined;
+      const hasConfirmation = hasQuestConfirmation(quest.name);
+      console.log('🔍 Quest:', quest.name, 'Completed:', hasCompleted, 'HasConfirmation:', hasConfirmation);
+      return hasCompleted && hasConfirmation;
+    });
+    
+    // Map với confirmation data
+    const completed = completedQuests.map(quest => {
+      const confirmation = getQuestConfirmationData(quest.name);
+      return {
+        ...quest,
+        confirmation
+      };
+    });
+    
+    console.log('✅ Completed Quests:', completed.length, completed.map(q => q.name));
+    return completed;
   };
 
-  // Get pending quest confirmations (not overdue and no completedAt)
+  // Get pending quest submissions - có confirmation nhưng chưa completed và chưa quá hạn
   const getActivePendingQuestConfirmations = () => {
-    return getPendingQuestConfirmations().filter(quest => !isSubmissionOverdue(quest) && !quest.completedAt);
+    const allSubmissions = getAllQuestSubmissions();
+    const activePending = allSubmissions.filter(quest => {
+      // Pending nếu: chưa completed VÀ chưa quá hạn createdAt
+      const isNotCompleted = !quest.completedAt;
+      const isNotOverdue = !isSubmissionOverdue(quest, 'quest');
+      return isNotCompleted && isNotOverdue;
+    });
+    console.log('⏳ Active Pending Quests:', activePending.length, activePending.map(q => q.name));
+    return activePending;
   };
 
-  // Get failed (overdue) achievement confirmations
+  // Get failed (overdue) achievement submissions - chỉ quá hạn dueDate nếu có
   const getFailedAchievementConfirmations = () => {
-    return getPendingAchievementConfirmations().filter(achievement => isSubmissionOverdue(achievement));
+    const allSubmissions = getAllAchievementSubmissions();
+    const failed = allSubmissions.filter(achievement => {
+      // Failed chỉ khi có dueDate và đã quá hạn (nếu dueDate null thì vẫn còn hạn)
+      return achievement.dueDate && isSubmissionOverdue(achievement, 'achievement');
+    });
+    console.log('🔴 Failed Achievements:', failed.length, failed.map(a => a.name));
+    return failed;
   };
 
-  // Get completed achievement confirmations (not overdue and has completedAt)
+  // Get completed achievement submissions - có completedAt != null trong achievements collection VÀ có confirmation
   const getCompletedAchievementConfirmations = () => {
-    return getPendingAchievementConfirmations().filter(achievement => !isSubmissionOverdue(achievement) && achievement.completedAt);
+    // Lấy tất cả achievements có completedAt != null từ allAchievements
+    const completedAchievements = allAchievements.filter(achievement => {
+      const hasCompleted = achievement.completedAt !== null && achievement.completedAt !== undefined;
+      const hasConfirmation = hasAchievementConfirmation(achievement.name);
+      console.log('🔍 Achievement:', achievement.name, 'Completed:', hasCompleted, 'HasConfirmation:', hasConfirmation);
+      return hasCompleted && hasConfirmation;
+    });
+    
+    // Map với confirmation data
+    const completed = completedAchievements.map(achievement => {
+      const confirmation = getAchievementConfirmationData(achievement.name);
+      return {
+        ...achievement,
+        confirmation
+      };
+    });
+    
+    console.log('✅ Completed Achievements:', completed.length, completed.map(a => a.name));
+    return completed;
   };
 
-  // Get pending achievement confirmations (not overdue and no completedAt)
+  // Get pending achievement submissions - có confirmation nhưng chưa completed và chưa quá hạn
   const getActivePendingAchievementConfirmations = () => {
-    return getPendingAchievementConfirmations().filter(achievement => !isSubmissionOverdue(achievement) && !achievement.completedAt);
+    const allSubmissions = getAllAchievementSubmissions();
+    const activePending = allSubmissions.filter(achievement => {
+      // Pending nếu: chưa completed VÀ (không có dueDate HOẶC chưa quá hạn dueDate)
+      const isNotCompleted = !achievement.completedAt;
+      const isNotOverdue = !achievement.dueDate || !isSubmissionOverdue(achievement, 'achievement');
+      return isNotCompleted && isNotOverdue;
+    });
+    console.log('⏳ Active Pending Achievements:', activePending.length, activePending.map(a => a.name));
+    return activePending;
   };
 
   if (showPasswordModal) {
@@ -1040,7 +1153,7 @@ const UserPage = ({ onBack }) => {
                     )}
                   </div>
 
-                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && getPendingQuestConfirmations().length === 0 && (
+                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && getAllQuestSubmissions().length === 0 && (
                     <p className="no-quests-message">No incomplete quests available</p>
                   )}
                 </div>
@@ -1176,7 +1289,7 @@ const UserPage = ({ onBack }) => {
                     )}
                   </div>
 
-                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && getPendingAchievementConfirmations().length === 0 && (
+                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && getAllAchievementSubmissions().length === 0 && (
                     <p className="no-quests-message">No incomplete achievements available</p>
                   )}
                 </div>
@@ -1270,7 +1383,7 @@ const UserPage = ({ onBack }) => {
           </div>
 
           {/* Review Submitted Section */}
-          {(getPendingQuestConfirmations().length > 0 || getPendingAchievementConfirmations().length > 0) && (
+          {(getAllQuestSubmissions().length > 0 || getAllAchievementSubmissions().length > 0) && (
             <div className="form-section">
               <h2
                 className="section-title clickable"
@@ -1279,7 +1392,7 @@ const UserPage = ({ onBack }) => {
                   setReviewSubmittedExpanded(!reviewSubmittedExpanded);
                 }}
               >
-                {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({getPendingQuestConfirmations().length + getPendingAchievementConfirmations().length})
+                {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({getAllQuestSubmissions().length + getAllAchievementSubmissions().length})
               </h2>
 
               {reviewSubmittedExpanded && (
