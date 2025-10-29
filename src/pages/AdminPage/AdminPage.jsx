@@ -794,6 +794,15 @@ const AdminPage = ({ onBack }) => {
         successMessage += `\n\n🎉 LEVEL UP! You are now Level ${xpResult.newLevel}!`;
       }
 
+      // Update local state immediately to change button from Edit to View
+      setQuests(prevQuests => 
+        prevQuests.map(q => 
+          q.id === quest.id 
+            ? { ...q, completedAt: new Date() }
+            : q
+        )
+      );
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
@@ -804,7 +813,7 @@ const AdminPage = ({ onBack }) => {
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
           setReviewingId(null);
-          loadQuests();
+          loadQuests(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -847,8 +856,20 @@ const AdminPage = ({ onBack }) => {
         }
       }
 
-      // 2. Delete quest confirmation from Firestore (don't update completedAt)
-      await deleteQuestConfirmation(quest.name, CHARACTER_ID);
+      // 2. Delete quest confirmation from Firestore using the actual confirmation ID
+      console.log('🗑️ Deleting quest confirmation with ID:', confirmation.id);
+      await deleteQuestConfirmationById(confirmation.id, CHARACTER_ID);
+
+      // Update local state immediately to remove confirmation and change button to Edit
+      setQuestConfirmations(prevConfirmations => 
+        prevConfirmations.filter(c => !c.id.startsWith(
+          quest.name.trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 50) + '_'
+        ))
+      );
 
       setConfirmModal({
         isOpen: true,
@@ -860,7 +881,7 @@ const AdminPage = ({ onBack }) => {
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
           setReviewingId(null);
-          loadQuests();
+          loadQuests(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -930,6 +951,15 @@ const AdminPage = ({ onBack }) => {
         successMessage += `\n\n🎉 LEVEL UP! You are now Level ${xpResult.newLevel}!`;
       }
 
+      // Update local state immediately to change button from Edit to View
+      setAchievements(prevAchievements => 
+        prevAchievements.map(a => 
+          a.id === achievement.id 
+            ? { ...a, completedAt: new Date() }
+            : a
+        )
+      );
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
@@ -940,7 +970,7 @@ const AdminPage = ({ onBack }) => {
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
           setReviewingId(null);
-          loadAchievements();
+          loadAchievements(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -983,8 +1013,20 @@ const AdminPage = ({ onBack }) => {
         }
       }
 
-      // 2. Delete achievement confirmation from Firestore (don't update completedAt)
-      await deleteAchievementConfirmation(achievement.name, CHARACTER_ID);
+      // 2. Delete achievement confirmation from Firestore using the actual confirmation ID
+      console.log('🗑️ Deleting achievement confirmation with ID:', confirmation.id);
+      await deleteAchievementConfirmationById(confirmation.id, CHARACTER_ID);
+
+      // Update local state immediately to remove confirmation and change button to Edit
+      setAchievementConfirmations(prevConfirmations => 
+        prevConfirmations.filter(c => !c.id.startsWith(
+          achievement.name.trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 50) + '_'
+        ))
+      );
 
       setConfirmModal({
         isOpen: true,
@@ -996,7 +1038,7 @@ const AdminPage = ({ onBack }) => {
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
           setReviewingId(null);
-          loadAchievements();
+          loadAchievements(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -1535,37 +1577,14 @@ const AdminPage = ({ onBack }) => {
                                 </button>
                               )}
 
-                              {/* Show View button if completed */}
-                              {isCompleted && (
+                              {/* Show View button if completed OR no confirmation (default state) */}
+                              {(isCompleted || !hasConfirmation) && (
                                 <button
                                   onClick={() => handleViewAchievement(achievement)}
                                   className="btn-view"
                                   disabled={isSubmitting}
                                 >
                                   📖 View
-                                </button>
-                              )}
-
-                              {/* Show Edit button only if NOT completed AND NO confirmation pending */}
-                              {!isCompleted && !hasConfirmation && (
-                                <button
-                                  onClick={() => {
-                                    setEditingId(achievement.id);
-                                    setReviewingId(null);
-                                    setViewingId(null);
-                                    setFormData({
-                                      name: achievement.name,
-                                      desc: achievement.desc,
-                                      icon: achievement.icon,
-                                      xp: achievement.xp || '',
-                                      specialReward: achievement.specialReward || '',
-                                      dueDate: achievement.dueDate || ''
-                                    });
-                                  }}
-                                  className="btn-edit"
-                                  disabled={isSubmitting}
-                                >
-                                  ✎ Edit
                                 </button>
                               )}
 
@@ -1859,35 +1878,14 @@ const AdminPage = ({ onBack }) => {
                                 </button>
                               )}
 
-                              {/* Show View button if completed */}
-                              {isCompleted && (
+                              {/* Show View button if completed OR no confirmation (default state) */}
+                              {(isCompleted || !hasConfirmation) && (
                                 <button
                                   onClick={() => handleViewQuest(quest)}
                                   className="btn-view"
                                   disabled={isSubmitting}
                                 >
                                   📖 View
-                                </button>
-                              )}
-
-                              {/* Show Edit button only if NOT completed AND NO confirmation pending */}
-                              {!isCompleted && !hasConfirmation && (
-                                <button
-                                  onClick={() => {
-                                    setEditingId(quest.id);
-                                    setReviewingId(null);
-                                    setViewingId(null);
-                                    setFormData({
-                                      ...formData,
-                                      name: quest.name,
-                                      desc: quest.desc || '',
-                                      xp: quest.xp || ''
-                                    });
-                                  }}
-                                  className="btn-edit"
-                                  disabled={isSubmitting}
-                                >
-                                  ✎ Edit
                                 </button>
                               )}
 
