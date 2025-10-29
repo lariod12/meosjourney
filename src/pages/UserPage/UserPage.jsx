@@ -668,12 +668,6 @@ const UserPage = ({ onBack }) => {
         confirmation
       };
     });
-    console.log('📋 All Quest Submissions:', questsWithConfirmation.length, questsWithConfirmation.map(q => ({
-      name: q.name,
-      dueDate: q.dueDate,
-      completedAt: q.completedAt,
-      hasConfirmation: !!q.confirmation
-    })));
     
     return questsWithConfirmation;
   };
@@ -811,12 +805,6 @@ const UserPage = ({ onBack }) => {
         confirmation
       };
     });
-    console.log('📋 All Achievement Submissions:', achievementsWithConfirmation.length, achievementsWithConfirmation.map(a => ({
-      name: a.name,
-      dueDate: a.dueDate,
-      completedAt: a.completedAt,
-      hasConfirmation: !!a.confirmation
-    })));
     
     return achievementsWithConfirmation;
   };
@@ -843,7 +831,6 @@ const UserPage = ({ onBack }) => {
     if (itemType === 'quest') {
       // For quests: Check createdAt vs today (if createdAt < today then overdue)
       if (!item.createdAt) {
-        console.log('🔍 No createdAt for quest:', item.name, '→ Not overdue');
         return false;
       }
       
@@ -851,18 +838,15 @@ const UserPage = ({ onBack }) => {
       const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
       const isOverdue = daysDiff > 0; // If created before today, it's overdue
       
-      console.log('🔍 Checking quest overdue:', item.name, 'Created:', createdDate.toISOString().split('T')[0], 'Today:', today.toISOString().split('T')[0], 'Days diff:', daysDiff, 'Overdue:', isOverdue);
       return isOverdue;
     } else {
       // For achievements: Only check dueDate if it exists
       if (!item.dueDate) {
-        console.log('🔍 No dueDate for achievement:', item.name, '→ Not overdue');
         return false;
       }
       
       const dueDate = new Date(item.dueDate);
       const isOverdue = today > dueDate;
-      console.log('🔍 Checking achievement overdue:', item.name, 'Due:', item.dueDate, 'Today:', today.toISOString().split('T')[0], 'Overdue:', isOverdue);
       return isOverdue;
     }
   };
@@ -874,7 +858,6 @@ const UserPage = ({ onBack }) => {
       // Failed nếu createdAt < today (quest được tạo trước hôm nay)
       return isSubmissionOverdue(quest, 'quest');
     });
-    console.log('🔴 Failed Quests:', failed.length, failed.map(q => q.name));
     return failed;
   };
 
@@ -884,7 +867,6 @@ const UserPage = ({ onBack }) => {
     const completedQuests = allQuests.filter(quest => {
       const hasCompleted = quest.completedAt !== null && quest.completedAt !== undefined;
       const hasConfirmation = hasQuestConfirmation(quest.name);
-      console.log('🔍 Quest:', quest.name, 'Completed:', hasCompleted, 'HasConfirmation:', hasConfirmation);
       return hasCompleted && hasConfirmation;
     });
     
@@ -897,7 +879,6 @@ const UserPage = ({ onBack }) => {
       };
     });
     
-    console.log('✅ Completed Quests:', completed.length, completed.map(q => q.name));
     return completed;
   };
 
@@ -910,7 +891,6 @@ const UserPage = ({ onBack }) => {
       const isNotOverdue = !isSubmissionOverdue(quest, 'quest');
       return isNotCompleted && isNotOverdue;
     });
-    console.log('⏳ Active Pending Quests:', activePending.length, activePending.map(q => q.name));
     return activePending;
   };
 
@@ -921,7 +901,6 @@ const UserPage = ({ onBack }) => {
       // Failed chỉ khi có dueDate và đã quá hạn (nếu dueDate null thì vẫn còn hạn)
       return achievement.dueDate && isSubmissionOverdue(achievement, 'achievement');
     });
-    console.log('🔴 Failed Achievements:', failed.length, failed.map(a => a.name));
     return failed;
   };
 
@@ -931,7 +910,6 @@ const UserPage = ({ onBack }) => {
     const completedAchievements = allAchievements.filter(achievement => {
       const hasCompleted = achievement.completedAt !== null && achievement.completedAt !== undefined;
       const hasConfirmation = hasAchievementConfirmation(achievement.name);
-      console.log('🔍 Achievement:', achievement.name, 'Completed:', hasCompleted, 'HasConfirmation:', hasConfirmation);
       return hasCompleted && hasConfirmation;
     });
     
@@ -944,7 +922,6 @@ const UserPage = ({ onBack }) => {
       };
     });
     
-    console.log('✅ Completed Achievements:', completed.length, completed.map(a => a.name));
     return completed;
   };
 
@@ -957,7 +934,6 @@ const UserPage = ({ onBack }) => {
       const isNotOverdue = !achievement.dueDate || !isSubmissionOverdue(achievement, 'achievement');
       return isNotCompleted && isNotOverdue;
     });
-    console.log('⏳ Active Pending Achievements:', activePending.length, activePending.map(a => a.name));
     return activePending;
   };
 
@@ -1388,7 +1364,6 @@ const UserPage = ({ onBack }) => {
               <h2
                 className="section-title clickable"
                 onClick={() => {
-                  console.log('Review Submitted section clicked');
                   setReviewSubmittedExpanded(!reviewSubmittedExpanded);
                 }}
               >
@@ -1402,7 +1377,6 @@ const UserPage = ({ onBack }) => {
                     <h3 
                       className="review-group-title clickable"
                       onClick={() => {
-                        console.log('Pending Review group clicked');
                         setPendingGroupExpanded(!pendingGroupExpanded);
                       }}
                     >
@@ -1528,7 +1502,6 @@ const UserPage = ({ onBack }) => {
                     <h3 
                       className="review-group-title clickable failed"
                       onClick={() => {
-                        console.log('Failed Review group clicked');
                         setFailedGroupExpanded(!failedGroupExpanded);
                       }}
                     >
@@ -1657,7 +1630,6 @@ const UserPage = ({ onBack }) => {
                     <h3 
                       className="review-group-title clickable completed"
                       onClick={() => {
-                        console.log('Completed Review group clicked');
                         setCompletedGroupExpanded(!completedGroupExpanded);
                       }}
                     >
