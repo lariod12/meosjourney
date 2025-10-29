@@ -15,6 +15,7 @@ import {
   CHARACTER_ID
 } from '../../services/firestore';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
+import { sendQuestSubmissionNotification, sendAchievementNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
@@ -375,6 +376,30 @@ const UserPage = ({ onBack }) => {
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
+            // Send Discord notification for quest submission
+            try {
+              const questData = {
+                name: submission.questTitle,
+                xp: submission.questXp || 0,
+                desc: submission.questDesc || ''
+              };
+              
+              const userData = {
+                name: formData.characterName || 'Unknown User',
+                level: 1 // You might want to get actual level from character data
+              };
+              
+              const confirmationData = {
+                desc: submission.description || '',
+                imgUrl: imgUrl
+              };
+              
+              await sendQuestSubmissionNotification(questData, userData, confirmationData);
+            } catch (discordError) {
+              console.warn('⚠️ Discord notification failed:', discordError);
+              // Don't fail the entire submission if Discord fails
+            }
+
             results.push({
               type: 'success',
               item: `Quest: ${submission.questTitle}${uploadWarning}`
@@ -432,6 +457,31 @@ const UserPage = ({ onBack }) => {
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
+
+            // Send Discord notification for achievement submission
+            try {
+              const achievementData = {
+                name: submission.achievementTitle,
+                xp: submission.achievementXp || 0,
+                desc: submission.achievementDesc || '',
+                icon: submission.achievementIcon || '🏆'
+              };
+              
+              const userData = {
+                name: formData.characterName || 'Unknown User',
+                level: 1 // You might want to get actual level from character data
+              };
+              
+              const confirmationData = {
+                desc: submission.description || '',
+                imgUrl: imgUrl
+              };
+              
+              await sendAchievementNotification(achievementData, userData, confirmationData);
+            } catch (discordError) {
+              console.warn('⚠️ Discord notification failed:', discordError);
+              // Don't fail the entire submission if Discord fails
+            }
 
             results.push({
               type: 'success',

@@ -4,8 +4,6 @@ import './QuestDetailModal.css';
 const QuestDetailModal = ({ quest, onClose }) => {
   if (!quest) return null;
 
-
-
   // Handle ESC key
   useEffect(() => {
     const handleEscKey = (e) => {
@@ -25,8 +23,6 @@ const QuestDetailModal = ({ quest, onClose }) => {
       onClose();
     }
   };
-
-
 
   return (
     <div className="quest-detail-overlay" onClick={handleOverlayClick}>
