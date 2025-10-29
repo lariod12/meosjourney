@@ -18,14 +18,23 @@ export const groupJournalsByDate = (journals) => {
   journals.forEach(journal => {
     if (!journal.timestamp) return;
 
+    // Ensure timestamp is a Date object
+    let timestamp = journal.timestamp;
+    if (!(timestamp instanceof Date)) {
+      timestamp = new Date(timestamp);
+    }
+
+    // Skip invalid dates
+    if (isNaN(timestamp.getTime())) return;
+
     // Convert to Vietnam timezone date string (YYYY-MM-DD)
-    const dateStr = journal.timestamp.toLocaleDateString('sv-SE', {
+    const dateStr = timestamp.toLocaleDateString('sv-SE', {
       timeZone: 'Asia/Ho_Chi_Minh'
     });
 
     if (!groupedByDate[dateStr]) {
       groupedByDate[dateStr] = {
-        date: new Date(journal.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })),
+        date: new Date(timestamp.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })),
         entries: []
       };
     }
