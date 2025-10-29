@@ -5,9 +5,10 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
+import { clearCache } from '../../utils/cacheManager';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -761,6 +762,16 @@ const AdminPage = ({ onBack }) => {
         completedAt: new Date()
       }, CHARACTER_ID);
 
+      // Update profile XP
+      let xpResult = null;
+      try {
+        xpResult = await updateProfileXP(quest.xp, CHARACTER_ID);
+        console.log(`✅ Profile XP increased by ${quest.xp} for quest:`, quest.name);
+      } catch (xpError) {
+        console.warn('⚠️ Could not update profile XP:', xpError.message);
+        // Continue even if XP update fails - quest is still marked as completed
+      }
+
       // Create automatic journal entry for quest completion
       try {
         await saveQuestCompletionJournal({
@@ -774,11 +785,20 @@ const AdminPage = ({ onBack }) => {
         // Continue even if journal creation fails - quest is still marked as completed
       }
 
+      // Clear cache to force homepage refresh with new XP
+      clearCache();
+
+      // Build success message with level up info if applicable
+      let successMessage = `Quest "${quest.name}" has been marked as completed and added to journal!`;
+      if (xpResult?.leveledUp) {
+        successMessage += `\n\n🎉 LEVEL UP! You are now Level ${xpResult.newLevel}!`;
+      }
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Quest Passed',
-        message: `Quest "${quest.name}" has been marked as completed and added to journal!`,
+        message: successMessage,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
@@ -877,6 +897,16 @@ const AdminPage = ({ onBack }) => {
         completedAt: new Date()
       }, CHARACTER_ID);
 
+      // Update profile XP
+      let xpResult = null;
+      try {
+        xpResult = await updateProfileXP(achievement.xp, CHARACTER_ID);
+        console.log(`✅ Profile XP increased by ${achievement.xp} for achievement:`, achievement.name);
+      } catch (xpError) {
+        console.warn('⚠️ Could not update profile XP:', xpError.message);
+        // Continue even if XP update fails - achievement is still marked as completed
+      }
+
       // Create automatic journal entry for achievement completion
       try {
         await saveAchievementCompletionJournal({
@@ -891,11 +921,20 @@ const AdminPage = ({ onBack }) => {
         // Continue even if journal creation fails - achievement is still marked as completed
       }
 
+      // Clear cache to force homepage refresh with new XP
+      clearCache();
+
+      // Build success message with level up info if applicable
+      let successMessage = `Achievement "${achievement.name}" has been marked as completed and added to journal!`;
+      if (xpResult?.leveledUp) {
+        successMessage += `\n\n🎉 LEVEL UP! You are now Level ${xpResult.newLevel}!`;
+      }
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Achievement Passed',
-        message: `Achievement "${achievement.name}" has been marked as completed and added to journal!`,
+        message: successMessage,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {

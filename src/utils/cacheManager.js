@@ -48,4 +48,17 @@ export const setCachedData = (data) => {
   }
 };
 
+/**
+ * Clear cached data
+ * Use this when data is updated (e.g., quest/achievement completed)
+ */
+export const clearCache = () => {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+    console.log('🗑️ Cache cleared successfully');
+  } catch (error) {
+    console.error('❌ Error clearing cache:', error);
+  }
+};
+
 

@@ -3,7 +3,7 @@ export const characterData = {
     caption: "Forever Curious",
     level: 0,
     currentXP: 0,
-    maxXP: 10000,
+    maxXP: 1000,
     
     skills: [
         { name: "Photoshop" },

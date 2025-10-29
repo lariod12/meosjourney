@@ -16,6 +16,67 @@ export const fetchProfile = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData(['main', characterId, 'profile']);
 };
 
+export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
+  try {
+    // Fetch current profile to get its ID and current XP
+    const currentProfile = await fetchProfile(characterId);
+
+    if (!currentProfile || !currentProfile.id) {
+      throw new Error('No profile document found. Please create one first.');
+    }
+
+    const currentXP = Number.parseInt(currentProfile.currentXP, 10) || 0;
+    const currentLevel = Number.parseInt(currentProfile.level, 10) || 0;
+    const maxXP = Number.parseInt(currentProfile.maxXP, 10) || 1000;
+    
+    // Add XP
+    let newXP = currentXP + xpToAdd;
+    let newLevel = currentLevel;
+    let leveledUp = false;
+
+    // Check for level up (can level up multiple times if XP is high enough)
+    // maxXP stays constant - does not increase with level
+    // When leveling up, excess XP is reduced by half
+    while (newXP >= maxXP) {
+      newXP -= maxXP;
+      newLevel += 1;
+      leveledUp = true;
+      
+      // Reduce excess XP by half (penalty for leveling up)
+      newXP = Math.floor(newXP / 2);
+      
+      console.log(`🎉 LEVEL UP! New level: ${newLevel}, Remaining XP after penalty: ${newXP}`);
+    }
+
+    // Prepare data to update (maxXP is not updated, stays constant)
+    const dataToUpdate = {
+      currentXP: newXP,
+      level: newLevel
+    };
+
+    // Update profile with new XP and level
+    const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+    await setDoc(profileDocRef, dataToUpdate, { merge: true });
+
+    console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
+    
+    return { 
+      success: true, 
+      oldXP: currentXP, 
+      newXP, 
+      addedXP: xpToAdd,
+      oldLevel: currentLevel,
+      newLevel,
+      leveledUp,
+      maxXP
+    };
+
+  } catch (error) {
+    console.error('❌ Error updating profile XP:', error);
+    throw new Error(`Failed to update XP: ${error.message}`);
+  }
+};
+
 export const fetchConfig = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData(['main', characterId, 'config']);
 };
