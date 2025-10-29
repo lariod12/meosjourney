@@ -988,8 +988,29 @@ body {
 }
 
 /* ========================================
-   Pending Confirmations Section
+   Review Submitted Section
    ======================================== */
+
+.review-status-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 3px solid #000000;
+    background-color: #f9f9f9;
+}
+
+.review-status-section:last-child {
+    margin-bottom: 0;
+}
+
+.review-status-title {
+    font-family: 'Architects Daughter', cursive;
+    font-size: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid #000000;
+    color: #000000;
+    text-align: center;
+}
 
 .pending-category {
     margin-bottom: 30px;
@@ -1006,6 +1027,15 @@ body {
     padding-bottom: 10px;
     border-bottom: 2px solid #000000;
     color: #000000;
+}
+
+.pending-subcategory-title {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #666666;
+    color: #333333;
 }
 
 .pending-items-list {
@@ -1042,6 +1072,17 @@ body {
     background-color: #ffffff;
 }
 
+.pending-item.failed {
+    background-color: #f5f5f5;
+    border-style: dashed;
+    opacity: 0.8;
+}
+
+.pending-item.completed {
+    background-color: #ffffff;
+    border-width: 3px;
+}
+
 .pending-item-header {
     display: flex;
     justify-content: space-between;
@@ -1064,9 +1105,26 @@ body {
     font-family: 'Kalam', cursive;
     font-size: 14px;
     padding: 4px 12px;
+    border: 2px solid #000000;
+    font-weight: bold;
+}
+
+.pending-item-badge.pending {
     background-color: #000000;
     color: #ffffff;
-    border: 2px solid #000000;
+}
+
+.pending-item-badge.failed {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+    text-decoration: line-through;
+}
+
+.pending-item-badge.completed {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
 }
 
 .pending-item-details {
@@ -1086,6 +1144,17 @@ body {
     font-size: 14px;
     color: #666666;
     margin: 5px 0;
+    font-weight: bold;
+}
+
+.pending-item-date.overdue {
+    color: #000000;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.pending-item-date.completed {
+    color: #333333;
     font-weight: bold;
 }
 
@@ -1110,8 +1179,24 @@ body {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+    .review-status-section {
+        padding: 16px;
+        margin-bottom: 30px;
+    }
+
+    .review-status-title {
+        font-size: 22px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+    }
+
     .pending-category-title {
         font-size: 20px;
+    }
+
+    .pending-subcategory-title {
+        font-size: 16px;
+        margin-bottom: 10px;
     }
 
     .pending-item-header {
@@ -1126,6 +1211,19 @@ body {
 }
 
 @media (max-width: 480px) {
+    .review-status-section {
+        padding: 12px;
+        margin-bottom: 20px;
+        border-width: 2px;
+    }
+
+    .review-status-title {
+        font-size: 20px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom-width: 2px;
+    }
+
     .pending-category {
         margin-bottom: 20px;
     }
@@ -1133,5 +1231,20 @@ body {
     .pending-category-title {
         font-size: 18px;
         padding-bottom: 8px;
+    }
+
+    .pending-subcategory-title {
+        font-size: 15px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .pending-item {
+        padding: 12px;
+        border-width: 2px;
+    }
+
+    .pending-item.completed {
+        border-width: 2px;
     }
 }
