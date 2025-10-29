@@ -42,7 +42,7 @@ export const useCharacterData = (defaultData) => {
       // Fetch fresh data from Firebase
       console.log('🔄 Fetching fresh data from Firebase...');
       const freshData = await fetchCharacterViewData(CHARACTER_ID, defaultData);
-      
+
       if (mountedRef.current) {
         setData(freshData);
         setCachedData(freshData);

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import { CharacterProvider } from './contexts';
 import { characterData } from './data/characterData';
 import { useCharacterData } from './hooks/useCharacterData';
+import { LoadingDialog } from './components/common';
 import CharacterSheet from './pages/HomePage';
 import UserPage from './pages/UserPage';
 import AdminPage from './pages/AdminPage';
@@ -11,22 +12,9 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { data, loading } = useCharacterData(characterData);
 
-  // Show loading state briefly (optional)
-  if (loading && !data.name) {
-    return (
-      <div className="bg-pattern">
-        <div className="container" style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh',
-          fontFamily: 'Kalam, cursive',
-          fontSize: '18px'
-        }}>
-          Loading...
-        </div>
-      </div>
-    );
+  // Show loading dialog while fetching data
+  if (loading) {
+    return <LoadingDialog />;
   }
 
   return (
