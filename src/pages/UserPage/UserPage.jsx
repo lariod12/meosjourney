@@ -74,6 +74,11 @@ const UserPage = ({ onBack }) => {
 
   // Review submitted visibility state - hidden by default
   const [reviewSubmittedExpanded, setReviewSubmittedExpanded] = useState(false);
+  
+  // Individual group collapse/expand states - collapsed by default
+  const [pendingGroupExpanded, setPendingGroupExpanded] = useState(false);
+  const [failedGroupExpanded, setFailedGroupExpanded] = useState(false);
+  const [completedGroupExpanded, setCompletedGroupExpanded] = useState(false);
 
   useEffect(() => {
     // Load config, quests, achievements, and confirmations from Firestore
@@ -1279,352 +1284,412 @@ const UserPage = ({ onBack }) => {
 
               {reviewSubmittedExpanded && (
                 <div className="section-content">
-                  {/* Active Pending Submissions */}
-                  {(getActivePendingQuestConfirmations().length > 0 || getActivePendingAchievementConfirmations().length > 0) && (
-                    <div className="review-status-section">
-                      <h3 className="review-status-title">⏳ Pending Review ({getActivePendingQuestConfirmations().length + getActivePendingAchievementConfirmations().length})</h3>
+                  {/* Pending Review Group - Always show */}
+                  <div className="review-group">
+                    <h3 
+                      className="review-group-title clickable"
+                      onClick={() => {
+                        console.log('Pending Review group clicked');
+                        setPendingGroupExpanded(!pendingGroupExpanded);
+                      }}
+                    >
+                      {pendingGroupExpanded ? '▼' : '▸'} ⏳ Pending Review ({getActivePendingQuestConfirmations().length + getActivePendingAchievementConfirmations().length})
+                    </h3>
                       
-                      {/* Active Pending Quests */}
-                      {getActivePendingQuestConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">⚔️ Quests ({getActivePendingQuestConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getActivePendingQuestConfirmations().map(quest => {
-                              const createdAt = quest.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                    {pendingGroupExpanded && (
+                      <div className="review-group-content">
+                        {/* Active Pending Quests */}
+                        {getActivePendingQuestConfirmations().length > 0 ? (
+                          <div className="pending-category">
+                            <h4 className="pending-subcategory-title">⚔️ Quests ({getActivePendingQuestConfirmations().length})</h4>
+                            <div className="pending-items-list">
+                              {getActivePendingQuestConfirmations().map(quest => {
+                                const createdAt = quest.confirmation?.createdAt;
+                                const formattedDate = createdAt
+                                  ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                  : null;
 
-                              return (
-                                <div key={quest.id} className="pending-item">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">⚔️ {quest.name}</span>
-                                    <span className="pending-item-badge pending">Pending</span>
-                                  </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">+{quest.xp} XP</span>
-                                    {formattedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
-                                    )}
-                                    {quest.confirmation?.desc && (
-                                      <p className="pending-item-desc">{quest.confirmation.desc}</p>
-                                    )}
-                                    {quest.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Active Pending Achievements */}
-                      {getActivePendingAchievementConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">🏆 Achievements ({getActivePendingAchievementConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getActivePendingAchievementConfirmations().map(achievement => {
-                              const createdAt = achievement.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-
-                              return (
-                                <div key={achievement.id} className="pending-item">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">
-                                      {achievement.icon && (
-                                        <IconRenderer iconName={achievement.icon} size={20} />
+                                return (
+                                  <div key={quest.id} className="pending-item">
+                                    <div className="pending-item-header">
+                                      <span className="pending-item-title">⚔️ {quest.name}</span>
+                                      <span className="pending-item-badge pending">Pending</span>
+                                    </div>
+                                    <div className="pending-item-details">
+                                      <span className="pending-item-xp">+{quest.xp} XP</span>
+                                      {formattedDate && (
+                                        <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
                                       )}
-                                      {' '}{achievement.name}
-                                    </span>
-                                    <span className="pending-item-badge pending">Pending</span>
+                                      {quest.confirmation?.desc && (
+                                        <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                                      )}
+                                      {quest.confirmation?.imgUrl && (
+                                        <div className="pending-item-image">
+                                          <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">
-                                      {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                      {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                                    </span>
-                                    {formattedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
-                                    )}
-                                    {achievement.dueDate && (
-                                      <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
-                                    )}
-                                    {achievement.confirmation?.desc && (
-                                      <p className="pending-item-desc">{achievement.confirmation.desc}</p>
-                                    )}
-                                    {achievement.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
+                        ) : (
+                          <div className="pending-category">
+                            <h4 className="pending-subcategory-title">⚔️ Quests (0)</h4>
+                            <div className="empty-message">No pending quest submissions.</div>
+                          </div>
+                        )}
+
+                        {/* Active Pending Achievements */}
+                        {getActivePendingAchievementConfirmations().length > 0 ? (
+                          <div className="pending-category">
+                            <h4 className="pending-subcategory-title">🏆 Achievements ({getActivePendingAchievementConfirmations().length})</h4>
+                            <div className="pending-items-list">
+                              {getActivePendingAchievementConfirmations().map(achievement => {
+                                const createdAt = achievement.confirmation?.createdAt;
+                                const formattedDate = createdAt
+                                  ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                  : null;
+
+                                return (
+                                  <div key={achievement.id} className="pending-item">
+                                    <div className="pending-item-header">
+                                      <span className="pending-item-title">
+                                        {achievement.icon && (
+                                          <IconRenderer iconName={achievement.icon} size={20} />
+                                        )}
+                                        {' '}{achievement.name}
+                                      </span>
+                                      <span className="pending-item-badge pending">Pending</span>
+                                    </div>
+                                    <div className="pending-item-details">
+                                      <span className="pending-item-xp">
+                                        {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                        {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                      </span>
+                                      {formattedDate && (
+                                        <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                      )}
+                                      {achievement.dueDate && (
+                                        <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                      )}
+                                      {achievement.confirmation?.desc && (
+                                        <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                                      )}
+                                      {achievement.confirmation?.imgUrl && (
+                                        <div className="pending-item-image">
+                                          <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pending-category">
+                            <h4 className="pending-subcategory-title">🏆 Achievements (0)</h4>
+                            <div className="empty-message">No pending achievement submissions.</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Failed (Overdue) Group - Always show */}
+                  <div className="review-group">
+                    <h3 
+                      className="review-group-title clickable failed"
+                      onClick={() => {
+                        console.log('Failed Review group clicked');
+                        setFailedGroupExpanded(!failedGroupExpanded);
+                      }}
+                    >
+                      {failedGroupExpanded ? '▼' : '▸'} ❌ Failed (Overdue) ({getFailedQuestConfirmations().length + getFailedAchievementConfirmations().length})
+                    </h3>
+                      
+                      {failedGroupExpanded && (
+                        <div className="review-group-content">
+                          {/* Failed Quests */}
+                          {getFailedQuestConfirmations().length > 0 ? (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">⚔️ Quests ({getFailedQuestConfirmations().length})</h4>
+                              <div className="pending-items-list">
+                                {getFailedQuestConfirmations().map(quest => {
+                                  const createdAt = quest.confirmation?.createdAt;
+                                  const formattedDate = createdAt
+                                    ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
+
+                                  return (
+                                    <div key={quest.id} className="pending-item failed">
+                                      <div className="pending-item-header">
+                                        <span className="pending-item-title">⚔️ {quest.name}</span>
+                                        <span className="pending-item-badge failed">Failed</span>
+                                      </div>
+                                      <div className="pending-item-details">
+                                        <span className="pending-item-xp">+{quest.xp} XP</span>
+                                        {formattedDate && (
+                                          <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                        )}
+                                        {quest.dueDate && (
+                                          <p className="pending-item-date overdue">⚠️ Due: {quest.dueDate} (Overdue)</p>
+                                        )}
+                                        {quest.confirmation?.desc && (
+                                          <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                                        )}
+                                        {quest.confirmation?.imgUrl && (
+                                          <div className="pending-item-image">
+                                            <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">⚔️ Quests (0)</h4>
+                              <div className="empty-message">No failed quest submissions.</div>
+                            </div>
+                          )}
+
+                          {/* Failed Achievements */}
+                          {getFailedAchievementConfirmations().length > 0 ? (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">🏆 Achievements ({getFailedAchievementConfirmations().length})</h4>
+                              <div className="pending-items-list">
+                                {getFailedAchievementConfirmations().map(achievement => {
+                                  const createdAt = achievement.confirmation?.createdAt;
+                                  const formattedDate = createdAt
+                                    ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
+
+                                  return (
+                                    <div key={achievement.id} className="pending-item failed">
+                                      <div className="pending-item-header">
+                                        <span className="pending-item-title">
+                                          {achievement.icon && (
+                                            <IconRenderer iconName={achievement.icon} size={20} />
+                                          )}
+                                          {' '}{achievement.name}
+                                        </span>
+                                        <span className="pending-item-badge failed">Failed</span>
+                                      </div>
+                                      <div className="pending-item-details">
+                                        <span className="pending-item-xp">
+                                          {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                          {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                        </span>
+                                        {formattedDate && (
+                                          <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
+                                        )}
+                                        {achievement.dueDate && (
+                                          <p className="pending-item-date overdue">⚠️ Due: {achievement.dueDate} (Overdue)</p>
+                                        )}
+                                        {achievement.confirmation?.desc && (
+                                          <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                                        )}
+                                        {achievement.confirmation?.imgUrl && (
+                                          <div className="pending-item-image">
+                                            <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">🏆 Achievements (0)</h4>
+                              <div className="empty-message">No failed achievement submissions.</div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {/* Failed (Overdue) Submissions */}
-                  {(getFailedQuestConfirmations().length > 0 || getFailedAchievementConfirmations().length > 0) && (
-                    <div className="review-status-section">
-                      <h3 className="review-status-title">❌ Failed (Overdue) ({getFailedQuestConfirmations().length + getFailedAchievementConfirmations().length})</h3>
+                  {/* Completed Group - Always show */}
+                  <div className="review-group">
+                    <h3 
+                      className="review-group-title clickable completed"
+                      onClick={() => {
+                        console.log('Completed Review group clicked');
+                        setCompletedGroupExpanded(!completedGroupExpanded);
+                      }}
+                    >
+                      {completedGroupExpanded ? '▼' : '▸'} ✅ Completed ({getCompletedQuestConfirmations().length + getCompletedAchievementConfirmations().length})
+                    </h3>
                       
-                      {/* Failed Quests */}
-                      {getFailedQuestConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">⚔️ Quests ({getFailedQuestConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getFailedQuestConfirmations().map(quest => {
-                              const createdAt = quest.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                      {completedGroupExpanded && (
+                        <div className="review-group-content">
+                          {/* Completed Quests */}
+                          {getCompletedQuestConfirmations().length > 0 ? (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">⚔️ Quests ({getCompletedQuestConfirmations().length})</h4>
+                              <div className="pending-items-list">
+                                {getCompletedQuestConfirmations().map(quest => {
+                                  const createdAt = quest.confirmation?.createdAt;
+                                  const completedAt = quest.completedAt;
+                                  const formattedSubmittedDate = createdAt
+                                    ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
+                                  const formattedCompletedDate = completedAt
+                                    ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
 
-                              return (
-                                <div key={quest.id} className="pending-item failed">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">⚔️ {quest.name}</span>
-                                    <span className="pending-item-badge failed">Failed</span>
-                                  </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">+{quest.xp} XP</span>
-                                    {formattedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
-                                    )}
-                                    {quest.dueDate && (
-                                      <p className="pending-item-date overdue">⚠️ Due: {quest.dueDate} (Overdue)</p>
-                                    )}
-                                    {quest.confirmation?.desc && (
-                                      <p className="pending-item-desc">{quest.confirmation.desc}</p>
-                                    )}
-                                    {quest.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                  return (
+                                    <div key={quest.id} className="pending-item completed">
+                                      <div className="pending-item-header">
+                                        <span className="pending-item-title">⚔️ {quest.name}</span>
+                                        <span className="pending-item-badge completed">Completed</span>
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Failed Achievements */}
-                      {getFailedAchievementConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">🏆 Achievements ({getFailedAchievementConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getFailedAchievementConfirmations().map(achievement => {
-                              const createdAt = achievement.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-
-                              return (
-                                <div key={achievement.id} className="pending-item failed">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">
-                                      {achievement.icon && (
-                                        <IconRenderer iconName={achievement.icon} size={20} />
-                                      )}
-                                      {' '}{achievement.name}
-                                    </span>
-                                    <span className="pending-item-badge failed">Failed</span>
-                                  </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">
-                                      {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                      {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                                    </span>
-                                    {formattedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
-                                    )}
-                                    {achievement.dueDate && (
-                                      <p className="pending-item-date overdue">⚠️ Due: {achievement.dueDate} (Overdue)</p>
-                                    )}
-                                    {achievement.confirmation?.desc && (
-                                      <p className="pending-item-desc">{achievement.confirmation.desc}</p>
-                                    )}
-                                    {achievement.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                      <div className="pending-item-details">
+                                        <span className="pending-item-xp">+{quest.xp} XP</span>
+                                        {formattedSubmittedDate && (
+                                          <p className="pending-item-date">📅 Submitted: {formattedSubmittedDate}</p>
+                                        )}
+                                        {formattedCompletedDate && (
+                                          <p className="pending-item-date completed">✅ Completed: {formattedCompletedDate}</p>
+                                        )}
+                                        {quest.confirmation?.desc && (
+                                          <p className="pending-item-desc">{quest.confirmation.desc}</p>
+                                        )}
+                                        {quest.confirmation?.imgUrl && (
+                                          <div className="pending-item-image">
+                                            <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">⚔️ Quests (0)</h4>
+                              <div className="empty-message">No completed quest submissions.</div>
+                            </div>
+                          )}
+
+                          {/* Completed Achievements */}
+                          {getCompletedAchievementConfirmations().length > 0 ? (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">🏆 Achievements ({getCompletedAchievementConfirmations().length})</h4>
+                              <div className="pending-items-list">
+                                {getCompletedAchievementConfirmations().map(achievement => {
+                                  const createdAt = achievement.confirmation?.createdAt;
+                                  const completedAt = achievement.completedAt;
+                                  const formattedSubmittedDate = createdAt
+                                    ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
+                                  const formattedCompletedDate = completedAt
+                                    ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                    : null;
+
+                                  return (
+                                    <div key={achievement.id} className="pending-item completed">
+                                      <div className="pending-item-header">
+                                        <span className="pending-item-title">
+                                          {achievement.icon && (
+                                            <IconRenderer iconName={achievement.icon} size={20} />
+                                          )}
+                                          {' '}{achievement.name}
+                                        </span>
+                                        <span className="pending-item-badge completed">Completed</span>
+                                      </div>
+                                      <div className="pending-item-details">
+                                        <span className="pending-item-xp">
+                                          {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                          {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                        </span>
+                                        {formattedSubmittedDate && (
+                                          <p className="pending-item-date">📅 Submitted: {formattedSubmittedDate}</p>
+                                        )}
+                                        {formattedCompletedDate && (
+                                          <p className="pending-item-date completed">✅ Completed: {formattedCompletedDate}</p>
+                                        )}
+                                        {achievement.dueDate && (
+                                          <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                        )}
+                                        {achievement.confirmation?.desc && (
+                                          <p className="pending-item-desc">{achievement.confirmation.desc}</p>
+                                        )}
+                                        {achievement.confirmation?.imgUrl && (
+                                          <div className="pending-item-image">
+                                            <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="pending-category">
+                              <h4 className="pending-subcategory-title">🏆 Achievements (0)</h4>
+                              <div className="empty-message">No completed achievement submissions.</div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Completed Submissions */}
-                  {(getCompletedQuestConfirmations().length > 0 || getCompletedAchievementConfirmations().length > 0) && (
-                    <div className="review-status-section">
-                      <h3 className="review-status-title">✅ Completed ({getCompletedQuestConfirmations().length + getCompletedAchievementConfirmations().length})</h3>
-                      
-                      {/* Completed Quests */}
-                      {getCompletedQuestConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">⚔️ Quests ({getCompletedQuestConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getCompletedQuestConfirmations().map(quest => {
-                              const createdAt = quest.confirmation?.createdAt;
-                              const completedAt = quest.completedAt;
-                              const formattedSubmittedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-                              const formattedCompletedDate = completedAt
-                                ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-
-                              return (
-                                <div key={quest.id} className="pending-item completed">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">⚔️ {quest.name}</span>
-                                    <span className="pending-item-badge completed">Completed</span>
-                                  </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">+{quest.xp} XP</span>
-                                    {formattedSubmittedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedSubmittedDate}</p>
-                                    )}
-                                    {formattedCompletedDate && (
-                                      <p className="pending-item-date completed">✅ Completed: {formattedCompletedDate}</p>
-                                    )}
-                                    {quest.confirmation?.desc && (
-                                      <p className="pending-item-desc">{quest.confirmation.desc}</p>
-                                    )}
-                                    {quest.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={quest.confirmation.imgUrl} alt="Quest confirmation" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Completed Achievements */}
-                      {getCompletedAchievementConfirmations().length > 0 && (
-                        <div className="pending-category">
-                          <h4 className="pending-subcategory-title">🏆 Achievements ({getCompletedAchievementConfirmations().length})</h4>
-                          <div className="pending-items-list">
-                            {getCompletedAchievementConfirmations().map(achievement => {
-                              const createdAt = achievement.confirmation?.createdAt;
-                              const completedAt = achievement.completedAt;
-                              const formattedSubmittedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-                              const formattedCompletedDate = completedAt
-                                ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-
-                              return (
-                                <div key={achievement.id} className="pending-item completed">
-                                  <div className="pending-item-header">
-                                    <span className="pending-item-title">
-                                      {achievement.icon && (
-                                        <IconRenderer iconName={achievement.icon} size={20} />
-                                      )}
-                                      {' '}{achievement.name}
-                                    </span>
-                                    <span className="pending-item-badge completed">Completed</span>
-                                  </div>
-                                  <div className="pending-item-details">
-                                    <span className="pending-item-xp">
-                                      {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                      {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                                    </span>
-                                    {formattedSubmittedDate && (
-                                      <p className="pending-item-date">📅 Submitted: {formattedSubmittedDate}</p>
-                                    )}
-                                    {formattedCompletedDate && (
-                                      <p className="pending-item-date completed">✅ Completed: {formattedCompletedDate}</p>
-                                    )}
-                                    {achievement.dueDate && (
-                                      <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
-                                    )}
-                                    {achievement.confirmation?.desc && (
-                                      <p className="pending-item-desc">{achievement.confirmation.desc}</p>
-                                    )}
-                                    {achievement.confirmation?.imgUrl && (
-                                      <div className="pending-item-image">
-                                        <img src={achievement.confirmation.imgUrl} alt="Achievement confirmation" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
