@@ -1096,7 +1096,7 @@ const UserPage = ({ onBack }) => {
                 setQuestsExpanded(!questsExpanded);
               }}
             >
-              {questsExpanded ? '▼' : '▸'} Daily Quests Update
+              {questsExpanded ? '▼' : '▸'} Daily Quests Update ({getAvailableQuestsForDropdown().length + selectedQuestSubmissions.length})
             </h2>
 
             {questsExpanded && (
@@ -1223,7 +1223,7 @@ const UserPage = ({ onBack }) => {
                 setAchievementsExpanded(!achievementsExpanded);
               }}
             >
-              {achievementsExpanded ? '▼' : '▸'} Achievements Update
+              {achievementsExpanded ? '▼' : '▸'} Achievements Update ({getAvailableAchievementsForDropdown().length + selectedAchievementSubmissions.length})
             </h2>
 
             {achievementsExpanded && (
