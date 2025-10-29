@@ -39,6 +39,7 @@ const UserPage = ({ onBack }) => {
   const [allQuests, setAllQuests] = useState([]); // Tất cả quests (bao gồm completed)
   const [questConfirmations, setQuestConfirmations] = useState([]);
   const [selectedQuestSubmissions, setSelectedQuestSubmissions] = useState([]);
+  const [expandedQuestSubmissions, setExpandedQuestSubmissions] = useState([]); // Track expanded quest forms
   const [showQuestDropdown, setShowQuestDropdown] = useState(false);
   const questDropdownRef = useRef(null);
 
@@ -47,6 +48,7 @@ const UserPage = ({ onBack }) => {
   const [allAchievements, setAllAchievements] = useState([]); // Tất cả achievements (bao gồm completed)
   const [achievementConfirmations, setAchievementConfirmations] = useState([]);
   const [selectedAchievementSubmissions, setSelectedAchievementSubmissions] = useState([]);
+  const [expandedAchievementSubmissions, setExpandedAchievementSubmissions] = useState([]); // Track expanded achievement forms
   const [showAchievementDropdown, setShowAchievementDropdown] = useState(false);
   const achievementDropdownRef = useRef(null);
 
@@ -492,6 +494,8 @@ const UserPage = ({ onBack }) => {
               // Clear quest and achievement submissions
               setSelectedQuestSubmissions([]);
               setSelectedAchievementSubmissions([]);
+              setExpandedQuestSubmissions([]);
+              setExpandedAchievementSubmissions([]);
               // Reload quests, achievements, and confirmations to update available lists and review submitted
               Promise.all([
                 fetchQuests(CHARACTER_ID),
@@ -552,11 +556,14 @@ const UserPage = ({ onBack }) => {
     });
     setSelectedQuestSubmissions([]);
     setSelectedAchievementSubmissions([]);
+    setExpandedQuestSubmissions([]);
+    setExpandedAchievementSubmissions([]);
   };
 
   // Quest submission handlers
   const handleAddQuestSubmission = (quest) => {
     console.log('➕ Adding quest submission:', quest.name);
+    const newIndex = selectedQuestSubmissions.length;
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
       questTitle: quest.name,
@@ -566,11 +573,20 @@ const UserPage = ({ onBack }) => {
       image: null,
       imagePreview: null
     }]);
+    // Add new item as collapsed by default
+    setExpandedQuestSubmissions(prev => [...prev, false]);
     setShowQuestDropdown(false);
   };
 
   const handleRemoveQuestSubmission = (index) => {
     setSelectedQuestSubmissions(prev => prev.filter((_, i) => i !== index));
+    setExpandedQuestSubmissions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleQuestSubmissionExpand = (index) => {
+    setExpandedQuestSubmissions(prev => prev.map((expanded, i) => 
+      i === index ? !expanded : expanded
+    ));
   };
 
   const handleQuestDescriptionChange = (index, value) => {
@@ -702,12 +718,21 @@ const UserPage = ({ onBack }) => {
       image: null,
       imagePreview: null
     }]);
+    // Add new item as collapsed by default
+    setExpandedAchievementSubmissions(prev => [...prev, false]);
     setShowAchievementDropdown(false);
   };
 
   const handleRemoveAchievementSubmission = (index) => {
     console.log('➖ Removing achievement submission at index:', index);
     setSelectedAchievementSubmissions(prev => prev.filter((_, i) => i !== index));
+    setExpandedAchievementSubmissions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleAchievementSubmissionExpand = (index) => {
+    setExpandedAchievementSubmissions(prev => prev.map((expanded, i) => 
+      i === index ? !expanded : expanded
+    ));
   };
 
   const handleAchievementDescriptionChange = (index, value) => {
@@ -1137,12 +1162,16 @@ const UserPage = ({ onBack }) => {
                 {/* Quest Submission Forms */}
                 {selectedQuestSubmissions.map((submission, index) => {
                   const hasConfirm = hasQuestConfirmation(submission.questTitle);
+                  const isExpanded = expandedQuestSubmissions[index] || false;
                   return (
                     <div key={index} className="quest-submission-form">
-                      <div className="quest-submission-header">
+                      <div 
+                        className="quest-submission-header clickable"
+                        onClick={() => toggleQuestSubmissionExpand(index)}
+                      >
                         <div className="quest-submission-info">
                           <h3 className="quest-submission-title">
-                            ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
+                            {isExpanded ? '▼' : '▸'} ⚔️ {submission.questTitle} <span className="quest-xp-badge">+{submission.questXp} XP</span>
                             {hasConfirm && <span className="quest-status-badge pending">📝 Review Submitted</span>}
                           </h3>
                           {submission.questDesc && (
@@ -1152,61 +1181,68 @@ const UserPage = ({ onBack }) => {
                         <button
                           type="button"
                           className="btn-remove-quest"
-                          onClick={() => handleRemoveQuestSubmission(index)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent header click
+                            handleRemoveQuestSubmission(index);
+                          }}
                           disabled={isSubmitting}
                         >
                           ✕
                         </button>
                       </div>
 
-                      <div className="form-group">
-                        <label htmlFor={`quest-desc-${index}`}>Description</label>
-                        <textarea
-                          id={`quest-desc-${index}`}
-                          rows="4"
-                          value={submission.description}
-                          onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
-                          placeholder="Describe how you completed this quest..."
-                          disabled={isSubmitting}
-                        />
-                      </div>
+                      {isExpanded && (
+                        <div className="quest-submission-content">
+                          <div className="form-group">
+                            <label htmlFor={`quest-desc-${index}`}>Description</label>
+                            <textarea
+                              id={`quest-desc-${index}`}
+                              rows="4"
+                              value={submission.description}
+                              onChange={(e) => handleQuestDescriptionChange(index, e.target.value)}
+                              placeholder="Describe how you completed this quest..."
+                              disabled={isSubmitting}
+                            />
+                          </div>
 
-                      <div className="form-group">
-                        <label htmlFor={`quest-image-${index}`}>Attach Image</label>
-                        <div className="image-upload-section">
-                          {!submission.imagePreview ? (
-                            <div className="image-upload-placeholder">
-                              <input
-                                type="file"
-                                id={`quest-image-${index}`}
-                                accept="image/*"
-                                onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
-                                style={{ display: 'none' }}
-                                disabled={isSubmitting}
-                              />
-                              <label htmlFor={`quest-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
-                                📷 Choose Image or Take Photo
-                              </label>
+                          <div className="form-group">
+                            <label htmlFor={`quest-image-${index}`}>Attach Image</label>
+                            <div className="image-upload-section">
+                              {!submission.imagePreview ? (
+                                <div className="image-upload-placeholder">
+                                  <input
+                                    type="file"
+                                    id={`quest-image-${index}`}
+                                    accept="image/*"
+                                    onChange={(e) => handleQuestImageChange(index, e.target.files[0])}
+                                    style={{ display: 'none' }}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor={`quest-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
+                                    📷 Choose Image or Take Photo
+                                  </label>
+                                </div>
+                              ) : (
+                                <div className="image-preview-container">
+                                  <img
+                                    src={submission.imagePreview}
+                                    alt="Quest completion"
+                                    className="image-preview"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn-remove-image"
+                                    onClick={() => handleRemoveQuestImage(index)}
+                                    disabled={isSubmitting}
+                                  >
+                                    ✕ Remove
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="image-preview-container">
-                              <img
-                                src={submission.imagePreview}
-                                alt="Quest completion"
-                                className="image-preview"
-                              />
-                              <button
-                                type="button"
-                                className="btn-remove-image"
-                                onClick={() => handleRemoveQuestImage(index)}
-                                disabled={isSubmitting}
-                              >
-                                ✕ Remove
-                              </button>
-                            </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1273,11 +1309,16 @@ const UserPage = ({ onBack }) => {
                 {/* Achievement Submission Forms */}
                 {selectedAchievementSubmissions.map((submission, index) => {
                   const hasConfirm = hasAchievementConfirmation(submission.achievementTitle);
+                  const isExpanded = expandedAchievementSubmissions[index] || false;
                   return (
                     <div key={index} className="quest-submission-form">
-                      <div className="quest-submission-header">
+                      <div 
+                        className="quest-submission-header clickable"
+                        onClick={() => toggleAchievementSubmissionExpand(index)}
+                      >
                         <div className="quest-submission-info">
                           <h3 className="quest-submission-title">
+                            {isExpanded ? '▼' : '▸'}
                             {submission.achievementIcon && (
                               <IconRenderer iconName={submission.achievementIcon} size={24} />
                             )}
@@ -1296,61 +1337,68 @@ const UserPage = ({ onBack }) => {
                         <button
                           type="button"
                           className="btn-remove-quest"
-                          onClick={() => handleRemoveAchievementSubmission(index)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent header click
+                            handleRemoveAchievementSubmission(index);
+                          }}
                           disabled={isSubmitting}
                         >
                           ✕
                         </button>
                       </div>
 
-                      <div className="form-group">
-                        <label htmlFor={`achievement-desc-${index}`}>Description</label>
-                        <textarea
-                          id={`achievement-desc-${index}`}
-                          rows="4"
-                          value={submission.description}
-                          onChange={(e) => handleAchievementDescriptionChange(index, e.target.value)}
-                          placeholder="Describe how you achieved this..."
-                          disabled={isSubmitting}
-                        />
-                      </div>
+                      {isExpanded && (
+                        <div className="quest-submission-content">
+                          <div className="form-group">
+                            <label htmlFor={`achievement-desc-${index}`}>Description</label>
+                            <textarea
+                              id={`achievement-desc-${index}`}
+                              rows="4"
+                              value={submission.description}
+                              onChange={(e) => handleAchievementDescriptionChange(index, e.target.value)}
+                              placeholder="Describe how you achieved this..."
+                              disabled={isSubmitting}
+                            />
+                          </div>
 
-                      <div className="form-group">
-                        <label htmlFor={`achievement-image-${index}`}>Attach Image</label>
-                        <div className="image-upload-section">
-                          {!submission.imagePreview ? (
-                            <div className="image-upload-placeholder">
-                              <input
-                                type="file"
-                                id={`achievement-image-${index}`}
-                                accept="image/*"
-                                onChange={(e) => handleAchievementImageChange(index, e.target.files[0])}
-                                style={{ display: 'none' }}
-                                disabled={isSubmitting}
-                              />
-                              <label htmlFor={`achievement-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
-                                📷 Choose Image or Take Photo
-                              </label>
+                          <div className="form-group">
+                            <label htmlFor={`achievement-image-${index}`}>Attach Image</label>
+                            <div className="image-upload-section">
+                              {!submission.imagePreview ? (
+                                <div className="image-upload-placeholder">
+                                  <input
+                                    type="file"
+                                    id={`achievement-image-${index}`}
+                                    accept="image/*"
+                                    onChange={(e) => handleAchievementImageChange(index, e.target.files[0])}
+                                    style={{ display: 'none' }}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor={`achievement-image-${index}`} className={`btn-upload-image ${isSubmitting ? 'disabled' : ''}`}>
+                                    📷 Choose Image or Take Photo
+                                  </label>
+                                </div>
+                              ) : (
+                                <div className="image-preview-container">
+                                  <img
+                                    src={submission.imagePreview}
+                                    alt="Achievement completion"
+                                    className="image-preview"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn-remove-image"
+                                    onClick={() => handleRemoveAchievementImage(index)}
+                                    disabled={isSubmitting}
+                                  >
+                                    ✕ Remove
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="image-preview-container">
-                              <img
-                                src={submission.imagePreview}
-                                alt="Achievement completion"
-                                className="image-preview"
-                              />
-                              <button
-                                type="button"
-                                className="btn-remove-image"
-                                onClick={() => handleRemoveAchievementImage(index)}
-                                disabled={isSubmitting}
-                              >
-                                ✕ Remove
-                              </button>
-                            </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
