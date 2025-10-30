@@ -69,30 +69,24 @@ const getEmojiFromIcon = (iconName) => {
   return ICON_TO_EMOJI[cleanIconName] || ICON_TO_EMOJI.default;
 };
 
-const getEnvValue = (key) => {
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key] !== undefined) {
-    return import.meta.env[key];
-  }
-
-  if (typeof process !== 'undefined' && process.env && process.env[key] !== undefined) {
-    return process.env[key];
-  }
-
-  return undefined;
-};
-
 // Discord Configuration
 const DISCORD_CONFIG = {
   // Discord webhook URL - bot name and avatar will be used from Discord bot settings
   WEBHOOK_URL: 'https://discord.com/api/webhooks/1409114023366230117/2g6lELXazBqSf9cTOtaobc3KQTb6M0XQTRjm_XQbZefIr4TsrjrO_C63GPlwU83EG0wl',
-  ADMIN_WEBHOOK_URL: getEnvValue('VITE_DISCORD_ADMIN_WEBHOOK_URL') || ''
+  // Set a dedicated admin webhook here (no env logic, no fallback)
+  ADMIN_WEBHOOK_URL: 'https://discord.com/api/webhooks/1422653865014067352/Vfw_9sCrxXoupLUb_n-vKAOD9msHwSiTGCCXJYm8-LP5DjwRhhGNLC4YtnJD48LhsLLC'
 };
 
-const sendDiscordWebhookMessage = async (payload, webhookUrl = DISCORD_CONFIG.WEBHOOK_URL) => {
-  const targetUrl = webhookUrl || DISCORD_CONFIG.WEBHOOK_URL;
+const sendDiscordWebhookMessage = async (payload, webhookUrl) => {
+  const targetUrl = webhookUrl;
 
   if (!targetUrl || targetUrl === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
     console.warn('⚠️ Discord webhook URL not configured');
+    return false;
+  }
+
+  if (targetUrl === 'YOUR_ADMIN_DISCORD_WEBHOOK_URL_HERE') {
+    console.warn('⚠️ Discord admin webhook URL not configured');
     return false;
   }
 
