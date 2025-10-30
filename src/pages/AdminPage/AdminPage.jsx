@@ -1283,7 +1283,22 @@ const AdminPage = ({ onBack }) => {
             <p className="admin-empty-message">No achievements found</p>
           ) : (
             <div className="achievements-table">
-              {achievements.map(achievement => {
+              {achievements
+                .sort((a, b) => {
+                  // Get confirmation status for both achievements
+                  const aConfirmation = getAchievementConfirmation(a.name);
+                  const bConfirmation = getAchievementConfirmation(b.name);
+                  const aHasReview = !!aConfirmation && !a.completedAt;
+                  const bHasReview = !!bConfirmation && !b.completedAt;
+                  
+                  // Items with Review status go to top
+                  if (aHasReview && !bHasReview) return -1;
+                  if (!aHasReview && bHasReview) return 1;
+                  
+                  // Otherwise maintain original order
+                  return 0;
+                })
+                .map(achievement => {
                 const isEditing = editingId === achievement.id;
                 const isReviewing = reviewingId === achievement.id;
                 const isViewing = viewingId === achievement.id;
@@ -1616,7 +1631,22 @@ const AdminPage = ({ onBack }) => {
             <p className="admin-empty-message">No quests found</p>
           ) : (
             <div className="quests-table">
-              {quests.map(quest => {
+              {quests
+                .sort((a, b) => {
+                  // Get confirmation status for both quests
+                  const aConfirmation = getQuestConfirmation(a.name);
+                  const bConfirmation = getQuestConfirmation(b.name);
+                  const aHasReview = !!aConfirmation && !a.completedAt;
+                  const bHasReview = !!bConfirmation && !b.completedAt;
+                  
+                  // Items with Review status go to top
+                  if (aHasReview && !bHasReview) return -1;
+                  if (!aHasReview && bHasReview) return 1;
+                  
+                  // Otherwise maintain original order
+                  return 0;
+                })
+                .map(quest => {
                 const isEditing = editingId === quest.id;
                 const isReviewing = reviewingId === quest.id;
                 const isViewing = viewingId === quest.id;

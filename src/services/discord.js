@@ -304,11 +304,6 @@ export const sendAchievementNotification = async (achievementData, userData, con
       color: 0xFFD700, // Gold color for achievements
       fields: [
         {
-          name: `Achievement Name`,
-          value: achievementData.name,
-          inline: false
-        },
-        {
           name: '📝 Submission Details',
           value: confirmationData.desc || 'No details provided',
           inline: false
