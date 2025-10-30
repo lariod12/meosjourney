@@ -1033,11 +1033,14 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-family: 'Kalam', cursive;
-    font-size: 1.1rem;
     padding: 60px 20px;
     min-height: 250px;
-    color: var(--gray-medium);
+    font-family: 'Patrick Hand', cursive;
+    font-size: 1rem;
+    font-style: italic;
+    color: #666666;
+    background-color: #f9f9f9;
+    border: 2px dashed #cccccc;
 }
 
 /* === ACHIEVEMENT TAB === */

@@ -21,7 +21,7 @@ const HistoryTab = () => {
   if (!data.journal) {
     return (
       <div className="history-list">
-        <div className="history-empty-message">Loading journal history...</div>
+        <div className="empty-message history-empty-message">Loading journal history...</div>
       </div>
     );
   }
@@ -30,7 +30,7 @@ const HistoryTab = () => {
   if (historyData.length === 0) {
     return (
       <div className="history-list">
-        <div className="history-empty-message">No journal entries found.</div>
+        <div className="empty-message history-empty-message">No journal entries found.</div>
       </div>
     );
   }
