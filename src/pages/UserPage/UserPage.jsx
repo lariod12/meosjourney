@@ -1456,20 +1456,19 @@ const UserPage = ({ onBack }) => {
             )}
           </div>
 
-          {/* Review Submitted Section */}
-          {(getAllQuestSubmissions().length > 0 || getAllAchievementSubmissions().length > 0) && (
-            <div className="form-section">
-              <h2
-                className="section-title clickable"
-                onClick={() => {
-                  setReviewSubmittedExpanded(!reviewSubmittedExpanded);
-                }}
-              >
-                {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({getAllQuestSubmissions().length + getAllAchievementSubmissions().length})
-              </h2>
+          {/* Review Submitted Section - always visible */}
+          <div className="form-section">
+            <h2
+              className="section-title clickable"
+              onClick={() => {
+                setReviewSubmittedExpanded(!reviewSubmittedExpanded);
+              }}
+            >
+              {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({getAllQuestSubmissions().length + getAllAchievementSubmissions().length})
+            </h2>
 
-              {reviewSubmittedExpanded && (
-                <div className="section-content">
+            {reviewSubmittedExpanded && (
+              <div className="section-content">
                   {/* Pending Review Group - Always show */}
                   <div className="review-group">
                     <h3 
@@ -1876,7 +1875,6 @@ const UserPage = ({ onBack }) => {
                 </div>
               )}
             </div>
-          )}
 
           {/* Action Buttons */}
           <div className="form-actions">
