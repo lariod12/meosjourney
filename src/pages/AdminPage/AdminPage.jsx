@@ -1086,7 +1086,7 @@ const AdminPage = ({ onBack }) => {
         >
           <span className="dropdown-current">
             {activeTab === 'create-achievement' && '🏆 Create Achievement'}
-            {activeTab === 'create-quest' && '⚔️ Create Quest'}
+            {activeTab === 'create-quest' && '📜 Create Quest'}
             {activeTab === 'manage-achievements' && '📋 Manage Achievements'}
             {activeTab === 'manage-quests' && '📝 Manage Quests'}
           </span>
@@ -1113,7 +1113,7 @@ const AdminPage = ({ onBack }) => {
                 setDropdownOpen(false);
               }}
             >
-              ⚔️ Create Quest
+              📜 Create Quest
             </button>
             <button
               className={`dropdown-item ${activeTab === 'manage-achievements' ? 'active' : ''}`}
