@@ -103,11 +103,9 @@ export const getCachedData = () => {
     if (now - timestamp < CACHE_DURATION) {
       // Deserialize Firestore Timestamps before returning
       const deserializedData = deserializeTimestamps(data);
-      console.log('✅ Cache loaded and timestamps deserialized');
       return deserializedData;
     }
 
-    console.log('⏰ Cache expired, will fetch fresh data');
     return null;
   } catch (error) {
     console.error('❌ Error reading cache:', error);
@@ -129,7 +127,6 @@ export const setCachedData = (data) => {
       timestamp: Date.now()
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObject));
-    console.log('💾 Data cached successfully with serialized timestamps');
   } catch (error) {
     console.error('❌ Error saving cache:', error);
   }

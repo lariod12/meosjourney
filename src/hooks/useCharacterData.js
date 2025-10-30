@@ -19,7 +19,6 @@ export const useCharacterData = (defaultData) => {
   const fetchData = useCallback(async (forceRefresh = false) => {
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) {
-      console.log('⏳ Fetch already in progress, skipping...');
       return;
     }
 
@@ -40,7 +39,6 @@ export const useCharacterData = (defaultData) => {
       }
 
       // Fetch fresh data from Firebase
-      console.log('🔄 Fetching fresh data from Firebase...');
       const freshData = await fetchCharacterViewData(CHARACTER_ID, defaultData);
 
       if (mountedRef.current) {
