@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
+import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
 import { clearCache } from '../../utils/cacheManager';
@@ -292,6 +293,7 @@ const AdminPage = ({ onBack }) => {
       const result = await saveAchievement(achievementData, CHARACTER_ID);
 
       if (result.success) {
+        await sendAdminAchievementCreatedNotification({ ...achievementData, id: result.id });
         setConfirmModal({
           isOpen: true,
           type: 'success',
@@ -339,6 +341,7 @@ const AdminPage = ({ onBack }) => {
       const result = await saveQuest(questData, CHARACTER_ID);
 
       if (result.success) {
+        await sendAdminQuestCreatedNotification({ ...questData, id: result.id });
         setConfirmModal({
           isOpen: true,
           type: 'success',

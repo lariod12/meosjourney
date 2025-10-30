@@ -69,10 +69,135 @@ const getEmojiFromIcon = (iconName) => {
   return ICON_TO_EMOJI[cleanIconName] || ICON_TO_EMOJI.default;
 };
 
+const getEnvValue = (key) => {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key] !== undefined) {
+    return import.meta.env[key];
+  }
+
+  if (typeof process !== 'undefined' && process.env && process.env[key] !== undefined) {
+    return process.env[key];
+  }
+
+  return undefined;
+};
+
 // Discord Configuration
 const DISCORD_CONFIG = {
   // Discord webhook URL - bot name and avatar will be used from Discord bot settings
-  WEBHOOK_URL: 'https://discord.com/api/webhooks/1409114023366230117/2g6lELXazBqSf9cTOtaobc3KQTb6M0XQTRjm_XQbZefIr4TsrjrO_C63GPlwU83EG0wl'
+  WEBHOOK_URL: 'https://discord.com/api/webhooks/1409114023366230117/2g6lELXazBqSf9cTOtaobc3KQTb6M0XQTRjm_XQbZefIr4TsrjrO_C63GPlwU83EG0wl',
+  ADMIN_WEBHOOK_URL: getEnvValue('VITE_DISCORD_ADMIN_WEBHOOK_URL') || ''
+};
+
+const sendDiscordWebhookMessage = async (payload, webhookUrl = DISCORD_CONFIG.WEBHOOK_URL) => {
+  const targetUrl = webhookUrl || DISCORD_CONFIG.WEBHOOK_URL;
+
+  if (!targetUrl || targetUrl === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+    console.warn('⚠️ Discord webhook URL not configured');
+    return false;
+  }
+
+  const response = await fetch(targetUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (response.ok) {
+    console.log('✅ Discord admin notification sent successfully');
+    return true;
+  }
+
+  const errorText = await response.text();
+  console.error('❌ Discord admin notification failed:', response.status, errorText);
+  return false;
+};
+
+export const sendAdminQuestCreatedNotification = async (questData) => {
+  try {
+    const embed = {
+      title: '📜 New Quest Added',
+      color: 0x1E90FF,
+      fields: [
+        {
+          name: '',
+          value: questData.name,
+          inline: false
+        },
+        {
+          name: '📋 Description',
+          value: questData.desc || 'No description provided',
+          inline: false
+        },
+        {
+          name: '⭐ XP Reward',
+          value: `+${questData.xp} XP`,
+          inline: true
+        }
+      ],
+      footer: {
+        text: 'Meo\'s Journey'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const payload = {
+      embeds: [embed]
+    };
+
+    return await sendDiscordWebhookMessage(payload, DISCORD_CONFIG.ADMIN_WEBHOOK_URL);
+  } catch (error) {
+    console.error('❌ Error sending quest creation notification:', error);
+    return false;
+  }
+};
+
+export const sendAdminAchievementCreatedNotification = async (achievementData) => {
+  try {
+    const embed = {
+      title: '🏆 New Achievement Added',
+      color: 0xFFD700,
+      fields: [
+        {
+          name: '',
+          value: achievementData.name,
+          inline: false
+        },
+        {
+          name: '📋 Description',
+          value: achievementData.desc || 'No description provided',
+          inline: false
+        },
+        {
+          name: '⭐ XP Reward',
+          value: achievementData.xp > 0 ? `+${achievementData.xp} XP` : 'None',
+          inline: true
+        }
+      ],
+      footer: {
+        text: 'Meo\'s Journey'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    if (achievementData.specialReward) {
+      embed.fields.push({
+        name: '🎁 Special Reward',
+        value: achievementData.specialReward,
+        inline: false
+      });
+    }
+
+    const payload = {
+      embeds: [embed]
+    };
+
+    return await sendDiscordWebhookMessage(payload, DISCORD_CONFIG.ADMIN_WEBHOOK_URL);
+  } catch (error) {
+    console.error('❌ Error sending achievement creation notification:', error);
+    return false;
+  }
 };
 
 /**
@@ -92,11 +217,11 @@ export const sendQuestSubmissionNotification = async (questData, userData, confi
 
     // Create embed message
     const embed = {
-      title: 'Quest Submitted!',
-      color: 0x000000, // Black color to match theme
+      title: '📜 Quest Submitted!',
+      color: 0x1E90FF,
       fields: [
         {
-          name: 'Quest Name',
+          name: '',
           value: questData.name,
           inline: false
         },
@@ -173,12 +298,9 @@ export const sendAchievementNotification = async (achievementData, userData, con
       return false;
     }
 
-    // Get emoji from achievement icon
-    const achievementEmoji = getEmojiFromIcon(achievementData.icon);
-
     // Create embed message
     const embed = {
-      title: `Achievement Submitted!`,
+      title: `🏆 Achievement Submitted!`,
       color: 0xFFD700, // Gold color for achievements
       fields: [
         {
