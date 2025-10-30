@@ -6,24 +6,24 @@ import { AchievementsTab } from '../../achievements/components';
 const DailyActivities = () => {
   const tabs = [
     {
-      id: 'quests',
-      label: 'DAILY QUESTS',
-      content: <QuestsTab />
-    },
-    {
       id: 'journal',
       label: 'DAILY JOURNAL',
       content: <JournalTab />
     },
     {
-      id: 'history',
-      label: 'HISTORY',
-      content: <HistoryTab />
+      id: 'quests',
+      label: 'DAILY QUESTS',
+      content: <QuestsTab />
     },
     {
       id: 'achievements',
       label: 'ACHIEVEMENTS',
       content: <AchievementsTab />
+    },
+    {
+      id: 'history',
+      label: 'HISTORY',
+      content: <HistoryTab />
     }
   ];
 
