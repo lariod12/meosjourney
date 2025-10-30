@@ -24,7 +24,6 @@ const ConfirmModal = ({
   };
 
   const handleConfirm = () => {
-    console.log('✅ User confirmed action');
     if (onConfirm) {
       onConfirm();
     }

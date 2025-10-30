@@ -99,7 +99,6 @@ const sendDiscordWebhookMessage = async (payload, webhookUrl) => {
   });
 
   if (response.ok) {
-    console.log('✅ Discord admin notification sent successfully');
     return true;
   }
 
