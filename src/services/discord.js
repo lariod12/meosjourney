@@ -93,13 +93,9 @@ export const sendQuestSubmissionNotification = async (questData, userData, confi
     // Create embed message
     const embed = {
       title: 'Quest Submitted!',
-      color: 0x000000, // Black color to match theme
+      description: `\n${questData.name}`,
+      color: 0x5865F2, // Discord blurple color for quests
       fields: [
-        {
-          name: 'Quest Name',
-          value: questData.name,
-          inline: false
-        },
         {
           name: '📝 Submission Details',
           value: confirmationData.desc || 'No details provided',
@@ -179,13 +175,9 @@ export const sendAchievementNotification = async (achievementData, userData, con
     // Create embed message
     const embed = {
       title: `Achievement Submitted!`,
+      description: `\n${achievementData.name}`,
       color: 0xFFD700, // Gold color for achievements
       fields: [
-        {
-          name: `Achievement Name`,
-          value: achievementData.name,
-          inline: false
-        },
         {
           name: '📝 Submission Details',
           value: confirmationData.desc || 'No details provided',
