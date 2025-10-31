@@ -948,6 +948,29 @@ body {
 /* === HISTORY TAB === */
 .history-list {
     padding: 10px 0;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Scrollbar styling for history list - Outer scroll */
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: var(--gray-light);
+    border-radius: 0;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: var(--gray-dark);
+    border-radius: 0;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--black);
 }
 
 .history-item {
@@ -999,13 +1022,18 @@ body {
 }
 
 .history-item.expanded .history-entries-wrapper {
-    max-height: 600px;
+    max-height: 400px;
     padding: 15px;
     border: 2px dashed var(--black);
     margin-top: 10px;
     min-height: 150px;
     opacity: 1;
     transform: translateY(0);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    position: relative;
+    z-index: 1;
     transition: max-height 0.2s cubic-bezier(0, 0, 0.2, 1), 
                 opacity 0.15s ease 0.02s,
                 transform 0.15s ease 0.02s;
@@ -1028,6 +1056,39 @@ body {
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
+}
+
+/* Scrollbar styling for history entries - Inner scroll */
+.history-item.expanded .history-entries-wrapper::-webkit-scrollbar {
+    width: 10px;
+    background: var(--white);
+}
+
+.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-track {
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: 0;
+    margin: 2px;
+}
+
+.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb {
+    background: var(--black);
+    border: 1px solid var(--black);
+    border-radius: 0;
+    min-height: 30px;
+}
+
+.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-dark);
+}
+
+.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-corner {
+    background: var(--white);
+}
+
+/* Ensure proper spacing at bottom of entries */
+.history-item.expanded .history-entries-wrapper {
+    padding-bottom: 20px;
 }
 
 .history-empty-message {
@@ -1887,6 +1948,43 @@ body {
     .history-item.expanded .history-entries-wrapper {
         padding: 10px;
         min-height: 100px;
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Mobile outer scroll */
+    .history-list {
+        max-height: calc(100vh - 150px);
+    }
+
+    /* Mobile scrollbar for history entries - Inner scroll */
+    .history-item.expanded .history-entries-wrapper::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .history-item.expanded .history-entries-wrapper::-webkit-scrollbar-track {
+        background: var(--white);
+        border: 1px solid var(--black);
+    }
+
+    .history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb {
+        background: var(--black);
+        border: 1px solid var(--black);
+        min-height: 20px;
+    }
+
+    /* Mobile outer scroll */
+    .history-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .history-list::-webkit-scrollbar-track {
+        background: var(--gray-light);
+    }
+
+    .history-list::-webkit-scrollbar-thumb {
+        background: var(--gray-dark);
     }
 
     /* Footer */
