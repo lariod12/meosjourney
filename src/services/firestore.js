@@ -160,6 +160,17 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     const name = typeof profile?.name === 'string' && profile.name.trim() ? profile.name : base.name;
     const caption = typeof profile?.caption === 'string' && profile.caption.trim() ? profile.caption : base.caption;
 
+    // Social links: prefer database profile.socialLinks (or socialLink) then fallback to base
+    const socialFromDb = profile?.socialLinks || profile?.socialLink || {};
+    const social = {
+      facebook: socialFromDb.facebook || base.social?.facebook || '',
+      instagram: socialFromDb.instagram || base.social?.instagram || '',
+      tiktok: socialFromDb.tiktok || base.social?.tiktok || '',
+      youtube: socialFromDb.youtube || base.social?.youtube || '',
+      // DB might store as 'mail' or 'gmail' -> normalize to gmail for UI
+      gmail: socialFromDb.gmail || socialFromDb.mail || base.social?.gmail || ''
+    };
+
     // Process status data
     let statusTimestamp = new Date();
 
@@ -216,6 +227,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       skills,
       interests,
       introduce,
+      social,
       status: statusData,
       achievements: achievementsData,
       quests: questsData,
