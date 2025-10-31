@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCharacter } from '../../../contexts';
-import { formatDate } from '../../../utils/dateUtils';
+import { formatDate, formatTime } from '../../../utils/dateUtils';
 import { filterTodayItems } from '../../../utils/dateFilter';
 import { useLanguage } from '../../../contexts';
 
@@ -45,7 +45,7 @@ const JournalTab = () => {
       <div className="journal-content">
         {todayJournals.map((entry, index) => (
           <div key={entry.id || index} className="journal-entry">
-            <div className="journal-time">{entry.time}</div>
+            <div className="journal-time">{formatTime(entry.time, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
             <div className="journal-text">{entry.entry}</div>
           </div>
         ))}

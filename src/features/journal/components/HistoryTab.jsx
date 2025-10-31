@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useCharacter } from '../../../contexts';
-import { formatDate } from '../../../utils/dateUtils';
+import { formatDate, formatTime } from '../../../utils/dateUtils';
 import { groupJournalsByDate } from '../../../utils/journalUtils';
 import { useLanguage } from '../../../contexts';
 
@@ -48,7 +48,7 @@ const HistoryTab = () => {
           <div className="history-entries-wrapper">
             {day.entries.map((entry, entryIndex) => (
               <div key={entry.id || entryIndex} className="journal-entry">
-                <div className="journal-time">{entry.time}</div>
+                <div className="journal-time">{formatTime(entry.time, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
                 <div className="journal-text">{entry.entry}</div>
               </div>
             ))}

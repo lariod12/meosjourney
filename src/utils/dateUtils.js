@@ -40,3 +40,26 @@ export const getTimeAgo = (timestamp) => {
     return `${years} year${years > 1 ? 's' : ''} ago`;
   }
 };
+
+// Format "H:MM AM/PM" to 24h (HH:mm) for vi-VN; otherwise keep original
+export const formatTime = (timeStr, locale = 'en-US') => {
+  if (!timeStr) return '';
+  const s = String(timeStr).trim();
+  const isVI = String(locale).toLowerCase().startsWith('vi');
+  if (!isVI) return s;
+
+  // Already 24h like HH:mm
+  if (/^\d{1,2}:\d{2}$/.test(s) && !/\s?(AM|PM)$/i.test(s)) {
+    const [h, m] = s.split(':');
+    return `${String(h).padStart(2, '0')}:${m}`;
+  }
+
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return s;
+  let hour = parseInt(m[1], 10);
+  const minute = m[2];
+  const period = m[3].toUpperCase();
+  if (period === 'PM' && hour < 12) hour += 12;
+  if (period === 'AM' && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, '0')}:${minute}`;
+};
