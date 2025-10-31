@@ -1344,35 +1344,22 @@ const UserPage = ({ onBack }) => {
 
             {questsExpanded && (
               <div className="section-content">
-                {/* Add Quest Button */}
+                {/* Always-visible quest picker */}
                 <div className="quest-add-section">
-                  <div className="select-wrap" ref={questDropdownRef}>
-                    <button
-                      type="button"
-                      className="btn-add-quest"
-                      onClick={() => setShowQuestDropdown(!showQuestDropdown)}
-                      disabled={isSubmitting || getAvailableQuestsForDropdown().length === 0}
-                    >
-                      ➕ Add Completed Quest
-                    </button>
-
-                    {showQuestDropdown && getAvailableQuestsForDropdown().length > 0 && (
-                      <div className="quest-dropdown">
-                        {getAvailableQuestsForDropdown().map(quest => (
-                          <div
-                            key={quest.id}
-                            className="quest-dropdown-item"
-                            onClick={() => handleAddQuestSubmission(quest)}
-                          >
-                            <span className="quest-dropdown-title">{quest.name}</span>
-                            <span className="quest-dropdown-xp">+{quest.xp} XP</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {getAvailableQuestsForDropdown().length === 0 && selectedQuestSubmissions.length === 0 && getAllQuestSubmissions().length === 0 && (
+                  {getAvailableQuestsForDropdown().length > 0 ? (
+                    <div className="quest-dropdown dropdown-static" ref={questDropdownRef}>
+                      {getAvailableQuestsForDropdown().map(quest => (
+                        <div
+                          key={quest.id}
+                          className="quest-dropdown-item"
+                          onClick={() => handleAddQuestSubmission(quest)}
+                        >
+                          <span className="quest-dropdown-title">{quest.name}</span>
+                          <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                     <p className="no-quests-message">No incomplete quests available</p>
                   )}
                 </div>
@@ -1482,44 +1469,31 @@ const UserPage = ({ onBack }) => {
 
             {achievementsExpanded && (
               <div className="section-content">
-                {/* Add Achievement Button */}
+                {/* Always-visible achievement picker */}
                 <div className="quest-add-section">
-                  <div className="select-wrap" ref={achievementDropdownRef}>
-                    <button
-                      type="button"
-                      className="btn-add-quest"
-                      onClick={() => setShowAchievementDropdown(!showAchievementDropdown)}
-                      disabled={isSubmitting || getAvailableAchievementsForDropdown().length === 0}
-                    >
-                      ➕ Add Completed Achievement
-                    </button>
-
-                    {showAchievementDropdown && getAvailableAchievementsForDropdown().length > 0 && (
-                      <div className="quest-dropdown">
-                        {getAvailableAchievementsForDropdown().map(achievement => (
-                          <div
-                            key={achievement.id}
-                            className="quest-dropdown-item"
-                            onClick={() => handleAddAchievementSubmission(achievement)}
-                          >
-                            <span className="quest-dropdown-title">
-                              {achievement.icon && (
-                                <IconRenderer iconName={achievement.icon} size={20} />
-                              )}
-                              {' '}{achievement.name}
-                              {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
-                            </span>
-                            <span className="quest-dropdown-xp">
-                              {achievement.xp > 0 && `+${achievement.xp} XP`}
-                              {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {getAvailableAchievementsForDropdown().length === 0 && selectedAchievementSubmissions.length === 0 && getAllAchievementSubmissions().length === 0 && (
+                  {getAvailableAchievementsForDropdown().length > 0 ? (
+                    <div className="quest-dropdown dropdown-static" ref={achievementDropdownRef}>
+                      {getAvailableAchievementsForDropdown().map(achievement => (
+                        <div
+                          key={achievement.id}
+                          className="quest-dropdown-item"
+                          onClick={() => handleAddAchievementSubmission(achievement)}
+                        >
+                          <span className="quest-dropdown-title">
+                            {achievement.icon && (
+                              <IconRenderer iconName={achievement.icon} size={20} />
+                            )}
+                            {' '}{achievement.name}
+                            {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
+                          </span>
+                          <span className="quest-dropdown-xp">
+                            {achievement.xp > 0 && `+${achievement.xp} XP`}
+                            {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                     <p className="no-quests-message">No incomplete achievements available</p>
                   )}
                 </div>

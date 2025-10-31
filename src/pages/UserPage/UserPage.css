@@ -454,6 +454,16 @@ body {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Always-visible dropdown variant (no button) */
+.quest-dropdown.dropdown-static {
+  position: relative;
+  top: 0;
+  left: auto;
+  right: auto;
+  box-shadow: none;
+  max-height: 360px;
+}
+
 .quest-dropdown-item {
     padding: 12px 16px;
     cursor: pointer;
