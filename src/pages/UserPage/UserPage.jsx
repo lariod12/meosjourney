@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 import {
   fetchConfig,
+  fetchStatus,
   saveStatus,
   saveJournal,
   fetchQuests,
@@ -24,6 +25,9 @@ const SESSION_KEY = 'meos05_access';
 
 const UserPage = ({ onBack }) => {
   const [moodOptions, setMoodOptions] = useState([]);
+  const [existingDoings, setExistingDoings] = useState([]);
+  const [doingSuggestions, setDoingSuggestions] = useState([]);
+  const [doingOpen, setDoingOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -69,6 +73,7 @@ const UserPage = ({ onBack }) => {
   });
 
   const moodRef = useRef(null);
+  const doingRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
 
   // Collapse/expand states - collapsed by default
@@ -89,14 +94,29 @@ const UserPage = ({ onBack }) => {
     // Load config, quests, achievements, and confirmations from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
+      fetchStatus(CHARACTER_ID),
       fetchQuests(CHARACTER_ID),
       fetchQuestConfirmations(CHARACTER_ID),
       fetchAchievements(CHARACTER_ID),
       fetchAchievementConfirmations(CHARACTER_ID)
     ])
-      .then(([cfg, quests, questConfirms, achievements, achievementConfirms]) => {
+      .then(([cfg, statusData, quests, questConfirms, achievements, achievementConfirms]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
+
+        // Prepare existing doings from status (array or string)
+        const doingsArr = Array.isArray(statusData?.doing)
+          ? statusData.doing
+          : (statusData?.doing ? [statusData.doing] : []);
+        // Dedupe while preserving order and cast to string
+        const seen = new Set();
+        const normalized = [];
+        doingsArr.forEach((d) => {
+          const s = String(d).trim();
+          const key = s.toLowerCase();
+          if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
+        });
+        setExistingDoings(normalized);
 
         // Store all quests and filter incomplete ones
         setAllQuests(quests);
@@ -130,8 +150,9 @@ const UserPage = ({ onBack }) => {
     setIsRefreshing(true);
 
     try {
-      const [cfg, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
+      const [cfg, statusData, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
         fetchConfig(CHARACTER_ID),
+        fetchStatus(CHARACTER_ID),
         fetchQuests(CHARACTER_ID),
         fetchQuestConfirmations(CHARACTER_ID),
         fetchAchievements(CHARACTER_ID),
@@ -139,6 +160,18 @@ const UserPage = ({ onBack }) => {
       ]);
 
       setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
+
+      const doingsArr = Array.isArray(statusData?.doing)
+        ? statusData.doing
+        : (statusData?.doing ? [statusData.doing] : []);
+      const seen = new Set();
+      const normalized = [];
+      doingsArr.forEach((d) => {
+        const s = String(d).trim();
+        const key = s.toLowerCase();
+        if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
+      });
+      setExistingDoings(normalized);
 
       // Store all and filter incomplete quests
       setAllQuests(quests);
@@ -229,6 +262,9 @@ const UserPage = ({ onBack }) => {
       if (moodRef.current && !moodRef.current.contains(e.target)) {
         setMoodOpen(false);
       }
+      if (doingRef.current && !doingRef.current.contains(e.target)) {
+        setDoingOpen(false);
+      }
       if (questDropdownRef.current && !questDropdownRef.current.contains(e.target)) {
         setShowQuestDropdown(false);
       }
@@ -240,12 +276,28 @@ const UserPage = ({ onBack }) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const updateDoingSuggestions = (value) => {
+    const q = String(value || '').trim().toLowerCase();
+    if (!q) {
+      setDoingSuggestions([]);
+      setDoingOpen(false);
+      return;
+    }
+    const suggestions = existingDoings.filter(d => d.toLowerCase().includes(q) || d.toLowerCase().startsWith(q));
+    setDoingSuggestions(suggestions.slice(0, 10));
+    setDoingOpen(suggestions.length > 0);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    if (name === 'doing') {
+      updateDoingSuggestions(value);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -304,6 +356,8 @@ const UserPage = ({ onBack }) => {
 
           if (statusResult.success) {
             results.push({ type: 'success', item: 'Status Update' });
+          } else if (statusResult.message === 'No data to save') {
+            results.push({ type: 'success', item: 'Status Update (no change)' });
           } else {
             console.warn('⚠️ Status not saved:', statusResult.message);
             results.push({ type: 'failed', item: 'Status Update' });
@@ -548,11 +602,23 @@ const UserPage = ({ onBack }) => {
               setExpandedAchievementSubmissions([]);
               // Reload quests, achievements, and confirmations to update available lists and review submitted
               Promise.all([
+            fetchStatus(CHARACTER_ID),
                 fetchQuests(CHARACTER_ID),
                 fetchQuestConfirmations(CHARACTER_ID),
                 fetchAchievements(CHARACTER_ID),
                 fetchAchievementConfirmations(CHARACTER_ID)
-              ]).then(([quests, questConfirms, achievements, achievementConfirms]) => {
+          ]).then(([statusData2, quests, questConfirms, achievements, achievementConfirms]) => {
+            const doingsArr2 = Array.isArray(statusData2?.doing)
+              ? statusData2.doing
+              : (statusData2?.doing ? [statusData2.doing] : []);
+            const seen2 = new Set();
+            const normalized2 = [];
+            doingsArr2.forEach((d) => {
+              const s = String(d).trim();
+              const key = s.toLowerCase();
+              if (s && !seen2.has(key)) { seen2.add(key); normalized2.push(s); }
+            });
+            setExistingDoings(normalized2);
                 // Store all and filter incomplete quests
                 setAllQuests(quests);
                 const availableQuests = quests.filter(q => q.completedAt === null);
@@ -604,6 +670,8 @@ const UserPage = ({ onBack }) => {
       mood: moodOptions[0] || '',
       journalEntry: ''
     });
+    setDoingSuggestions([]);
+    setDoingOpen(false);
     setSelectedQuestSubmissions([]);
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
@@ -1068,14 +1136,34 @@ const UserPage = ({ onBack }) => {
               <div className="section-content">
                 <div className="form-group">
                   <label htmlFor="doing">Current Activity</label>
-                  <input
-                    type="text"
-                    id="doing"
-                    name="doing"
-                    value={formData.doing}
-                    onChange={handleChange}
-                    placeholder="e.g., Studying character design"
-                  />
+                  <div className="suggest-wrap" ref={doingRef}>
+                    <input
+                      type="text"
+                      id="doing"
+                      name="doing"
+                      value={formData.doing}
+                      onChange={handleChange}
+                      placeholder="e.g., Studying character design"
+                      autoComplete="off"
+                    />
+                    {doingOpen && doingSuggestions.length > 0 && (
+                      <div className="suggest-dropdown" role="listbox">
+                        {doingSuggestions.map((item) => (
+                          <div
+                            key={item}
+                            role="option"
+                            className="suggest-item"
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, doing: item }));
+                              setDoingOpen(false);
+                            }}
+                          >
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-group">

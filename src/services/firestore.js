@@ -189,8 +189,18 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Build data object with only non-empty fields (merge behavior)
     const dataToSave = {};
 
+    // doing: if provided, prepend to existing array (or convert to array) and save
     if (statusData.doing && statusData.doing.trim()) {
-      dataToSave.doing = statusData.doing.trim();
+      const newDoing = statusData.doing.trim();
+      const existingDoing = Array.isArray(currentStatus?.doing)
+        ? currentStatus.doing
+        : (currentStatus?.doing ? [currentStatus.doing] : []);
+      const exists = existingDoing
+        .map(d => String(d).trim().toLowerCase())
+        .includes(newDoing.toLowerCase());
+      if (!exists) {
+        dataToSave.doing = [newDoing, ...existingDoing];
+      }
     }
 
     if (statusData.location && statusData.location.trim()) {
