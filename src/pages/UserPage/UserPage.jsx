@@ -148,11 +148,6 @@ const UserPage = ({ onBack }) => {
             introduce: profile.introduce || ''
           }));
           
-          console.log('✅ Profile data loaded:', {
-            introduce: profile.introduce || '',
-            skills: loadedSkills,
-            interests: loadedInterests
-          });
         }
         setProfileLoaded(true);
 
