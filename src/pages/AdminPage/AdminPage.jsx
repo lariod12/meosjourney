@@ -588,7 +588,6 @@ const AdminPage = ({ onBack }) => {
     try {
       if (deleteTarget.type === 'quest') {
         const conf = questConfirmations.find(c => c.id === deleteTarget.id) || null;
-        console.log(`🗑️ Deleting quest "${deleteTarget.name}" (id: ${deleteTarget.id}) with ${conf ? 1 : 0} matching confirmation`);
 
         if (conf?.imgUrl) {
           try {
@@ -902,7 +901,6 @@ const AdminPage = ({ onBack }) => {
       // 1. Delete image from Storage if exists
       if (confirmation.imgUrl) {
         try {
-          console.log('🗑️ Deleting quest confirmation image...');
           await deleteImageByUrl(confirmation.imgUrl);
           console.log('✅ Image deleted from Storage');
         } catch (imgError) {
@@ -912,7 +910,6 @@ const AdminPage = ({ onBack }) => {
       }
 
       // 2. Delete quest confirmation from Firestore using the actual confirmation ID
-      console.log('🗑️ Deleting quest confirmation with ID:', confirmation.id);
       await deleteQuestConfirmationById(confirmation.id, CHARACTER_ID);
 
       // Update local state immediately to remove confirmation and change button to Edit

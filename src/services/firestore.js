@@ -900,7 +900,6 @@ export const deleteQuestConfirmationById = async (confirmationId, characterId = 
     const confirmRef = doc(db, 'main', characterId, 'quests-confirm', confirmationId);
     await deleteDoc(confirmRef);
 
-    console.log('✅ Quest confirmation deleted by ID:', confirmationId);
     return { success: true };
 
   } catch (error) {
@@ -1023,7 +1022,6 @@ export const deleteAchievementConfirmationById = async (confirmationId, characte
     const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', confirmationId);
     await deleteDoc(confirmRef);
 
-    console.log('✅ Achievement confirmation deleted by ID:', confirmationId);
     return { success: true };
 
   } catch (error) {
