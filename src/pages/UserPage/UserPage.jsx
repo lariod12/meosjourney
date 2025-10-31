@@ -3,6 +3,7 @@ import './UserPage.css';
 import {
   fetchConfig,
   fetchStatus,
+  fetchProfile,
   saveStatus,
   saveJournal,
   fetchQuests,
@@ -18,7 +19,7 @@ import {
   updateProfileXP,
   CHARACTER_ID
 } from '../../services/firestore';
-import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
+import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification } from '../../services/discord';
@@ -406,6 +407,25 @@ const UserPage = ({ onBack }) => {
 
       if (hasStatusData) {
         try {
+          // Fetch current status and profile to detect changes
+          const [currentStatus, currentProfile] = await Promise.all([
+            fetchStatus(CHARACTER_ID),
+            fetchProfile(CHARACTER_ID)
+          ]);
+          
+          // Get current values (handle both array and string formats)
+          const getCurrentValue = (field) => {
+            if (!currentStatus || !currentStatus[field]) return '';
+            return Array.isArray(currentStatus[field]) 
+              ? (currentStatus[field][0] || '')
+              : (currentStatus[field] || '');
+          };
+
+          const oldDoing = getCurrentValue('doing');
+          const oldLocation = getCurrentValue('location');
+          const oldMood = getCurrentValue('mood');
+          const oldCaption = currentProfile?.caption || '';
+
           const statusResult = await saveStatus({
             doing: formData.doing,
             location: formData.location,
@@ -415,6 +435,45 @@ const UserPage = ({ onBack }) => {
 
           if (statusResult.success) {
             results.push({ type: 'success', item: 'Status Update' });
+
+            // Create journal entries for changed fields
+            const newDoing = formData.doing.trim();
+            const newLocation = formData.location.trim();
+            const newMood = formData.mood.trim();
+            const newCaption = formData.caption.trim();
+
+            // Check and save journal entry for each changed field
+            if (newDoing && newDoing !== oldDoing) {
+              try {
+                await saveStatusChangeJournal('doing', oldDoing, newDoing, CHARACTER_ID);
+              } catch (journalError) {
+                console.warn('⚠️ Failed to save activity change journal:', journalError);
+              }
+            }
+
+            if (newLocation && newLocation !== oldLocation) {
+              try {
+                await saveStatusChangeJournal('location', oldLocation, newLocation, CHARACTER_ID);
+              } catch (journalError) {
+                console.warn('⚠️ Failed to save location change journal:', journalError);
+              }
+            }
+
+            if (newMood && newMood !== oldMood) {
+              try {
+                await saveStatusChangeJournal('mood', oldMood, newMood, CHARACTER_ID);
+              } catch (journalError) {
+                console.warn('⚠️ Failed to save mood change journal:', journalError);
+              }
+            }
+
+            if (newCaption && newCaption !== oldCaption) {
+              try {
+                await saveStatusChangeJournal('caption', oldCaption, newCaption, CHARACTER_ID);
+              } catch (journalError) {
+                console.warn('⚠️ Failed to save caption change journal:', journalError);
+              }
+            }
           } else if (statusResult.message === 'No data to save') {
             results.push({ type: 'success', item: 'Status Update (no change)' });
           } else {

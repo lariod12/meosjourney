@@ -32,6 +32,11 @@ export const homeLocales = {
     'journal.empty_today': 'No journal entries for today.',
     'journal.achievement_unlocked': 'Achievement Unlocked',
     'journal.quest_completed': 'Quest Completed',
+    'journal.status_update': 'Status Update',
+    'journal.status_mood': 'Mood',
+    'journal.status_location': 'Location',
+    'journal.status_activity': 'Activity',
+    'journal.status_caption': 'Caption',
 
     'history.loading': 'Loading journal history...',
     'history.empty': 'No journal entries found.',
@@ -77,6 +82,11 @@ export const homeLocales = {
     'journal.empty_today': 'Chưa có nhật ký hôm nay.',
     'journal.achievement_unlocked': 'Thành tích mở khóa',
     'journal.quest_completed': 'Nhiệm vụ hoàn thành',
+    'journal.status_update': 'Cập nhật trạng thái',
+    'journal.status_mood': 'Tâm trạng',
+    'journal.status_location': 'Vị trí',
+    'journal.status_activity': 'Hoạt động',
+    'journal.status_caption': 'Chú thích',
 
     'history.loading': 'Đang tải lịch sử nhật ký...',
     'history.empty': 'Không tìm thấy nhật ký.',

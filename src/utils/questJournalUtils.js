@@ -1,5 +1,5 @@
 /**
- * Utility functions for creating journal entries from quest completions
+ * Utility functions for creating journal entries from quest completions and status changes
  */
 
 import { saveJournal } from '../services/firestore';
@@ -91,6 +91,53 @@ export const saveAchievementCompletionJournal = async (achievement, characterId)
     return result;
   } catch (error) {
     console.error('❌ Error saving achievement completion journal:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate journal entry content for status change
+ * @param {string} fieldType - Type of field ('mood', 'location', 'doing', 'caption')
+ * @param {string} oldValue - Old value
+ * @param {string} newValue - New value
+ * @returns {string} Formatted journal entry content
+ */
+export const generateStatusChangeJournalEntry = (fieldType, oldValue, newValue) => {
+  // Format: [Status Update] Field: old_value → new_value
+  const fieldMap = {
+    'mood': 'Mood',
+    'location': 'Location',
+    'doing': 'Activity',
+    'caption': 'Caption'
+  };
+
+  const fieldName = fieldMap[fieldType] || fieldType;
+  const old = oldValue || 'N/A';
+  const newVal = newValue || 'N/A';
+
+  return `[Status Update] ${fieldName}: ${old} → ${newVal}`;
+};
+
+/**
+ * Save status change as journal entry
+ * @param {string} fieldType - Type of field ('mood', 'location', 'doing')
+ * @param {string} oldValue - Old value
+ * @param {string} newValue - New value
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Object>} Save result
+ */
+export const saveStatusChangeJournal = async (fieldType, oldValue, newValue, characterId) => {
+  try {
+    const journalContent = generateStatusChangeJournalEntry(fieldType, oldValue, newValue);
+
+    const result = await saveJournal({
+      caption: journalContent
+    }, characterId);
+
+    console.log(`✅ Status change journal saved: ${fieldType}`);
+    return result;
+  } catch (error) {
+    console.error('❌ Error saving status change journal:', error);
     throw error;
   }
 };

@@ -26,6 +26,18 @@ export const translateJournalEntry = (entryText, lang, t) => {
     `[${t('journal.quest_completed')}]`
   );
 
+  // Translate [Status Update] format with field names
+  translated = translated.replace(
+    /\[Status Update\]/gi,
+    `[${t('journal.status_update')}]`
+  );
+
+  // Translate field names in status updates
+  translated = translated.replace(/\bMood\b/g, t('journal.status_mood'));
+  translated = translated.replace(/\bLocation\b/g, t('journal.status_location'));
+  translated = translated.replace(/\bActivity\b/g, t('journal.status_activity'));
+  translated = translated.replace(/\bCaption\b/g, t('journal.status_caption'));
+
   return translated;
 };
 
