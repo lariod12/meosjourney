@@ -28,11 +28,7 @@ const StatusBox = () => {
           </div>
           <div className="status-mood">
             <span className="status-label">Mood:</span>
-            <span>
-              {Array.isArray(data.status.mood)
-                ? (data.status.mood[0] || '')
-                : (data.status.mood || '')}
-            </span>
+            <span>{data.status.mood}</span>
           </div>
           <div className="status-time">
             Updated: <TimeAgo timestamp={pageLoadTime} /> <span className="status-refresh-note">(Refresh page to get latest data)</span>
