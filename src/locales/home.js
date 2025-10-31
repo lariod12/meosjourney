@@ -37,6 +37,11 @@ export const homeLocales = {
     'journal.status_location': 'Location',
     'journal.status_activity': 'Activity',
     'journal.status_caption': 'Caption',
+    'journal.profile_update': 'Profile Update',
+    'journal.profile_added': 'Added',
+    'journal.profile_removed': 'Removed',
+    'journal.profile_skill': 'skill',
+    'journal.profile_interest': 'interest',
 
     'history.loading': 'Loading journal history...',
     'history.empty': 'No journal entries found.',
@@ -87,6 +92,11 @@ export const homeLocales = {
     'journal.status_location': 'Vị trí',
     'journal.status_activity': 'Hoạt động',
     'journal.status_caption': 'Chú thích',
+    'journal.profile_update': 'Cập nhật hồ sơ',
+    'journal.profile_added': 'Đã thêm',
+    'journal.profile_removed': 'Đã xóa',
+    'journal.profile_skill': 'kỹ năng',
+    'journal.profile_interest': 'sở thích',
 
     'history.loading': 'Đang tải lịch sử nhật ký...',
     'history.empty': 'Không tìm thấy nhật ký.',

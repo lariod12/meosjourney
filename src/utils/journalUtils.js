@@ -38,6 +38,16 @@ export const translateJournalEntry = (entryText, lang, t) => {
   translated = translated.replace(/\bActivity\b/g, t('journal.status_activity'));
   translated = translated.replace(/\bCaption\b/g, t('journal.status_caption'));
 
+  // Translate [Profile Update] format and its parts
+  translated = translated.replace(
+    /\[Profile Update\]/gi,
+    `[${t('journal.profile_update')}]`
+  );
+  translated = translated.replace(/\bAdded\b/g, t('journal.profile_added'));
+  translated = translated.replace(/\bRemoved\b/g, t('journal.profile_removed'));
+  translated = translated.replace(/\bskill\b/g, t('journal.profile_skill'));
+  translated = translated.replace(/\binterest\b/g, t('journal.profile_interest'));
+
   return translated;
 };
 
