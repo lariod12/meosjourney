@@ -103,6 +103,16 @@ export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
 
     console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
     
+    // If leveled up, log to daily journal
+    try {
+      if (leveledUp) {
+        const caption = `[Level Up] Level ${currentLevel} → ${newLevel}`;
+        await saveJournal({ caption }, characterId);
+      }
+    } catch (journalError) {
+      console.warn('⚠️ Failed to save level up journal:', journalError?.message || journalError);
+    }
+    
     return { 
       success: true, 
       oldXP: currentXP, 
@@ -596,7 +606,7 @@ export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
 
     // Generate datetime-based document ID using Vietnam timezone (UTC+7)
     const now = new Date();
-    const datetimeId = now.toLocaleString('sv-SE', {
+    const baseId = now.toLocaleString('sv-SE', {
       timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
@@ -605,6 +615,10 @@ export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
       minute: '2-digit',
       second: '2-digit'
     }).replace(' ', '_').replace(/:/g, '-'); // Format: YYYY-MM-DD_HH-MM-SS (Vietnam time)
+
+    // Add milliseconds to avoid collisions when multiple journals are created within the same second
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    const datetimeId = `${baseId}-${ms}`; // e.g., YYYY-MM-DD_HH-MM-SS-123
 
     const dataToSave = {
       caption: journalData.caption.trim(),
