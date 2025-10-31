@@ -12,6 +12,10 @@ A beautiful, minimalist RPG character sheet website built with **React** and **V
 - 🧩 **Component-Based** - Modular, maintainable architecture
 - 🌐 **Static Deployment** - Deploy anywhere (Vercel, Netlify, GitHub Pages)
 
+## 📝 Notes
+
+- Body text font is standardized to **Playfair (Playfair Display)**.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
