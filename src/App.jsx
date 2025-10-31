@@ -28,7 +28,8 @@ const HomePage = () => {
 };
 
 const App = () => {
-  const basename = import.meta.env.MODE === 'production' ? '/meosjourney' : '/';
+  // Use Vite's BASE_URL to keep router base in sync with build base (handles GH Pages subpath)
+  const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
   return (
     <Router basename={basename}>
