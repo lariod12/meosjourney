@@ -716,6 +716,13 @@ const UserPage = ({ onBack }) => {
               try {
                 await saveQuestCompletionJournal({ name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+              // Save Level Up journal AFTER quest journal to preserve order
+              try {
+                if (xpResult?.leveledUp) {
+                  const caption = `[Level Up] Level ${xpResult.oldLevel} → ${xpResult.newLevel}`;
+                  await saveJournal({ caption }, CHARACTER_ID);
+                }
+              } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch {}
 
               // Optimistically update UI
@@ -846,6 +853,13 @@ const UserPage = ({ onBack }) => {
               try {
                 await saveAchievementCompletionJournal({ name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+              // Save Level Up journal AFTER achievement journal to preserve order
+              try {
+                if (xpResult?.leveledUp) {
+                  const caption = `[Level Up] Level ${xpResult.oldLevel} → ${xpResult.newLevel}`;
+                  await saveJournal({ caption }, CHARACTER_ID);
+                }
+              } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch {}
 
               // Optimistically update UI

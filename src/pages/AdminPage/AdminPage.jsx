@@ -5,7 +5,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/firestore';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
@@ -806,6 +806,16 @@ const AdminPage = ({ onBack }) => {
         // Continue even if journal creation fails - quest is still marked as completed
       }
 
+      // Save Level Up journal AFTER quest journal
+      try {
+        if (xpResult?.leveledUp) {
+          const caption = `[Level Up] Level ${xpResult.oldLevel} → ${xpResult.newLevel}`;
+          await saveJournal({ caption }, CHARACTER_ID);
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not create level up journal:', e?.message || e);
+      }
+
       // Clear cache to force homepage refresh with new XP
       clearCache();
 
@@ -985,6 +995,16 @@ const AdminPage = ({ onBack }) => {
       } catch (journalError) {
         console.warn('⚠️ Could not create achievement completion journal:', journalError.message);
         // Continue even if journal creation fails - achievement is still marked as completed
+      }
+
+      // Save Level Up journal AFTER achievement journal
+      try {
+        if (xpResult?.leveledUp) {
+          const caption = `[Level Up] Level ${xpResult.oldLevel} → ${xpResult.newLevel}`;
+          await saveJournal({ caption }, CHARACTER_ID);
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not create level up journal:', e?.message || e);
       }
 
       // Clear cache to force homepage refresh with new XP

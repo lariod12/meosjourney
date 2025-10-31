@@ -103,16 +103,6 @@ export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
 
     console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
     
-    // If leveled up, log to daily journal (Discord notify handled by caller to preserve ordering)
-    try {
-      if (leveledUp) {
-        const caption = `[Level Up] Level ${currentLevel} → ${newLevel}`;
-        await saveJournal({ caption }, characterId);
-      }
-    } catch (journalError) {
-      console.warn('⚠️ Failed to save level up journal:', journalError?.message || journalError);
-    }
-    
     return { 
       success: true, 
       oldXP: currentXP, 
