@@ -10,7 +10,7 @@ export const formatDate = (date, locale = 'vi-VN') => {
   return date.toLocaleDateString(locale, options);
 };
 
-export const getTimeAgo = (timestamp) => {
+export const getTimeAgo = (timestamp, locale = 'VI') => {
   const now = new Date();
   const diff = now - timestamp;
   
@@ -22,22 +22,25 @@ export const getTimeAgo = (timestamp) => {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
+  // Check if Vietnamese
+  const isVI = String(locale).toUpperCase().startsWith('VI');
+
   if (seconds < 30) {
-    return 'Just now';
+    return isVI ? 'Vừa xong' : 'Just now';
   } else if (seconds < 60) {
-    return `${seconds} seconds ago`;
+    return isVI ? `${seconds} giây trước` : `${seconds} seconds ago`;
   } else if (minutes < 60) {
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return isVI ? `${minutes} phút trước` : `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
   } else if (hours < 24) {
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return isVI ? `${hours} giờ trước` : `${hours} hour${hours > 1 ? 's' : ''} ago`;
   } else if (days < 7) {
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+    return isVI ? `${days} ngày trước` : `${days} day${days > 1 ? 's' : ''} ago`;
   } else if (weeks < 4) {
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    return isVI ? `${weeks} tuần trước` : `${weeks} week${weeks > 1 ? 's' : ''} ago`;
   } else if (months < 12) {
-    return `${months} month${months > 1 ? 's' : ''} ago`;
+    return isVI ? `${months} tháng trước` : `${months} month${months > 1 ? 's' : ''} ago`;
   } else {
-    return `${years} year${years > 1 ? 's' : ''} ago`;
+    return isVI ? `${years} năm trước` : `${years} year${years > 1 ? 's' : ''} ago`;
   }
 };
 
