@@ -20,11 +20,19 @@ const StatusBox = () => {
           </div>
           <div className="status-location">
             <span className="status-label">Location:</span>
-            <span>{data.status.location}</span>
+            <span>
+              {Array.isArray(data.status.location)
+                ? data.status.location.join(', ')
+                : (data.status.location || '')}
+            </span>
           </div>
           <div className="status-mood">
             <span className="status-label">Mood:</span>
-            <span>{data.status.mood}</span>
+            <span>
+              {Array.isArray(data.status.mood)
+                ? data.status.mood.join(', ')
+                : (data.status.mood || '')}
+            </span>
           </div>
           <div className="status-time">
             Updated: <TimeAgo timestamp={pageLoadTime} /> <span className="status-refresh-note">(Refresh page to get latest data)</span>
