@@ -552,40 +552,32 @@ const AdminPage = ({ onBack }) => {
 
     try {
       if (deleteTarget.type === 'quest') {
-        // 1. Get all confirmations for this quest
-        const allConfirmations = getQuestConfirmations(deleteTarget.name);
-        console.log(`🗑️ Deleting quest "${deleteTarget.name}" with ${allConfirmations.length} confirmations`);
+        const conf = questConfirmations.find(c => c.id === deleteTarget.id) || null;
+        console.log(`🗑️ Deleting quest "${deleteTarget.name}" (id: ${deleteTarget.id}) with ${conf ? 1 : 0} matching confirmation`);
 
-        // 2. Delete all images from Storage
-        for (const conf of allConfirmations) {
-          if (conf.imgUrl) {
-            try {
-              await deleteImageByUrl(conf.imgUrl);
-            } catch (imgError) {
-              console.warn('⚠️ Could not delete image:', imgError.message);
-              // Continue even if image deletion fails
-            }
+        if (conf?.imgUrl) {
+          try {
+            await deleteImageByUrl(conf.imgUrl);
+          } catch (imgError) {
+            console.warn('⚠️ Could not delete image:', imgError.message);
           }
         }
 
-        // 3. Delete all quest confirmations from Firestore
-        for (const conf of allConfirmations) {
+        if (conf) {
           try {
             await deleteQuestConfirmationById(conf.id, CHARACTER_ID);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
-            // Continue even if confirmation deletion fails
           }
         }
 
-        // 4. Delete the quest itself
         await deleteQuest(deleteTarget.id, CHARACTER_ID);
 
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: `Quest deleted successfully! (${allConfirmations.length} confirmations removed)`,
+          message: `Quest deleted successfully! (${conf ? 1 : 0} confirmation removed)`,
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => {
@@ -595,40 +587,31 @@ const AdminPage = ({ onBack }) => {
           onCancel: null
         });
       } else {
-        // Delete achievement with confirmations
-        // 1. Get all confirmations for this achievement
-        const allConfirmations = getAchievementConfirmations(deleteTarget.name);
+        const conf = achievementConfirmations.find(c => c.id === deleteTarget.id) || null;
 
-        // 2. Delete all images from Storage
-        for (const conf of allConfirmations) {
-          if (conf.imgUrl) {
-            try {
-              await deleteImageByUrl(conf.imgUrl);
-            } catch (imgError) {
-              console.warn('⚠️ Could not delete image:', imgError.message);
-              // Continue even if image deletion fails
-            }
+        if (conf?.imgUrl) {
+          try {
+            await deleteImageByUrl(conf.imgUrl);
+          } catch (imgError) {
+            console.warn('⚠️ Could not delete image:', imgError.message);
           }
         }
 
-        // 3. Delete all achievement confirmations from Firestore
-        for (const conf of allConfirmations) {
+        if (conf) {
           try {
             await deleteAchievementConfirmationById(conf.id, CHARACTER_ID);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
-            // Continue even if confirmation deletion fails
           }
         }
 
-        // 4. Delete the achievement itself
         await deleteAchievement(deleteTarget.id, CHARACTER_ID);
 
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: `Achievement deleted successfully! (${allConfirmations.length} confirmations removed)`,
+          message: `Achievement deleted successfully! (${conf ? 1 : 0} confirmation removed)`,
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => {
