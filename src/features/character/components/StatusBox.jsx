@@ -16,7 +16,11 @@ const StatusBox = () => {
         <div className="status-content">
           <div className="status-indicator">
             <span className="status-dot"></span>
-            <span>{data.status.doing}</span>
+            <span>
+              {Array.isArray(data.status.doing)
+                ? (data.status.doing[0] || '')
+                : (data.status.doing || '')}
+            </span>
           </div>
           <div className="status-location">
             <span className="status-label">Location:</span>
