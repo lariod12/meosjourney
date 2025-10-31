@@ -19,6 +19,7 @@ import {
   CHARACTER_ID
 } from '../../services/firestore';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
+import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import { sendQuestSubmissionNotification, sendAchievementNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
@@ -443,6 +444,7 @@ const UserPage = ({ onBack }) => {
       }
 
       // Submit Quest Confirmations (if has submissions)
+      let didAutoApprove = false;
       if (selectedQuestSubmissions.length > 0) {
 
         for (let i = 0; i < selectedQuestSubmissions.length; i++) {
@@ -480,7 +482,7 @@ const UserPage = ({ onBack }) => {
 
           // 3. Save confirmation to quests-confirm collection (will override if exists)
           try {
-            await saveQuestConfirmation({
+            const questConfirmResult = await saveQuestConfirmation({
               name: submission.questTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
@@ -496,6 +498,18 @@ const UserPage = ({ onBack }) => {
               try {
                 await saveQuestCompletionJournal({ name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+              try { clearCache(); } catch {}
+
+              // Optimistically update UI
+              setAllQuests(prev => prev.map(q => q.id === submission.questId ? { ...q, completedAt: new Date() } : q));
+              setAvailableQuests(prev => prev.filter(q => q.id !== submission.questId));
+              if (questConfirmResult?.id) {
+                setQuestConfirmations(prev => {
+                  const rest = prev.filter(c => c.id !== questConfirmResult.id);
+                  return [...rest, { id: questConfirmResult.id, name: submission.questTitle, desc: submission.description || '', imgUrl, createdAt: new Date() }];
+                });
+              }
+              didAutoApprove = true;
             }
 
             // Send Discord notification for quest submission
@@ -574,7 +588,7 @@ const UserPage = ({ onBack }) => {
 
           // 3. Save confirmation to achievements-confirm collection (will override if exists)
           try {
-            await saveAchievementConfirmation({
+            const achConfirmResult = await saveAchievementConfirmation({
               name: submission.achievementTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
@@ -590,6 +604,18 @@ const UserPage = ({ onBack }) => {
               try {
                 await saveAchievementCompletionJournal({ name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+              try { clearCache(); } catch {}
+
+              // Optimistically update UI
+              setAllAchievements(prev => prev.map(a => a.id === submission.achievementId ? { ...a, completedAt: new Date() } : a));
+              setAvailableAchievements(prev => prev.filter(a => a.id !== submission.achievementId));
+              if (achConfirmResult?.id) {
+                setAchievementConfirmations(prev => {
+                  const rest = prev.filter(c => c.id !== achConfirmResult.id);
+                  return [...rest, { id: achConfirmResult.id, name: submission.achievementTitle, desc: submission.description || '', imgUrl, createdAt: new Date() }];
+                });
+              }
+              didAutoApprove = true;
             }
 
             // Send Discord notification for achievement submission
@@ -629,6 +655,11 @@ const UserPage = ({ onBack }) => {
         }
 
         setUploadingQuestIndex(-1);
+      }
+
+      // Fire global refresh so Home (and others) can refetch immediately
+      if (autoApproveTasks && didAutoApprove) {
+        try { window.dispatchEvent(new Event('meo:refresh')); } catch {}
       }
 
       // Analyze results and show appropriate message

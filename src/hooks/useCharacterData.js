@@ -70,6 +70,22 @@ export const useCharacterData = (defaultData) => {
     };
   }, [fetchData]);
 
+  // Listen for external refresh triggers (cache cleared or explicit event)
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e && e.key && e.key !== 'meo_journey_home_cache') return;
+      // Cache mutated elsewhere -> force refresh
+      fetchData(true);
+    };
+    const onRefresh = () => fetchData(true);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('meo:refresh', onRefresh);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('meo:refresh', onRefresh);
+    };
+  }, [fetchData]);
+
   return {
     data,
     loading,
