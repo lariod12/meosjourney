@@ -3,6 +3,7 @@ import { useCharacter } from '../../../contexts';
 import { formatDate, formatTime } from '../../../utils/dateUtils';
 import { filterTodayItems } from '../../../utils/dateFilter';
 import { useLanguage } from '../../../contexts';
+import { translateJournalEntry } from '../../../utils/journalUtils';
 
 const JournalTab = () => {
   const data = useCharacter();
@@ -46,7 +47,7 @@ const JournalTab = () => {
         {todayJournals.map((entry, index) => (
           <div key={entry.id || index} className="journal-entry">
             <div className="journal-time">{formatTime(entry.time, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
-            <div className="journal-text">{entry.entry}</div>
+            <div className="journal-text">{translateJournalEntry(entry.entry, lang, t)}</div>
           </div>
         ))}
       </div>

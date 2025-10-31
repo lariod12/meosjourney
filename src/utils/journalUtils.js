@@ -3,6 +3,33 @@
  */
 
 /**
+ * Translate journal entry text for UI display (Vietnamese mode)
+ * @param {string} entryText - Original journal entry text (in English format)
+ * @param {string} lang - Current language ('EN' or 'VI')
+ * @param {Function} t - Translation function from useLanguage
+ * @returns {string} Translated journal entry text
+ */
+export const translateJournalEntry = (entryText, lang, t) => {
+  if (!entryText || lang !== 'VI') {
+    return entryText;
+  }
+
+  // Translate [Achievement Unlocked] format
+  let translated = entryText.replace(
+    /\[Achievement Unlocked\]/gi,
+    `[${t('journal.achievement_unlocked')}]`
+  );
+
+  // Translate [Quest Completed] format
+  translated = translated.replace(
+    /\[Quest Completed\]/gi,
+    `[${t('journal.quest_completed')}]`
+  );
+
+  return translated;
+};
+
+/**
  * Group journal entries by date (Vietnam timezone)
  * @param {Array} journals - Array of journal entries with timestamp
  * @returns {Array} Array of grouped entries by date, sorted by date descending

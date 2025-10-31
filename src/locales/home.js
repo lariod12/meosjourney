@@ -29,6 +29,8 @@ export const homeLocales = {
 
     'journal.loading': 'Loading journal entries...',
     'journal.empty_today': 'No journal entries for today.',
+    'journal.achievement_unlocked': 'Achievement Unlocked',
+    'journal.quest_completed': 'Quest Completed',
 
     'history.loading': 'Loading journal history...',
     'history.empty': 'No journal entries found.',
@@ -71,6 +73,8 @@ export const homeLocales = {
 
     'journal.loading': 'Đang tải nhật ký...',
     'journal.empty_today': 'Chưa có nhật ký hôm nay.',
+    'journal.achievement_unlocked': 'Thành tích mở khóa',
+    'journal.quest_completed': 'Nhiệm vụ hoàn thành',
 
     'history.loading': 'Đang tải lịch sử nhật ký...',
     'history.empty': 'Không tìm thấy nhật ký.',
