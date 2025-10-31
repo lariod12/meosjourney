@@ -1101,30 +1101,7 @@ body {
 
 /* Ensure content fits within container - handled above */
 
-/* Visual hint for drag scrolling */
-.history-item.expanded .history-entries-wrapper::before {
-    content: '';
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    width: 20px;
-    height: 4px;
-    background: repeating-linear-gradient(
-        90deg,
-        var(--gray-dark) 0px,
-        var(--gray-dark) 3px,
-        transparent 3px,
-        transparent 6px
-    );
-    opacity: 0.3;
-    pointer-events: none;
-    z-index: 2;
-}
-
-/* Show hint more prominently when scrollable */
-.history-item.expanded .history-entries-wrapper[data-scrollable="true"]::before {
-    opacity: 0.6;
-}
+/* Visual hint removed for cleaner interface */
 
 .history-empty-message {
     display: flex;
