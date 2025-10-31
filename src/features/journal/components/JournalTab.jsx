@@ -7,7 +7,7 @@ import { useLanguage } from '../../../contexts';
 const JournalTab = () => {
   const data = useCharacter();
   const today = new Date();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   // Filter journal entries to show only today's entries (Vietnam timezone)
   const todayJournals = useMemo(() => {
@@ -19,7 +19,7 @@ const JournalTab = () => {
   if (!data.journal) {
     return (
       <>
-        <div className="journal-date">{formatDate(today)}</div>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
         <div className="journal-content">
           <div className="empty-message">{t('journal.loading')}</div>
         </div>
@@ -31,7 +31,7 @@ const JournalTab = () => {
   if (todayJournals.length === 0) {
     return (
       <>
-        <div className="journal-date">{formatDate(today)}</div>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
         <div className="journal-content">
           <div className="empty-message">{t('journal.empty_today')}</div>
         </div>
@@ -41,7 +41,7 @@ const JournalTab = () => {
 
   return (
     <>
-      <div className="journal-date">{formatDate(today)}</div>
+      <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
       <div className="journal-content">
         {todayJournals.map((entry, index) => (
           <div key={entry.id || index} className="journal-entry">

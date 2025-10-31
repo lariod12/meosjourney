@@ -7,7 +7,7 @@ import { useLanguage } from '../../../contexts';
 const HistoryTab = () => {
   const data = useCharacter();
   const [expandedIndex, setExpandedIndex] = useState(null);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   // Group journal entries by date (Vietnam timezone)
   const historyData = useMemo(() => {
@@ -42,7 +42,7 @@ const HistoryTab = () => {
       {historyData.map((day, index) => (
         <div key={index} className={`history-item ${expandedIndex === index ? 'expanded' : ''}`}>
           <div className="history-date-header" onClick={() => toggleExpand(index)}>
-            <span className="history-date-text">{formatDate(day.date)}</span>
+            <span className="history-date-text">{formatDate(day.date, lang === 'VI' ? 'vi-VN' : 'en-US')}</span>
             <span className="history-arrow">{expandedIndex === index ? '▲' : '▼'}</span>
           </div>
           <div className="history-entries-wrapper">

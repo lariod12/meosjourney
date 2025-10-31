@@ -1,4 +1,11 @@
 export const formatDate = (date, locale = 'en-US') => {
+  if (!date) return '';
+  if (String(locale).toLowerCase().startsWith('vi')) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`; // Việt Nam: ngày/tháng/năm
+  }
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   return date.toLocaleDateString(locale, options);
 };
