@@ -1,6 +1,7 @@
 export const homeLocales = {
   EN: {
     'modal.quest.title': 'Quest Details',
+    'modal.quest.title_completed': 'Quest Details - Completed',
     'modal.quest.name': 'Quest Name',
     'modal.quest.description': 'Description',
     'modal.quest.xp': 'XP Reward',
@@ -45,6 +46,7 @@ export const homeLocales = {
   },
   VI: {
     'modal.quest.title': 'Chi tiết nhiệm vụ',
+    'modal.quest.title_completed': 'Chi tiết nhiệm vụ - Hoàn thành',
     'modal.quest.name': 'Tên nhiệm vụ',
     'modal.quest.description': 'Mô tả',
     'modal.quest.xp': 'Phần thưởng XP',

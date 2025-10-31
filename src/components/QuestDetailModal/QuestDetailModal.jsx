@@ -26,12 +26,15 @@ const QuestDetailModal = ({ quest, onClose }) => {
   };
 
   const { t } = useLanguage();
+  
+  const isCompleted = quest.completedAt !== null;
+  const modalTitle = isCompleted ? t('modal.quest.title_completed') : t('modal.quest.title');
 
   return (
     <div className="quest-detail-overlay" onClick={handleOverlayClick}>
       <div className="quest-detail-modal">
         <div className="quest-detail-header">
-          <h2>⚔️ {t('modal.quest.title')}</h2>
+          <h2>⚔️ {modalTitle}</h2>
           <button 
             className="quest-detail-close"
             onClick={onClose}
