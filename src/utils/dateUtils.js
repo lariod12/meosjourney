@@ -1,4 +1,4 @@
-export const formatDate = (date, locale = 'en-US') => {
+export const formatDate = (date, locale = 'vi-VN') => {
   if (!date) return '';
   if (String(locale).toLowerCase().startsWith('vi')) {
     const dd = String(date.getDate()).padStart(2, '0');
@@ -42,7 +42,7 @@ export const getTimeAgo = (timestamp) => {
 };
 
 // Format "H:MM AM/PM" to 24h (HH:mm) for vi-VN; otherwise keep original
-export const formatTime = (timeStr, locale = 'en-US') => {
+export const formatTime = (timeStr, locale = 'vi-VN') => {
   if (!timeStr) return '';
   const s = String(timeStr).trim();
   const isVI = String(locale).toLowerCase().startsWith('vi');
