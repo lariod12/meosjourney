@@ -464,6 +464,26 @@ body {
   max-height: 360px;
 }
 
+/* Collapse toggle button for static dropdowns */
+.dropdown-collapse-btn {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+  text-align: left;
+}
+.dropdown-collapse-btn:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
 .quest-dropdown-item {
     padding: 12px 16px;
     cursor: pointer;

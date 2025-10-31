@@ -63,6 +63,8 @@ const UserPage = ({ onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [uploadingQuestIndex, setUploadingQuestIndex] = useState(-1);
+  const [questPickerCollapsed, setQuestPickerCollapsed] = useState(false);
+  const [achievementPickerCollapsed, setAchievementPickerCollapsed] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: 'info',
@@ -1336,7 +1338,11 @@ const UserPage = ({ onBack }) => {
               className="section-title clickable"
               onClick={() => {
                 console.log('Daily Quests Update section clicked');
-                setQuestsExpanded(!questsExpanded);
+                setQuestsExpanded(prev => {
+                  const next = !prev;
+                  if (next) setQuestPickerCollapsed(false);
+                  return next;
+                });
               }}
             >
               {questsExpanded ? '▼' : '▸'} Daily Quests Update ({getAvailableQuestsForDropdown().length + selectedQuestSubmissions.length})
@@ -1347,18 +1353,31 @@ const UserPage = ({ onBack }) => {
                 {/* Always-visible quest picker */}
                 <div className="quest-add-section">
                   {getAvailableQuestsForDropdown().length > 0 ? (
-                    <div className="quest-dropdown dropdown-static" ref={questDropdownRef}>
-                      {getAvailableQuestsForDropdown().map(quest => (
-                        <div
-                          key={quest.id}
-                          className="quest-dropdown-item"
-                          onClick={() => handleAddQuestSubmission(quest)}
-                        >
-                          <span className="quest-dropdown-title">{quest.name}</span>
-                          <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                    <>
+                      <button
+                        type="button"
+                        className="dropdown-collapse-btn"
+                        onClick={() => setQuestPickerCollapsed(v => !v)}
+                        aria-expanded={!questPickerCollapsed}
+                        aria-controls="quest-picker"
+                      >
+                        {questPickerCollapsed ? '▾ Show list' : '▴ Hide list'}
+                      </button>
+                      {!questPickerCollapsed && (
+                        <div id="quest-picker" className="quest-dropdown dropdown-static" ref={questDropdownRef}>
+                          {getAvailableQuestsForDropdown().map(quest => (
+                            <div
+                              key={quest.id}
+                              className="quest-dropdown-item"
+                              onClick={() => handleAddQuestSubmission(quest)}
+                            >
+                              <span className="quest-dropdown-title">{quest.name}</span>
+                              <span className="quest-dropdown-xp">+{quest.xp} XP</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <p className="no-quests-message">No incomplete quests available</p>
                   )}
@@ -1461,7 +1480,11 @@ const UserPage = ({ onBack }) => {
               className="section-title clickable"
               onClick={() => {
                 console.log('Achievements Update section clicked');
-                setAchievementsExpanded(!achievementsExpanded);
+                setAchievementsExpanded(prev => {
+                  const next = !prev;
+                  if (next) setAchievementPickerCollapsed(false);
+                  return next;
+                });
               }}
             >
               {achievementsExpanded ? '▼' : '▸'} Achievements Update ({getAvailableAchievementsForDropdown().length + selectedAchievementSubmissions.length})
@@ -1472,27 +1495,40 @@ const UserPage = ({ onBack }) => {
                 {/* Always-visible achievement picker */}
                 <div className="quest-add-section">
                   {getAvailableAchievementsForDropdown().length > 0 ? (
-                    <div className="quest-dropdown dropdown-static" ref={achievementDropdownRef}>
-                      {getAvailableAchievementsForDropdown().map(achievement => (
-                        <div
-                          key={achievement.id}
-                          className="quest-dropdown-item"
-                          onClick={() => handleAddAchievementSubmission(achievement)}
-                        >
-                          <span className="quest-dropdown-title">
-                            {achievement.icon && (
-                              <IconRenderer iconName={achievement.icon} size={20} />
-                            )}
-                            {' '}{achievement.name}
-                            {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
-                          </span>
-                          <span className="quest-dropdown-xp">
-                            {achievement.xp > 0 && `+${achievement.xp} XP`}
-                            {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                          </span>
+                    <>
+                      <button
+                        type="button"
+                        className="dropdown-collapse-btn"
+                        onClick={() => setAchievementPickerCollapsed(v => !v)}
+                        aria-expanded={!achievementPickerCollapsed}
+                        aria-controls="achievement-picker"
+                      >
+                        {achievementPickerCollapsed ? '▾ Show list' : '▴ Hide list'}
+                      </button>
+                      {!achievementPickerCollapsed && (
+                        <div id="achievement-picker" className="quest-dropdown dropdown-static" ref={achievementDropdownRef}>
+                          {getAvailableAchievementsForDropdown().map(achievement => (
+                            <div
+                              key={achievement.id}
+                              className="quest-dropdown-item"
+                              onClick={() => handleAddAchievementSubmission(achievement)}
+                            >
+                              <span className="quest-dropdown-title">
+                                {achievement.icon && (
+                                  <IconRenderer iconName={achievement.icon} size={20} />
+                                )}
+                                {' '}{achievement.name}
+                                {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
+                              </span>
+                              <span className="quest-dropdown-xp">
+                                {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <p className="no-quests-message">No incomplete achievements available</p>
                   )}
