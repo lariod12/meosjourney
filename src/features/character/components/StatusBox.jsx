@@ -22,7 +22,7 @@ const StatusBox = () => {
             <span className="status-label">Location:</span>
             <span>
               {Array.isArray(data.status.location)
-                ? data.status.location.join(', ')
+                ? (data.status.location[0] || '')
                 : (data.status.location || '')}
             </span>
           </div>
@@ -30,7 +30,7 @@ const StatusBox = () => {
             <span className="status-label">Mood:</span>
             <span>
               {Array.isArray(data.status.mood)
-                ? data.status.mood.join(', ')
+                ? (data.status.mood[0] || '')
                 : (data.status.mood || '')}
             </span>
           </div>
