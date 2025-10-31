@@ -28,6 +28,9 @@ const UserPage = ({ onBack }) => {
   const [existingDoings, setExistingDoings] = useState([]);
   const [doingSuggestions, setDoingSuggestions] = useState([]);
   const [doingOpen, setDoingOpen] = useState(false);
+  const [existingLocations, setExistingLocations] = useState([]);
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [locationOpen, setLocationOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [correctPassword, setCorrectPassword] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -74,6 +77,7 @@ const UserPage = ({ onBack }) => {
 
   const moodRef = useRef(null);
   const doingRef = useRef(null);
+  const locationRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
 
   // Collapse/expand states - collapsed by default
@@ -117,6 +121,19 @@ const UserPage = ({ onBack }) => {
           if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
         });
         setExistingDoings(normalized);
+
+        // Prepare existing locations from status (array or string)
+        const locArr = Array.isArray(statusData?.location)
+          ? statusData.location
+          : (statusData?.location ? [statusData.location] : []);
+        const seenLoc = new Set();
+        const normalizedLocs = [];
+        locArr.forEach((l) => {
+          const s = String(l).trim();
+          const key = s.toLowerCase();
+          if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
+        });
+        setExistingLocations(normalizedLocs);
 
         // Store all quests and filter incomplete ones
         setAllQuests(quests);
@@ -172,6 +189,18 @@ const UserPage = ({ onBack }) => {
         if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
       });
       setExistingDoings(normalized);
+
+      const locArr = Array.isArray(statusData?.location)
+        ? statusData.location
+        : (statusData?.location ? [statusData.location] : []);
+      const seenLoc = new Set();
+      const normalizedLocs = [];
+      locArr.forEach((l) => {
+        const s = String(l).trim();
+        const key = s.toLowerCase();
+        if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
+      });
+      setExistingLocations(normalizedLocs);
 
       // Store all and filter incomplete quests
       setAllQuests(quests);
@@ -265,6 +294,9 @@ const UserPage = ({ onBack }) => {
       if (doingRef.current && !doingRef.current.contains(e.target)) {
         setDoingOpen(false);
       }
+      if (locationRef.current && !locationRef.current.contains(e.target)) {
+        setLocationOpen(false);
+      }
       if (questDropdownRef.current && !questDropdownRef.current.contains(e.target)) {
         setShowQuestDropdown(false);
       }
@@ -288,6 +320,18 @@ const UserPage = ({ onBack }) => {
     setDoingOpen(suggestions.length > 0);
   };
 
+  const updateLocationSuggestions = (value) => {
+    const q = String(value || '').trim().toLowerCase();
+    if (!q) {
+      setLocationSuggestions([]);
+      setLocationOpen(false);
+      return;
+    }
+    const suggestions = existingLocations.filter(l => l.toLowerCase().includes(q) || l.toLowerCase().startsWith(q));
+    setLocationSuggestions(suggestions.slice(0, 10));
+    setLocationOpen(suggestions.length > 0);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -297,6 +341,9 @@ const UserPage = ({ onBack }) => {
 
     if (name === 'doing') {
       updateDoingSuggestions(value);
+    }
+    if (name === 'location') {
+      updateLocationSuggestions(value);
     }
   };
 
@@ -619,6 +666,17 @@ const UserPage = ({ onBack }) => {
               if (s && !seen2.has(key)) { seen2.add(key); normalized2.push(s); }
             });
             setExistingDoings(normalized2);
+            const locArr2 = Array.isArray(statusData2?.location)
+              ? statusData2.location
+              : (statusData2?.location ? [statusData2.location] : []);
+            const seenLoc2 = new Set();
+            const normalizedLocs2 = [];
+            locArr2.forEach((l) => {
+              const s = String(l).trim();
+              const key = s.toLowerCase();
+              if (s && !seenLoc2.has(key)) { seenLoc2.add(key); normalizedLocs2.push(s); }
+            });
+            setExistingLocations(normalizedLocs2);
                 // Store all and filter incomplete quests
                 setAllQuests(quests);
                 const availableQuests = quests.filter(q => q.completedAt === null);
@@ -672,6 +730,8 @@ const UserPage = ({ onBack }) => {
     });
     setDoingSuggestions([]);
     setDoingOpen(false);
+    setLocationSuggestions([]);
+    setLocationOpen(false);
     setSelectedQuestSubmissions([]);
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
@@ -1168,14 +1228,34 @@ const UserPage = ({ onBack }) => {
 
                 <div className="form-group">
                   <label htmlFor="location">Location</label>
-                  <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="e.g., Home, Coffee shop, Office"
-                  />
+                  <div className="suggest-wrap" ref={locationRef}>
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleChange}
+                      placeholder="e.g., Home, Coffee shop, Office"
+                      autoComplete="off"
+                    />
+                    {locationOpen && locationSuggestions.length > 0 && (
+                      <div className="suggest-dropdown" role="listbox">
+                        {locationSuggestions.map((item) => (
+                          <div
+                            key={item}
+                            role="option"
+                            className="suggest-item"
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, location: item }));
+                              setLocationOpen(false);
+                            }}
+                          >
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-group">

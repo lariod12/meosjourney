@@ -204,7 +204,16 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     }
 
     if (statusData.location && statusData.location.trim()) {
-      dataToSave.location = statusData.location.trim();
+      const newLocation = statusData.location.trim();
+      const existingLocation = Array.isArray(currentStatus?.location)
+        ? currentStatus.location
+        : (currentStatus?.location ? [currentStatus.location] : []);
+      const existsLoc = existingLocation
+        .map(v => String(v).trim().toLowerCase())
+        .includes(newLocation.toLowerCase());
+      if (!existsLoc) {
+        dataToSave.location = [newLocation, ...existingLocation];
+      }
     }
 
     if (statusData.mood && statusData.mood.trim()) {
