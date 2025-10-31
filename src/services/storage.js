@@ -1,0 +1,383 @@
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage } from './firebase';
+import imageCompression from 'browser-image-compression';
+
+/**
+ * Compress image before upload
+ * @param {File} file - Original image file
+ * @param {Object} options - Compression options
+ * @returns {Promise<File>} - Compressed image file
+ */
+const compressImage = async (file, options = {}) => {
+  const defaultOptions = {
+    maxSizeMB: 1,              // Max file size 1MB
+    maxWidthOrHeight: 1920,    // Max dimension 1920px
+    useWebWorker: true,        // Use web worker for better performance
+    fileType: 'image/webp',    // Convert to WebP (best compression)
+    ...options
+  };
+
+  try {
+    console.log('📦 Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+    const compressedFile = await imageCompression(file, defaultOptions);
+    console.log('✅ Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('💾 Size reduction:', ((1 - compressedFile.size / file.size) * 100).toFixed(1), '%');
+    return compressedFile;
+  } catch (error) {
+    console.error('❌ Compression failed, using original file:', error);
+    return file; // Fallback to original if compression fails
+  }
+};
+
+/**
+ * Upload image to Firebase Storage
+ * @param {File} file - Image file to upload
+ * @param {string} characterId - Character ID
+ * @param {string} questId - Quest ID
+ * @returns {Promise<{url: string, path: string}>} - Download URL and storage path
+ */
+export const uploadQuestImage = async (file, characterId, questId) => {
+  try {
+    // Validate file
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    // Check file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const fileName = `${timestamp}.webp`; // Always use .webp extension
+
+    // Create storage path
+    const storagePath = `quest-images/${characterId}/${questId}/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    // Upload compressed file
+    const snapshot = await uploadBytes(storageRef, compressedFile);
+
+    // Get download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    return {
+      url: downloadURL,
+      path: storagePath
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading image:', error);
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+};
+
+/**
+ * Delete image from Firebase Storage
+ * @param {string} storagePath - Storage path of the image
+ * @returns {Promise<void>}
+ */
+export const deleteQuestImage = async (storagePath) => {
+  try {
+    if (!storagePath) {
+      throw new Error('No storage path provided');
+    }
+
+    const storageRef = ref(storage, storagePath);
+    await deleteObject(storageRef);
+
+  } catch (error) {
+    // If file doesn't exist, don't throw error
+    if (error.code === 'storage/object-not-found') {
+      console.warn('⚠️ Image not found, may have been deleted already:', storagePath);
+      return;
+    }
+
+    console.error('❌ Error deleting image:', error);
+    throw new Error(`Failed to delete image: ${error.message}`);
+  }
+};
+
+/**
+ * Upload journal image to Firebase Storage
+ * @param {File} file - Image file to upload
+ * @param {string} characterId - Character ID
+ * @param {string} journalId - Journal ID
+ * @returns {Promise<{url: string, path: string}>} - Download URL and storage path
+ */
+export const uploadJournalImage = async (file, characterId, journalId) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
+    const timestamp = Date.now();
+    const fileName = `${timestamp}.webp`; // Always use .webp extension
+
+    const storagePath = `journal-images/${characterId}/${journalId}/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, compressedFile);
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    return {
+      url: downloadURL,
+      path: storagePath
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading journal image:', error);
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+};
+
+/**
+ * Upload avatar image to Firebase Storage
+ * @param {File} file - Image file to upload
+ * @param {string} characterId - Character ID
+ * @returns {Promise<{url: string, path: string}>} - Download URL and storage path
+ */
+export const uploadAvatarImage = async (file, characterId) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 2 * 1024 * 1024; // 2MB for avatar
+    if (file.size > maxSize) {
+      throw new Error('Avatar image size must be less than 2MB');
+    }
+
+    // Compress avatar with smaller size and dimensions
+    const compressedFile = await compressImage(file, {
+      maxSizeMB: 0.5,           // Smaller size for avatars
+      maxWidthOrHeight: 512     // Avatars don't need to be large
+    });
+
+    const timestamp = Date.now();
+    const fileName = `avatar_${timestamp}.webp`; // Always use .webp extension
+
+    const storagePath = `avatars/${characterId}/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, compressedFile);
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    return {
+      url: downloadURL,
+      path: storagePath
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading avatar:', error);
+    throw new Error(`Failed to upload avatar: ${error.message}`);
+  }
+};
+
+/**
+ * Upload quest confirmation image to Firebase Storage
+ * Images are stored in quests-confirm/ folder with quest name + date prefix
+ * Format: name_YYMMDD_{timestamp}.jpg (e.g., newquest01_251016_1234567890.jpg)
+ * 
+ * @param {File} file - Image file to upload
+ * @param {string} questName - Name of the quest (used as prefix)
+ * @returns {Promise<{url: string, path: string, questNamePrefix: string}>}
+ */
+export const uploadQuestConfirmImage = async (file, questName) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
+    // Sanitize quest name for filename
+    const sanitizedQuestName = questName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
+    const now = new Date();
+    const dateSuffix = now.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/-/g, ''); // Format: YYMMDD
+
+    // Generate filename: name_YYMMDD_{timestamp}.webp
+    const timestamp = Date.now();
+    const fileName = `${sanitizedQuestName}_${dateSuffix}_${timestamp}.webp`;
+
+    // Storage path: quests-confirm/{name_YYMMDD_{timestamp}.webp}
+    const storagePath = `quests-confirm/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, compressedFile);
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('🔗 Download URL:', downloadURL);
+
+    return {
+      url: downloadURL,
+      path: storagePath,
+      questNamePrefix: `${sanitizedQuestName}_${dateSuffix}`
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading quest confirmation image:', error);
+    throw new Error(`Failed to upload quest confirmation image: ${error.message}`);
+  }
+};
+
+/**
+ * Upload achievement confirmation image to Firebase Storage
+ * Images are stored in achievements-confirm/ folder with achievement name prefix
+ * 
+ * @param {File} file - Image file to upload
+ * @param {string} achievementName - Name of the achievement (used as prefix)
+ * @returns {Promise<{url: string, path: string, achievementNamePrefix: string}>}
+ */
+export const uploadAchievementConfirmImage = async (file, achievementName) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    if (!file.type.startsWith('image/')) {
+      throw new Error('File must be an image');
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    // Compress image before upload
+    const compressedFile = await compressImage(file, { maxSizeMB: 1 });
+
+    // Sanitize achievement name for filename
+    const sanitizedAchievementName = achievementName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+
+    const timestamp = Date.now();
+    const fileName = `${sanitizedAchievementName}_${timestamp}.webp`;
+
+    // Storage path: achievements-confirm/{achievementName}_{timestamp}.webp
+    const storagePath = `achievements-confirm/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    console.log('📤 Uploading achievement confirmation image to:', storagePath);
+    console.log('🏆 Achievement name prefix:', sanitizedAchievementName);
+
+    const snapshot = await uploadBytes(storageRef, compressedFile);
+    console.log('✅ Achievement confirmation image uploaded successfully');
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    console.log('🔗 Download URL:', downloadURL);
+
+    return {
+      url: downloadURL,
+      path: storagePath,
+      achievementNamePrefix: sanitizedAchievementName
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading achievement confirmation image:', error);
+    throw new Error(`Failed to upload achievement confirmation image: ${error.message}`);
+  }
+};
+
+/**
+ * Extract storage path from Firebase Storage URL
+ * @param {string} url - Firebase Storage download URL
+ * @returns {string|null} - Storage path or null if invalid
+ */
+export const getStoragePathFromUrl = (url) => {
+  try {
+    if (!url) return null;
+
+    // Firebase Storage URL format:
+    // https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?alt=media&token={token}
+
+    const urlObj = new URL(url);
+    const pathMatch = urlObj.pathname.match(/\/o\/(.+)/);
+
+    if (pathMatch && pathMatch[1]) {
+      // Decode the path (Firebase encodes it)
+      const encodedPath = pathMatch[1].split('?')[0];
+      const decodedPath = decodeURIComponent(encodedPath);
+      return decodedPath;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('❌ Error extracting storage path from URL:', error);
+    return null;
+  }
+};
+
+/**
+ * Delete image from Firebase Storage using download URL
+ * @param {string} downloadUrl - Firebase Storage download URL
+ * @returns {Promise<void>}
+ */
+export const deleteImageByUrl = async (downloadUrl) => {
+  try {
+    const storagePath = getStoragePathFromUrl(downloadUrl);
+
+    if (!storagePath) {
+      throw new Error('Could not extract storage path from URL');
+    }
+
+    await deleteQuestImage(storagePath);
+    console.log('✅ Image deleted by URL:', downloadUrl);
+
+  } catch (error) {
+    console.error('❌ Error deleting image by URL:', error);
+    throw error;
+  }
+};

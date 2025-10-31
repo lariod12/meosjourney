@@ -1,18 +1,27 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { CharacterProvider } from './contexts/CharacterContext';
+import { CharacterProvider } from './contexts';
 import { characterData } from './data/characterData';
-import CharacterSheet from './components/CharacterSheet';
-import DailyUpdate from './components/notes/DailyUpdate';
-import './assets/styles/global.css';
+import { useCharacterData } from './hooks/useCharacterData';
+import { LoadingDialog } from './components/common';
+import CharacterSheet from './pages/HomePage';
+import UserPage from './pages/UserPage';
+import AdminPage from './pages/AdminPage';
+import './styles/global.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { data, loading } = useCharacterData(characterData);
+
+  // Show loading dialog while fetching data
+  if (loading) {
+    return <LoadingDialog />;
+  }
 
   return (
-    <CharacterProvider data={characterData}>
+    <CharacterProvider data={data}>
       <div className="bg-pattern"></div>
       <div className="container">
-        <CharacterSheet onNavigateToNotes={() => navigate('/notes/meos05')} />
+        <CharacterSheet onNavigateToNotes={() => navigate('/user/meos05')} />
       </div>
     </CharacterProvider>
   );
@@ -20,12 +29,13 @@ const HomePage = () => {
 
 const App = () => {
   const basename = import.meta.env.MODE === 'production' ? '/meosjourney' : '/';
-  
+
   return (
     <Router basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/notes/meos05" element={<DailyUpdate onBack={() => window.history.back()} />} />
+        <Route path="/user/meos05" element={<UserPage onBack={() => window.history.back()} />} />
+        <Route path="/admin/meos05" element={<AdminPage onBack={() => window.history.back()} />} />
       </Routes>
     </Router>
   );

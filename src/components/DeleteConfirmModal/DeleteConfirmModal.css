@@ -1,0 +1,243 @@
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.delete-modal-container {
+  background-color: #ffffff;
+  border: 4px solid #000000;
+  max-width: 450px;
+  width: 100%;
+  font-family: 'Playfair Display', serif;
+  position: relative;
+  transform: rotate(-1deg);
+  box-shadow: 8px 8px 0 #000000;
+}
+
+.delete-modal-header {
+  background-color: #000000;
+  color: #ffffff;
+  padding: 20px 25px;
+  border-bottom: 3px solid #000000;
+  transform: rotate(1deg);
+  margin: -4px -4px 0 -4px;
+}
+
+.delete-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-family: 'Playfair Display', serif;
+  text-align: center;
+}
+
+.delete-modal-content {
+  padding: 30px 25px;
+  text-align: center;
+  background-color: #ffffff;
+}
+
+.delete-warning {
+  font-size: 18px;
+  margin: 0 0 15px 0;
+  color: #000000;
+  font-weight: normal;
+}
+
+.delete-achievement-name {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  padding: 10px 15px;
+  border: 2px dashed #000000;
+  background-color: #f8f8f8;
+  transform: rotate(0.5deg);
+}
+
+.delete-notice {
+  font-size: 16px;
+  margin: 0;
+  color: #666666;
+  font-style: italic;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 15px;
+  padding: 0 25px 25px 25px;
+}
+
+.delete-btn-cancel,
+.delete-btn-confirm {
+  flex: 1;
+  padding: 15px 20px;
+  font-size: 18px;
+  font-family: 'Playfair Display', serif;
+  font-weight: bold;
+  border: 3px solid #000000;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.delete-btn-cancel {
+  background-color: #ffffff;
+  color: #000000;
+  transform: rotate(-0.5deg);
+}
+
+.delete-btn-cancel:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: rotate(-0.5deg) translateY(-2px);
+  box-shadow: 0 4px 0 #666666;
+}
+
+.delete-btn-confirm {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #000000;
+  transform: rotate(0.5deg);
+}
+
+.delete-btn-confirm:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: rotate(0.5deg) translateY(-2px);
+  box-shadow: 0 4px 0 #666666;
+}
+
+.delete-btn-confirm:active {
+  transform: rotate(0.5deg) translateY(0);
+  box-shadow: 0 2px 0 #666666;
+}
+
+.delete-btn-cancel:active {
+  transform: rotate(-0.5deg) translateY(0);
+  box-shadow: 0 2px 0 #666666;
+}
+
+@media (max-width: 768px) {
+  .delete-modal-overlay {
+    padding: 16px;
+  }
+
+  .delete-modal-container {
+    max-width: 100%;
+    transform: rotate(0deg);
+    box-shadow: 4px 4px 0 #000000;
+  }
+
+  .delete-modal-header {
+    transform: rotate(0deg);
+    padding: 16px 20px;
+  }
+
+  .delete-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .delete-modal-content {
+    padding: 24px 20px;
+  }
+
+  .delete-warning {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+
+  .delete-achievement-name {
+    font-size: 19px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    transform: rotate(0deg);
+  }
+
+  .delete-notice {
+    font-size: 15px;
+  }
+
+  .delete-modal-actions {
+    flex-direction: column;
+    padding: 0 20px 20px 20px;
+    gap: 12px;
+  }
+  
+  .delete-btn-cancel,
+  .delete-btn-confirm {
+    width: 100%;
+    transform: rotate(0deg);
+    font-size: 17px;
+    padding: 14px 16px;
+    min-height: 48px;
+  }
+  
+  .delete-btn-cancel:hover,
+  .delete-btn-confirm:hover {
+    transform: translateY(-2px);
+  }
+
+  .delete-btn-cancel:active,
+  .delete-btn-confirm:active {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .delete-modal-overlay {
+    padding: 12px;
+  }
+
+  .delete-modal-container {
+    box-shadow: 3px 3px 0 #000000;
+  }
+
+  .delete-modal-header {
+    padding: 14px 16px;
+  }
+
+  .delete-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .delete-modal-content {
+    padding: 20px 16px;
+  }
+
+  .delete-warning {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .delete-achievement-name {
+    font-size: 18px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+  }
+
+  .delete-notice {
+    font-size: 14px;
+  }
+
+  .delete-modal-actions {
+    padding: 0 16px 16px 16px;
+    gap: 10px;
+  }
+
+  .delete-btn-cancel,
+  .delete-btn-confirm {
+    font-size: 16px;
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+}

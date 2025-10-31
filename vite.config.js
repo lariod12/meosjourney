@@ -68,7 +68,6 @@ export default defineConfig(({ mode }) => ({
     cssMinify: true
   },
   server: {
-    port: 3000,
-    open: true
-  }
+    // Fix ipv6 issue with vite about hrm 
+    host: '::1', hmr: { host: '[::1]', protocol: 'ws'} }
 }));
