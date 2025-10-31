@@ -23,7 +23,7 @@ import {
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
-import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification } from '../../services/discord';
+import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
@@ -704,12 +704,14 @@ const UserPage = ({ onBack }) => {
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
+            // Persist across blocks to evaluate after admin notify
+            let xpResult = null;
             if (autoApproveTasks) {
               try {
                 await updateQuest(submission.questId, { completedAt: new Date() }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve quest update failed:', e.message); }
               try {
-                await updateProfileXP(submission.questXp || 0, CHARACTER_ID);
+                xpResult = await updateProfileXP(submission.questXp || 0, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve XP update failed:', e.message); }
               try {
                 await saveQuestCompletionJournal({ name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 }, CHARACTER_ID);
@@ -760,6 +762,18 @@ const UserPage = ({ onBack }) => {
                   { desc: submission.description || '', imgUrl }
                 );
               } catch (e) { console.warn('⚠️ Discord admin quest notification failed:', e); }
+
+              // Ensure level-up notification comes AFTER quest completion message
+              try {
+                if (xpResult?.leveledUp) {
+                  await sendLevelUpNotification({ name: formData.characterName || 'Unknown User' }, {
+                    oldLevel: xpResult.oldLevel,
+                    newLevel: xpResult.newLevel,
+                    newXP: xpResult.newXP,
+                    maxXP: xpResult.maxXP
+                  });
+                }
+              } catch (e) { console.warn('⚠️ Discord level-up notification failed:', e); }
             }
 
             results.push({
@@ -814,18 +828,20 @@ const UserPage = ({ onBack }) => {
 
           // 3. Save confirmation to achievements-confirm collection (will override if exists)
           try {
-            const achConfirmResult = await saveAchievementConfirmation({
+          const achConfirmResult = await saveAchievementConfirmation({
               name: submission.achievementTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
-            if (autoApproveTasks) {
+          // Persist across blocks to evaluate after admin notify
+          let xpResult = null;
+          if (autoApproveTasks) {
               try {
                 await updateAchievement(submission.achievementId, { completedAt: new Date() }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve achievement update failed:', e.message); }
               try {
-                await updateProfileXP(submission.achievementXp || 0, CHARACTER_ID);
+                xpResult = await updateProfileXP(submission.achievementXp || 0, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve XP update failed:', e.message); }
               try {
                 await saveAchievementCompletionJournal({ name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' }, CHARACTER_ID);
@@ -877,6 +893,18 @@ const UserPage = ({ onBack }) => {
                   { desc: submission.description || '', imgUrl }
                 );
               } catch (e) { console.warn('⚠️ Discord admin achievement notification failed:', e); }
+
+              // Ensure level-up notification comes AFTER achievement completion message
+              try {
+                if (xpResult?.leveledUp) {
+                  await sendLevelUpNotification({ name: formData.characterName || 'Unknown User' }, {
+                    oldLevel: xpResult.oldLevel,
+                    newLevel: xpResult.newLevel,
+                    newXP: xpResult.newXP,
+                    maxXP: xpResult.maxXP
+                  });
+                }
+              } catch (e) { console.warn('⚠️ Discord level-up notification failed:', e); }
             }
 
             results.push({

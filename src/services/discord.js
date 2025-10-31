@@ -434,9 +434,9 @@ export const sendAchievementNotification = async (achievementData, userData, con
  */
 export const sendLevelUpNotification = async (userData, levelUpData) => {
   try {
-    // Validate webhook URL
-    if (!DISCORD_CONFIG.WEBHOOK_URL || DISCORD_CONFIG.WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
-      console.warn('⚠️ Discord webhook URL not configured');
+    // Validate admin webhook URL
+    if (!DISCORD_CONFIG.ADMIN_WEBHOOK_URL || DISCORD_CONFIG.ADMIN_WEBHOOK_URL === 'YOUR_ADMIN_DISCORD_WEBHOOK_URL_HERE') {
+      console.warn('⚠️ Discord admin webhook URL not configured');
       return false;
     }
 
@@ -444,52 +444,20 @@ export const sendLevelUpNotification = async (userData, levelUpData) => {
     const embed = {
       title: '🎉 Level Up!',
       description: `**${userData.name || 'Unknown User'}** has leveled up!`,
-      color: 0x00FF00, // Green color for level up
+      color: 0x9B59B6, // Purple for level up (distinct from quest/achievement)
       fields: [
-        {
-          name: '📊 New Level',
-          value: `Level ${levelUpData.newLevel}`,
-          inline: true
-        },
-        {
-          name: '📈 Previous Level',
-          value: `Level ${levelUpData.oldLevel}`,
-          inline: true
-        },
-        {
-          name: '⭐ Current XP',
-          value: `${levelUpData.newXP}/${levelUpData.maxXP}`,
-          inline: true
-        }
+        { name: '⬆️ Level', value: `${levelUpData.oldLevel} → ${levelUpData.newLevel}`, inline: true },
+        { name: '⭐ Current XP', value: `${levelUpData.newXP}/${levelUpData.maxXP}`, inline: true }
       ],
       timestamp: new Date().toISOString(),
-      footer: {
-        text: 'Meo\'s Journey'
-      }
+      footer: { text: "Meo's Journey • Admin" }
     };
 
-    // Prepare webhook payload - bot name and avatar will be used from Discord bot settings
-    const payload = {
-      embeds: [embed]
-    };
+    const payload = { embeds: [embed] };
 
-    // Send to Discord
-    const response = await fetch(DISCORD_CONFIG.WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      console.log('✅ Discord level up notification sent successfully');
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.error('❌ Discord webhook failed:', response.status, errorText);
-      return false;
-    }
+    const ok = await sendDiscordWebhookMessage(payload, DISCORD_CONFIG.ADMIN_WEBHOOK_URL);
+    if (ok) console.log('✅ Discord level up notification sent successfully');
+    return ok;
 
   } catch (error) {
     console.error('❌ Error sending Discord level up notification:', error);
