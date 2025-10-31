@@ -81,6 +81,21 @@ export const fetchConfig = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData(['main', characterId, 'config']);
 };
 
+export const setAutoApproveTasks = async (enabled, characterId = CHARACTER_ID) => {
+  try {
+    const cfg = await fetchConfig(characterId);
+    if (!cfg || !cfg.id) {
+      throw new Error('No config document found. Please create one first.');
+    }
+    const configRef = doc(db, 'main', characterId, 'config', cfg.id);
+    await setDoc(configRef, { auto_approve_tasks: !!enabled }, { merge: true });
+    return { success: true, value: !!enabled };
+  } catch (error) {
+    console.error('❌ Error setting auto_approve_tasks:', error);
+    throw new Error(`Failed to update config: ${error.message}`);
+  }
+};
+
 export const fetchStatus = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData(['main', characterId, 'status']);
 };

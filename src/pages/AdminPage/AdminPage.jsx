@@ -5,7 +5,7 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
+import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
@@ -20,6 +20,7 @@ const AdminPage = ({ onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('create-achievement');
+  const [autoApprove, setAutoApprove] = useState(false);
   const [achievements, setAchievements] = useState([]);
   const [quests, setQuests] = useState([]);
   const [questConfirmations, setQuestConfirmations] = useState([]);
@@ -52,7 +53,10 @@ const AdminPage = ({ onBack }) => {
 
   useEffect(() => {
     fetchConfig(CHARACTER_ID)
-      .then(cfg => setCorrectPassword(cfg?.pwDailyUpdate || null))
+      .then(cfg => {
+        setCorrectPassword(cfg?.pwDailyUpdate || null);
+        setAutoApprove(!!cfg?.auto_approve_tasks);
+      })
       .catch(() => setCorrectPassword(null));
   }, []);
 
@@ -184,6 +188,37 @@ const AdminPage = ({ onBack }) => {
   const handlePasswordCancel = () => {
     setShowPasswordModal(false);
     if (onBack) onBack();
+  };
+
+  const handleToggleAutoApprove = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const next = !autoApprove;
+      await setAutoApproveTasks(next, CHARACTER_ID);
+      setAutoApprove(next);
+      setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: 'Config Updated',
+        message: `Auto approve tasks is now ${next ? 'ON' : 'OFF'}.`,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    } catch (e) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Update Failed',
+        message: e.message,
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -1059,6 +1094,21 @@ const AdminPage = ({ onBack }) => {
           {isRefreshing ? '⟳' : '↻'}
         </button>
       </header>
+
+      <div className="auto-approve-bar">
+        <div className="auto-approve-toggle">
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={autoApprove}
+              onChange={handleToggleAutoApprove}
+              disabled={isSubmitting}
+            />
+            <span className="slider" />
+          </label>
+          <span className="toggle-text">Auto approve tasks</span>
+        </div>
+      </div>
 
       <nav className="admin-dropdown">
         <button

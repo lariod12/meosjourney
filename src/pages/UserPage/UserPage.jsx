@@ -13,8 +13,12 @@ import {
   fetchAchievementConfirmations,
   saveAchievementConfirmation,
   getAchievementConfirmation,
+  updateQuest,
+  updateAchievement,
+  updateProfileXP,
   CHARACTER_ID
 } from '../../services/firestore';
+import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import { sendQuestSubmissionNotification, sendAchievementNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
@@ -63,6 +67,7 @@ const UserPage = ({ onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [uploadingQuestIndex, setUploadingQuestIndex] = useState(-1);
+  const [autoApproveTasks, setAutoApproveTasks] = useState(false);
   const [questPickerCollapsed, setQuestPickerCollapsed] = useState(false);
   const [achievementPickerCollapsed, setAchievementPickerCollapsed] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
@@ -108,6 +113,7 @@ const UserPage = ({ onBack }) => {
     ])
       .then(([cfg, statusData, quests, questConfirms, achievements, achievementConfirms]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
+        setAutoApproveTasks(!!cfg?.auto_approve_tasks);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
 
         // Prepare existing doings from status (array or string)
@@ -179,6 +185,7 @@ const UserPage = ({ onBack }) => {
       ]);
 
       setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
+      setAutoApproveTasks(!!cfg?.auto_approve_tasks);
 
       const doingsArr = Array.isArray(statusData?.doing)
         ? statusData.doing
@@ -479,6 +486,18 @@ const UserPage = ({ onBack }) => {
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
+            if (autoApproveTasks) {
+              try {
+                await updateQuest(submission.questId, { completedAt: new Date() }, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve quest update failed:', e.message); }
+              try {
+                await updateProfileXP(submission.questXp || 0, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve XP update failed:', e.message); }
+              try {
+                await saveQuestCompletionJournal({ name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 }, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+            }
+
             // Send Discord notification for quest submission
             try {
               const questData = {
@@ -560,6 +579,18 @@ const UserPage = ({ onBack }) => {
               desc: submission.description || '',
               imgUrl: imgUrl
             }, CHARACTER_ID);
+
+            if (autoApproveTasks) {
+              try {
+                await updateAchievement(submission.achievementId, { completedAt: new Date() }, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve achievement update failed:', e.message); }
+              try {
+                await updateProfileXP(submission.achievementXp || 0, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve XP update failed:', e.message); }
+              try {
+                await saveAchievementCompletionJournal({ name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' }, CHARACTER_ID);
+              } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
+            }
 
             // Send Discord notification for achievement submission
             try {
