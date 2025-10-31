@@ -2,7 +2,7 @@ import { useLanguage } from '../../../contexts';
 import './Header.css';
 
 const Header = () => {
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
 
   return (
     <div className="sheet-header">
@@ -26,7 +26,7 @@ const Header = () => {
           </button>
         </div>
       </div>
-      <h1 className="title-sketch">MY JOURNEY</h1>
+      <h1 className="title-sketch">{t('header.title')}</h1>
       <div className="decorative-line"></div>
     </div>
   );
