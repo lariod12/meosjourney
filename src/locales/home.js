@@ -1,5 +1,14 @@
 export const homeLocales = {
   EN: {
+    'modal.quest.title': 'Quest Details',
+    'modal.quest.name': 'Quest Name',
+    'modal.quest.description': 'Description',
+    'modal.quest.xp': 'XP Reward',
+    'modal.common.close': 'Close',
+
+    'modal.achievement.completed': '✓ COMPLETED',
+    'modal.achievement.rewards': 'REWARDS',
+    'modal.achievement.due_date': 'Due Date:',
     'status.tab_status': 'STATUS',
     'status.tab_introduce': 'INTRODUCE',
     'status.tab_skills': 'SKILLS',
@@ -33,6 +42,15 @@ export const homeLocales = {
     'header.title': 'MY JOURNEY'
   },
   VI: {
+    'modal.quest.title': 'Chi tiết nhiệm vụ',
+    'modal.quest.name': 'Tên nhiệm vụ',
+    'modal.quest.description': 'Mô tả',
+    'modal.quest.xp': 'Phần thưởng XP',
+    'modal.common.close': 'Đóng',
+
+    'modal.achievement.completed': '✓ HOÀN THÀNH',
+    'modal.achievement.rewards': 'PHẦN THƯỞNG',
+    'modal.achievement.due_date': 'Hạn chót:',
     'status.tab_status': 'TRẠNG THÁI',
     'status.tab_introduce': 'GIỚI THIỆU',
     'status.tab_skills': 'KỸ NĂNG',

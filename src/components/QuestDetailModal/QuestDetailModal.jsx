@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLanguage } from '../../contexts';
 import './QuestDetailModal.css';
 
 const QuestDetailModal = ({ quest, onClose }) => {
@@ -24,11 +25,13 @@ const QuestDetailModal = ({ quest, onClose }) => {
     }
   };
 
+  const { t } = useLanguage();
+
   return (
     <div className="quest-detail-overlay" onClick={handleOverlayClick}>
       <div className="quest-detail-modal">
         <div className="quest-detail-header">
-          <h2>⚔️ Quest Details</h2>
+          <h2>⚔️ {t('modal.quest.title')}</h2>
           <button 
             className="quest-detail-close"
             onClick={onClose}
@@ -40,7 +43,7 @@ const QuestDetailModal = ({ quest, onClose }) => {
 
         <div className="quest-detail-content">
           {/* Quest Title */}
-          <label className="quest-detail-label">Quest Name</label>
+          <label className="quest-detail-label">{t('modal.quest.name')}</label>
           <div className="quest-detail-value quest-title">
             {quest.name}
           </div>
@@ -48,7 +51,7 @@ const QuestDetailModal = ({ quest, onClose }) => {
           {/* Quest Description */}
           {quest.desc && (
             <>
-              <label className="quest-detail-label">Description</label>
+              <label className="quest-detail-label">{t('modal.quest.description')}</label>
               <div className="quest-detail-value quest-description">
                 {quest.desc}
               </div>
@@ -56,7 +59,7 @@ const QuestDetailModal = ({ quest, onClose }) => {
           )}
 
           {/* XP Reward */}
-          <label className="quest-detail-label">XP Reward</label>
+          <label className="quest-detail-label">{t('modal.quest.xp')}</label>
           <div className="quest-detail-value quest-xp-value">
             <span className="xp-badge">+{quest.xp} XP</span>
           </div>
@@ -67,7 +70,7 @@ const QuestDetailModal = ({ quest, onClose }) => {
             className="btn-close-modal"
             onClick={onClose}
           >
-            Close
+            {t('modal.common.close')}
           </button>
         </div>
       </div>

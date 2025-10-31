@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
+import { useLanguage } from '../../../contexts';
+import { formatDate } from '../../../utils/dateUtils';
 
 const AchievementModal = ({ achievement, onClose }) => {
   useEffect(() => {
@@ -18,6 +20,7 @@ const AchievementModal = ({ achievement, onClose }) => {
     }
   };
 
+  const { t, lang } = useLanguage();
   const isCompleted = achievement.completedAt !== null;
 
   return (
@@ -25,7 +28,7 @@ const AchievementModal = ({ achievement, onClose }) => {
       <div className="achievement-modal-content">
         <div className="achievement-modal-close" onClick={onClose}>✕</div>
         {isCompleted && (
-          <div className="achievement-modal-status completed">✓ COMPLETED</div>
+          <div className="achievement-modal-status completed">{t('modal.achievement.completed')}</div>
         )}
         <div className="achievement-modal-icon">
           <IconRenderer iconName={achievement.icon} size={48} />
@@ -35,7 +38,7 @@ const AchievementModal = ({ achievement, onClose }) => {
           {achievement.description || achievement.desc}
           {achievement.dueDate && (
             <div className="achievement-modal-due-date">
-              Due Date: {(() => {
+              {t('modal.achievement.due_date')} {(() => {
                 try {
                   // Handle different date formats
                   let date;
@@ -52,8 +55,8 @@ const AchievementModal = ({ achievement, onClose }) => {
                   if (isNaN(date.getTime())) {
                     return achievement.dueDate; // Return original if can't parse
                   }
-                  
-                  return date.toLocaleDateString('vi-VN');
+
+                  return formatDate(date, lang === 'VI' ? 'vi-VN' : 'en-US');
                 } catch (error) {
                   console.error('Error parsing due date:', error);
                   return achievement.dueDate; // Return original on error
@@ -63,7 +66,7 @@ const AchievementModal = ({ achievement, onClose }) => {
           )}
         </div>
         <div className="achievement-modal-rewards-box">
-          <div className="rewards-box-title">REWARDS</div>
+          <div className="rewards-box-title">{t('modal.achievement.rewards')}</div>
           <div className="rewards-box-list">
             {achievement.specialReward ? (
               <>
