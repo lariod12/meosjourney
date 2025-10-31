@@ -5,6 +5,7 @@ import {
   fetchStatus,
   fetchProfile,
   saveStatus,
+  saveProfile,
   saveJournal,
   fetchQuests,
   fetchQuestConfirmations,
@@ -46,8 +47,19 @@ const UserPage = ({ onBack }) => {
     location: '',
     caption: '',
     mood: '',
-    journalEntry: ''
+    journalEntry: '',
+    introduce: '',
+    newSkill: '',
+    newInterest: ''
   });
+
+  // Profile data states
+  const [profileData, setProfileData] = useState({
+    introduce: '',
+    skills: [],
+    interests: []
+  });
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Daily Quests Update states
   const [availableQuests, setAvailableQuests] = useState([]);
@@ -91,6 +103,7 @@ const UserPage = ({ onBack }) => {
   const [moodOpen, setMoodOpen] = useState(false);
 
   // Collapse/expand states - collapsed by default
+  const [profileExpanded, setProfileExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
@@ -105,19 +118,43 @@ const UserPage = ({ onBack }) => {
   const [completedGroupExpanded, setCompletedGroupExpanded] = useState(false);
 
   useEffect(() => {
-    // Load config, quests, achievements, and confirmations from Firestore
+    // Load config, profile, quests, achievements, and confirmations from Firestore
     Promise.all([
       fetchConfig(CHARACTER_ID),
       fetchStatus(CHARACTER_ID),
+      fetchProfile(CHARACTER_ID),
       fetchQuests(CHARACTER_ID),
       fetchQuestConfirmations(CHARACTER_ID),
       fetchAchievements(CHARACTER_ID),
       fetchAchievementConfirmations(CHARACTER_ID)
     ])
-      .then(([cfg, statusData, quests, questConfirms, achievements, achievementConfirms]) => {
+      .then(([cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms]) => {
         setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setAutoApproveTasks(!!cfg?.auto_approve_tasks);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
+
+        // Load profile data
+        if (profile) {
+          const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
+          const loadedInterests = Array.isArray(profile.interests) ? profile.interests : [];
+          
+          setProfileData({
+            introduce: profile.introduce || '',
+            skills: [...loadedSkills], // Create new array to ensure reactivity
+            interests: [...loadedInterests] // Create new array to ensure reactivity
+          });
+          setFormData(prev => ({
+            ...prev,
+            introduce: profile.introduce || ''
+          }));
+          
+          console.log('✅ Profile data loaded:', {
+            introduce: profile.introduce || '',
+            skills: loadedSkills,
+            interests: loadedInterests
+          });
+        }
+        setProfileLoaded(true);
 
         // Prepare existing doings from status (array or string)
         const doingsArr = Array.isArray(statusData?.doing)
@@ -162,6 +199,8 @@ const UserPage = ({ onBack }) => {
         console.error('❌ Error loading data:', error);
         setMoodOptions([]);
         setCorrectPassword(null);
+        setProfileData({ introduce: '', skills: [], interests: [] });
+        setProfileLoaded(true); // Set loaded even on error to allow interaction
         setAllQuests([]);
         setAvailableQuests([]);
         setQuestConfirmations([]);
@@ -178,9 +217,10 @@ const UserPage = ({ onBack }) => {
     setIsRefreshing(true);
 
     try {
-      const [cfg, statusData, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
+      const [cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
         fetchConfig(CHARACTER_ID),
         fetchStatus(CHARACTER_ID),
+        fetchProfile(CHARACTER_ID),
         fetchQuests(CHARACTER_ID),
         fetchQuestConfirmations(CHARACTER_ID),
         fetchAchievements(CHARACTER_ID),
@@ -189,6 +229,28 @@ const UserPage = ({ onBack }) => {
 
       setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
       setAutoApproveTasks(!!cfg?.auto_approve_tasks);
+
+      // Update profile data
+      if (profile) {
+        const refreshedSkills = Array.isArray(profile.skills) ? profile.skills : [];
+        const refreshedInterests = Array.isArray(profile.interests) ? profile.interests : [];
+        
+        setProfileData({
+          introduce: profile.introduce || '',
+          skills: [...refreshedSkills], // Create new array to ensure reactivity
+          interests: [...refreshedInterests] // Create new array to ensure reactivity
+        });
+        setFormData(prev => ({
+          ...prev,
+          introduce: profile.introduce || ''
+        }));
+        
+        console.log('🔄 Profile data refreshed:', {
+          introduce: profile.introduce || '',
+          skills: refreshedSkills,
+          interests: refreshedInterests
+        });
+      }
 
       const doingsArr = Array.isArray(statusData?.doing)
         ? statusData.doing
@@ -359,6 +421,51 @@ const UserPage = ({ onBack }) => {
     }
   };
 
+  // Profile handlers
+  const handleAddSkill = () => {
+    const skill = formData.newSkill.trim();
+    if (skill && !profileData.skills.includes(skill)) {
+      setProfileData(prev => ({
+        ...prev,
+        skills: [...prev.skills, skill]
+      }));
+      setFormData(prev => ({ ...prev, newSkill: '' }));
+      console.log('➕ Added skill:', skill, '| Current skills:', [...profileData.skills, skill]);
+    } else if (skill && profileData.skills.includes(skill)) {
+      console.log('⚠️ Skill already exists:', skill);
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove) => {
+    setProfileData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }));
+    console.log('➖ Removed skill:', skillToRemove);
+  };
+
+  const handleAddInterest = () => {
+    const interest = formData.newInterest.trim();
+    if (interest && !profileData.interests.includes(interest)) {
+      setProfileData(prev => ({
+        ...prev,
+        interests: [...prev.interests, interest]
+      }));
+      setFormData(prev => ({ ...prev, newInterest: '' }));
+      console.log('➕ Added interest:', interest, '| Current interests:', [...profileData.interests, interest]);
+    } else if (interest && profileData.interests.includes(interest)) {
+      console.log('⚠️ Interest already exists:', interest);
+    }
+  };
+
+  const handleRemoveInterest = (interestToRemove) => {
+    setProfileData(prev => ({
+      ...prev,
+      interests: prev.interests.filter(interest => interest !== interestToRemove)
+    }));
+    console.log('➖ Removed interest:', interestToRemove);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -401,6 +508,31 @@ const UserPage = ({ onBack }) => {
 
     try {
       const results = [];
+
+      // Submit Profile Update (if has data)
+      const hasProfileData = formData.introduce.trim() || profileData.skills.length > 0 || profileData.interests.length > 0;
+
+      if (hasProfileData) {
+        try {
+          const profileResult = await saveProfile({
+            introduce: formData.introduce,
+            skills: profileData.skills,
+            interests: profileData.interests
+          }, CHARACTER_ID);
+
+          if (profileResult.success) {
+            results.push({ type: 'success', item: 'Profile Update' });
+          } else if (profileResult.message === 'No data to save') {
+            results.push({ type: 'success', item: 'Profile Update (no change)' });
+          } else {
+            console.warn('⚠️ Profile not saved:', profileResult.message);
+            results.push({ type: 'failed', item: 'Profile Update' });
+          }
+        } catch (error) {
+          console.error('❌ Error saving profile:', error);
+          results.push({ type: 'failed', item: 'Profile Update' });
+        }
+      }
 
       // Submit Status Update (if has data)
       const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.caption.trim() || formData.mood.trim();
@@ -785,21 +917,24 @@ const UserPage = ({ onBack }) => {
                 doing: '',
                 location: '',
                 mood: moodOptions[0] || '',
-                journalEntry: ''
+                journalEntry: '',
+                newSkill: '',
+                newInterest: ''
               }));
               // Clear quest and achievement submissions
               setSelectedQuestSubmissions([]);
               setSelectedAchievementSubmissions([]);
               setExpandedQuestSubmissions([]);
               setExpandedAchievementSubmissions([]);
-              // Reload quests, achievements, and confirmations to update available lists and review submitted
+              // Reload profile, quests, achievements, and confirmations to update available lists and review submitted
               Promise.all([
-            fetchStatus(CHARACTER_ID),
+                fetchStatus(CHARACTER_ID),
+                fetchProfile(CHARACTER_ID),
                 fetchQuests(CHARACTER_ID),
                 fetchQuestConfirmations(CHARACTER_ID),
                 fetchAchievements(CHARACTER_ID),
                 fetchAchievementConfirmations(CHARACTER_ID)
-          ]).then(([statusData2, quests, questConfirms, achievements, achievementConfirms]) => {
+              ]).then(([statusData2, profile2, quests, questConfirms, achievements, achievementConfirms]) => {
             const doingsArr2 = Array.isArray(statusData2?.doing)
               ? statusData2.doing
               : (statusData2?.doing ? [statusData2.doing] : []);
@@ -822,6 +957,28 @@ const UserPage = ({ onBack }) => {
               if (s && !seenLoc2.has(key)) { seenLoc2.add(key); normalizedLocs2.push(s); }
             });
             setExistingLocations(normalizedLocs2);
+            
+            // Update profile data after successful submission
+            if (profile2) {
+              const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
+              const updatedInterests = Array.isArray(profile2.interests) ? profile2.interests : [];
+              
+              setProfileData({
+                introduce: profile2.introduce || '',
+                skills: [...updatedSkills], // Create new array to ensure reactivity
+                interests: [...updatedInterests] // Create new array to ensure reactivity
+              });
+              setFormData(prev => ({
+                ...prev,
+                introduce: profile2.introduce || ''
+              }));
+              
+              console.log('✅ Profile data updated after submission:', {
+                introduce: profile2.introduce || '',
+                skills: updatedSkills,
+                interests: updatedInterests
+              });
+            }
                 // Store all and filter incomplete quests
                 setAllQuests(quests);
                 const availableQuests = quests.filter(q => q.completedAt === null);
@@ -871,7 +1028,10 @@ const UserPage = ({ onBack }) => {
       doing: '',
       location: '',
       mood: moodOptions[0] || '',
-      journalEntry: ''
+      journalEntry: '',
+      introduce: profileData.introduce,
+      newSkill: '',
+      newInterest: ''
     });
     setDoingSuggestions([]);
     setDoingOpen(false);
@@ -1324,6 +1484,132 @@ const UserPage = ({ onBack }) => {
 
       <main className="update-form">
         <form id="dailyUpdateForm" onSubmit={handleSubmit}>
+
+          {/* Profile Update */}
+          <div className="form-section">
+            <h2
+              className="section-title clickable"
+              onClick={() => {
+                console.log('Profile Update section clicked');
+                setProfileExpanded(!profileExpanded);
+              }}
+            >
+              {profileExpanded ? '▼' : '▸'} Profile Update
+            </h2>
+
+            {profileExpanded && (
+              <div className="section-content">
+                {!profileLoaded && (
+                  <div className="userpage-loading-message">
+                    Loading profile data...
+                  </div>
+                )}
+                
+                <div className="form-group">
+                  <label htmlFor="introduce">Introduction</label>
+                  <textarea
+                    id="introduce"
+                    name="introduce"
+                    rows="6"
+                    value={formData.introduce}
+                    onChange={handleChange}
+                    placeholder="Tell us about yourself..."
+                    disabled={!profileLoaded}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="newSkill">Skills {profileData.skills.length > 0 && `(${profileData.skills.length})`}</label>
+                  <div className="userpage-skill-input-section">
+                    <input
+                      type="text"
+                      id="newSkill"
+                      name="newSkill"
+                      value={formData.newSkill}
+                      onChange={handleChange}
+                      placeholder="Add a skill..."
+                      disabled={!profileLoaded}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSkill();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="userpage-add-btn"
+                      onClick={handleAddSkill}
+                      disabled={!profileLoaded || !formData.newSkill.trim()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {profileData.skills.length > 0 && (
+                    <div className="userpage-tags-container">
+                      {profileData.skills.map((skill, index) => (
+                        <div key={index} className="userpage-tag">
+                          <span>{skill}</span>
+                          <button
+                            type="button"
+                            className="userpage-tag-remove"
+                            onClick={() => handleRemoveSkill(skill)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="newInterest">Interests {profileData.interests.length > 0 && `(${profileData.interests.length})`}</label>
+                  <div className="userpage-skill-input-section">
+                    <input
+                      type="text"
+                      id="newInterest"
+                      name="newInterest"
+                      value={formData.newInterest}
+                      onChange={handleChange}
+                      placeholder="Add an interest..."
+                      disabled={!profileLoaded}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddInterest();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="userpage-add-btn"
+                      onClick={handleAddInterest}
+                      disabled={!profileLoaded || !formData.newInterest.trim()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {profileData.interests.length > 0 && (
+                    <div className="userpage-tags-container">
+                      {profileData.interests.map((interest, index) => (
+                        <div key={index} className="userpage-tag">
+                          <span>{interest}</span>
+                          <button
+                            type="button"
+                            className="userpage-tag-remove"
+                            onClick={() => handleRemoveInterest(interest)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Status Update */}
           <div className="form-section">

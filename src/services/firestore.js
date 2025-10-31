@@ -16,6 +16,49 @@ export const fetchProfile = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData(['main', characterId, 'profile']);
 };
 
+export const saveProfile = async (profileData, characterId = CHARACTER_ID) => {
+  try {
+    // Fetch current profile to get its ID
+    const currentProfile = await fetchProfile(characterId);
+
+    if (!currentProfile || !currentProfile.id) {
+      throw new Error('No profile document found. Please create one first.');
+    }
+
+    // Prepare data to update
+    const dataToUpdate = {};
+    
+    if (profileData.introduce !== undefined) {
+      dataToUpdate.introduce = profileData.introduce.trim();
+    }
+    
+    if (profileData.skills !== undefined) {
+      dataToUpdate.skills = Array.isArray(profileData.skills) ? profileData.skills : [];
+    }
+    
+    if (profileData.interests !== undefined) {
+      dataToUpdate.interests = Array.isArray(profileData.interests) ? profileData.interests : [];
+    }
+
+    // Only update if there's data to save
+    if (Object.keys(dataToUpdate).length === 0) {
+      return { success: false, message: 'No data to save' };
+    }
+
+    // Update profile document
+    const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+    await setDoc(profileDocRef, dataToUpdate, { merge: true });
+
+    console.log('✅ Profile updated successfully:', dataToUpdate);
+    
+    return { success: true, data: dataToUpdate };
+
+  } catch (error) {
+    console.error('❌ Error saving profile:', error);
+    throw new Error(`Failed to save profile: ${error.message}`);
+  }
+};
+
 export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
   try {
     // Fetch current profile to get its ID and current XP
