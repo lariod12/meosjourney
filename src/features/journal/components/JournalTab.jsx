@@ -2,10 +2,12 @@ import { useMemo } from 'react';
 import { useCharacter } from '../../../contexts';
 import { formatDate } from '../../../utils/dateUtils';
 import { filterTodayItems } from '../../../utils/dateFilter';
+import { useLanguage } from '../../../contexts';
 
 const JournalTab = () => {
   const data = useCharacter();
   const today = new Date();
+  const { t } = useLanguage();
 
   // Filter journal entries to show only today's entries (Vietnam timezone)
   const todayJournals = useMemo(() => {
@@ -19,7 +21,7 @@ const JournalTab = () => {
       <>
         <div className="journal-date">{formatDate(today)}</div>
         <div className="journal-content">
-          <div className="empty-message">Loading journal entries...</div>
+          <div className="empty-message">{t('journal.loading')}</div>
         </div>
       </>
     );
@@ -31,7 +33,7 @@ const JournalTab = () => {
       <>
         <div className="journal-date">{formatDate(today)}</div>
         <div className="journal-content">
-          <div className="empty-message">No journal entries for today.</div>
+          <div className="empty-message">{t('journal.empty_today')}</div>
         </div>
       </>
     );

@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { useCharacter } from '../../../contexts';
 import AchievementModal from './AchievementModal';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
+import { useLanguage } from '../../../contexts';
 
 const AchievementsTab = () => {
   const data = useCharacter();
   const [selectedAchievement, setSelectedAchievement] = useState(null);
+  const { t } = useLanguage();
 
   // Handle loading state
   if (!data.achievements) {
     return (
       <div className="achievements-grid">
-        <div className="loading-message">Loading achievements...</div>
+        <div className="loading-message">{t('achievements.loading')}</div>
       </div>
     );
   }
@@ -20,7 +22,7 @@ const AchievementsTab = () => {
   if (data.achievements.length === 0) {
     return (
       <div className="achievements-grid">
-        <div className="empty-message">No achievements found.</div>
+        <div className="empty-message">{t('achievements.empty')}</div>
       </div>
     );
   }

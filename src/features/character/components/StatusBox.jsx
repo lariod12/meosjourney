@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { useCharacter } from '../../../contexts/CharacterContext';
 import TabNavigation from './TabNavigation';
 import { TimeAgo } from '../../../components/common';
+import { useLanguage } from '../../../contexts';
 
 const StatusBox = () => {
   const data = useCharacter();
   const [pageLoadTime] = useState(() => new Date());
+  const { t } = useLanguage();
 
   const tabs = [
     {
       id: 'status',
-      label: 'STATUS',
+      label: t('status.tab_status'),
       contentClassName: 'status-tab-content',
       content: (
         <div className="status-content">
@@ -23,7 +25,7 @@ const StatusBox = () => {
             </span>
           </div>
           <div className="status-location">
-            <span className="status-label">Location:</span>
+            <span className="status-label">{t('status.location')}</span>
             <span>
               {Array.isArray(data.status.location)
                 ? (data.status.location[0] || '')
@@ -31,18 +33,18 @@ const StatusBox = () => {
             </span>
           </div>
           <div className="status-mood">
-            <span className="status-label">Mood:</span>
+            <span className="status-label">{t('status.mood')}</span>
             <span>{data.status.mood}</span>
           </div>
           <div className="status-time">
-            Updated: <TimeAgo timestamp={pageLoadTime} /> <span className="status-refresh-note">(Refresh page to get latest data)</span>
+            {t('status.updated')} <TimeAgo timestamp={pageLoadTime} /> <span className="status-refresh-note">{t('status.refresh_note')}</span>
           </div>
         </div>
       )
     },
     {
       id: 'introduce',
-      label: 'INTRODUCE',
+      label: t('status.tab_introduce'),
       contentClassName: 'status-tab-content',
       content: (
         <div className="introduce-content">
@@ -52,7 +54,7 @@ const StatusBox = () => {
     },
     {
       id: 'skills',
-      label: 'SKILLS',
+      label: t('status.tab_skills'),
       contentClassName: 'status-tab-content',
       content: (
         <div className="skills-content">
@@ -66,7 +68,7 @@ const StatusBox = () => {
     },
     {
       id: 'hobbies',
-      label: 'HOBBIES',
+      label: t('status.tab_hobbies'),
       contentClassName: 'status-tab-content',
       content: (
         <div className="hobbies-content">

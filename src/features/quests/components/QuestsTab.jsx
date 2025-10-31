@@ -2,10 +2,12 @@ import { useState, useMemo } from 'react';
 import { useCharacter } from '../../../contexts';
 import QuestDetailModal from '../../../components/QuestDetailModal/QuestDetailModal';
 import { filterTodayItems } from '../../../utils/dateFilter';
+import { useLanguage } from '../../../contexts';
 
 const QuestsTab = () => {
   const data = useCharacter();
   const [selectedQuest, setSelectedQuest] = useState(null);
+  const { t } = useLanguage();
 
   // Filter quests to show only today's quests (Vietnam timezone)
   const todayQuests = useMemo(() => {
@@ -18,10 +20,10 @@ const QuestsTab = () => {
     return (
       <>
         <div className="quest-progress">
-          <span>0/0</span> Completed
+          <span>0/0</span> {t('quests.completed')}
         </div>
         <div className="quests-list">
-          <div className="loading-message">Loading quests...</div>
+          <div className="loading-message">{t('quests.loading')}</div>
         </div>
       </>
     );
@@ -32,10 +34,10 @@ const QuestsTab = () => {
     return (
       <>
         <div className="quest-progress">
-          <span>0/0</span> Completed
+          <span>0/0</span> {t('quests.completed')}
         </div>
         <div className="quests-list">
-          <div className="empty-message">No quests for today.</div>
+          <div className="empty-message">{t('quests.empty_today')}</div>
         </div>
       </>
     );
@@ -57,7 +59,7 @@ const QuestsTab = () => {
   return (
     <>
       <div className="quest-progress">
-        <span>{completed}/{total}</span> Completed
+        <span>{completed}/{total}</span> {t('quests.completed')}
       </div>
       <div className="quests-list">
         {todayQuests.map(quest => {

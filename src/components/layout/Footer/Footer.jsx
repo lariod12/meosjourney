@@ -1,13 +1,14 @@
-import { useCharacter } from '../../../contexts';
+import { useCharacter, useLanguage } from '../../../contexts';
 
 const Footer = () => {
   const data = useCharacter();
+  const { t } = useLanguage();
 
   return (
     <div className="sheet-footer">
       <div className="decorative-line"></div>
       <div className="footer-content">
-        <div className="footer-title">CONNECT WITH ME</div>
+        <div className="footer-title">{t('footer.connect')}</div>
         <div className="social-links">
           <a href={data.social.facebook} target="_blank" rel="noopener noreferrer" className="social-link" title="Facebook">
             <i className="fab fa-facebook"></i>
@@ -34,7 +35,7 @@ const Footer = () => {
           © 2025 by {data.name} | All rights reserved.
         </div>
         <div className="footer-version">
-          Version 1.0
+          {t('footer.version_label')} 1.0
         </div>
       </div>
     </div>

@@ -2,10 +2,12 @@ import { useState, useMemo, useCallback } from 'react';
 import { useCharacter } from '../../../contexts';
 import { formatDate } from '../../../utils/dateUtils';
 import { groupJournalsByDate } from '../../../utils/journalUtils';
+import { useLanguage } from '../../../contexts';
 
 const HistoryTab = () => {
   const data = useCharacter();
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const { t } = useLanguage();
 
   // Group journal entries by date (Vietnam timezone)
   const historyData = useMemo(() => {
@@ -21,7 +23,7 @@ const HistoryTab = () => {
   if (!data.journal) {
     return (
       <div className="history-list">
-        <div className="empty-message history-empty-message">Loading journal history...</div>
+        <div className="empty-message history-empty-message">{t('history.loading')}</div>
       </div>
     );
   }
@@ -30,7 +32,7 @@ const HistoryTab = () => {
   if (historyData.length === 0) {
     return (
       <div className="history-list">
-        <div className="empty-message history-empty-message">No journal entries found.</div>
+        <div className="empty-message history-empty-message">{t('history.empty')}</div>
       </div>
     );
   }

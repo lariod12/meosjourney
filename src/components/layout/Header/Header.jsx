@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useLanguage } from '../../../contexts';
 import './Header.css';
 
 const Header = () => {
-  const [lang, setLang] = useState('VI');
+  const { lang, setLang } = useLanguage();
 
   return (
     <div className="sheet-header">
