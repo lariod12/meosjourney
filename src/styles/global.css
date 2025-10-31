@@ -1045,9 +1045,7 @@ body {
 /* === ACHIEVEMENT TAB === */
 .achievements-grid {
     display: grid;
-    /* Smaller fixed squares; approx 1/3 current size */
-    grid-template-columns: repeat(4, 110px);
-    justify-content: start;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
     gap: 20px;
     padding: 15px;
     min-height: 300px;
