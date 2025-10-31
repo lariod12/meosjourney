@@ -21,7 +21,7 @@ import {
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
-import { sendQuestSubmissionNotification, sendAchievementNotification } from '../../services/discord';
+import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
@@ -536,6 +536,16 @@ const UserPage = ({ onBack }) => {
               // Don't fail the entire submission if Discord fails
             }
 
+            // Then notify admin (only when auto-approve is ON) to ensure ordering
+            if (autoApproveTasks) {
+              try {
+                await sendAdminQuestCompletedNotification(
+                  { name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 },
+                  { desc: submission.description || '', imgUrl }
+                );
+              } catch (e) { console.warn('⚠️ Discord admin quest notification failed:', e); }
+            }
+
             results.push({
               type: 'success',
               item: `Quest: ${submission.questTitle}${uploadWarning}`
@@ -641,6 +651,16 @@ const UserPage = ({ onBack }) => {
             } catch (discordError) {
               console.warn('⚠️ Discord notification failed:', discordError);
               // Don't fail the entire submission if Discord fails
+            }
+
+            // Then notify admin (only when auto-approve is ON) to ensure ordering
+            if (autoApproveTasks) {
+              try {
+                await sendAdminAchievementCompletedNotification(
+                  { name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' },
+                  { desc: submission.description || '', imgUrl }
+                );
+              } catch (e) { console.warn('⚠️ Discord admin achievement notification failed:', e); }
             }
 
             results.push({

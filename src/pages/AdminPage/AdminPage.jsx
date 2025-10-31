@@ -6,7 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, CHARACTER_ID } from '../../services/firestore';
-import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification } from '../../services/discord';
+import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
 import { clearCache } from '../../utils/cacheManager';
@@ -824,6 +824,16 @@ const AdminPage = ({ onBack }) => {
         )
       );
 
+      // Notify admin channel via Discord
+      try {
+        await sendAdminQuestCompletedNotification(
+          { name: quest.name, desc: quest.desc, xp: quest.xp },
+          { desc: confirmation?.desc || '', imgUrl: confirmation?.imgUrl || '' }
+        );
+      } catch (e) {
+        console.warn('⚠️ Discord admin notification failed:', e);
+      }
+
       setConfirmModal({
         isOpen: true,
         type: 'success',
@@ -980,6 +990,16 @@ const AdminPage = ({ onBack }) => {
             : a
         )
       );
+
+      // Notify admin channel via Discord
+      try {
+        await sendAdminAchievementCompletedNotification(
+          { name: achievement.name, desc: achievement.desc, xp: achievement.xp, specialReward: achievement.specialReward },
+          { desc: confirmation?.desc || '', imgUrl: confirmation?.imgUrl || '' }
+        );
+      } catch (e) {
+        console.warn('⚠️ Discord admin notification failed:', e);
+      }
 
       setConfirmModal({
         isOpen: true,

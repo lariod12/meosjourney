@@ -193,6 +193,64 @@ export const sendAdminAchievementCreatedNotification = async (achievementData) =
   }
 };
 
+export const sendAdminQuestCompletedNotification = async (questData, confirmationData = {}) => {
+  try {
+    const embed = {
+      title: '📜 Quest Completed (Approved)',
+      color: 0x1E90FF,
+      fields: [
+        { name: '', value: questData.name, inline: false },
+        { name: '📋 Quest Description', value: questData.desc || 'No description available', inline: false },
+        { name: '📝 Submission', value: confirmationData.desc || 'No details provided', inline: false },
+        { name: '⭐ XP Awarded', value: `+${questData.xp || 0} XP`, inline: true }
+      ],
+      footer: { text: "Meo's Journey • Admin" },
+      timestamp: new Date().toISOString()
+    };
+
+    if (confirmationData.imgUrl) {
+      embed.image = { url: confirmationData.imgUrl };
+    }
+
+    const payload = { embeds: [embed] };
+    return await sendDiscordWebhookMessage(payload, DISCORD_CONFIG.ADMIN_WEBHOOK_URL);
+  } catch (error) {
+    console.error('❌ Error sending quest completed notification:', error);
+    return false;
+  }
+};
+
+export const sendAdminAchievementCompletedNotification = async (achievementData, confirmationData = {}) => {
+  try {
+    const embed = {
+      title: '🏆 Achievement Completed (Approved)',
+      color: 0xFFD700,
+      fields: [
+        { name: '', value: achievementData.name, inline: false },
+        { name: '📋 Achievement Description', value: achievementData.desc || 'No description available', inline: false },
+        { name: '📝 Submission', value: confirmationData.desc || 'No details provided', inline: false },
+        { name: '⭐ XP Awarded', value: `+${achievementData.xp || 0} XP`, inline: true }
+      ],
+      footer: { text: "Meo's Journey • Admin" },
+      timestamp: new Date().toISOString()
+    };
+
+    if (achievementData.specialReward) {
+      embed.fields.push({ name: '🎁 Special Reward', value: achievementData.specialReward, inline: false });
+    }
+
+    if (confirmationData.imgUrl) {
+      embed.image = { url: confirmationData.imgUrl };
+    }
+
+    const payload = { embeds: [embed] };
+    return await sendDiscordWebhookMessage(payload, DISCORD_CONFIG.ADMIN_WEBHOOK_URL);
+  } catch (error) {
+    console.error('❌ Error sending achievement completed notification:', error);
+    return false;
+  }
+};
+
 /**
  * Send quest submission notification to Discord
  * @param {Object} questData - Quest information
