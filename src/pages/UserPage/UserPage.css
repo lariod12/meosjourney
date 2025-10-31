@@ -9,7 +9,7 @@
 }
 
 body {
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     background-color: #ffffff;
     color: #000000;
     line-height: 1.6;
@@ -84,14 +84,14 @@ body {
 }
 
 .header h1 {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 48px;
     margin-bottom: 10px;
     letter-spacing: 2px;
 }
 
 .subtitle {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     color: #333333;
 }
@@ -118,7 +118,7 @@ body {
 }
 
 .form-section h2 {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 28px;
     margin-bottom: 25px;
     color: #000000;
@@ -129,7 +129,7 @@ body {
    ======================================== */
 
 .section-title {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 28px;
     margin-bottom: 25px;
     color: #000000;
@@ -179,7 +179,7 @@ body {
 
 .form-group label {
     display: block;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 10px;
@@ -196,7 +196,7 @@ body {
     border: 3px solid #000000;
     background-color: #ffffff;
     color: #000000;
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 17px;
     transition: all 0.3s;
 }
@@ -248,7 +248,7 @@ body {
     border: 3px solid #000000;
     background-color: #ffffff;
     color: #000000;
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 17px;
     text-align: left;
     cursor: pointer;
@@ -308,7 +308,7 @@ body {
 .btn-secondary {
     flex: 1;
     padding: 18px 30px;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 20px;
     font-weight: bold;
     border: 3px solid #000000;
@@ -348,7 +348,7 @@ body {
 .notes-footer {
     text-align: center;
     padding: 25px;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     color: #666666;
 }
@@ -423,7 +423,7 @@ body {
     border: 3px solid #000000;
     background-color: #ffffff;
     color: #000000;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     font-weight: bold;
     cursor: pointer;
@@ -471,7 +471,7 @@ body {
   border: 2px solid #000000;
   background: #ffffff;
   color: #000000;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
@@ -503,20 +503,20 @@ body {
 }
 
 .quest-dropdown-title {
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     flex: 1;
 }
 
 .quest-dropdown-xp {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 14px;
     font-weight: bold;
     margin-left: 10px;
 }
 
 .no-quests-message {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     color: #666666;
     text-align: center;
@@ -559,7 +559,7 @@ body {
 }
 
 .quest-submission-title {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 22px;
     color: #000000;
     margin: 0;
@@ -570,7 +570,7 @@ body {
 }
 
 .quest-xp-badge {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     font-weight: bold;
     background-color: #000000;
@@ -584,7 +584,7 @@ body {
     background: #ffffff;
     border: 2px solid #000000;
     color: #000000;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     font-weight: bold;
     padding: 6px 12px;
@@ -615,7 +615,7 @@ body {
     border: 3px solid #000000;
     background-color: #ffffff;
     color: #000000;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
@@ -654,7 +654,7 @@ body {
     border: 2px solid #000000;
     background-color: #ffffff;
     color: #000000;
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
@@ -1065,7 +1065,7 @@ body {
 }
 
 .review-group-title {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 22px;
     margin: 0;
     padding: 15px 20px;
@@ -1120,7 +1120,7 @@ body {
 }
 
 .review-status-title {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 24px;
     margin-bottom: 20px;
     padding-bottom: 12px;
@@ -1138,7 +1138,7 @@ body {
 }
 
 .pending-category-title {
-    font-family: 'Architects Daughter', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 22px;
     margin-bottom: 15px;
     padding-bottom: 10px;
@@ -1147,7 +1147,7 @@ body {
 }
 
 .pending-subcategory-title {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -1210,7 +1210,7 @@ body {
 }
 
 .pending-item-title {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 18px;
     font-weight: bold;
     display: flex;
@@ -1219,7 +1219,7 @@ body {
 }
 
 .pending-item-badge {
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 14px;
     padding: 4px 12px;
     border: 2px solid #000000;
@@ -1251,13 +1251,13 @@ body {
 }
 
 .pending-item-xp {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     font-weight: bold;
 }
 
 .pending-item-date {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 14px;
     color: #666666;
     margin: 5px 0;
@@ -1276,7 +1276,7 @@ body {
 }
 
 .pending-item-desc {
-    font-family: 'Kalam', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 14px;
     color: #333333;
     margin: 5px 0;
@@ -1295,7 +1295,7 @@ body {
 }
 
 .empty-message {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Playfair Display', serif;
     font-size: 16px;
     color: #666666;
     text-align: center;

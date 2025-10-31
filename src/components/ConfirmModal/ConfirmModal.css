@@ -18,7 +18,7 @@
   border-radius: 0;
   max-width: 450px;
   width: 100%;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   position: relative;
   transform: rotate(-0.5deg);
   box-shadow: 8px 8px 0 #000000;
@@ -48,7 +48,7 @@
 .confirm-modal-header h2 {
   margin: 0;
   font-size: 22px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   text-align: center;
   display: flex;
   align-items: center;
@@ -102,7 +102,7 @@
   flex: 1;
   padding: 15px 20px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;

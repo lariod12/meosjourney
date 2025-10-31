@@ -18,7 +18,7 @@ const ConfirmModalDemo = () => {
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Kalam, cursive' }}>
+    <div style={{ padding: '2rem', fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontWeight: 500 }}>
       <h1>ConfirmModal Demo</h1>
       
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>

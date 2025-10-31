@@ -2,7 +2,7 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   background-color: #ffffff;
   color: #000000;
   min-height: 100vh;
@@ -70,7 +70,7 @@
 .admin-header h1 {
   margin: 0;
   font-size: 42px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 /* Auto approve toggle switch */
@@ -137,7 +137,7 @@
 }
 
 .auto-approve-toggle .toggle-text {
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 16px;
 }
 
@@ -154,7 +154,7 @@
   width: 100%;
   padding: 16px 20px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   background-color: #ffffff;
   color: #000000;
@@ -207,7 +207,7 @@
   width: 100%;
   padding: 14px 20px;
   font-size: 16px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   background-color: #ffffff;
   color: #000000;
@@ -253,7 +253,7 @@
 }
 
 .form-section h2 {
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 28px;
   margin-bottom: 25px;
   color: #000000;
@@ -283,7 +283,7 @@
   background-color: #ffffff;
   color: #000000;
   box-sizing: border-box;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 17px;
   transition: all 0.3s;
   pointer-events: auto;
@@ -308,7 +308,7 @@
   flex: 1;
   padding: 16px 30px;
   font-size: 20px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -529,7 +529,7 @@
 }
 
 .achievements-list h2 {
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 28px;
   margin-bottom: 25px;
   color: #000000;
@@ -592,7 +592,7 @@
 .achievement-info h3 {
   margin: 0 0 10px 0;
   font-size: 22px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   color: #000000;
 }
 
@@ -619,7 +619,7 @@
 
 .achievement-details .submission-date,
 .quest-details .submission-date {
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .achievement-buttons {
@@ -632,7 +632,7 @@
 .btn-delete {
   padding: 8px 16px;
   font-size: 16px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -706,7 +706,7 @@
   flex: 1;
   padding: 12px 20px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -723,7 +723,7 @@
 }
 
 .quests-list h2 {
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 28px;
   margin-bottom: 25px;
   color: #000000;
@@ -774,7 +774,7 @@
 .quest-info h3 {
   margin: 0 0 10px 0;
   font-size: 22px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   color: #000000;
 }
 
@@ -809,7 +809,7 @@
   background-color: #ffffff;
   color: #000000;
   box-sizing: border-box;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 17px;
   transition: all 0.3s;
   pointer-events: auto;
@@ -826,7 +826,7 @@
   flex: 1;
   padding: 12px 20px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -841,7 +841,7 @@
 .btn-review {
   padding: 10px 20px;
   font-size: 16px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   background-color: #000000;
   color: #ffffff;
@@ -891,7 +891,7 @@
 .review-title {
   font-size: 24px;
   margin-bottom: 20px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   border-bottom: 2px solid #000000;
   padding-bottom: 10px;
 }
@@ -906,7 +906,7 @@
 .review-quest-info h4 {
   font-size: 20px;
   margin: 0 0 10px 0;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .review-confirmation-content {
@@ -948,7 +948,7 @@
   flex: 1;
   padding: 14px 25px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -994,7 +994,7 @@
   border: 3px solid #000000;
   padding: 14px 25px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -1021,7 +1021,7 @@
 .btn-view {
   padding: 10px 20px;
   font-size: 16px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   background-color: #ffffff;
   color: #000000;
@@ -1064,7 +1064,7 @@
 .view-title {
   font-size: 24px;
   margin-bottom: 20px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   border-bottom: 2px solid #000000;
   padding-bottom: 10px;
 }
@@ -1079,7 +1079,7 @@
 .view-quest-info h4 {
   font-size: 20px;
   margin: 0 0 10px 0;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .view-confirmations {
@@ -1089,7 +1089,7 @@
 .confirmations-title {
   font-size: 20px;
   margin-bottom: 15px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   border-bottom: 2px solid #000000;
   padding-bottom: 8px;
 }
@@ -1132,7 +1132,7 @@
 .confirmation-date {
   font-size: 16px;
   font-weight: bold;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .confirmation-id {
@@ -1148,7 +1148,7 @@
 .confirmation-desc strong {
   display: block;
   margin-bottom: 5px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .confirmation-desc p {
@@ -1185,7 +1185,7 @@
   flex: 1;
   padding: 14px 25px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;
@@ -1206,7 +1206,7 @@
 
 .created-label {
   font-weight: bold;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   color: #333333;
 }
 
@@ -1270,7 +1270,7 @@
   flex: 1;
   padding: 12px 20px;
   font-size: 18px;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   border: 3px solid #000000;
   cursor: pointer;

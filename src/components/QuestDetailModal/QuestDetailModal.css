@@ -21,7 +21,7 @@
   border: 4px solid #000000;
   max-width: 600px;
   width: 100%;
-  font-family: 'Kalam', cursive;
+  font-family: 'Playfair Display', serif;
   position: relative;
   transform: rotate(-0.5deg);
   box-shadow: 8px 8px 0 #000000;
@@ -57,7 +57,7 @@
 .quest-detail-header h2 {
   margin: 0;
   font-size: 24px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .quest-detail-close {
@@ -97,7 +97,7 @@
 
 .quest-detail-label {
   display: block;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 16px;
   font-weight: bold;
   color: #666666;
@@ -113,7 +113,7 @@
 }
 
 .quest-title {
-  font-family: 'Architects Daughter', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: bold;
   padding: 12px 16px;
@@ -141,7 +141,7 @@
   color: #ffffff;
   padding: 8px 16px;
   border: 3px solid #000000;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 20px;
   font-weight: bold;
   transform: rotate(1deg);
@@ -159,7 +159,7 @@
   width: 100%;
   padding: 15px 20px;
   font-size: 18px;
-  font-family: 'Patrick Hand', cursive;
+  font-family: 'Playfair Display', serif;
   font-weight: bold;
   background-color: #ffffff;
   color: #000000;
