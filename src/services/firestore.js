@@ -238,11 +238,32 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Always add timestamp
     dataToSave.timestamp = serverTimestamp();
 
-    // Only save if there's at least one field besides timestamp
-    if (Object.keys(dataToSave).length > 1) {
+    // Handle caption update to profile (separate from status)
+    let captionUpdated = false;
+    if (statusData.caption && statusData.caption.trim()) {
+      try {
+        const currentProfile = await fetchProfile(characterId);
+        if (currentProfile && currentProfile.id) {
+          const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+          await setDoc(profileDocRef, { caption: statusData.caption.trim() }, { merge: true });
+          console.log('✅ Profile caption updated successfully');
+          captionUpdated = true;
+        }
+      } catch (profileError) {
+        console.error('⚠️ Error updating profile caption:', profileError);
+        // Don't throw error, just log it since caption update is secondary
+      }
+    }
+
+    // Save status data if there's at least one field besides timestamp
+    const hasStatusData = Object.keys(dataToSave).length > 1;
+    if (hasStatusData) {
       const statusDocRef = doc(db, 'main', characterId, 'status', currentStatus.id);
       await setDoc(statusDocRef, dataToSave, { merge: true });
+    }
 
+    // Return success if either caption or status data was updated
+    if (captionUpdated || hasStatusData) {
       return { success: true, id: currentStatus.id, data: dataToSave };
     }
 

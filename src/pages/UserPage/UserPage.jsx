@@ -43,6 +43,7 @@ const UserPage = ({ onBack }) => {
     noteDate: new Date().toISOString().split('T')[0],
     doing: '',
     location: '',
+    caption: '',
     mood: '',
     journalEntry: ''
   });
@@ -401,13 +402,14 @@ const UserPage = ({ onBack }) => {
       const results = [];
 
       // Submit Status Update (if has data)
-      const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.mood.trim();
+      const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.caption.trim() || formData.mood.trim();
 
       if (hasStatusData) {
         try {
           const statusResult = await saveStatus({
             doing: formData.doing,
             location: formData.location,
+            caption: formData.caption,
             mood: formData.mood
           }, CHARACTER_ID);
 
@@ -1340,6 +1342,19 @@ const UserPage = ({ onBack }) => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="caption">Caption</label>
+                  <input
+                    type="text"
+                    id="caption"
+                    name="caption"
+                    value={formData.caption}
+                    onChange={handleChange}
+                    placeholder="e.g., Forever Curios"
+                    autoComplete="off"
+                  />
                 </div>
 
                 <div className="form-group">
