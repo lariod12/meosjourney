@@ -948,33 +948,46 @@ body {
 /* === HISTORY TAB === */
 .history-list {
     padding: 10px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Only add outer scroll when there are multiple items */
+.history-list.multiple-items {
     max-height: calc(100vh - 200px);
     overflow-y: auto;
     overflow-x: hidden;
-    position: relative;
 }
 
-/* Scrollbar styling for history list - Outer scroll */
-.history-list::-webkit-scrollbar {
+/* Single item - no outer scroll needed */
+.history-list.single-item {
+    max-height: none;
+    overflow: visible;
+}
+
+/* Scrollbar styling for history list - Only when multiple items */
+.history-list.multiple-items::-webkit-scrollbar {
     width: 6px;
 }
 
-.history-list::-webkit-scrollbar-track {
+.history-list.multiple-items::-webkit-scrollbar-track {
     background: var(--gray-light);
     border-radius: 0;
 }
 
-.history-list::-webkit-scrollbar-thumb {
+.history-list.multiple-items::-webkit-scrollbar-thumb {
     background: var(--gray-dark);
     border-radius: 0;
 }
 
-.history-list::-webkit-scrollbar-thumb:hover {
+.history-list.multiple-items::-webkit-scrollbar-thumb:hover {
     background: var(--black);
 }
 
 .history-item {
     margin-bottom: 10px;
+    overflow: hidden;
+    position: relative;
 }
 
 .history-date-header {
@@ -1022,6 +1035,7 @@ body {
 }
 
 .history-item.expanded .history-entries-wrapper {
+    height: 400px;
     max-height: 400px;
     padding: 15px;
     border: 2px dashed var(--black);
@@ -1034,9 +1048,23 @@ body {
     scroll-behavior: smooth;
     position: relative;
     z-index: 1;
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
     transition: max-height 0.2s cubic-bezier(0, 0, 0.2, 1), 
                 opacity 0.15s ease 0.02s,
                 transform 0.15s ease 0.02s;
+}
+
+.history-item.expanded .history-entries-wrapper:active {
+    cursor: grabbing;
+}
+
+/* When single item, allow larger expansion */
+.history-list.single-item .history-item.expanded .history-entries-wrapper {
+    height: calc(100vh - 250px);
+    max-height: calc(100vh - 250px);
 }
 
 /* Optimize collapse performance */
@@ -1048,47 +1076,54 @@ body {
 
 .history-entries-wrapper .journal-entry {
     border-bottom: 1px solid var(--gray-light);
-    padding-bottom: 15px;
-    margin-bottom: 15px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .history-entries-wrapper .journal-entry:last-child {
     border-bottom: none;
     margin-bottom: 0;
-    padding-bottom: 0;
+    padding-bottom: 5px;
 }
 
-/* Scrollbar styling for history entries - Inner scroll */
+/* Hide scrollbar for history entries - Inner scroll */
 .history-item.expanded .history-entries-wrapper::-webkit-scrollbar {
-    width: 10px;
-    background: var(--white);
+    width: 0;
+    background: transparent;
 }
 
-.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-track {
-    background: var(--white);
-    border: 2px solid var(--black);
-    border-radius: 0;
-    margin: 2px;
-}
-
-.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb {
-    background: var(--black);
-    border: 1px solid var(--black);
-    border-radius: 0;
-    min-height: 30px;
-}
-
-.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb:hover {
-    background: var(--gray-dark);
-}
-
-.history-item.expanded .history-entries-wrapper::-webkit-scrollbar-corner {
-    background: var(--white);
-}
-
-/* Ensure proper spacing at bottom of entries */
 .history-item.expanded .history-entries-wrapper {
-    padding-bottom: 20px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ensure content fits within container - handled above */
+
+/* Visual hint for drag scrolling */
+.history-item.expanded .history-entries-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    width: 20px;
+    height: 4px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--gray-dark) 0px,
+        var(--gray-dark) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Show hint more prominently when scrollable */
+.history-item.expanded .history-entries-wrapper[data-scrollable="true"]::before {
+    opacity: 0.6;
 }
 
 .history-empty-message {
@@ -1948,42 +1983,45 @@ body {
     .history-item.expanded .history-entries-wrapper {
         padding: 10px;
         min-height: 100px;
+        height: 300px;
         max-height: 300px;
         overflow-y: auto;
         overflow-x: hidden;
+        box-sizing: border-box;
     }
 
-    /* Mobile outer scroll */
-    .history-list {
+    /* Mobile single item - larger expansion */
+    .history-list.single-item .history-item.expanded .history-entries-wrapper {
+        height: calc(100vh - 200px);
+        max-height: calc(100vh - 200px);
+    }
+
+    /* Mobile outer scroll - only for multiple items */
+    .history-list.multiple-items {
         max-height: calc(100vh - 150px);
     }
 
-    /* Mobile scrollbar for history entries - Inner scroll */
+    .history-list.single-item {
+        max-height: none;
+        overflow: visible;
+    }
+
+    /* Mobile - Hide scrollbar for history entries */
     .history-item.expanded .history-entries-wrapper::-webkit-scrollbar {
-        width: 8px;
+        width: 0;
+        background: transparent;
     }
 
-    .history-item.expanded .history-entries-wrapper::-webkit-scrollbar-track {
-        background: var(--white);
-        border: 1px solid var(--black);
-    }
-
-    .history-item.expanded .history-entries-wrapper::-webkit-scrollbar-thumb {
-        background: var(--black);
-        border: 1px solid var(--black);
-        min-height: 20px;
-    }
-
-    /* Mobile outer scroll */
-    .history-list::-webkit-scrollbar {
+    /* Mobile outer scroll - only for multiple items */
+    .history-list.multiple-items::-webkit-scrollbar {
         width: 4px;
     }
 
-    .history-list::-webkit-scrollbar-track {
+    .history-list.multiple-items::-webkit-scrollbar-track {
         background: var(--gray-light);
     }
 
-    .history-list::-webkit-scrollbar-thumb {
+    .history-list.multiple-items::-webkit-scrollbar-thumb {
         background: var(--gray-dark);
     }
 
