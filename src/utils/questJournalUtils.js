@@ -141,3 +141,43 @@ export const saveStatusChangeJournal = async (fieldType, oldValue, newValue, cha
     throw error;
   }
 };
+
+/**
+ * Generate journal entry content for profile skill/interest changes
+ * @param {string} action - 'added' or 'removed'
+ * @param {string} type - 'skill' or 'interest'
+ * @param {string} item - The skill or interest name
+ * @returns {string} Formatted journal entry content
+ */
+export const generateProfileChangeJournalEntry = (action, type, item) => {
+  // Format: [Profile Update] Added skill: JavaScript
+  // Format: [Profile Update] Removed interest: Gaming
+  const actionText = action === 'added' ? 'Added' : 'Removed';
+  const typeText = type === 'skill' ? 'skill' : 'interest';
+  
+  return `[Profile Update] ${actionText} ${typeText}: ${item}`;
+};
+
+/**
+ * Save profile skill/interest change as journal entry
+ * @param {string} action - 'added' or 'removed'
+ * @param {string} type - 'skill' or 'interest'
+ * @param {string} item - The skill or interest name
+ * @param {string} characterId - Character ID
+ * @returns {Promise<Object>} Save result
+ */
+export const saveProfileChangeJournal = async (action, type, item, characterId) => {
+  try {
+    const journalContent = generateProfileChangeJournalEntry(action, type, item);
+
+    const result = await saveJournal({
+      caption: journalContent
+    }, characterId);
+
+    console.log(`✅ Profile ${action} journal saved: ${type} - ${item}`);
+    return result;
+  } catch (error) {
+    console.error('❌ Error saving profile change journal:', error);
+    throw error;
+  }
+};

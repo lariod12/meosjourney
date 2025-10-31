@@ -20,7 +20,7 @@ import {
   updateProfileXP,
   CHARACTER_ID
 } from '../../services/firestore';
-import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal } from '../../utils/questJournalUtils';
+import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification } from '../../services/discord';
@@ -422,7 +422,7 @@ const UserPage = ({ onBack }) => {
   };
 
   // Profile handlers
-  const handleAddSkill = () => {
+  const handleAddSkill = async () => {
     const skill = formData.newSkill.trim();
     if (skill && !profileData.skills.includes(skill)) {
       setProfileData(prev => ({
@@ -431,20 +431,34 @@ const UserPage = ({ onBack }) => {
       }));
       setFormData(prev => ({ ...prev, newSkill: '' }));
       console.log('➕ Added skill:', skill, '| Current skills:', [...profileData.skills, skill]);
+      
+      // Save journal entry for skill addition
+      try {
+        await saveProfileChangeJournal('added', 'skill', skill, CHARACTER_ID);
+      } catch (journalError) {
+        console.warn('⚠️ Failed to save skill addition journal:', journalError);
+      }
     } else if (skill && profileData.skills.includes(skill)) {
       console.log('⚠️ Skill already exists:', skill);
     }
   };
 
-  const handleRemoveSkill = (skillToRemove) => {
+  const handleRemoveSkill = async (skillToRemove) => {
     setProfileData(prev => ({
       ...prev,
       skills: prev.skills.filter(skill => skill !== skillToRemove)
     }));
     console.log('➖ Removed skill:', skillToRemove);
+    
+    // Save journal entry for skill removal
+    try {
+      await saveProfileChangeJournal('removed', 'skill', skillToRemove, CHARACTER_ID);
+    } catch (journalError) {
+      console.warn('⚠️ Failed to save skill removal journal:', journalError);
+    }
   };
 
-  const handleAddInterest = () => {
+  const handleAddInterest = async () => {
     const interest = formData.newInterest.trim();
     if (interest && !profileData.interests.includes(interest)) {
       setProfileData(prev => ({
@@ -453,17 +467,31 @@ const UserPage = ({ onBack }) => {
       }));
       setFormData(prev => ({ ...prev, newInterest: '' }));
       console.log('➕ Added interest:', interest, '| Current interests:', [...profileData.interests, interest]);
+      
+      // Save journal entry for interest addition
+      try {
+        await saveProfileChangeJournal('added', 'interest', interest, CHARACTER_ID);
+      } catch (journalError) {
+        console.warn('⚠️ Failed to save interest addition journal:', journalError);
+      }
     } else if (interest && profileData.interests.includes(interest)) {
       console.log('⚠️ Interest already exists:', interest);
     }
   };
 
-  const handleRemoveInterest = (interestToRemove) => {
+  const handleRemoveInterest = async (interestToRemove) => {
     setProfileData(prev => ({
       ...prev,
       interests: prev.interests.filter(interest => interest !== interestToRemove)
     }));
     console.log('➖ Removed interest:', interestToRemove);
+    
+    // Save journal entry for interest removal
+    try {
+      await saveProfileChangeJournal('removed', 'interest', interestToRemove, CHARACTER_ID);
+    } catch (journalError) {
+      console.warn('⚠️ Failed to save interest removal journal:', journalError);
+    }
   };
 
   const handleSubmit = async (e) => {
