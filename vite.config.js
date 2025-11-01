@@ -19,7 +19,12 @@ export default defineConfig(({ mode }) => ({
         drop_debugger: true
       }
     },
-    cssMinify: true
+    cssMinify: true,
+    rollupOptions: {
+      input: {
+        main: './index.html'
+      }
+    }
   },
   server: {
     // Fix ipv6 issue with vite about hrm 
