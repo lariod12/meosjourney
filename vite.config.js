@@ -4,7 +4,7 @@ import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
 import { createHtmlPlugin } from 'vite-plugin-html';
 
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/meosjourney/' : '/',
+  base: '/',
   plugins: [
     react(),
     mode === 'production' && createHtmlPlugin({

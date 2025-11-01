@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
 
 **Example:**
 - Repo: `github.com/username/meosjourney`
-- Base: `/meosjourney/` ✅
-- Base: `/blog-art-minimal/` ❌ (wrong name)
+- Custom domain: `https://meosjourney.info/`
+- Base: `/` ✅ (root path for custom domain)
 
 ---
 
