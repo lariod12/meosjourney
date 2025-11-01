@@ -3,8 +3,9 @@ export const homeLocales = {
     'modal.quest.title': 'Quest Details',
     'modal.quest.title_completed': 'Quest Details - Completed',
     'modal.quest.name': 'Quest Name',
-    'modal.quest.description': 'Description',
+    'modal.quest.description': 'Quest Description',
     'modal.quest.xp': 'XP Reward',
+    'modal.common.user_desc': 'User Description',
     'modal.common.close': 'Close',
 
     'modal.achievement.completed': '✓ COMPLETED',
@@ -58,8 +59,9 @@ export const homeLocales = {
     'modal.quest.title': 'Chi tiết nhiệm vụ',
     'modal.quest.title_completed': 'Chi tiết nhiệm vụ - Hoàn thành',
     'modal.quest.name': 'Tên nhiệm vụ',
-    'modal.quest.description': 'Mô tả',
+    'modal.quest.description': 'Mô tả nhiệm vụ',
     'modal.quest.xp': 'Phần thưởng XP',
+    'modal.common.user_desc': 'Mô tả của người dùng',
     'modal.common.close': 'Đóng',
 
     'modal.achievement.completed': '✓ HOÀN THÀNH',

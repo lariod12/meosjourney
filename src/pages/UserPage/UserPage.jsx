@@ -101,6 +101,7 @@ const UserPage = ({ onBack }) => {
   const doingRef = useRef(null);
   const locationRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
+  const [moodFilter, setMoodFilter] = useState('');
 
   // Collapse/expand states - collapsed by default
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -116,6 +117,127 @@ const UserPage = ({ onBack }) => {
   const [pendingGroupExpanded, setPendingGroupExpanded] = useState(false);
   const [failedGroupExpanded, setFailedGroupExpanded] = useState(false);
   const [completedGroupExpanded, setCompletedGroupExpanded] = useState(false);
+
+  const normalizeStatusValue = (value) => {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const str = typeof item === 'string' ? item.trim() : String(item || '').trim();
+        if (str) return str;
+      }
+      return '';
+    }
+    if (value === undefined || value === null) return '';
+    return typeof value === 'string' ? value.trim() : String(value).trim();
+  };
+
+  const applyStatusProfileToForm = (statusData, profile) => {
+    setFormData(prev => {
+      const next = { ...prev };
+
+      if (profile) {
+        next.introduce = profile.introduce || '';
+        next.caption = typeof profile.caption === 'string' ? profile.caption : '';
+      }
+
+      if (statusData) {
+        next.doing = normalizeStatusValue(statusData.doing);
+        next.location = normalizeStatusValue(statusData.location);
+        const normalizedMood = normalizeStatusValue(statusData.mood);
+        next.mood = normalizedMood || (moodOptions[0] || '');
+      } else if (!next.mood) {
+        next.mood = moodOptions[0] || '';
+      }
+
+      return next;
+    });
+  };
+
+  const resetUserPageState = async () => {
+    setFormData(prev => ({
+      ...prev,
+      doing: '',
+      location: '',
+      mood: moodOptions[0] || '',
+      journalEntry: '',
+      newSkill: '',
+      newInterest: ''
+    }));
+    setDoingSuggestions([]);
+    setDoingOpen(false);
+    setLocationSuggestions([]);
+    setLocationOpen(false);
+    setSelectedQuestSubmissions([]);
+    setSelectedAchievementSubmissions([]);
+    setExpandedQuestSubmissions([]);
+    setExpandedAchievementSubmissions([]);
+
+    try {
+      const [statusData2, profile2, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
+        fetchStatus(CHARACTER_ID),
+        fetchProfile(CHARACTER_ID),
+        fetchQuests(CHARACTER_ID),
+        fetchQuestConfirmations(CHARACTER_ID),
+        fetchAchievements(CHARACTER_ID),
+        fetchAchievementConfirmations(CHARACTER_ID)
+      ]);
+
+      applyStatusProfileToForm(statusData2, profile2);
+      setFormData(prev => ({
+        ...prev,
+        journalEntry: '',
+        newSkill: '',
+        newInterest: ''
+      }));
+
+      const doingsArr2 = Array.isArray(statusData2?.doing)
+        ? statusData2.doing
+        : (statusData2?.doing ? [statusData2.doing] : []);
+      const seenDoings = new Set();
+      const normalizedDoings = [];
+      doingsArr2.forEach((d) => {
+        const s = String(d).trim();
+        const key = s.toLowerCase();
+        if (s && !seenDoings.has(key)) { seenDoings.add(key); normalizedDoings.push(s); }
+      });
+      setExistingDoings(normalizedDoings);
+
+      const locArr2 = Array.isArray(statusData2?.location)
+        ? statusData2.location
+        : (statusData2?.location ? [statusData2.location] : []);
+      const seenLoc2 = new Set();
+      const normalizedLocs2 = [];
+      locArr2.forEach((l) => {
+        const s = String(l).trim();
+        const key = s.toLowerCase();
+        if (s && !seenLoc2.has(key)) { seenLoc2.add(key); normalizedLocs2.push(s); }
+      });
+      setExistingLocations(normalizedLocs2);
+
+      if (profile2) {
+        const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
+        const updatedInterests = Array.isArray(profile2.interests) ? profile2.interests : [];
+
+        setProfileData({
+          introduce: profile2.introduce || '',
+          skills: [...updatedSkills],
+          interests: [...updatedInterests]
+        });
+
+      } else {
+        setProfileData({ introduce: '', skills: [], interests: [] });
+      }
+
+      setAllQuests(quests);
+      setAvailableQuests(quests.filter(q => q.completedAt === null));
+      setQuestConfirmations(questConfirms);
+
+      setAllAchievements(achievements);
+      setAvailableAchievements(achievements.filter(a => a.completedAt === null));
+      setAchievementConfirmations(achievementConfirms);
+    } catch (error) {
+      console.error('⚠️ Failed to refresh data after submission:', error);
+    }
+  };
 
   useEffect(() => {
     // Load config, profile, quests, achievements, and confirmations from Firestore
@@ -143,13 +265,10 @@ const UserPage = ({ onBack }) => {
             skills: [...loadedSkills], // Create new array to ensure reactivity
             interests: [...loadedInterests] // Create new array to ensure reactivity
           });
-          setFormData(prev => ({
-            ...prev,
-            introduce: profile.introduce || ''
-          }));
-          
         }
         setProfileLoaded(true);
+
+        applyStatusProfileToForm(statusData, profile);
 
         // Prepare existing doings from status (array or string)
         const doingsArr = Array.isArray(statusData?.doing)
@@ -235,16 +354,6 @@ const UserPage = ({ onBack }) => {
           skills: [...refreshedSkills], // Create new array to ensure reactivity
           interests: [...refreshedInterests] // Create new array to ensure reactivity
         });
-        setFormData(prev => ({
-          ...prev,
-          introduce: profile.introduce || ''
-        }));
-        
-        console.log('🔄 Profile data refreshed:', {
-          introduce: profile.introduce || '',
-          skills: refreshedSkills,
-          interests: refreshedInterests
-        });
       }
 
       const doingsArr = Array.isArray(statusData?.doing)
@@ -282,6 +391,8 @@ const UserPage = ({ onBack }) => {
       const availableAchievements = achievements.filter(a => a.completedAt === null);
       setAvailableAchievements(availableAchievements);
       setAchievementConfirmations(achievementConfirms);
+
+      applyStatusProfileToForm(statusData, profile);
 
       // Show success notification
       setConfirmModal({
@@ -391,14 +502,22 @@ const UserPage = ({ onBack }) => {
 
   const updateLocationSuggestions = (value) => {
     const q = String(value || '').trim().toLowerCase();
+    const pool = Array.isArray(existingLocations) ? existingLocations : [];
     if (!q) {
-      setLocationSuggestions([]);
-      setLocationOpen(false);
+      setLocationSuggestions(pool.slice(0, 10));
       return;
     }
-    const suggestions = existingLocations.filter(l => l.toLowerCase().includes(q) || l.toLowerCase().startsWith(q));
+    const suggestions = pool.filter(l => l.toLowerCase().includes(q) || l.toLowerCase().startsWith(q));
     setLocationSuggestions(suggestions.slice(0, 10));
     setLocationOpen(suggestions.length > 0);
+  };
+
+  const openLocationDropdown = () => {
+    // Show all available options on focus/click
+    const pool = Array.isArray(existingLocations) ? existingLocations : [];
+    const list = pool.slice(0, 10);
+    setLocationSuggestions(list);
+    setLocationOpen(list.length > 0);
   };
 
   const handleChange = (e) => {
@@ -964,6 +1083,10 @@ const UserPage = ({ onBack }) => {
           modalMessage = `✓ Saved: ${successItems.map(r => r.item).join(', ')}\n\n✕ Failed: ${failedItems.map(r => r.item).join(', ')}`;
         }
 
+        if (successItems.length > 0) {
+          resetUserPageState();
+        }
+
         setConfirmModal({
           isOpen: true,
           type: modalType,
@@ -973,90 +1096,6 @@ const UserPage = ({ onBack }) => {
           cancelText: null,
           onConfirm: () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
-
-            // Only reset form if there were some successes
-            if (successItems.length > 0) {
-              // Reset form after successful submit
-              setFormData(prev => ({
-                ...prev,
-                doing: '',
-                location: '',
-                mood: moodOptions[0] || '',
-                journalEntry: '',
-                newSkill: '',
-                newInterest: ''
-              }));
-              // Clear quest and achievement submissions
-              setSelectedQuestSubmissions([]);
-              setSelectedAchievementSubmissions([]);
-              setExpandedQuestSubmissions([]);
-              setExpandedAchievementSubmissions([]);
-              // Reload profile, quests, achievements, and confirmations to update available lists and review submitted
-              Promise.all([
-                fetchStatus(CHARACTER_ID),
-                fetchProfile(CHARACTER_ID),
-                fetchQuests(CHARACTER_ID),
-                fetchQuestConfirmations(CHARACTER_ID),
-                fetchAchievements(CHARACTER_ID),
-                fetchAchievementConfirmations(CHARACTER_ID)
-              ]).then(([statusData2, profile2, quests, questConfirms, achievements, achievementConfirms]) => {
-            const doingsArr2 = Array.isArray(statusData2?.doing)
-              ? statusData2.doing
-              : (statusData2?.doing ? [statusData2.doing] : []);
-            const seen2 = new Set();
-            const normalized2 = [];
-            doingsArr2.forEach((d) => {
-              const s = String(d).trim();
-              const key = s.toLowerCase();
-              if (s && !seen2.has(key)) { seen2.add(key); normalized2.push(s); }
-            });
-            setExistingDoings(normalized2);
-            const locArr2 = Array.isArray(statusData2?.location)
-              ? statusData2.location
-              : (statusData2?.location ? [statusData2.location] : []);
-            const seenLoc2 = new Set();
-            const normalizedLocs2 = [];
-            locArr2.forEach((l) => {
-              const s = String(l).trim();
-              const key = s.toLowerCase();
-              if (s && !seenLoc2.has(key)) { seenLoc2.add(key); normalizedLocs2.push(s); }
-            });
-            setExistingLocations(normalizedLocs2);
-            
-            // Update profile data after successful submission
-            if (profile2) {
-              const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
-              const updatedInterests = Array.isArray(profile2.interests) ? profile2.interests : [];
-              
-              setProfileData({
-                introduce: profile2.introduce || '',
-                skills: [...updatedSkills], // Create new array to ensure reactivity
-                interests: [...updatedInterests] // Create new array to ensure reactivity
-              });
-              setFormData(prev => ({
-                ...prev,
-                introduce: profile2.introduce || ''
-              }));
-              
-              console.log('✅ Profile data updated after submission:', {
-                introduce: profile2.introduce || '',
-                skills: updatedSkills,
-                interests: updatedInterests
-              });
-            }
-                // Store all and filter incomplete quests
-                setAllQuests(quests);
-                const availableQuests = quests.filter(q => q.completedAt === null);
-                setAvailableQuests(availableQuests);
-                setQuestConfirmations(questConfirms);
-
-                // Store all and filter incomplete achievements
-                setAllAchievements(achievements);
-                const availableAchievements = achievements.filter(a => a.completedAt === null);
-                setAvailableAchievements(availableAchievements);
-                setAchievementConfirmations(achievementConfirms);
-              });
-            }
           }
         });
       } else {
@@ -1110,7 +1149,6 @@ const UserPage = ({ onBack }) => {
 
   // Quest submission handlers
   const handleAddQuestSubmission = (quest) => {
-    console.log('➕ Adding quest submission:', quest.name);
     const newIndex = selectedQuestSubmissions.length;
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
@@ -1555,7 +1593,6 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Profile Update section clicked');
                 setProfileExpanded(!profileExpanded);
               }}
             >
@@ -1702,6 +1739,16 @@ const UserPage = ({ onBack }) => {
                       placeholder="e.g., Studying character design"
                       autoComplete="off"
                     />
+                    {formData.doing && (
+                      <button
+                        type="button"
+                        className="suggest-clear-btn"
+                        onClick={() => setFormData(prev => ({ ...prev, doing: '' }))}
+                        aria-label="Clear current activity"
+                      >
+                        ✕
+                      </button>
+                    )}
                     {doingOpen && doingSuggestions.length > 0 && (
                       <div className="suggest-dropdown" role="listbox">
                         {doingSuggestions.map((item) => (
@@ -1733,7 +1780,19 @@ const UserPage = ({ onBack }) => {
                       onChange={handleChange}
                       placeholder="e.g., Home, Coffee shop, Office"
                       autoComplete="off"
+                      onFocus={openLocationDropdown}
+                      onClick={openLocationDropdown}
                     />
+                    {formData.location && (
+                      <button
+                        type="button"
+                        className="suggest-clear-btn"
+                        onClick={() => setFormData(prev => ({ ...prev, location: '' }))}
+                        aria-label="Clear location"
+                      >
+                        ✕
+                      </button>
+                    )}
                     {locationOpen && locationSuggestions.length > 0 && (
                       <div className="suggest-dropdown" role="listbox">
                         {locationSuggestions.map((item) => (
@@ -1776,14 +1835,23 @@ const UserPage = ({ onBack }) => {
                       className="select-display"
                       aria-haspopup="listbox"
                       aria-expanded={moodOpen}
-                      onClick={() => setMoodOpen(o => !o)}
+                      onClick={() => setMoodOpen(o => { const n = !o; if (n) setMoodFilter(''); return n; })}
                     >
                       {formData.mood || 'Select mood'}
                       <span className="select-caret">▾</span>
                     </button>
                     {moodOpen && (
                       <div className="select-options" role="listbox">
-                        {moodOptions.map(opt => (
+                        <div className="select-search">
+                          <input
+                            type="text"
+                            placeholder="Search mood..."
+                            value={moodFilter}
+                            onChange={(e) => setMoodFilter(e.target.value)}
+                            autoFocus
+                          />
+                        </div>
+                        {(moodOptions.filter(opt => String(opt).toLowerCase().includes(moodFilter.trim().toLowerCase()))).map(opt => (
                           <div
                             key={opt}
                             role="option"
@@ -1844,7 +1912,6 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Daily Quests Update section clicked');
                 setQuestsExpanded(prev => {
                   const next = !prev;
                   if (next) setQuestPickerCollapsed(false);

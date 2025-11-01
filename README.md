@@ -410,6 +410,13 @@ All interactive elements should follow this pattern:
 - Maintain sketch aesthetic in all breakpoints
 - **Mobile-first media queries**: Start with mobile styles, enhance for desktop
 
+#### 4. Square Item Grids (Home Tabs)
+- Use a responsive grid that keeps each square at a fixed footprint
+- Desktop: `grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))`
+- Tablet & smaller (`max-width: 768px`): switch to `repeat(2, minmax(140px, 1fr))`
+- Extra-small (`max-width: 430px`): tighten to `repeat(2, minmax(120px, 1fr))`
+- Always cap item width (e.g., `max-width: 150px`) so fewer cards do not stretch or overflow the tab
+
 ### Accessibility Considerations
 
 #### 1. Color Contrast

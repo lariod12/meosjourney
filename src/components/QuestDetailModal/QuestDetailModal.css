@@ -130,6 +130,15 @@
   line-height: 1.6;
 }
 
+.quest-user-desc {
+  padding: 15px 18px;
+  border: 2px dashed #000000;
+  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 10px, #f9f9f9 10px, #f9f9f9 20px);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
 .quest-xp-value {
   display: flex;
   align-items: center;
@@ -239,6 +248,11 @@
     font-size: 16px;
   }
 
+  .quest-user-desc {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
   .xp-badge {
     font-size: 18px;
     padding: 6px 14px;
@@ -313,6 +327,11 @@
   }
 
   .quest-description {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .quest-user-desc {
     padding: 12px;
     font-size: 15px;
   }

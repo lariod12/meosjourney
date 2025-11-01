@@ -65,6 +65,7 @@ const AchievementModal = ({ achievement, onClose }) => {
             </div>
           )}
         </div>
+
         <div className="achievement-modal-rewards-box">
           <div className="rewards-box-title">{t('modal.achievement.rewards')}</div>
           <div className="rewards-box-list">
@@ -78,6 +79,14 @@ const AchievementModal = ({ achievement, onClose }) => {
             )}
           </div>
         </div>
+
+        {/* User Confirmation Description if available - placed at bottom for consistency */}
+        {isCompleted && achievement.confirmation?.desc && (
+          <div className="achievement-modal-user-desc">
+            <div className="user-desc-title">{t('modal.common.user_desc')}</div>
+            <div className="user-desc-content">{achievement.confirmation.desc}</div>
+          </div>
+        )}
       </div>
     </div>
   );

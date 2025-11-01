@@ -1120,10 +1120,14 @@ body {
 /* === ACHIEVEMENT TAB === */
 .achievements-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 20px;
     padding: 15px;
     min-height: 300px;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    justify-items: center;
 }
 
 /* Empty and Loading States - Centered */
@@ -1169,6 +1173,8 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     aspect-ratio: 1 / 1;
+    width: 100%;
+    max-width: 150px;
 }
 
 .achievement-item.completed {
@@ -1382,6 +1388,30 @@ body {
     padding: 0;
     overflow: hidden;
     margin-top: 5px;
+}
+
+/* User confirmation description (bottom) */
+.achievement-modal-user-desc {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
+}
+
+.achievement-modal-user-desc .user-desc-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.achievement-modal-user-desc .user-desc-content {
+    font-family: 'Playfair Display', serif;
+    line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .rewards-box-title {
@@ -1657,7 +1687,7 @@ body {
 
     /* Achievement responsive */
     .achievements-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
         gap: 15px;
     }
 
@@ -2052,9 +2082,9 @@ body {
 
     /* Achievement responsive for mobile */
     .achievements-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-        padding: 8px;
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+        gap: 10px;
+        padding: 8px 6px;
     }
 
     .achievement-item {
@@ -2134,6 +2164,12 @@ body {
     }
 
     .achievement-modal-rewards-box {
+        border-width: 2px;
+    }
+
+    .achievement-modal-user-desc {
+        padding: 10px 12px;
+        margin-top: 10px;
         border-width: 2px;
     }
 
@@ -2264,6 +2300,10 @@ body {
 
     .social-link span {
         font-size: 0.6rem;
+    }
+
+    .achievements-grid {
+        grid-template-columns: repeat(2, minmax(100px, 1fr));
     }
 
     .achievement-item {

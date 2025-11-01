@@ -66,6 +66,16 @@ const QuestDetailModal = ({ quest, onClose }) => {
           <div className="quest-detail-value quest-xp-value">
             <span className="xp-badge">+{quest.xp} XP</span>
           </div>
+
+          {/* User Confirmation Description if available */}
+          {isCompleted && quest.confirmation?.desc && (
+            <>
+              <label className="quest-detail-label">{t('modal.common.user_desc')}</label>
+              <div className="quest-detail-value quest-user-desc">
+                {quest.confirmation.desc}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="quest-detail-footer">

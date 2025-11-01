@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn' }) => {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   const [isMobile, setIsMobile] = useState(false);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
 
   // Check if device is mobile
   useEffect(() => {
@@ -37,31 +35,6 @@ const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn
   };
 
   // Handle touch start
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-
-  // Handle touch move
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  // Handle touch end
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      goToNextTab();
-    }
-    if (isRightSwipe) {
-      goToPrevTab();
-    }
-  };
-
   const currentTab = tabs.find(tab => tab.id === activeTab);
 
   return (
@@ -105,9 +78,6 @@ const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn
       
       <div 
         className="tab-content-wrapper"
-        onTouchStart={isMobile ? handleTouchStart : undefined}
-        onTouchMove={isMobile ? handleTouchMove : undefined}
-        onTouchEnd={isMobile ? handleTouchEnd : undefined}
       >
         {tabs.map(tab => (
           <div
