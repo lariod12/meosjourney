@@ -2,7 +2,7 @@
   "name": "blog-art-minimal",
   "version": "1.0.0",
   "description": "RPG Character Sheet - React + Vite",
-  "homepage": "https://lariod12.github.io/meosjourney/",
+  "homepage": "https://meosjourney.info/",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
