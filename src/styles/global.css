@@ -1108,6 +1108,10 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: stretch; /* stretch fully if parent is flex/grid */
+    margin: 0;
     padding: 60px 20px;
     min-height: 250px;
     font-family: 'Playfair Display', serif;
@@ -1142,6 +1146,10 @@ body {
     font-size: 1.1rem;
     padding: 60px 20px;
     min-height: 250px;
+    width: 100%;
+    justify-self: stretch;
+    box-sizing: border-box;
+    margin: 0;
 }
 
 .achievements-grid .loading-message {
