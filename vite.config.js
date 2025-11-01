@@ -1,24 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
-import { createHtmlPlugin } from 'vite-plugin-html';
 
 export default defineConfig(({ mode }) => ({
   base: '/',
   plugins: [
     react(),
-    mode === 'production' && createHtmlPlugin({
-      minify: {
-        collapseWhitespace: true,
-        removeComments: true,
-        removeRedundantAttributes: true,
-        removeScriptTypeAttributes: true,
-        removeStyleLinkTypeAttributes: true,
-        useShortDoctype: true,
-        minifyCSS: true,
-        minifyJS: true
-      }
-    }),
     mode === 'production' && obfuscatorPlugin({
       include: ['src/**/*.js', 'src/**/*.jsx', 'src/**/*.ts', 'src/**/*.tsx'],
       exclude: [/node_modules/],
