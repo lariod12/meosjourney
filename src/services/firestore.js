@@ -231,7 +231,6 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       quests: questsData,
       journal: journalsData,
       moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
-      locationOptions: Array.isArray(config?.locationOptions) ? config.locationOptions : [],
     };
   } catch (error) {
     console.error('❌ Error in fetchCharacterViewData:', error);

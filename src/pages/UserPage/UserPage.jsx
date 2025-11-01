@@ -506,14 +506,22 @@ const UserPage = ({ onBack }) => {
 
   const updateLocationSuggestions = (value) => {
     const q = String(value || '').trim().toLowerCase();
+    const pool = Array.isArray(existingLocations) ? existingLocations : [];
     if (!q) {
-      setLocationSuggestions([]);
-      setLocationOpen(false);
+      setLocationSuggestions(pool.slice(0, 10));
       return;
     }
-    const suggestions = existingLocations.filter(l => l.toLowerCase().includes(q) || l.toLowerCase().startsWith(q));
+    const suggestions = pool.filter(l => l.toLowerCase().includes(q) || l.toLowerCase().startsWith(q));
     setLocationSuggestions(suggestions.slice(0, 10));
     setLocationOpen(suggestions.length > 0);
+  };
+
+  const openLocationDropdown = () => {
+    // Show all available options on focus/click
+    const pool = Array.isArray(existingLocations) ? existingLocations : [];
+    const list = pool.slice(0, 10);
+    setLocationSuggestions(list);
+    setLocationOpen(list.length > 0);
   };
 
   const handleChange = (e) => {
@@ -1777,6 +1785,8 @@ const UserPage = ({ onBack }) => {
                       onChange={handleChange}
                       placeholder="e.g., Home, Coffee shop, Office"
                       autoComplete="off"
+                      onFocus={openLocationDropdown}
+                      onClick={openLocationDropdown}
                     />
                     {formData.location && (
                       <button
