@@ -10,12 +10,20 @@
  * @returns {string} Translated journal entry text
  */
 export const translateJournalEntry = (entryText, lang, t) => {
-  if (!entryText || lang !== 'VI') {
-    return entryText;
+  let translated = (entryText || '').toString();
+
+  // Cleanup legacy placeholders like "N/A" in status updates (apply for all languages)
+  translated = translated.replace(/:\s*N\/?A\s*→\s*/gi, ': '); // ": N/A → New" -> ": New"
+  translated = translated.replace(/:\s*N\/?A\s*$/gi, '');       // trailing ": N/A" -> removed
+  translated = translated.trim();
+
+  if (!translated) return '';
+  if (lang !== 'VI') {
+    return translated;
   }
 
   // Translate [Achievement Unlocked] format
-  let translated = entryText.replace(
+  translated = translated.replace(
     /\[Achievement Unlocked\]/gi,
     `[${t('journal.achievement_unlocked')}]`
   );
