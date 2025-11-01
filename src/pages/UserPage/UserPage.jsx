@@ -101,6 +101,7 @@ const UserPage = ({ onBack }) => {
   const doingRef = useRef(null);
   const locationRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
+  const [moodFilter, setMoodFilter] = useState('');
 
   // Collapse/expand states - collapsed by default
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -1840,14 +1841,23 @@ const UserPage = ({ onBack }) => {
                       className="select-display"
                       aria-haspopup="listbox"
                       aria-expanded={moodOpen}
-                      onClick={() => setMoodOpen(o => !o)}
+                      onClick={() => setMoodOpen(o => { const n = !o; if (n) setMoodFilter(''); return n; })}
                     >
                       {formData.mood || 'Select mood'}
                       <span className="select-caret">▾</span>
                     </button>
                     {moodOpen && (
                       <div className="select-options" role="listbox">
-                        {moodOptions.map(opt => (
+                        <div className="select-search">
+                          <input
+                            type="text"
+                            placeholder="Search mood..."
+                            value={moodFilter}
+                            onChange={(e) => setMoodFilter(e.target.value)}
+                            autoFocus
+                          />
+                        </div>
+                        {(moodOptions.filter(opt => String(opt).toLowerCase().includes(moodFilter.trim().toLowerCase()))).map(opt => (
                           <div
                             key={opt}
                             role="option"
