@@ -1390,6 +1390,30 @@ body {
     margin-top: 5px;
 }
 
+/* User confirmation description (bottom) */
+.achievement-modal-user-desc {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(45deg,
+            var(--white),
+            var(--white) 10px,
+            #f9f9f9 10px,
+            #f9f9f9 20px);
+}
+
+.achievement-modal-user-desc .user-desc-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.achievement-modal-user-desc .user-desc-content {
+    font-family: 'Playfair Display', serif;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
 .rewards-box-title {
     font-family: 'Playfair Display', serif;
     font-size: 1rem;
@@ -2140,6 +2164,12 @@ body {
     }
 
     .achievement-modal-rewards-box {
+        border-width: 2px;
+    }
+
+    .achievement-modal-user-desc {
+        padding: 10px 12px;
+        margin-top: 10px;
         border-width: 2px;
     }
 

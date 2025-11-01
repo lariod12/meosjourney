@@ -143,13 +143,15 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
 
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
   try {
-    const [profile, config, status, achievements, quests, journals] = await Promise.all([
+    const [profile, config, status, achievements, quests, journals, questConfirms, achievementConfirms] = await Promise.all([
       fetchProfile(characterId),
       fetchConfig(characterId),
       fetchStatus(characterId),
       fetchAchievements(characterId),
       fetchQuests(characterId),
-      fetchJournals(characterId)
+      fetchJournals(characterId),
+      fetchQuestConfirmations(characterId),
+      fetchAchievementConfirmations(characterId)
     ]);
 
     const skills = Array.isArray(profile?.skills) ? profile.skills.map((n) => ({ name: n })) : base.skills || [];
@@ -198,18 +200,32 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       timestamp: statusTimestamp
     } : base.status || {};
 
-    // Process achievements data - ALWAYS use database achievements
-    // Map achievements to include completedAt status
+    // Helper: find latest confirmation for a name by matching ID prefix
+    const getLatestConfirmation = (name, all) => {
+      if (!Array.isArray(all) || !name) return null;
+      const sanitized = String(name)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 50);
+      const matches = all.filter(c => typeof c.id === 'string' && c.id.startsWith(sanitized + '_'));
+      if (matches.length === 0) return null;
+      return matches[matches.length - 1];
+    };
+
+    // Process achievements data - attach latest confirmation if exists
     const achievementsData = achievements.map(achievement => ({
       ...achievement,
-      completed: achievement.completedAt !== null
+      completed: achievement.completedAt !== null,
+      confirmation: getLatestConfirmation(achievement.name, achievementConfirms)
     }));
 
-    // Process quests data - ALWAYS use database quests
-    // Map quests to include completedAt status
+    // Process quests data - attach latest confirmation if exists
     const questsData = quests.map(quest => ({
       ...quest,
-      completed: quest.completedAt !== null
+      completed: quest.completedAt !== null,
+      confirmation: getLatestConfirmation(quest.name, questConfirms)
     }));
 
     // Process journals data - ALWAYS use database journals

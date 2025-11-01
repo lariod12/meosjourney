@@ -354,11 +354,6 @@ const UserPage = ({ onBack }) => {
           skills: [...refreshedSkills], // Create new array to ensure reactivity
           interests: [...refreshedInterests] // Create new array to ensure reactivity
         });
-        console.log('🔄 Profile data refreshed:', {
-          introduce: profile.introduce || '',
-          skills: refreshedSkills,
-          interests: refreshedInterests
-        });
       }
 
       const doingsArr = Array.isArray(statusData?.doing)
@@ -1154,7 +1149,6 @@ const UserPage = ({ onBack }) => {
 
   // Quest submission handlers
   const handleAddQuestSubmission = (quest) => {
-    console.log('➕ Adding quest submission:', quest.name);
     const newIndex = selectedQuestSubmissions.length;
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
