@@ -33,7 +33,7 @@ export const characterData = {
         timestamp: new Date()
     },
 
-    introduce: "A creative artist who brings imagination to life through drawing. Passionate about exploring the world, discovering new cultures, and savoring delicious food. Every sketch tells a story, every journey sparks inspiration, and every meal brings pure happiness.",
+    introduce: "",
 
     quests: [],
     
