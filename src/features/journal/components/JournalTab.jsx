@@ -40,14 +40,34 @@ const JournalTab = () => {
     );
   }
 
+  // Remove empty/placeholder entries after translation (e.g., legacy N/A-only)
+  const filtered = todayJournals
+    .map((entry) => ({
+      key: entry.id || entry.time,
+      time: entry.time,
+      text: translateJournalEntry(entry.entry, lang, t).trim()
+    }))
+    .filter((e) => !!e.text);
+
+  if (filtered.length === 0) {
+    return (
+      <>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
+        <div className="journal-content">
+          <div className="empty-message">{t('journal.empty_today')}</div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
       <div className="journal-content">
-        {todayJournals.map((entry, index) => (
-          <div key={entry.id || index} className="journal-entry">
+        {filtered.map((entry, index) => (
+          <div key={entry.key || index} className="journal-entry">
             <div className="journal-time">{formatTime(entry.time, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
-            <div className="journal-text">{translateJournalEntry(entry.entry, lang, t)}</div>
+            <div className="journal-text">{entry.text}</div>
           </div>
         ))}
       </div>
