@@ -112,10 +112,13 @@ export const generateStatusChangeJournalEntry = (fieldType, oldValue, newValue) 
   };
 
   const fieldName = fieldMap[fieldType] || fieldType;
-  const old = oldValue || 'N/A';
-  const newVal = newValue || 'N/A';
+  const old = typeof oldValue === 'string' ? oldValue.trim() : String(oldValue || '').trim();
+  const newVal = typeof newValue === 'string' ? newValue.trim() : String(newValue || '').trim();
 
-  return `[Status Update] ${fieldName}: ${old} → ${newVal}`;
+  if (old && newVal) return `[Status Update] ${fieldName}: ${old} → ${newVal}`;
+  if (newVal) return `[Status Update] ${fieldName}: ${newVal}`;
+  if (old) return `[Status Update] ${fieldName}: ${old}`;
+  return `[Status Update] ${fieldName}`;
 };
 
 /**
