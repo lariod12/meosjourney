@@ -128,9 +128,31 @@ const HistoryTab = () => {
     );
   }
 
+  // Prepare display data: translate and drop empty entries
+  const displayDays = historyData
+    .map(day => {
+      const entries = day.entries
+        .map(e => ({
+          id: e.id,
+          time: e.time,
+          text: (translateJournalEntry(e.entry, lang, t) || '').trim()
+        }))
+        .filter(e => !!e.text);
+      return { ...day, entries };
+    })
+    .filter(day => day.entries.length > 0);
+
+  if (displayDays.length === 0) {
+    return (
+      <div className="history-list">
+        <div className="empty-message history-empty-message">{t('history.empty')}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`history-list ${historyData.length > 1 ? 'multiple-items' : 'single-item'}`}>
-      {historyData.map((day, index) => (
+    <div className={`history-list ${displayDays.length > 1 ? 'multiple-items' : 'single-item'}`}>
+      {displayDays.map((day, index) => (
         <div key={index} className={`history-item ${expandedIndex === index ? 'expanded' : ''}`}>
           <div className="history-date-header" onClick={() => toggleExpand(index)}>
             <span className="history-date-text">{formatDate(day.date, lang === 'VI' ? 'vi-VN' : 'en-US')}</span>
@@ -147,7 +169,7 @@ const HistoryTab = () => {
             {day.entries.map((entry, entryIndex) => (
               <div key={entry.id || entryIndex} className="journal-entry">
                 <div className="journal-time">{formatTime(entry.time, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
-                <div className="journal-text">{translateJournalEntry(entry.entry, lang, t)}</div>
+                <div className="journal-text">{entry.text}</div>
               </div>
             ))}
           </div>
