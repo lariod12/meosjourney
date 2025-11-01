@@ -222,11 +222,6 @@ const UserPage = ({ onBack }) => {
           interests: [...updatedInterests]
         });
 
-        console.log('✅ Profile data updated after submission:', {
-          introduce: profile2.introduce || '',
-          skills: updatedSkills,
-          interests: updatedInterests
-        });
       } else {
         setProfileData({ introduce: '', skills: [], interests: [] });
       }
@@ -1595,7 +1590,6 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Profile Update section clicked');
                 setProfileExpanded(!profileExpanded);
               }}
             >
@@ -1904,7 +1898,6 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Daily Quests Update section clicked');
                 setQuestsExpanded(prev => {
                   const next = !prev;
                   if (next) setQuestPickerCollapsed(false);

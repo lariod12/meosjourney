@@ -48,8 +48,6 @@ export const saveProfile = async (profileData, characterId = CHARACTER_ID) => {
     // Update profile document
     const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
     await setDoc(profileDocRef, dataToUpdate, { merge: true });
-
-    console.log('✅ Profile updated successfully:', dataToUpdate);
     
     return { success: true, data: dataToUpdate };
 

@@ -134,7 +134,6 @@ export const saveStatusChangeJournal = async (fieldType, oldValue, newValue, cha
       caption: journalContent
     }, characterId);
 
-    console.log(`✅ Status change journal saved: ${fieldType}`);
     return result;
   } catch (error) {
     console.error('❌ Error saving status change journal:', error);
