@@ -77,3 +77,4 @@ src/
 ## Notes
 - Current System Info Window 11 
 - Do not run dev because server is already running 
+- Do not use pnpm deploy because we working on local no need to do this
