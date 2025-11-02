@@ -93,13 +93,6 @@ git push origin main
    - Source: chọn **GitHub Actions**
    - Workflow sẽ tự động build và deploy
 
-**Option 2: Manual Deploy**
-
-```bash
-# Deploy thủ công
-pnpm run deploy
-```
-
 ## 🏗️ Project Structure
 
 ```

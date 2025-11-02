@@ -52,6 +52,7 @@ export const homeLocales = {
 
     'footer.connect': 'CONNECT WITH ME',
     'footer.version_label': 'Version',
+    'footer.open_link': 'Open link',
 
     'header.title': 'MY JOURNEY'
   },
@@ -108,6 +109,7 @@ export const homeLocales = {
 
     'footer.connect': 'KẾT NỐI VỚI TÔI',
     'footer.version_label': 'Phiên bản',
+    'footer.open_link': 'Mở liên kết',
 
     'header.title': 'HÀNH TRÌNH CỦA TÔI'
   }

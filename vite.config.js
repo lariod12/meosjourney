@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
 
 export default defineConfig(({ mode }) => ({
+  // Use root base for custom domain (https://meosjourney.info)
   base: '/',
   plugins: [
     react(),
