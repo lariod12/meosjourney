@@ -272,25 +272,52 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Build data object with only non-empty fields (merge behavior)
     const dataToSave = {};
 
-    // doing: if provided, prepend to existing array (or convert to array) and save
-    if (statusData.doing && statusData.doing.trim()) {
-      const newDoing = statusData.doing.trim();
-      const existingDoing = Array.isArray(currentStatus?.doing)
+    // Helper to normalize arrays: trim items, drop empties, dedupe case-insensitively while preserving order
+    const normalizeArray = (arr = []) => {
+      const out = [];
+      const seen = new Set();
+      for (const item of arr) {
+        const s = String(item ?? '').trim();
+        if (!s) continue; // skip empty/whitespace
+        const k = s.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(s);
+      }
+      return out;
+    };
+
+    // doing: if provided, prepend to existing cleaned array; otherwise, if existing contains empties, clean it
+    {
+      const existingDoingRaw = Array.isArray(currentStatus?.doing)
         ? currentStatus.doing
         : (currentStatus?.doing ? [currentStatus.doing] : []);
-      // Move-to-front (dedupe, case-insensitive)
-      const dedupDoing = existingDoing.filter(d => String(d).trim().toLowerCase() !== newDoing.toLowerCase());
-      dataToSave.doing = [newDoing, ...dedupDoing];
+      const existingDoingClean = normalizeArray(existingDoingRaw);
+
+      if (statusData.doing && statusData.doing.trim()) {
+        const newDoing = statusData.doing.trim();
+        const dedup = existingDoingClean.filter(d => d.toLowerCase() !== newDoing.toLowerCase());
+        dataToSave.doing = [newDoing, ...dedup];
+      } else if (existingDoingClean.length !== existingDoingRaw.length) {
+        // No new doing provided, but clean up empties if present
+        dataToSave.doing = existingDoingClean;
+      }
     }
 
-    if (statusData.location && statusData.location.trim()) {
-      const newLocation = statusData.location.trim();
-      const existingLocation = Array.isArray(currentStatus?.location)
+    // location: same handling as doing
+    {
+      const existingLocationRaw = Array.isArray(currentStatus?.location)
         ? currentStatus.location
         : (currentStatus?.location ? [currentStatus.location] : []);
-      // Move-to-front (dedupe, case-insensitive)
-      const dedupLoc = existingLocation.filter(v => String(v).trim().toLowerCase() !== newLocation.toLowerCase());
-      dataToSave.location = [newLocation, ...dedupLoc];
+      const existingLocationClean = normalizeArray(existingLocationRaw);
+
+      if (statusData.location && statusData.location.trim()) {
+        const newLocation = statusData.location.trim();
+        const dedup = existingLocationClean.filter(v => v.toLowerCase() !== newLocation.toLowerCase());
+        dataToSave.location = [newLocation, ...dedup];
+      } else if (existingLocationClean.length !== existingLocationRaw.length) {
+        dataToSave.location = existingLocationClean;
+      }
     }
 
     if (statusData.mood && statusData.mood.trim()) {
