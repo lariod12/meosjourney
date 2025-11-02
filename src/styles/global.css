@@ -1561,6 +1561,54 @@ body {
     letter-spacing: 0.5px;
 }
 
+/* Footer - social detail preview */
+.footer-detail-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    border: 2px dashed var(--black);
+    background: repeating-linear-gradient(45deg, var(--white), var(--white) 10px, #f9f9f9 10px, #f9f9f9 20px);
+    margin: 5px auto 0;
+    max-width: 720px;
+}
+
+.footer-detail-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.footer-detail-value {
+    user-select: text;
+}
+
+.footer-open-btn {
+    background: var(--white);
+    color: var(--black);
+    border: 3px solid var(--black);
+    padding: 6px 10px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    transform: rotate(-0.5deg);
+}
+
+.footer-open-btn:hover {
+    background: var(--black);
+    color: var(--white);
+    transform: rotate(-0.5deg) translateY(-2px);
+    box-shadow: 2px 4px 0 var(--gray-medium);
+}
+
+.footer-open-btn:active {
+    transform: rotate(-0.5deg) translateY(0);
+    box-shadow: 1px 2px 0 var(--gray-medium);
+}
+
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 1024px) {
     .main-layout {
@@ -2088,6 +2136,23 @@ body {
         margin-top: 6px;
     }
 
+    .footer-detail-box {
+        padding: 10px;
+        gap: 8px;
+        border-width: 2px;
+        margin-top: 8px;
+    }
+
+    .footer-detail-text {
+        font-size: 0.85rem;
+    }
+
+    .footer-open-btn {
+        padding: 5px 8px;
+        border-width: 2px;
+        font-size: 0.8rem;
+    }
+
     /* Achievement responsive for mobile */
     .achievements-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
@@ -2384,5 +2449,14 @@ body {
     .footer-version {
         font-size: 0.7rem;
         margin-top: 5px;
+    }
+
+    .footer-detail-text {
+        font-size: 0.8rem;
+    }
+    .footer-open-btn {
+        padding: 4px 7px;
+        border-width: 2px;
+        font-size: 0.75rem;
     }
 }
