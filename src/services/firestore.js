@@ -278,12 +278,9 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       const existingDoing = Array.isArray(currentStatus?.doing)
         ? currentStatus.doing
         : (currentStatus?.doing ? [currentStatus.doing] : []);
-      const exists = existingDoing
-        .map(d => String(d).trim().toLowerCase())
-        .includes(newDoing.toLowerCase());
-      if (!exists) {
-        dataToSave.doing = [newDoing, ...existingDoing];
-      }
+      // Move-to-front (dedupe, case-insensitive)
+      const dedupDoing = existingDoing.filter(d => String(d).trim().toLowerCase() !== newDoing.toLowerCase());
+      dataToSave.doing = [newDoing, ...dedupDoing];
     }
 
     if (statusData.location && statusData.location.trim()) {
@@ -291,12 +288,9 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       const existingLocation = Array.isArray(currentStatus?.location)
         ? currentStatus.location
         : (currentStatus?.location ? [currentStatus.location] : []);
-      const existsLoc = existingLocation
-        .map(v => String(v).trim().toLowerCase())
-        .includes(newLocation.toLowerCase());
-      if (!existsLoc) {
-        dataToSave.location = [newLocation, ...existingLocation];
-      }
+      // Move-to-front (dedupe, case-insensitive)
+      const dedupLoc = existingLocation.filter(v => String(v).trim().toLowerCase() !== newLocation.toLowerCase());
+      dataToSave.location = [newLocation, ...dedupLoc];
     }
 
     if (statusData.mood && statusData.mood.trim()) {

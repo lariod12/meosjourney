@@ -710,6 +710,10 @@ const UserPage = ({ onBack }) => {
           if (statusResult.success) {
             results.push({ type: 'success', item: 'Status Update' });
 
+            // Invalidate cache and notify Home to refresh immediately
+            try { clearCache(); } catch {}
+            try { window.dispatchEvent(new Event('meo:refresh')); } catch {}
+
             // Create journal entries for changed fields
             const newDoing = formData.doing.trim();
             const newLocation = formData.location.trim();
@@ -769,6 +773,8 @@ const UserPage = ({ onBack }) => {
 
           if (journalResult.success) {
             results.push({ type: 'success', item: 'Journal Entry' });
+            try { clearCache(); } catch {}
+            try { window.dispatchEvent(new Event('meo:refresh')); } catch {}
           } else {
             results.push({ type: 'failed', item: 'Journal Entry' });
           }
