@@ -1,9 +1,14 @@
-export const formatDate = (date, locale = 'vi-VN') => {
+export const formatDate = (date, locale = 'vi-VN', includeWeekday = false) => {
   if (!date) return '';
   if (String(locale).toLowerCase().startsWith('vi')) {
     const dd = String(date.getDate()).padStart(2, '0');
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const yyyy = date.getFullYear();
+    if (includeWeekday) {
+      const weekdaysVI = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+      const weekday = weekdaysVI[date.getDay()];
+      return `${dd}/${mm}/${yyyy} (${weekday})`;
+    }
     return `${dd}/${mm}/${yyyy}`; // Việt Nam: ngày/tháng/năm
   }
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };

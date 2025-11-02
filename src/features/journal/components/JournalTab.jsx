@@ -20,7 +20,7 @@ const JournalTab = () => {
   if (!data.journal) {
     return (
       <>
-        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US', lang === 'VI')}</div>
         <div className="journal-content">
           <div className="empty-message">{t('journal.loading')}</div>
         </div>
@@ -32,7 +32,7 @@ const JournalTab = () => {
   if (todayJournals.length === 0) {
     return (
       <>
-        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US', lang === 'VI')}</div>
         <div className="journal-content">
           <div className="empty-message">{t('journal.empty_today')}</div>
         </div>
@@ -52,7 +52,7 @@ const JournalTab = () => {
   if (filtered.length === 0) {
     return (
       <>
-        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
+        <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US', lang === 'VI')}</div>
         <div className="journal-content">
           <div className="empty-message">{t('journal.empty_today')}</div>
         </div>
@@ -62,7 +62,7 @@ const JournalTab = () => {
 
   return (
     <>
-      <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US')}</div>
+      <div className="journal-date">{formatDate(today, lang === 'VI' ? 'vi-VN' : 'en-US', lang === 'VI')}</div>
       <div className="journal-content">
         {filtered.map((entry, index) => (
           <div key={entry.key || index} className="journal-entry">
