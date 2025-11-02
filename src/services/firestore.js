@@ -1,6 +1,6 @@
 import { collection, getDocs, doc, setDoc, serverTimestamp, getDocsFromServer, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { CHARACTER_ID } from '../config/constants';
+import { CHARACTER_ID, COLLECTION_ROOT } from '../config/constants';
 
 export { CHARACTER_ID };
 
@@ -13,7 +13,7 @@ export const fetchFirstDocData = async (colPath, fromServer = false) => {
 };
 
 export const fetchProfile = async (characterId = CHARACTER_ID) => {
-  return await fetchFirstDocData(['main', characterId, 'profile']);
+  return await fetchFirstDocData([COLLECTION_ROOT, characterId, 'profile']);
 };
 
 export const saveProfile = async (profileData, characterId = CHARACTER_ID) => {
@@ -46,7 +46,7 @@ export const saveProfile = async (profileData, characterId = CHARACTER_ID) => {
     }
 
     // Update profile document
-    const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+    const profileDocRef = doc(db, COLLECTION_ROOT, characterId, 'profile', currentProfile.id);
     await setDoc(profileDocRef, dataToUpdate, { merge: true });
     
     return { success: true, data: dataToUpdate };
@@ -96,7 +96,7 @@ export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
     };
 
     // Update profile with new XP and level
-    const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+    const profileDocRef = doc(db, COLLECTION_ROOT, characterId, 'profile', currentProfile.id);
     await setDoc(profileDocRef, dataToUpdate, { merge: true });
 
     console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
@@ -119,7 +119,7 @@ export const updateProfileXP = async (xpToAdd, characterId = CHARACTER_ID) => {
 };
 
 export const fetchConfig = async (characterId = CHARACTER_ID) => {
-  return await fetchFirstDocData(['main', characterId, 'config']);
+  return await fetchFirstDocData([COLLECTION_ROOT, characterId, 'config']);
 };
 
 export const setAutoApproveTasks = async (enabled, characterId = CHARACTER_ID) => {
@@ -128,7 +128,7 @@ export const setAutoApproveTasks = async (enabled, characterId = CHARACTER_ID) =
     if (!cfg || !cfg.id) {
       throw new Error('No config document found. Please create one first.');
     }
-    const configRef = doc(db, 'main', characterId, 'config', cfg.id);
+    const configRef = doc(db, COLLECTION_ROOT, characterId, 'config', cfg.id);
     await setDoc(configRef, { auto_approve_tasks: !!enabled }, { merge: true });
     return { success: true, value: !!enabled };
   } catch (error) {
@@ -138,7 +138,7 @@ export const setAutoApproveTasks = async (enabled, characterId = CHARACTER_ID) =
 };
 
 export const fetchStatus = async (characterId = CHARACTER_ID) => {
-  return await fetchFirstDocData(['main', characterId, 'status']);
+  return await fetchFirstDocData([COLLECTION_ROOT, characterId, 'status']);
 };
 
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
@@ -272,30 +272,51 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Build data object with only non-empty fields (merge behavior)
     const dataToSave = {};
 
-    // doing: if provided, prepend to existing array (or convert to array) and save
-    if (statusData.doing && statusData.doing.trim()) {
-      const newDoing = statusData.doing.trim();
-      const existingDoing = Array.isArray(currentStatus?.doing)
+    // Helper to normalize arrays: trim items, drop empties, dedupe case-insensitively while preserving order
+    const normalizeArray = (arr = []) => {
+      const out = [];
+      const seen = new Set();
+      for (const item of arr) {
+        const s = String(item ?? '').trim();
+        if (!s) continue; // skip empty/whitespace
+        const k = s.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(s);
+      }
+      return out;
+    };
+
+    // doing: if provided, prepend to existing cleaned array; otherwise, if existing contains empties, clean it
+    {
+      const existingDoingRaw = Array.isArray(currentStatus?.doing)
         ? currentStatus.doing
         : (currentStatus?.doing ? [currentStatus.doing] : []);
-      const exists = existingDoing
-        .map(d => String(d).trim().toLowerCase())
-        .includes(newDoing.toLowerCase());
-      if (!exists) {
-        dataToSave.doing = [newDoing, ...existingDoing];
+      const existingDoingClean = normalizeArray(existingDoingRaw);
+
+      if (statusData.doing && statusData.doing.trim()) {
+        const newDoing = statusData.doing.trim();
+        const dedup = existingDoingClean.filter(d => d.toLowerCase() !== newDoing.toLowerCase());
+        dataToSave.doing = [newDoing, ...dedup];
+      } else if (existingDoingClean.length !== existingDoingRaw.length) {
+        // No new doing provided, but clean up empties if present
+        dataToSave.doing = existingDoingClean;
       }
     }
 
-    if (statusData.location && statusData.location.trim()) {
-      const newLocation = statusData.location.trim();
-      const existingLocation = Array.isArray(currentStatus?.location)
+    // location: same handling as doing
+    {
+      const existingLocationRaw = Array.isArray(currentStatus?.location)
         ? currentStatus.location
         : (currentStatus?.location ? [currentStatus.location] : []);
-      const existsLoc = existingLocation
-        .map(v => String(v).trim().toLowerCase())
-        .includes(newLocation.toLowerCase());
-      if (!existsLoc) {
-        dataToSave.location = [newLocation, ...existingLocation];
+      const existingLocationClean = normalizeArray(existingLocationRaw);
+
+      if (statusData.location && statusData.location.trim()) {
+        const newLocation = statusData.location.trim();
+        const dedup = existingLocationClean.filter(v => v.toLowerCase() !== newLocation.toLowerCase());
+        dataToSave.location = [newLocation, ...dedup];
+      } else if (existingLocationClean.length !== existingLocationRaw.length) {
+        dataToSave.location = existingLocationClean;
       }
     }
 
@@ -312,7 +333,7 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       try {
         const currentProfile = await fetchProfile(characterId);
         if (currentProfile && currentProfile.id) {
-          const profileDocRef = doc(db, 'main', characterId, 'profile', currentProfile.id);
+          const profileDocRef = doc(db, COLLECTION_ROOT, characterId, 'profile', currentProfile.id);
           await setDoc(profileDocRef, { caption: statusData.caption.trim() }, { merge: true });
           console.log('✅ Profile caption updated successfully');
           captionUpdated = true;
@@ -326,7 +347,7 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
     // Save status data if there's at least one field besides timestamp
     const hasStatusData = Object.keys(dataToSave).length > 1;
     if (hasStatusData) {
-      const statusDocRef = doc(db, 'main', characterId, 'status', currentStatus.id);
+      const statusDocRef = doc(db, COLLECTION_ROOT, characterId, 'status', currentStatus.id);
       await setDoc(statusDocRef, dataToSave, { merge: true });
     }
 
@@ -389,7 +410,7 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
     };
 
     // Use setDoc with achievement name + date as document ID
-    const achievementDocRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    const achievementDocRef = doc(db, COLLECTION_ROOT, characterId, 'achievements', achievementId);
     await setDoc(achievementDocRef, dataToSave);
 
     return { success: true, id: achievementId, data: dataToSave };
@@ -405,7 +426,7 @@ export const saveAchievement = async (achievementData, characterId = CHARACTER_I
 
 export const fetchAchievements = async (characterId = CHARACTER_ID) => {
   try {
-    const achievementsRef = collection(db, 'main', characterId, 'achievements');
+    const achievementsRef = collection(db, COLLECTION_ROOT, characterId, 'achievements');
     const snapshot = await getDocs(achievementsRef);
 
     const achievements = snapshot.docs.map(doc => ({
@@ -425,7 +446,7 @@ export const updateAchievement = async (achievementId, achievementData, characte
   try {
     // Just update existing document, don't change ID
     // Achievement ID includes date suffix and should not be changed
-    const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    const achievementRef = doc(db, COLLECTION_ROOT, characterId, 'achievements', achievementId);
 
     // Get the old document to check if it exists
     const oldDoc = await getDoc(achievementRef);
@@ -445,7 +466,7 @@ export const updateAchievement = async (achievementId, achievementData, characte
 
 export const deleteAchievement = async (achievementId, characterId = CHARACTER_ID) => {
   try {
-    const achievementRef = doc(db, 'main', characterId, 'achievements', achievementId);
+    const achievementRef = doc(db, COLLECTION_ROOT, characterId, 'achievements', achievementId);
     await deleteDoc(achievementRef);
 
     return { success: true, id: achievementId };
@@ -501,7 +522,7 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
       createdAt: serverTimestamp()
     };
 
-    const questDocRef = doc(db, 'main', characterId, 'quests', questId);
+    const questDocRef = doc(db, COLLECTION_ROOT, characterId, 'quests', questId);
     await setDoc(questDocRef, dataToSave);
 
     return { success: true, id: questId, data: dataToSave };
@@ -517,7 +538,7 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
 
 export const fetchQuests = async (characterId = CHARACTER_ID) => {
   try {
-    const questsRef = collection(db, 'main', characterId, 'quests');
+    const questsRef = collection(db, COLLECTION_ROOT, characterId, 'quests');
     const snapshot = await getDocs(questsRef);
 
     const quests = snapshot.docs.map(doc => ({
@@ -535,7 +556,7 @@ export const fetchQuests = async (characterId = CHARACTER_ID) => {
 
 export const updateQuest = async (questId, questData, characterId = CHARACTER_ID) => {
   try {
-    const questRef = doc(db, 'main', characterId, 'quests', questId);
+    const questRef = doc(db, COLLECTION_ROOT, characterId, 'quests', questId);
     await setDoc(questRef, questData, { merge: true });
 
     return { success: true, id: questId };
@@ -547,7 +568,7 @@ export const updateQuest = async (questId, questData, characterId = CHARACTER_ID
 
 export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
   try {
-    const questRef = doc(db, 'main', characterId, 'quests', questId);
+    const questRef = doc(db, COLLECTION_ROOT, characterId, 'quests', questId);
     await deleteDoc(questRef);
 
     return { success: true, id: questId };
@@ -559,7 +580,7 @@ export const deleteQuest = async (questId, characterId = CHARACTER_ID) => {
 
 export const fetchJournals = async (characterId = CHARACTER_ID) => {
   try {
-    const journalsRef = collection(db, 'main', characterId, 'journal');
+    const journalsRef = collection(db, COLLECTION_ROOT, characterId, 'journal');
     const snapshot = await getDocs(journalsRef);
 
     const journals = snapshot.docs.map(doc => {
@@ -629,7 +650,7 @@ export const saveJournal = async (journalData, characterId = CHARACTER_ID) => {
     };
 
     // Use setDoc with custom document ID instead of addDoc
-    const journalDocRef = doc(db, 'main', characterId, 'journal', datetimeId);
+    const journalDocRef = doc(db, COLLECTION_ROOT, characterId, 'journal', datetimeId);
     await setDoc(journalDocRef, dataToSave);
 
     // Update history collection with journal reference
@@ -650,9 +671,9 @@ const updateTodayHistory = async (characterId, journalId) => {
   try {
     // Get today's date as document ID (YYYY-MM-DD format)
     const today = new Date().toISOString().split('T')[0];
-    const journalPath = `/main/${characterId}/journal/${journalId}`;
+    const journalPath = `/${COLLECTION_ROOT}/${characterId}/journal/${journalId}`;
 
-    const historyRef = doc(db, 'main', characterId, 'history', today);
+    const historyRef = doc(db, COLLECTION_ROOT, characterId, 'history', today);
 
     // Check if history document exists for today
     const historySnap = await getDoc(historyRef);
@@ -727,7 +748,7 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
       createdAt: serverTimestamp()
     };
 
-    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'quests-confirm', docId);
     // setDoc will overwrite if document already exists (same quest submitted multiple times today)
     await setDoc(confirmRef, dataToSave);
 
@@ -747,7 +768,7 @@ export const saveQuestConfirmation = async (confirmData, characterId = CHARACTER
  */
 export const fetchQuestConfirmations = async (characterId = CHARACTER_ID) => {
   try {
-    const confirmRef = collection(db, 'main', characterId, 'quests-confirm');
+    const confirmRef = collection(db, COLLECTION_ROOT, characterId, 'quests-confirm');
     const snapshot = await getDocs(confirmRef);
 
     const confirmations = snapshot.docs.map(doc => ({
@@ -789,7 +810,7 @@ export const getQuestConfirmation = async (questName, characterId = CHARACTER_ID
 
     const docId = `${sanitizedName}_${dateSuffix}`;
 
-    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'quests-confirm', docId);
     const snapshot = await getDoc(confirmRef);
 
     if (snapshot.exists()) {
@@ -830,7 +851,7 @@ export const deleteQuestConfirmation = async (questName, characterId = CHARACTER
 
     const docId = `${sanitizedName}_${dateSuffix}`;
 
-    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'quests-confirm', docId);
     await deleteDoc(confirmRef);
 
     return { success: true };
@@ -889,7 +910,7 @@ export const saveAchievementConfirmation = async (confirmData, characterId = CHA
       createdAt: serverTimestamp()
     };
 
-    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'achievements-confirm', docId);
     await setDoc(confirmRef, dataToSave);
 
     return { success: true, id: docId };
@@ -910,7 +931,7 @@ export const saveAchievementConfirmation = async (confirmData, characterId = CHA
  */
 export const deleteQuestConfirmationById = async (confirmationId, characterId = CHARACTER_ID) => {
   try {
-    const confirmRef = doc(db, 'main', characterId, 'quests-confirm', confirmationId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'quests-confirm', confirmationId);
     await deleteDoc(confirmRef);
 
     return { success: true };
@@ -929,7 +950,7 @@ export const deleteQuestConfirmationById = async (confirmationId, characterId = 
  */
 export const fetchAchievementConfirmations = async (characterId = CHARACTER_ID) => {
   try {
-    const confirmRef = collection(db, 'main', characterId, 'achievements-confirm');
+    const confirmRef = collection(db, COLLECTION_ROOT, characterId, 'achievements-confirm');
     const snapshot = await getDocs(confirmRef);
 
     const confirmations = snapshot.docs.map(doc => ({
@@ -971,7 +992,7 @@ export const getAchievementConfirmation = async (achievementName, characterId = 
 
     const docId = `${sanitizedName}_${dateSuffix}`;
 
-    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'achievements-confirm', docId);
     const snapshot = await getDoc(confirmRef);
 
     if (snapshot.exists()) {
@@ -1012,7 +1033,7 @@ export const deleteAchievementConfirmation = async (achievementName, characterId
 
     const docId = `${sanitizedName}_${dateSuffix}`;
 
-    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', docId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'achievements-confirm', docId);
     await deleteDoc(confirmRef);
 
     return { success: true };
@@ -1032,7 +1053,7 @@ export const deleteAchievementConfirmation = async (achievementName, characterId
  */
 export const deleteAchievementConfirmationById = async (confirmationId, characterId = CHARACTER_ID) => {
   try {
-    const confirmRef = doc(db, 'main', characterId, 'achievements-confirm', confirmationId);
+    const confirmRef = doc(db, COLLECTION_ROOT, characterId, 'achievements-confirm', confirmationId);
     await deleteDoc(confirmRef);
 
     return { success: true };

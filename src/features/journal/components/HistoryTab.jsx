@@ -155,7 +155,7 @@ const HistoryTab = () => {
       {displayDays.map((day, index) => (
         <div key={index} className={`history-item ${expandedIndex === index ? 'expanded' : ''}`}>
           <div className="history-date-header" onClick={() => toggleExpand(index)}>
-            <span className="history-date-text">{formatDate(day.date, lang === 'VI' ? 'vi-VN' : 'en-US')}</span>
+            <span className="history-date-text">{formatDate(day.date, lang === 'VI' ? 'vi-VN' : 'en-US', lang === 'VI')}</span>
             <span className="history-arrow">{expandedIndex === index ? '▲' : '▼'}</span>
           </div>
           <div 
