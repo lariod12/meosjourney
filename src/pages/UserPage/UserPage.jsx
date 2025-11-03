@@ -1330,9 +1330,9 @@ const UserPage = ({ onBack }) => {
     return questConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
   };
 
-  // Get all quest submissions (quests that have confirmation)
+  // Get all quest submissions (quests that have confirmation) - include completed
   const getAllQuestSubmissions = () => {
-    const questsWithConfirmation = availableQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
+    const questsWithConfirmation = allQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
       const confirmation = getQuestConfirmationData(quest.name);
       return {
         ...quest,
@@ -1483,9 +1483,9 @@ const UserPage = ({ onBack }) => {
     return achievementConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
   };
 
-  // Get all achievement submissions (achievements that have confirmation)
+  // Get all achievement submissions (achievements that have confirmation) - include completed
   const getAllAchievementSubmissions = () => {
-    const achievementsWithConfirmation = availableAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
+    const achievementsWithConfirmation = allAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
       const confirmation = getAchievementConfirmationData(achievement.name);
       return {
         ...achievement,
