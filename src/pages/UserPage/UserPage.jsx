@@ -130,6 +130,49 @@ const UserPage = ({ onBack }) => {
     return typeof value === 'string' ? value.trim() : String(value).trim();
   };
 
+  const resolveLocalizedValue = (value, fallback = '') => {
+    if (!value && value !== 0) {
+      return typeof fallback === 'string' ? fallback : '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const { en, vi, ...rest } = value;
+
+      if (typeof en === 'string' && en.trim()) {
+        return en.trim();
+      }
+
+      if (typeof vi === 'string' && vi.trim()) {
+        return vi.trim();
+      }
+
+      const firstString = Object.values(rest).find(
+        entry => typeof entry === 'string' && entry.trim()
+      );
+
+      if (firstString) {
+        return firstString.trim();
+      }
+    }
+
+    if (Array.isArray(value)) {
+      const firstString = value.find(entry => typeof entry === 'string' && entry.trim());
+      if (firstString) {
+        return firstString.trim();
+      }
+    }
+
+    return typeof fallback === 'string' ? fallback : '';
+  };
+
+  const getLocalizedName = (item) => resolveLocalizedValue(item?.nameTranslations, item?.name);
+  const getLocalizedDesc = (item) => resolveLocalizedValue(item?.descTranslations, item?.desc);
+  const getLocalizedReward = (item) => resolveLocalizedValue(item?.specialRewardTranslations, item?.specialReward);
+
   const applyStatusProfileToForm = (statusData, profile) => {
     setFormData(prev => {
       const next = { ...prev };
@@ -976,7 +1019,15 @@ const UserPage = ({ onBack }) => {
                 xpResult = await updateProfileXP(submission.achievementXp || 0, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve XP update failed:', e.message); }
               try {
-                await saveAchievementCompletionJournal({ name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' }, CHARACTER_ID);
+                await saveAchievementCompletionJournal({
+                  name: submission.achievementTitle,
+                  nameTranslations: submission.achievementNameTranslations,
+                  desc: submission.achievementDesc || '',
+                  descTranslations: submission.achievementDescTranslations,
+                  xp: submission.achievementXp || 0,
+                  specialReward: submission.achievementSpecialReward || '',
+                  specialRewardTranslations: submission.achievementSpecialRewardTranslations
+                }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve journal save failed:', e.message); }
               // Save Level Up journal AFTER achievement journal to preserve order
               try {
@@ -1003,8 +1054,12 @@ const UserPage = ({ onBack }) => {
             try {
               const achievementData = {
                 name: submission.achievementTitle,
+                nameTranslations: submission.achievementNameTranslations,
                 xp: submission.achievementXp || 0,
                 desc: submission.achievementDesc || '',
+                descTranslations: submission.achievementDescTranslations,
+                specialReward: submission.achievementSpecialReward || '',
+                specialRewardTranslations: submission.achievementSpecialRewardTranslations,
                 icon: submission.achievementIcon || '🏆'
               };
               
@@ -1028,7 +1083,15 @@ const UserPage = ({ onBack }) => {
             if (autoApproveTasks) {
               try {
                 await sendAdminAchievementCompletedNotification(
-                  { name: submission.achievementTitle, desc: submission.achievementDesc || '', xp: submission.achievementXp || 0, specialReward: submission.achievementSpecialReward || '' },
+                  {
+                    name: submission.achievementTitle,
+                    nameTranslations: submission.achievementNameTranslations,
+                    desc: submission.achievementDesc || '',
+                    descTranslations: submission.achievementDescTranslations,
+                    xp: submission.achievementXp || 0,
+                    specialReward: submission.achievementSpecialReward || '',
+                    specialRewardTranslations: submission.achievementSpecialRewardTranslations
+                  },
                   { desc: submission.description || '', imgUrl }
                 );
               } catch (e) { console.warn('⚠️ Discord admin achievement notification failed:', e); }
@@ -1297,14 +1360,21 @@ const UserPage = ({ onBack }) => {
 
   // Achievement submission handlers
   const handleAddAchievementSubmission = (achievement) => {
-    console.log('➕ Adding achievement submission:', achievement.name);
+    const displayName = getLocalizedName(achievement);
+    const displayDesc = getLocalizedDesc(achievement);
+    const displayReward = getLocalizedReward(achievement);
+
+    console.log('➕ Adding achievement submission:', displayName);
     setSelectedAchievementSubmissions(prev => [...prev, {
       achievementId: achievement.id,
-      achievementTitle: achievement.name,
-      achievementDesc: achievement.desc || '',
+      achievementTitle: displayName,
+      achievementNameTranslations: achievement.nameTranslations || null,
+      achievementDesc: displayDesc,
+      achievementDescTranslations: achievement.descTranslations || null,
       achievementIcon: achievement.icon || '',
       achievementXp: achievement.xp,
-      achievementSpecialReward: achievement.specialReward || '',
+      achievementSpecialReward: displayReward,
+      achievementSpecialRewardTranslations: achievement.specialRewardTranslations || null,
       achievementDueDate: achievement.dueDate || null,
       description: '',
       image: null,
@@ -2087,25 +2157,30 @@ const UserPage = ({ onBack }) => {
                       </button>
                       {!achievementPickerCollapsed && (
                         <div id="achievement-picker" className="quest-dropdown dropdown-static" ref={achievementDropdownRef}>
-                          {getAvailableAchievementsForDropdown().map(achievement => (
-                            <div
-                              key={achievement.id}
-                              className="quest-dropdown-item"
-                              onClick={() => handleAddAchievementSubmission(achievement)}
-                            >
-                              <span className="quest-dropdown-title">
-                                {achievement.icon && (
-                                  <IconRenderer iconName={achievement.icon} size={20} />
-                                )}
-                                {' '}{achievement.name}
-                                {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
-                              </span>
-                              <span className="quest-dropdown-xp">
-                                {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
-                              </span>
-                            </div>
-                          ))}
+                          {getAvailableAchievementsForDropdown().map(achievement => {
+                            const displayName = getLocalizedName(achievement);
+                            const specialRewardText = getLocalizedReward(achievement);
+
+                            return (
+                              <div
+                                key={achievement.id}
+                                className="quest-dropdown-item"
+                                onClick={() => handleAddAchievementSubmission(achievement)}
+                              >
+                                <span className="quest-dropdown-title">
+                                  {achievement.icon && (
+                                    <IconRenderer iconName={achievement.icon} size={20} />
+                                  )}
+                                  {' '}{displayName}
+                                  {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
+                                </span>
+                                <span className="quest-dropdown-xp">
+                                  {achievement.xp > 0 && `+${achievement.xp} XP`}
+                                  {specialRewardText && ` 🎁 ${specialRewardText}`}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -2305,6 +2380,8 @@ const UserPage = ({ onBack }) => {
                                     minute: '2-digit'
                                   })
                                   : null;
+                                const displayName = getLocalizedName(achievement);
+                                const specialRewardText = getLocalizedReward(achievement);
 
                                 return (
                                   <div key={achievement.id} className="pending-item">
@@ -2313,14 +2390,14 @@ const UserPage = ({ onBack }) => {
                                         {achievement.icon && (
                                           <IconRenderer iconName={achievement.icon} size={20} />
                                         )}
-                                        {' '}{achievement.name}
+                                        {' '}{displayName}
                                       </span>
                                       <span className="pending-item-badge pending">Pending</span>
                                     </div>
                                     <div className="pending-item-details">
                                       <span className="pending-item-xp">
                                         {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                        {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                        {specialRewardText && ` 🎁 ${specialRewardText}`}
                                       </span>
                                       {formattedDate && (
                                         <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
@@ -2433,6 +2510,8 @@ const UserPage = ({ onBack }) => {
                                       minute: '2-digit'
                                     })
                                     : null;
+                                  const displayName = getLocalizedName(achievement);
+                                  const specialRewardText = getLocalizedReward(achievement);
 
                                   return (
                                     <div key={achievement.id} className="pending-item failed">
@@ -2441,14 +2520,14 @@ const UserPage = ({ onBack }) => {
                                           {achievement.icon && (
                                             <IconRenderer iconName={achievement.icon} size={20} />
                                           )}
-                                          {' '}{achievement.name}
+                                          {' '}{displayName}
                                         </span>
                                         <span className="pending-item-badge failed">Failed</span>
                                       </div>
                                       <div className="pending-item-details">
                                         <span className="pending-item-xp">
                                           {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                          {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                          {specialRewardText && ` 🎁 ${specialRewardText}`}
                                         </span>
                                         {formattedDate && (
                                           <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
@@ -2581,6 +2660,8 @@ const UserPage = ({ onBack }) => {
                                       minute: '2-digit'
                                     })
                                     : null;
+                                  const displayName = getLocalizedName(achievement);
+                                  const specialRewardText = getLocalizedReward(achievement);
 
                                   return (
                                     <div key={achievement.id} className="pending-item completed">
@@ -2589,14 +2670,14 @@ const UserPage = ({ onBack }) => {
                                           {achievement.icon && (
                                             <IconRenderer iconName={achievement.icon} size={20} />
                                           )}
-                                          {' '}{achievement.name}
+                                          {' '}{displayName}
                                         </span>
                                         <span className="pending-item-badge completed">Completed</span>
                                       </div>
                                       <div className="pending-item-details">
                                         <span className="pending-item-xp">
                                           {achievement.xp > 0 && `+${achievement.xp} XP`}
-                                          {achievement.specialReward && ` 🎁 ${achievement.specialReward}`}
+                                          {specialRewardText && ` 🎁 ${specialRewardText}`}
                                         </span>
                                         {formattedSubmittedDate && (
                                           <p className="pending-item-date">📅 Submitted: {formattedSubmittedDate}</p>

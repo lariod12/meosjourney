@@ -44,10 +44,13 @@ const AdminPage = ({ onBack }) => {
 
   const [formData, setFormData] = useState({
     name: '',
+    nameVi: '',
     desc: '',
+    descVi: '',
     icon: '',
     xp: '',
     specialReward: '',
+    specialRewardVi: '',
     dueDate: ''
   });
 
@@ -232,9 +235,44 @@ const AdminPage = ({ onBack }) => {
     if (isSubmitting) return;
 
     if (activeTab === 'create-achievement') {
+      const nameEn = formData.name.trim();
+      const nameVi = formData.nameVi.trim();
+      const descEn = formData.desc.trim();
+      const descVi = formData.descVi.trim();
+
+      if (!nameEn || !nameVi || !descEn || !descVi) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Please provide both English and Vietnamese names and descriptions.',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
       // Validate: must have either xp or specialReward
       const hasXP = formData.xp && Number(formData.xp) > 0;
-      const hasSpecialReward = formData.specialReward.trim().length > 0;
+      const specialRewardEn = formData.specialReward.trim();
+      const specialRewardVi = formData.specialRewardVi.trim();
+      const hasSpecialReward = specialRewardEn.length > 0 || specialRewardVi.length > 0;
+
+      if (hasSpecialReward && (!specialRewardEn || !specialRewardVi)) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Please provide Special Reward in both English and Vietnamese.',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
 
       if (!hasXP && !hasSpecialReward) {
         setConfirmModal({
@@ -255,7 +293,7 @@ const AdminPage = ({ onBack }) => {
         isOpen: true,
         type: 'info',
         title: 'Confirm Creation',
-        message: `Are you sure you want to create achievement "${formData.name.trim()}"?`,
+        message: `Are you sure you want to create achievement "${nameEn}"?`,
         confirmText: 'Create',
         cancelText: 'Cancel',
         onConfirm: () => {
@@ -266,8 +304,41 @@ const AdminPage = ({ onBack }) => {
       });
 
     } else if (activeTab === 'create-quest') {
+      const nameEn = formData.name.trim();
+      const nameVi = formData.nameVi.trim();
+      const descEn = formData.desc.trim();
+      const descVi = formData.descVi.trim();
+
+      if (!nameEn || !nameVi) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Quest name is required in both English and Vietnamese.',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
+      if (!descEn || !descVi) {
+        setConfirmModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Validation Error',
+          message: 'Quest description is required in both English and Vietnamese.',
+          confirmText: 'OK',
+          cancelText: null,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+          onCancel: null
+        });
+        return;
+      }
+
       // Validate quest
-      if (!formData.name.trim()) {
+      if (!nameEn) {
         setConfirmModal({
           isOpen: true,
           type: 'warning',
@@ -300,7 +371,7 @@ const AdminPage = ({ onBack }) => {
         isOpen: true,
         type: 'info',
         title: 'Confirm Creation',
-        message: `Are you sure you want to create quest "${formData.name.trim()}" with ${formData.xp} XP reward?`,
+        message: `Are you sure you want to create quest "${nameEn}" with ${formData.xp} XP reward?`,
         confirmText: 'Create',
         cancelText: 'Cancel',
         onConfirm: () => {
@@ -316,12 +387,19 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
+      const specialRewardEn = formData.specialReward.trim();
+      const specialRewardVi = formData.specialRewardVi.trim();
+      const hasSpecialReward = specialRewardEn.length > 0 || specialRewardVi.length > 0;
+      const specialRewardTranslations = hasSpecialReward
+        ? { en: specialRewardEn, vi: specialRewardVi }
+        : null;
+
       const achievementData = {
-        name: formData.name.trim(),
-        desc: formData.desc.trim(),
+        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
+        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
         icon: formData.icon.trim(),
         xp: Number(formData.xp) || 0,
-        specialReward: formData.specialReward.trim(),
+        specialReward: specialRewardTranslations,
         dueDate: formData.dueDate || null
       };
 
@@ -368,8 +446,8 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const questData = {
-        name: formData.name.trim(),
-        desc: formData.desc.trim(),
+        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
+        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
         xp: Number(formData.xp)
       };
 
@@ -414,10 +492,13 @@ const AdminPage = ({ onBack }) => {
   const handleReset = () => {
     setFormData({
       name: '',
+      nameVi: '',
       desc: '',
+      descVi: '',
       icon: '',
       xp: '',
       specialReward: '',
+      specialRewardVi: '',
       dueDate: ''
     });
   };
@@ -438,8 +519,43 @@ const AdminPage = ({ onBack }) => {
 
 
   const handleUpdate = async (achievementId) => {
+    const nameEn = formData.name.trim();
+    const nameVi = formData.nameVi.trim();
+    const descEn = formData.desc.trim();
+    const descVi = formData.descVi.trim();
+
+    if (!nameEn || !nameVi || !descEn || !descVi) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'Please provide both English and Vietnamese names and descriptions.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+      return;
+    }
+
     const hasXP = formData.xp && Number(formData.xp) > 0;
-    const hasSpecialReward = formData.specialReward.trim().length > 0;
+    const specialRewardEn = formData.specialReward.trim();
+    const specialRewardVi = formData.specialRewardVi.trim();
+    const hasSpecialReward = specialRewardEn.length > 0 || specialRewardVi.length > 0;
+
+    if (hasSpecialReward && (!specialRewardEn || !specialRewardVi)) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'Please provide Special Reward in both English and Vietnamese.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+      return;
+    }
 
     if (!hasXP && !hasSpecialReward) {
       setConfirmModal({
@@ -458,12 +574,18 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
+      const specialRewardEnTrimmed = specialRewardEn;
+      const specialRewardViTrimmed = specialRewardVi;
+      const specialRewardTranslations = hasSpecialReward
+        ? { en: specialRewardEnTrimmed, vi: specialRewardViTrimmed }
+        : null;
+
       const achievementData = {
-        name: formData.name.trim(),
-        desc: formData.desc.trim(),
+        name: { en: nameEn, vi: nameVi },
+        desc: { en: descEn, vi: descVi },
         icon: formData.icon.trim(),
         xp: Number(formData.xp) || 0,
-        specialReward: formData.specialReward.trim(),
+        specialReward: specialRewardTranslations,
         dueDate: formData.dueDate || null
       };
 
@@ -506,12 +628,31 @@ const AdminPage = ({ onBack }) => {
   };
 
   const handleUpdateQuest = async (questId) => {
-    if (!formData.name.trim()) {
+    const nameEn = formData.name.trim();
+    const nameVi = formData.nameVi.trim();
+    const descEn = formData.desc.trim();
+    const descVi = formData.descVi.trim();
+
+    if (!nameEn || !nameVi) {
       setConfirmModal({
         isOpen: true,
         type: 'warning',
         title: 'Validation Error',
-        message: 'Quest name is required',
+        message: 'Quest name is required in both English and Vietnamese.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: null
+      });
+      return;
+    }
+
+    if (!descEn || !descVi) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Validation Error',
+        message: 'Quest description is required in both English and Vietnamese.',
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
@@ -538,8 +679,8 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const questData = {
-        name: formData.name.trim(),
-        desc: formData.desc.trim(),
+        name: { en: nameEn, vi: nameVi },
+        desc: { en: descEn, vi: descVi },
         xp: Number(formData.xp)
       };
 
@@ -1241,29 +1382,63 @@ const AdminPage = ({ onBack }) => {
             <h2>▸ Create Achievement</h2>
 
             <div className="form-group">
-              <label htmlFor="name">Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g., First Drawing"
-                required
-              />
+              <label>Achievement Name *</label>
+              <div className="bilingual-field">
+                <div className="language-field">
+                  <span className="language-tag">English</span>
+                  <input
+                    type="text"
+                    id="achievement-name-en"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g., First Drawing"
+                    required
+                  />
+                </div>
+                <div className="language-field">
+                  <span className="language-tag">Tiếng Việt</span>
+                  <input
+                    type="text"
+                    id="achievement-name-vi"
+                    name="nameVi"
+                    value={formData.nameVi}
+                    onChange={handleChange}
+                    placeholder="ví dụ: Bức vẽ đầu tiên"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="desc">Description *</label>
-              <textarea
-                id="desc"
-                name="desc"
-                rows="3"
-                value={formData.desc}
-                onChange={handleChange}
-                placeholder="Describe the achievement..."
-                required
-              />
+              <label>Achievement Description *</label>
+              <div className="bilingual-field">
+                <div className="language-field">
+                  <span className="language-tag">English</span>
+                  <textarea
+                    id="achievement-desc-en"
+                    name="desc"
+                    rows="3"
+                    value={formData.desc}
+                    onChange={handleChange}
+                    placeholder="Describe the achievement..."
+                    required
+                  />
+                </div>
+                <div className="language-field">
+                  <span className="language-tag">Tiếng Việt</span>
+                  <textarea
+                    id="achievement-desc-vi"
+                    name="descVi"
+                    rows="3"
+                    value={formData.descVi}
+                    onChange={handleChange}
+                    placeholder="Mô tả thành tựu..."
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
@@ -1288,15 +1463,31 @@ const AdminPage = ({ onBack }) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="specialReward">Special Reward (required if no XP)</label>
-              <input
-                type="text"
-                id="specialReward"
-                name="specialReward"
-                value={formData.specialReward}
-                onChange={handleChange}
-                placeholder="e.g., New badge"
-              />
+              <label>Special Reward (required if no XP)</label>
+              <div className="bilingual-field">
+                <div className="language-field">
+                  <span className="language-tag">English</span>
+                  <input
+                    type="text"
+                    id="specialReward-en"
+                    name="specialReward"
+                    value={formData.specialReward}
+                    onChange={handleChange}
+                    placeholder="e.g., New badge"
+                  />
+                </div>
+                <div className="language-field">
+                  <span className="language-tag">Tiếng Việt</span>
+                  <input
+                    type="text"
+                    id="specialReward-vi"
+                    name="specialRewardVi"
+                    value={formData.specialRewardVi}
+                    onChange={handleChange}
+                    placeholder="ví dụ: Huy hiệu mới"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
@@ -1326,28 +1517,63 @@ const AdminPage = ({ onBack }) => {
             <h2>▸ Create Daily Quest</h2>
 
             <div className="form-group">
-              <label htmlFor="name">Quest Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g., Complete 3 drawings today"
-                required
-              />
+              <label>Quest Name *</label>
+              <div className="bilingual-field">
+                <div className="language-field">
+                  <span className="language-tag">English</span>
+                  <input
+                    type="text"
+                    id="quest-name-en"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g., Complete 3 drawings today"
+                    required
+                  />
+                </div>
+                <div className="language-field">
+                  <span className="language-tag">Tiếng Việt</span>
+                  <input
+                    type="text"
+                    id="quest-name-vi"
+                    name="nameVi"
+                    value={formData.nameVi}
+                    onChange={handleChange}
+                    placeholder="ví dụ: Hoàn thành 3 bức vẽ hôm nay"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="desc">Description</label>
-              <textarea
-                id="desc"
-                name="desc"
-                rows="3"
-                value={formData.desc}
-                onChange={handleChange}
-                placeholder="Describe the quest..."
-              />
+              <label>Quest Description *</label>
+              <div className="bilingual-field">
+                <div className="language-field">
+                  <span className="language-tag">English</span>
+                  <textarea
+                    id="quest-desc-en"
+                    name="desc"
+                    rows="3"
+                    value={formData.desc}
+                    onChange={handleChange}
+                    placeholder="Describe the quest..."
+                    required
+                  />
+                </div>
+                <div className="language-field">
+                  <span className="language-tag">Tiếng Việt</span>
+                  <textarea
+                    id="quest-desc-vi"
+                    name="descVi"
+                    rows="3"
+                    value={formData.descVi}
+                    onChange={handleChange}
+                    placeholder="Mô tả nhiệm vụ..."
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
@@ -1573,24 +1799,54 @@ const AdminPage = ({ onBack }) => {
                       ) : isEditing ? (
                         <div className="achievement-edit-form">
                           <div className="form-group">
-                            <label>Name *</label>
-                            <input
-                              type="text"
-                              name="name"
-                              value={formData.name}
-                              onChange={handleChange}
-                              required
-                            />
+                            <label>Achievement Name *</label>
+                            <div className="bilingual-field">
+                              <div className="language-field">
+                                <span className="language-tag">English</span>
+                                <input
+                                  type="text"
+                                  name="name"
+                                  value={formData.name}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                              <div className="language-field">
+                                <span className="language-tag">Tiếng Việt</span>
+                                <input
+                                  type="text"
+                                  name="nameVi"
+                                  value={formData.nameVi}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="form-group">
-                            <label>Description *</label>
-                            <textarea
-                              name="desc"
-                              rows="3"
-                              value={formData.desc}
-                              onChange={handleChange}
-                              required
-                            />
+                            <label>Achievement Description *</label>
+                            <div className="bilingual-field">
+                              <div className="language-field">
+                                <span className="language-tag">English</span>
+                                <textarea
+                                  name="desc"
+                                  rows="3"
+                                  value={formData.desc}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                              <div className="language-field">
+                                <span className="language-tag">Tiếng Việt</span>
+                                <textarea
+                                  name="descVi"
+                                  rows="3"
+                                  value={formData.descVi}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="form-group">
                             <label>Icon *</label>
@@ -1612,12 +1868,26 @@ const AdminPage = ({ onBack }) => {
                           </div>
                           <div className="form-group">
                             <label>Special Reward</label>
-                            <input
-                              type="text"
-                              name="specialReward"
-                              value={formData.specialReward}
-                              onChange={handleChange}
-                            />
+                            <div className="bilingual-field">
+                              <div className="language-field">
+                                <span className="language-tag">English</span>
+                                <input
+                                  type="text"
+                                  name="specialReward"
+                                  value={formData.specialReward}
+                                  onChange={handleChange}
+                                />
+                              </div>
+                              <div className="language-field">
+                                <span className="language-tag">Tiếng Việt</span>
+                                <input
+                                  type="text"
+                                  name="specialRewardVi"
+                                  value={formData.specialRewardVi}
+                                  onChange={handleChange}
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="form-group">
                             <label>Due Date</label>
@@ -1918,22 +2188,53 @@ const AdminPage = ({ onBack }) => {
                         <div className="quest-edit-form">
                           <div className="form-group">
                             <label>Quest Name *</label>
-                            <input
-                              type="text"
-                              name="name"
-                              value={formData.name}
-                              onChange={handleChange}
-                              required
-                            />
+                            <div className="bilingual-field">
+                              <div className="language-field">
+                                <span className="language-tag">English</span>
+                                <input
+                                  type="text"
+                                  name="name"
+                                  value={formData.name}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                              <div className="language-field">
+                                <span className="language-tag">Tiếng Việt</span>
+                                <input
+                                  type="text"
+                                  name="nameVi"
+                                  value={formData.nameVi}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="form-group">
-                            <label>Description</label>
-                            <textarea
-                              name="desc"
-                              rows="3"
-                              value={formData.desc}
-                              onChange={handleChange}
-                            />
+                            <label>Quest Description *</label>
+                            <div className="bilingual-field">
+                              <div className="language-field">
+                                <span className="language-tag">English</span>
+                                <textarea
+                                  name="desc"
+                                  rows="3"
+                                  value={formData.desc}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                              <div className="language-field">
+                                <span className="language-tag">Tiếng Việt</span>
+                                <textarea
+                                  name="descVi"
+                                  rows="3"
+                                  value={formData.descVi}
+                                  onChange={handleChange}
+                                  required
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="form-group">
                             <label>XP Reward *</label>
