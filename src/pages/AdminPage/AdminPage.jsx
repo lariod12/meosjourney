@@ -977,7 +977,13 @@ const AdminPage = ({ onBack }) => {
       // Notify admin channel via Discord
       try {
         await sendAdminQuestCompletedNotification(
-          { name: quest.name, desc: quest.desc, xp: quest.xp },
+          { 
+            name: quest.name, 
+            nameTranslations: quest.nameTranslations,
+            desc: quest.desc, 
+            descTranslations: quest.descTranslations,
+            xp: quest.xp 
+          },
           { desc: confirmation?.desc || '', imgUrl: confirmation?.imgUrl || '' }
         );
       } catch (e) {
@@ -1166,7 +1172,15 @@ const AdminPage = ({ onBack }) => {
       // Notify admin channel via Discord
       try {
         await sendAdminAchievementCompletedNotification(
-          { name: achievement.name, desc: achievement.desc, xp: achievement.xp, specialReward: achievement.specialReward },
+          { 
+            name: achievement.name, 
+            nameTranslations: achievement.nameTranslations,
+            desc: achievement.desc, 
+            descTranslations: achievement.descTranslations,
+            xp: achievement.xp, 
+            specialReward: achievement.specialReward,
+            specialRewardTranslations: achievement.specialRewardTranslations
+          },
           { desc: confirmation?.desc || '', imgUrl: confirmation?.imgUrl || '' }
         );
       } catch (e) {

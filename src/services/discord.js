@@ -81,12 +81,13 @@ const resolveLocalizedText = (value, fallback = '') => {
   if (typeof value === 'object' && value !== null) {
     const { en, vi, ...rest } = value;
 
-    if (typeof en === 'string' && en.trim()) {
-      return en.trim();
-    }
-
+    // Prefer Vietnamese first for Discord messages
     if (typeof vi === 'string' && vi.trim()) {
       return vi.trim();
+    }
+
+    if (typeof en === 'string' && en.trim()) {
+      return en.trim();
     }
 
     const firstString = Object.values(rest).find(
@@ -148,18 +149,16 @@ const sendDiscordWebhookMessage = async (payload, webhookUrl) => {
 
 export const sendAdminQuestCreatedNotification = async (questData) => {
   try {
-    const questName = resolveLocalizedText(questData.nameTranslations, questData.name);
-    const questDesc = resolveLocalizedText(questData.descTranslations, questData.desc);
+    const nameValue = questData?.nameTranslations ?? questData?.name;
+    const descValue = questData?.descTranslations ?? questData?.desc;
+    const questName = resolveLocalizedText(nameValue);
+    const questDesc = resolveLocalizedText(descValue);
 
     const embed = {
       title: '📜 New Quest Added',
+      description: `**${questName}**`,
       color: 0x1E90FF,
       fields: [
-        {
-          name: '',
-          value: questName,
-          inline: false
-        },
         {
           name: '📋 Description',
           value: questDesc || 'No description provided',
@@ -190,28 +189,18 @@ export const sendAdminQuestCreatedNotification = async (questData) => {
 
 export const sendAdminAchievementCreatedNotification = async (achievementData) => {
   try {
-    const achievementName = resolveLocalizedText(
-      achievementData.nameTranslations,
-      achievementData.name
-    );
-    const achievementDesc = resolveLocalizedText(
-      achievementData.descTranslations,
-      achievementData.desc
-    );
-    const specialReward = resolveLocalizedText(
-      achievementData.specialRewardTranslations,
-      achievementData.specialReward
-    );
+    const nameValue = achievementData?.nameTranslations ?? achievementData?.name;
+    const descValue = achievementData?.descTranslations ?? achievementData?.desc;
+    const rewardValue = achievementData?.specialRewardTranslations ?? achievementData?.specialReward;
+    const achievementName = resolveLocalizedText(nameValue);
+    const achievementDesc = resolveLocalizedText(descValue);
+    const specialReward = resolveLocalizedText(rewardValue);
 
     const embed = {
       title: '🏆 New Achievement Added',
+      description: `**${achievementName}**`,
       color: 0xFFD700,
       fields: [
-        {
-          name: '',
-          value: achievementName,
-          inline: false
-        },
         {
           name: '📋 Description',
           value: achievementDesc || 'No description provided',
@@ -250,14 +239,16 @@ export const sendAdminAchievementCreatedNotification = async (achievementData) =
 
 export const sendAdminQuestCompletedNotification = async (questData, confirmationData = {}) => {
   try {
-    const questName = resolveLocalizedText(questData.nameTranslations, questData.name);
-    const questDesc = resolveLocalizedText(questData.descTranslations, questData.desc);
+    const nameValue = questData?.nameTranslations ?? questData?.name;
+    const descValue = questData?.descTranslations ?? questData?.desc;
+    const questName = resolveLocalizedText(nameValue);
+    const questDesc = resolveLocalizedText(descValue);
 
     const embed = {
       title: '📜 Quest Completed (Approved)',
+      description: `**${questName}**`,
       color: 0x1E90FF,
       fields: [
-        { name: '', value: questName, inline: false },
         { name: '📋 Quest Description', value: questDesc || 'No description available', inline: false },
         { name: '📝 Submission', value: confirmationData.desc || 'No details provided', inline: false },
         { name: '⭐ XP Awarded', value: `+${questData.xp || 0} XP`, inline: true }
@@ -280,24 +271,18 @@ export const sendAdminQuestCompletedNotification = async (questData, confirmatio
 
 export const sendAdminAchievementCompletedNotification = async (achievementData, confirmationData = {}) => {
   try {
-    const achievementName = resolveLocalizedText(
-      achievementData.nameTranslations,
-      achievementData.name
-    );
-    const achievementDesc = resolveLocalizedText(
-      achievementData.descTranslations,
-      achievementData.desc
-    );
-    const specialReward = resolveLocalizedText(
-      achievementData.specialRewardTranslations,
-      achievementData.specialReward
-    );
+    const nameValue = achievementData?.nameTranslations ?? achievementData?.name;
+    const descValue = achievementData?.descTranslations ?? achievementData?.desc;
+    const rewardValue = achievementData?.specialRewardTranslations ?? achievementData?.specialReward;
+    const achievementName = resolveLocalizedText(nameValue);
+    const achievementDesc = resolveLocalizedText(descValue);
+    const specialReward = resolveLocalizedText(rewardValue);
 
     const embed = {
       title: '🏆 Achievement Completed (Approved)',
+      description: `**${achievementName}**`,
       color: 0xFFD700,
       fields: [
-        { name: '', value: achievementName, inline: false },
         { name: '📋 Achievement Description', value: achievementDesc || 'No description available', inline: false },
         { name: '📝 Submission', value: confirmationData.desc || 'No details provided', inline: false },
         { name: '⭐ XP Awarded', value: `+${achievementData.xp || 0} XP`, inline: true }
@@ -338,18 +323,16 @@ export const sendQuestSubmissionNotification = async (questData, userData, confi
     }
 
     // Create embed message
-    const questName = resolveLocalizedText(questData.nameTranslations, questData.name);
-    const questDesc = resolveLocalizedText(questData.descTranslations, questData.desc);
+    const nameValue = questData?.nameTranslations ?? questData?.name;
+    const descValue = questData?.descTranslations ?? questData?.desc;
+    const questName = resolveLocalizedText(nameValue);
+    const questDesc = resolveLocalizedText(descValue);
 
     const embed = {
       title: '📜 Quest Submitted!',
+      description: `**${questName}**`,
       color: 0x1E90FF,
       fields: [
-        {
-          name: '',
-          value: questName,
-          inline: false
-        },
         {
           name: '📝 Submission Details',
           value: confirmationData.desc || 'No details provided',
@@ -424,28 +407,18 @@ export const sendAchievementNotification = async (achievementData, userData, con
     }
 
     // Create embed message
-    const achievementName = resolveLocalizedText(
-      achievementData.nameTranslations,
-      achievementData.name
-    );
-    const achievementDesc = resolveLocalizedText(
-      achievementData.descTranslations,
-      achievementData.desc
-    );
-    const specialReward = resolveLocalizedText(
-      achievementData.specialRewardTranslations,
-      achievementData.specialReward
-    );
+    const nameValue = achievementData?.nameTranslations ?? achievementData?.name;
+    const descValue = achievementData?.descTranslations ?? achievementData?.desc;
+    const rewardValue = achievementData?.specialRewardTranslations ?? achievementData?.specialReward;
+    const achievementName = resolveLocalizedText(nameValue);
+    const achievementDesc = resolveLocalizedText(descValue);
+    const specialReward = resolveLocalizedText(rewardValue);
 
     const embed = {
       title: `🏆 Achievement Submitted!`,
+      description: `**${achievementName}**`,
       color: 0xFFD700, // Gold color for achievements
       fields: [
-        {
-          name: '',
-          value: achievementName,
-          inline: false
-        },
         {
           name: '📝 Submission Details',
           value: confirmationData.desc || 'No details provided',
