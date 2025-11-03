@@ -7,7 +7,7 @@ import { useLanguage } from '../../../contexts';
 const QuestsTab = () => {
   const data = useCharacter();
   const [selectedQuest, setSelectedQuest] = useState(null);
-  const { t } = useLanguage();
+  const { t, getLocalized } = useLanguage();
 
   // Filter quests to show only today's quests (Vietnam timezone)
   const todayQuests = useMemo(() => {
@@ -64,6 +64,7 @@ const QuestsTab = () => {
       <div className="quests-list">
         {todayQuests.map(quest => {
           const isCompleted = quest.completedAt !== null;
+          const questName = getLocalized(quest.nameTranslations, quest.name);
           return (
             <div
               key={quest.id}
@@ -71,7 +72,7 @@ const QuestsTab = () => {
               onClick={() => handleQuestClick(quest)}
               style={{ cursor: 'pointer' }}
             >
-              <div className="quest-text">{quest.name}</div>
+              <div className="quest-text">{questName}</div>
               <div className="quest-xp">+{quest.xp} XP</div>
             </div>
           );

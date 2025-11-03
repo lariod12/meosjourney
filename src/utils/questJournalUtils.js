@@ -4,6 +4,41 @@
 
 import { saveJournal } from '../services/firestore';
 
+const extractLocalizedField = (value, fallback = '') => {
+  if (!value && value !== 0) {
+    return typeof fallback === 'string' ? fallback : '';
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const en = value.en;
+    const vi = value.vi;
+
+    if (typeof en === 'string' && en.trim()) return en.trim();
+    if (typeof vi === 'string' && vi.trim()) return vi.trim();
+
+    const firstString = Object.values(value).find(
+      (entry) => typeof entry === 'string' && entry.trim()
+    );
+
+    if (firstString) {
+      return firstString.trim();
+    }
+  }
+
+  if (Array.isArray(value)) {
+    const firstString = value.find((entry) => typeof entry === 'string' && entry.trim());
+    if (firstString) {
+      return firstString.trim();
+    }
+  }
+
+  return typeof fallback === 'string' ? fallback : '';
+};
+
 /**
  * Generate journal entry content for completed quest
  * @param {Object} quest - Quest object with name, desc, xp
@@ -11,10 +46,13 @@ import { saveJournal } from '../services/firestore';
  */
 export const generateQuestJournalEntry = (quest) => {
   // Create journal entry template following the specified format
-  let journalContent = `[Quest Completed] ${quest.name}`;
+  const questName = extractLocalizedField(quest.nameTranslations, quest.name);
+  const questDesc = extractLocalizedField(quest.descTranslations, quest.desc);
 
-  if (quest.desc && quest.desc.trim()) {
-    journalContent += `: ${quest.desc}`;
+  let journalContent = `[Quest Completed] ${questName}`;
+
+  if (questDesc && questDesc.trim()) {
+    journalContent += `: ${questDesc}`;
   }
 
   journalContent += ` (+${quest.xp} XP)`;
@@ -29,10 +67,23 @@ export const generateQuestJournalEntry = (quest) => {
  */
 export const generateAchievementJournalEntry = (achievement) => {
   // Create journal entry template following the specified format
-  let journalContent = `[Achievement Unlocked] ${achievement.name}`;
+  const achievementName = extractLocalizedField(
+    achievement.nameTranslations,
+    achievement.name
+  );
+  const achievementDesc = extractLocalizedField(
+    achievement.descTranslations,
+    achievement.desc
+  );
+  const rewardText = extractLocalizedField(
+    achievement.specialRewardTranslations,
+    achievement.specialReward
+  );
 
-  if (achievement.desc && achievement.desc.trim()) {
-    journalContent += `: ${achievement.desc}`;
+  let journalContent = `[Achievement Unlocked] ${achievementName}`;
+
+  if (achievementDesc && achievementDesc.trim()) {
+    journalContent += `: ${achievementDesc}`;
   }
 
   // Add rewards
@@ -40,8 +91,8 @@ export const generateAchievementJournalEntry = (achievement) => {
   if (achievement.xp > 0) {
     rewards.push(`+${achievement.xp} XP`);
   }
-  if (achievement.specialReward && achievement.specialReward.trim()) {
-    rewards.push(achievement.specialReward);
+  if (rewardText && rewardText.trim()) {
+    rewards.push(rewardText);
   }
 
   if (rewards.length > 0) {
@@ -60,12 +111,13 @@ export const generateAchievementJournalEntry = (achievement) => {
 export const saveQuestCompletionJournal = async (quest, characterId) => {
   try {
     const journalContent = generateQuestJournalEntry(quest);
+    const questName = extractLocalizedField(quest.nameTranslations, quest.name);
 
     const result = await saveJournal({
       caption: journalContent
     }, characterId);
 
-    console.log('✅ Quest completion journal saved:', quest.name);
+    console.log('✅ Quest completion journal saved:', questName);
     return result;
   } catch (error) {
     console.error('❌ Error saving quest completion journal:', error);
@@ -82,12 +134,16 @@ export const saveQuestCompletionJournal = async (quest, characterId) => {
 export const saveAchievementCompletionJournal = async (achievement, characterId) => {
   try {
     const journalContent = generateAchievementJournalEntry(achievement);
+    const achievementName = extractLocalizedField(
+      achievement.nameTranslations,
+      achievement.name
+    );
 
     const result = await saveJournal({
       caption: journalContent
     }, characterId);
 
-    console.log('✅ Achievement completion journal saved:', achievement.name);
+    console.log('✅ Achievement completion journal saved:', achievementName);
     return result;
   } catch (error) {
     console.error('❌ Error saving achievement completion journal:', error);

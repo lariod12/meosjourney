@@ -4,10 +4,10 @@ import AchievementModal from './AchievementModal';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { useLanguage } from '../../../contexts';
 
-const AchievementsTab = () => {
+export default function AchievementsTab() {
   const data = useCharacter();
   const [selectedAchievement, setSelectedAchievement] = useState(null);
-  const { t } = useLanguage();
+  const { t, getLocalized } = useLanguage();
 
   // Handle loading state
   if (!data.achievements) {
@@ -47,7 +47,9 @@ const AchievementsTab = () => {
               <div className="achievement-icon">
                 <IconRenderer iconName={achievement.icon} size={32} />
               </div>
-              <div className="achievement-name">{achievement.name}</div>
+              <div className="achievement-name">
+                {getLocalized(achievement.nameTranslations, achievement.name)}
+              </div>
             </div>
           );
         })}
@@ -60,6 +62,4 @@ const AchievementsTab = () => {
       )}
     </>
   );
-};
-
-export default AchievementsTab;
+}

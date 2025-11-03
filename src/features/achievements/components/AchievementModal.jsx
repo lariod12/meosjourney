@@ -3,7 +3,7 @@ import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { useLanguage } from '../../../contexts';
 import { formatDate } from '../../../utils/dateUtils';
 
-const AchievementModal = ({ achievement, onClose }) => {
+export default function AchievementModal({ achievement, onClose }) {
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
@@ -20,8 +20,18 @@ const AchievementModal = ({ achievement, onClose }) => {
     }
   };
 
-  const { t, lang } = useLanguage();
+  const { t, lang, getLocalized } = useLanguage();
   const isCompleted = achievement.completedAt !== null;
+  const displayName = getLocalized(achievement.nameTranslations, achievement.name);
+  const description = getLocalized(
+    achievement.descTranslations,
+    achievement.description || achievement.desc
+  );
+  const specialReward = getLocalized(
+    achievement.specialRewardTranslations,
+    achievement.specialReward
+  );
+  const hasSpecialReward = !!specialReward;
 
   return (
     <div className="achievement-modal active" onClick={handleBackdropClick}>
@@ -33,9 +43,9 @@ const AchievementModal = ({ achievement, onClose }) => {
         <div className="achievement-modal-icon">
           <IconRenderer iconName={achievement.icon} size={48} />
         </div>
-        <div className="achievement-modal-title">{achievement.name}</div>
+        <div className="achievement-modal-title">{displayName}</div>
         <div className="achievement-modal-description">
-          {achievement.description || achievement.desc}
+          {description}
           {achievement.dueDate && (
             <div className="achievement-modal-due-date">
               {t('modal.achievement.due_date')} {(() => {
@@ -69,9 +79,9 @@ const AchievementModal = ({ achievement, onClose }) => {
         <div className="achievement-modal-rewards-box">
           <div className="rewards-box-title">{t('modal.achievement.rewards')}</div>
           <div className="rewards-box-list">
-            {achievement.specialReward ? (
+            {hasSpecialReward ? (
               <>
-                <div className="reward-special">{achievement.specialReward}</div>
+                <div className="reward-special">{specialReward}</div>
                 <div className="reward-exp">+{achievement.exp || achievement.xp} EXP</div>
               </>
             ) : (
@@ -90,6 +100,4 @@ const AchievementModal = ({ achievement, onClose }) => {
       </div>
     </div>
   );
-};
-
-export default AchievementModal;
+}

@@ -25,10 +25,12 @@ const QuestDetailModal = ({ quest, onClose }) => {
     }
   };
 
-  const { t } = useLanguage();
+  const { t, getLocalized } = useLanguage();
   
   const isCompleted = quest.completedAt !== null;
   const modalTitle = isCompleted ? t('modal.quest.title_completed') : t('modal.quest.title');
+  const questName = getLocalized(quest.nameTranslations, quest.name);
+  const questDescription = getLocalized(quest.descTranslations, quest.desc);
 
   return (
     <div className="quest-detail-overlay" onClick={handleOverlayClick}>
@@ -48,15 +50,15 @@ const QuestDetailModal = ({ quest, onClose }) => {
           {/* Quest Title */}
           <label className="quest-detail-label">{t('modal.quest.name')}</label>
           <div className="quest-detail-value quest-title">
-            {quest.name}
+            {questName}
           </div>
 
           {/* Quest Description */}
-          {quest.desc && (
+          {questDescription && (
             <>
               <label className="quest-detail-label">{t('modal.quest.description')}</label>
               <div className="quest-detail-value quest-description">
-                {quest.desc}
+                {questDescription}
               </div>
             </>
           )}

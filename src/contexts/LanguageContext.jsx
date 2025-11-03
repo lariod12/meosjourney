@@ -1,7 +1,17 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { homeLocales } from '../locales/home';
 
 const LanguageContext = createContext(null);
+
+const normalizeToString = (value) => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (value === undefined || value === null) {
+    return '';
+  }
+  return String(value).trim();
+};
 
 export const useLanguage = () => {
   const ctx = useContext(LanguageContext);
@@ -12,6 +22,47 @@ export const useLanguage = () => {
 export const LanguageProvider = ({ initialLang = 'VI', children }) => {
   const [lang, setLang] = useState(initialLang);
 
+  const getLocalized = useCallback((translations, fallback = '') => {
+    const normalizedFallback = normalizeToString(fallback);
+
+    if (!translations) {
+      return normalizedFallback;
+    }
+
+    if (typeof translations === 'string') {
+      const normalized = normalizeToString(translations);
+      return normalized || normalizedFallback;
+    }
+
+    if (typeof translations !== 'object') {
+      return normalizedFallback;
+    }
+
+    const currentKey = (typeof lang === 'string' ? lang : 'en').toLowerCase();
+    const primary = normalizeToString(translations[currentKey]);
+    if (primary) {
+      return primary;
+    }
+
+    const fallbackKey = currentKey === 'vi' ? 'en' : 'vi';
+    const alternate = normalizeToString(translations[fallbackKey]);
+    if (alternate) {
+      return alternate;
+    }
+
+    const enValue = normalizeToString(translations.en);
+    if (enValue) {
+      return enValue;
+    }
+
+    const viValue = normalizeToString(translations.vi);
+    if (viValue) {
+      return viValue;
+    }
+
+    return normalizedFallback;
+  }, [lang]);
+
   const t = useMemo(() => {
     const dict = homeLocales[lang] || {};
     return (key) => {
@@ -20,7 +71,7 @@ export const LanguageProvider = ({ initialLang = 'VI', children }) => {
     };
   }, [lang]);
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
+  const value = useMemo(() => ({ lang, setLang, t, getLocalized }), [lang, t, getLocalized]);
 
   return (
     <LanguageContext.Provider value={value}>

@@ -141,6 +141,105 @@ export const fetchStatus = async (characterId = CHARACTER_ID) => {
   return await fetchFirstDocData([COLLECTION_ROOT, characterId, 'status']);
 };
 
+const normalizeString = (value) => {
+  if (typeof value === 'string') return value.trim();
+  if (value === undefined || value === null) return '';
+  return String(value).trim();
+};
+
+const sanitizeForId = (text) => {
+  return normalizeString(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '_')
+    .substring(0, 50);
+};
+
+const ensureBilingualField = (value, fallbackEn = '', fallbackVi = '') => {
+  const normalizedFallbackEn = normalizeString(fallbackEn);
+  const normalizedFallbackVi = normalizeString(fallbackVi);
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const enValue = value.en !== undefined ? normalizeString(value.en) : '';
+    const viValue = value.vi !== undefined ? normalizeString(value.vi) : '';
+    return {
+      en: enValue || normalizedFallbackEn,
+      vi: viValue || normalizedFallbackVi
+    };
+  }
+
+  const normalizedValue = normalizeString(value);
+
+  return {
+    en: normalizedValue || normalizedFallbackEn,
+    vi: normalizedFallbackVi
+  };
+};
+
+const deriveBilingualFromPayload = (payload, field) => {
+  if (!payload || typeof payload !== 'object') return null;
+
+  if (payload[field] !== undefined) {
+    const direct = payload[field];
+    const fallbackEn = payload[`${field}En`];
+    const fallbackVi = payload[`${field}Vi`];
+
+    if (direct && typeof direct === 'object' && !Array.isArray(direct)) {
+      return ensureBilingualField(direct, fallbackEn, fallbackVi);
+    }
+
+    return ensureBilingualField(direct, fallbackEn ?? direct, fallbackVi);
+  }
+
+  if (payload[`${field}En`] !== undefined || payload[`${field}Vi`] !== undefined) {
+    return ensureBilingualField(
+      { en: payload[`${field}En`], vi: payload[`${field}Vi`] },
+      payload[`${field}En`],
+      payload[`${field}Vi`]
+    );
+  }
+
+  return null;
+};
+
+const normalizeBilingualFromDoc = (docData, field) => {
+  if (!docData) return { en: '', vi: '' };
+  return ensureBilingualField(
+    docData[field],
+    docData[`${field}En`],
+    docData[`${field}Vi`]
+  );
+};
+
+const appendBilingualReadFields = (data, field) => {
+  const bilingual = normalizeBilingualFromDoc(data, field);
+
+  return {
+    [`${field}Translations`]: bilingual,
+    [`${field}En`]: bilingual.en,
+    [`${field}Vi`]: bilingual.vi,
+    [field]: bilingual.en
+  };
+};
+
+const buildDatedDocId = (nameEn) => {
+  const sanitizedName = sanitizeForId(nameEn);
+
+  if (!sanitizedName) {
+    throw new Error('Name must contain at least one alphanumeric character');
+  }
+
+  const now = new Date();
+  const dateSuffix = now.toLocaleString('sv-SE', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: '2-digit',
+    month: '2-digit',
+    day: '2-digit'
+  }).replace(/-/g, '');
+
+  return `${sanitizedName}_${dateSuffix}`;
+};
+
 export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = {}) => {
   try {
     const [profile, config, status, achievements, quests, journals, questConfirms, achievementConfirms] = await Promise.all([
@@ -370,40 +469,38 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
 
 export const saveAchievement = async (achievementData, characterId = CHARACTER_ID) => {
   try {
+    // Normalize bilingual fields from payload (accepts map or legacy strings)
+    const nameField = ensureBilingualField(
+      achievementData.name,
+      achievementData.nameEn,
+      achievementData.nameVi
+    );
+    const descField = ensureBilingualField(
+      achievementData.desc,
+      achievementData.descEn,
+      achievementData.descVi
+    );
+    const rewardField = ensureBilingualField(
+      achievementData.specialReward,
+      achievementData.specialRewardEn,
+      achievementData.specialRewardVi
+    );
+    const hasSpecialReward = rewardField.en || rewardField.vi;
+    const specialRewardData = hasSpecialReward ? rewardField : null;
+
     // Validate achievement name
-    if (!achievementData.name || !achievementData.name.trim()) {
+    if (!nameField.en) {
       throw new Error('Achievement name cannot be empty');
     }
 
-    // Sanitize achievement name
-    const sanitizedName = achievementData.name.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .substring(0, 50); // Limit length to 50 characters
-
-    if (!sanitizedName) {
-      throw new Error('Achievement name must contain at least one alphanumeric character');
-    }
-
-    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
-    const now = new Date();
-    const dateSuffix = now.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, ''); // Format: YYMMDD
-
-    // Combine name with date: name_YYMMDD
-    const achievementId = `${sanitizedName}_${dateSuffix}`;
+    const achievementId = buildDatedDocId(nameField.en);
 
     const dataToSave = {
-      name: achievementData.name,
-      desc: achievementData.desc,
+      name: nameField,
+      desc: descField,
       icon: achievementData.icon,
       xp: achievementData.xp,
-      specialReward: achievementData.specialReward,
+      specialReward: specialRewardData,
       dueDate: achievementData.dueDate,
       completedAt: null,
       createdAt: serverTimestamp()
@@ -429,10 +526,20 @@ export const fetchAchievements = async (characterId = CHARACTER_ID) => {
     const achievementsRef = collection(db, COLLECTION_ROOT, characterId, 'achievements');
     const snapshot = await getDocs(achievementsRef);
 
-    const achievements = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const achievements = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const bilingualFields = {
+        ...appendBilingualReadFields(data, 'name'),
+        ...appendBilingualReadFields(data, 'desc'),
+        ...appendBilingualReadFields(data, 'specialReward')
+      };
+
+      return {
+        id: docSnap.id,
+        ...data,
+        ...bilingualFields
+      };
+    });
 
     return achievements;
   } catch (error) {
@@ -454,8 +561,37 @@ export const updateAchievement = async (achievementId, achievementData, characte
       throw new Error('Achievement not found');
     }
 
+    // Only persist allowed fields to avoid duplicating data
+    const updates = {};
+
+    const nameMap = deriveBilingualFromPayload(achievementData, 'name');
+    if (nameMap) {
+      updates.name = nameMap;
+    }
+
+    const descMap = deriveBilingualFromPayload(achievementData, 'desc');
+    if (descMap) {
+      updates.desc = descMap;
+    }
+
+    const rewardMap = deriveBilingualFromPayload(achievementData, 'specialReward');
+    if (rewardMap) {
+      const hasReward = rewardMap.en || rewardMap.vi;
+      if (hasReward) {
+        updates.specialReward = rewardMap;
+      } else {
+        updates.specialReward = null;
+      }
+    }
+
+    // Non-bilingual fields
+    if (achievementData.icon !== undefined) updates.icon = achievementData.icon;
+    if (achievementData.xp !== undefined) updates.xp = achievementData.xp;
+    if (achievementData.dueDate !== undefined) updates.dueDate = achievementData.dueDate;
+    if (achievementData.completedAt !== undefined) updates.completedAt = achievementData.completedAt;
+
     // Merge new data with existing document
-    await setDoc(achievementRef, achievementData, { merge: true });
+    await setDoc(achievementRef, updates, { merge: true });
 
     return { success: true, id: achievementId, nameChanged: false };
   } catch (error) {
@@ -482,8 +618,19 @@ export const deleteAchievement = async (achievementId, characterId = CHARACTER_I
 
 export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
   try {
+    const nameField = ensureBilingualField(
+      questData.name,
+      questData.nameEn,
+      questData.nameVi
+    );
+    const descField = ensureBilingualField(
+      questData.desc,
+      questData.descEn,
+      questData.descVi
+    );
+
     // Validate quest data
-    if (!questData.name || !questData.name.trim()) {
+    if (!nameField.en) {
       throw new Error('Quest name cannot be empty');
     }
 
@@ -491,32 +638,11 @@ export const saveQuest = async (questData, characterId = CHARACTER_ID) => {
       throw new Error('Quest XP must be greater than 0');
     }
 
-    // Sanitize quest name
-    const sanitizedName = questData.name.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '') // Remove special characters except spaces
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .substring(0, 50); // Limit length to 50 characters
-
-    if (!sanitizedName) {
-      throw new Error('Quest name must contain at least one alphanumeric character');
-    }
-
-    // Generate date suffix in YYMMDD format using Vietnam timezone (UTC+7)
-    const now = new Date();
-    const dateSuffix = now.toLocaleString('sv-SE', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/-/g, ''); // Format: YYMMDD
-
-    // Combine name with date: name_YYMMDD
-    const questId = `${sanitizedName}_${dateSuffix}`;
+    const questId = buildDatedDocId(nameField.en);
 
     const dataToSave = {
-      name: questData.name.trim(),
-      desc: questData.desc?.trim() || '',
+      name: nameField,
+      desc: descField,
       xp: questData.xp,
       completedAt: null,
       createdAt: serverTimestamp()
@@ -541,10 +667,19 @@ export const fetchQuests = async (characterId = CHARACTER_ID) => {
     const questsRef = collection(db, COLLECTION_ROOT, characterId, 'quests');
     const snapshot = await getDocs(questsRef);
 
-    const quests = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const quests = snapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const bilingualFields = {
+        ...appendBilingualReadFields(data, 'name'),
+        ...appendBilingualReadFields(data, 'desc')
+      };
+
+      return {
+        id: docSnap.id,
+        ...data,
+        ...bilingualFields
+      };
+    });
 
     return quests;
   } catch (error) {
@@ -557,7 +692,22 @@ export const fetchQuests = async (characterId = CHARACTER_ID) => {
 export const updateQuest = async (questId, questData, characterId = CHARACTER_ID) => {
   try {
     const questRef = doc(db, COLLECTION_ROOT, characterId, 'quests', questId);
-    await setDoc(questRef, questData, { merge: true });
+    const updates = {};
+
+    const nameMap = deriveBilingualFromPayload(questData, 'name');
+    if (nameMap) {
+      updates.name = nameMap;
+    }
+
+    const descMap = deriveBilingualFromPayload(questData, 'desc');
+    if (descMap) {
+      updates.desc = descMap;
+    }
+
+    if (questData.xp !== undefined) updates.xp = questData.xp;
+    if (questData.completedAt !== undefined) updates.completedAt = questData.completedAt;
+
+    await setDoc(questRef, updates, { merge: true });
 
     return { success: true, id: questId };
   } catch (error) {
