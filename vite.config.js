@@ -28,6 +28,11 @@ export default defineConfig(({ mode }) => ({
     }
   },
   server: {
-    // Fix ipv6 issue with vite about hrm 
-    host: '::1', hmr: { host: '[::1]', protocol: 'ws'} }
+  host: 'localhost',
+  port: 5555,
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws'
+    }
+  }
 }));
