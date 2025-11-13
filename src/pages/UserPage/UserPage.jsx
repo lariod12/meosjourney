@@ -1513,17 +1513,21 @@ const UserPage = ({ onBack }) => {
 
   // Helper function to check if a submission is overdue
   const isSubmissionOverdue = (item, itemType = 'unknown') => {
+    // Get today's date at midnight (00:00:00) for accurate date comparison
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     if (itemType === 'quest') {
-      // For quests: Check createdAt vs today (if createdAt < today then overdue)
+      // For quests: Daily quest chỉ có hạn trong ngày được tạo
+      // Nếu createdAt < today (khác ngày) thì overdue
       if (!item.createdAt) {
         return false;
       }
       
       const createdDate = new Date(item.createdAt.seconds ? item.createdAt.seconds * 1000 : item.createdAt);
-      const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
-      const isOverdue = daysDiff > 0; // If created before today, it's overdue
+      createdDate.setHours(0, 0, 0, 0); // Reset to midnight for date-only comparison
+      
+      const isOverdue = createdDate < today; // If created before today, it's overdue
       
       return isOverdue;
     } else {
@@ -1532,18 +1536,30 @@ const UserPage = ({ onBack }) => {
         return false;
       }
       
+      // Parse dueDate string (format: YYYY-MM-DD or similar)
       const dueDate = new Date(item.dueDate);
-      const isOverdue = today > dueDate;
+      dueDate.setHours(0, 0, 0, 0); // Reset to midnight for date-only comparison
+      
+      const isOverdue = today > dueDate; // If today is after dueDate, it's overdue
+      
       return isOverdue;
     }
   };
 
-  // Get failed (overdue) quest submissions - quá hạn createdAt
+  // Get failed (overdue) quest submissions - quá hạn createdAt (bao gồm cả quest không có confirmation)
   const getFailedQuestConfirmations = () => {
-    const allSubmissions = getAllQuestSubmissions();
-    const failed = allSubmissions.filter(quest => {
-      // Failed nếu createdAt < today (quest được tạo trước hôm nay)
-      return isSubmissionOverdue(quest, 'quest');
+    // Lấy tất cả quests (có hoặc không có confirmation)
+    const failed = allQuests.filter(quest => {
+      // Failed nếu: đã quá hạn createdAt (bất kể đã completed hay chưa)
+      const isOverdue = isSubmissionOverdue(quest, 'quest');
+      return isOverdue;
+    }).map(quest => {
+      // Thêm confirmation data nếu có
+      const confirmation = hasQuestConfirmation(quest.name) ? getQuestConfirmationData(quest.name) : null;
+      return {
+        ...quest,
+        confirmation
+      };
     });
     return failed;
   };
@@ -1581,12 +1597,21 @@ const UserPage = ({ onBack }) => {
     return activePending;
   };
 
-  // Get failed (overdue) achievement submissions - chỉ quá hạn dueDate nếu có
+  // Get failed (overdue) achievement submissions - chỉ quá hạn dueDate nếu có (bao gồm cả achievement không có confirmation)
   const getFailedAchievementConfirmations = () => {
-    const allSubmissions = getAllAchievementSubmissions();
-    const failed = allSubmissions.filter(achievement => {
-      // Failed chỉ khi có dueDate và đã quá hạn (nếu dueDate null thì vẫn còn hạn)
-      return achievement.dueDate && isSubmissionOverdue(achievement, 'achievement');
+    // Lấy tất cả achievements (có hoặc không có confirmation)
+    const failed = allAchievements.filter(achievement => {
+      // Failed chỉ khi: có dueDate VÀ đã quá hạn (bất kể đã completed hay chưa)
+      const hasDeadline = achievement.dueDate;
+      const isOverdue = hasDeadline && isSubmissionOverdue(achievement, 'achievement');
+      return isOverdue;
+    }).map(achievement => {
+      // Thêm confirmation data nếu có
+      const confirmation = hasAchievementConfirmation(achievement.name) ? getAchievementConfirmationData(achievement.name) : null;
+      return {
+        ...achievement,
+        confirmation
+      };
     });
     return failed;
   };
@@ -2429,7 +2454,7 @@ const UserPage = ({ onBack }) => {
                     )}
                   </div>
 
-                  {/* Failed (Overdue) Group - Always show */}
+                  {/* Failed Group - Always show */}
                   <div className="review-group">
                     <h3 
                       className="review-group-title clickable failed"
@@ -2437,7 +2462,7 @@ const UserPage = ({ onBack }) => {
                         setFailedGroupExpanded(!failedGroupExpanded);
                       }}
                     >
-                      {failedGroupExpanded ? '▼' : '▸'} ❌ Failed (Overdue) ({getFailedQuestConfirmations().length + getFailedAchievementConfirmations().length})
+                      {failedGroupExpanded ? '▼' : '▸'} ❌ Failed ({getFailedQuestConfirmations().length + getFailedAchievementConfirmations().length})
                     </h3>
                       
                       {failedGroupExpanded && (
