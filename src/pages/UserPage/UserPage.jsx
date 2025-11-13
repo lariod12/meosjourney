@@ -1546,35 +1546,13 @@ const UserPage = ({ onBack }) => {
     }
   };
 
-  // Get failed (overdue) quest submissions - quá hạn createdAt (bao gồm cả quest không có confirmation)
-  const getFailedQuestConfirmations = () => {
-    // Lấy tất cả quests (có hoặc không có confirmation)
-    const failed = allQuests.filter(quest => {
-      // Failed nếu: đã quá hạn createdAt (bất kể đã completed hay chưa)
-      const isOverdue = isSubmissionOverdue(quest, 'quest');
-      return isOverdue;
-    }).map(quest => {
-      // Thêm confirmation data nếu có
-      const confirmation = hasQuestConfirmation(quest.name) ? getQuestConfirmationData(quest.name) : null;
-      return {
-        ...quest,
-        confirmation
-      };
-    });
-    return failed;
-  };
-
-  // Get completed quest submissions - có completedAt != null trong quests collection VÀ có confirmation
+  // Get completed quest submissions - PRIORITY 1: có completedAt != null VÀ có confirmation
   const getCompletedQuestConfirmations = () => {
-    // Lấy tất cả quests có completedAt != null từ allQuests
-    const completedQuests = allQuests.filter(quest => {
+    const completed = allQuests.filter(quest => {
       const hasCompleted = quest.completedAt !== null && quest.completedAt !== undefined;
       const hasConfirmation = hasQuestConfirmation(quest.name);
       return hasCompleted && hasConfirmation;
-    });
-    
-    // Map với confirmation data
-    const completed = completedQuests.map(quest => {
+    }).map(quest => {
       const confirmation = getQuestConfirmationData(quest.name);
       return {
         ...quest,
@@ -1582,51 +1560,61 @@ const UserPage = ({ onBack }) => {
       };
     });
     
+    console.log('📋 [Review Section] Completed Quests:', completed.length, completed.map(q => ({ id: q.id, name: q.name })));
     return completed;
   };
 
-  // Get pending quest submissions - có confirmation nhưng chưa completed và chưa quá hạn
+  // Get failed (overdue) quest submissions - PRIORITY 2: CHƯA completed VÀ overdue (có hoặc không có confirmation)
+  const getFailedQuestConfirmations = () => {
+    const completedIds = getCompletedQuestConfirmations().map(q => q.id);
+    
+    const failed = allQuests.filter(quest => {
+      // Loại bỏ quest đã completed
+      if (completedIds.includes(quest.id)) return false;
+      
+      // Failed nếu: CHƯA completed VÀ đã quá hạn createdAt
+      const isNotCompleted = !quest.completedAt;
+      const isOverdue = isSubmissionOverdue(quest, 'quest');
+      return isNotCompleted && isOverdue;
+    }).map(quest => {
+      const confirmation = hasQuestConfirmation(quest.name) ? getQuestConfirmationData(quest.name) : null;
+      return {
+        ...quest,
+        confirmation
+      };
+    });
+    
+    console.log('📋 [Review Section] Failed Quests:', failed.length, failed.map(q => ({ id: q.id, name: q.name, hasConfirmation: !!q.confirmation })));
+    return failed;
+  };
+
+  // Get pending quest submissions - PRIORITY 3: có confirmation, CHƯA completed, CHƯA overdue
   const getActivePendingQuestConfirmations = () => {
+    const completedIds = getCompletedQuestConfirmations().map(q => q.id);
+    const failedIds = getFailedQuestConfirmations().map(q => q.id);
+    
     const allSubmissions = getAllQuestSubmissions();
     const activePending = allSubmissions.filter(quest => {
+      // Loại bỏ quest đã completed hoặc failed
+      if (completedIds.includes(quest.id) || failedIds.includes(quest.id)) return false;
+      
       // Pending nếu: chưa completed VÀ chưa quá hạn createdAt
       const isNotCompleted = !quest.completedAt;
       const isNotOverdue = !isSubmissionOverdue(quest, 'quest');
       return isNotCompleted && isNotOverdue;
     });
+    
+    console.log('📋 [Review Section] Pending Quests:', activePending.length, activePending.map(q => ({ id: q.id, name: q.name })));
     return activePending;
   };
 
-  // Get failed (overdue) achievement submissions - chỉ quá hạn dueDate nếu có (bao gồm cả achievement không có confirmation)
-  const getFailedAchievementConfirmations = () => {
-    // Lấy tất cả achievements (có hoặc không có confirmation)
-    const failed = allAchievements.filter(achievement => {
-      // Failed chỉ khi: có dueDate VÀ đã quá hạn (bất kể đã completed hay chưa)
-      const hasDeadline = achievement.dueDate;
-      const isOverdue = hasDeadline && isSubmissionOverdue(achievement, 'achievement');
-      return isOverdue;
-    }).map(achievement => {
-      // Thêm confirmation data nếu có
-      const confirmation = hasAchievementConfirmation(achievement.name) ? getAchievementConfirmationData(achievement.name) : null;
-      return {
-        ...achievement,
-        confirmation
-      };
-    });
-    return failed;
-  };
-
-  // Get completed achievement submissions - có completedAt != null trong achievements collection VÀ có confirmation
+  // Get completed achievement submissions - PRIORITY 1: có completedAt != null VÀ có confirmation
   const getCompletedAchievementConfirmations = () => {
-    // Lấy tất cả achievements có completedAt != null từ allAchievements
-    const completedAchievements = allAchievements.filter(achievement => {
+    const completed = allAchievements.filter(achievement => {
       const hasCompleted = achievement.completedAt !== null && achievement.completedAt !== undefined;
       const hasConfirmation = hasAchievementConfirmation(achievement.name);
       return hasCompleted && hasConfirmation;
-    });
-    
-    // Map với confirmation data
-    const completed = completedAchievements.map(achievement => {
+    }).map(achievement => {
       const confirmation = getAchievementConfirmationData(achievement.name);
       return {
         ...achievement,
@@ -1634,18 +1622,52 @@ const UserPage = ({ onBack }) => {
       };
     });
     
+    console.log('📋 [Review Section] Completed Achievements:', completed.length, completed.map(a => ({ id: a.id, name: a.name })));
     return completed;
   };
 
-  // Get pending achievement submissions - có confirmation nhưng chưa completed và chưa quá hạn
+  // Get failed (overdue) achievement submissions - PRIORITY 2: CHƯA completed VÀ có dueDate VÀ overdue
+  const getFailedAchievementConfirmations = () => {
+    const completedIds = getCompletedAchievementConfirmations().map(a => a.id);
+    
+    const failed = allAchievements.filter(achievement => {
+      // Loại bỏ achievement đã completed
+      if (completedIds.includes(achievement.id)) return false;
+      
+      // Failed chỉ khi: CHƯA completed VÀ có dueDate VÀ đã quá hạn
+      const isNotCompleted = !achievement.completedAt;
+      const hasDeadline = achievement.dueDate;
+      const isOverdue = hasDeadline && isSubmissionOverdue(achievement, 'achievement');
+      return isNotCompleted && isOverdue;
+    }).map(achievement => {
+      const confirmation = hasAchievementConfirmation(achievement.name) ? getAchievementConfirmationData(achievement.name) : null;
+      return {
+        ...achievement,
+        confirmation
+      };
+    });
+    
+    console.log('📋 [Review Section] Failed Achievements:', failed.length, failed.map(a => ({ id: a.id, name: a.name, hasConfirmation: !!a.confirmation, dueDate: a.dueDate })));
+    return failed;
+  };
+
+  // Get pending achievement submissions - PRIORITY 3: có confirmation, CHƯA completed, CHƯA overdue
   const getActivePendingAchievementConfirmations = () => {
+    const completedIds = getCompletedAchievementConfirmations().map(a => a.id);
+    const failedIds = getFailedAchievementConfirmations().map(a => a.id);
+    
     const allSubmissions = getAllAchievementSubmissions();
     const activePending = allSubmissions.filter(achievement => {
+      // Loại bỏ achievement đã completed hoặc failed
+      if (completedIds.includes(achievement.id) || failedIds.includes(achievement.id)) return false;
+      
       // Pending nếu: chưa completed VÀ (không có dueDate HOẶC chưa quá hạn dueDate)
       const isNotCompleted = !achievement.completedAt;
       const isNotOverdue = !achievement.dueDate || !isSubmissionOverdue(achievement, 'achievement');
       return isNotCompleted && isNotOverdue;
     });
+    
+    console.log('📋 [Review Section] Pending Achievements:', activePending.length, activePending.map(a => ({ id: a.id, name: a.name, dueDate: a.dueDate })));
     return activePending;
   };
 

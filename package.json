@@ -5,8 +5,11 @@
   "homepage": "https://meosjourney.info/",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "dev:staging": "vite --mode staging",
+    "dev:prod": "vite --mode production",
+    "build": "vite build --mode production",
+    "build:staging": "vite build --mode staging",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
