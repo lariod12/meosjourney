@@ -295,7 +295,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     const statusData = status ? {
       doing: status.doing || base.status?.doing || '',
       location: status.location || base.status?.location || '',
-      mood: status.mood || base.status?.mood || '',
+      moods: status.moods || base.status?.moods || [],
       timestamp: statusTimestamp
     } : base.status || {};
 
@@ -344,8 +344,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
       status: statusData,
       achievements: achievementsData,
       quests: questsData,
-      journal: journalsData,
-      moodOptions: Array.isArray(config?.moodOptions) ? config.moodOptions : [],
+      journal: journalsData
     };
   } catch (error) {
     console.error('❌ Error in fetchCharacterViewData:', error);
@@ -419,8 +418,20 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       }
     }
 
-    if (statusData.mood && statusData.mood.trim()) {
-      dataToSave.mood = statusData.mood.trim();
+    // moods: same handling as doing and location
+    {
+      const existingMoodsRaw = Array.isArray(currentStatus?.moods)
+        ? currentStatus.moods
+        : (currentStatus?.moods ? [currentStatus.moods] : []);
+      const existingMoodsClean = normalizeArray(existingMoodsRaw);
+
+      if (statusData.mood && statusData.mood.trim()) {
+        const newMood = statusData.mood.trim();
+        const dedup = existingMoodsClean.filter(v => v.toLowerCase() !== newMood.toLowerCase());
+        dataToSave.moods = [newMood, ...dedup];
+      } else if (existingMoodsClean.length !== existingMoodsRaw.length) {
+        dataToSave.moods = existingMoodsClean;
+      }
     }
 
     // Always add timestamp

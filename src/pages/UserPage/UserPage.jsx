@@ -31,7 +31,8 @@ import IconRenderer from '../../components/IconRenderer/IconRenderer';
 const SESSION_KEY = 'meos05_access';
 
 const UserPage = ({ onBack }) => {
-  const [moodOptions, setMoodOptions] = useState([]);
+  const [existingMoods, setExistingMoods] = useState([]);
+  const [moodSuggestions, setMoodSuggestions] = useState([]);
   const [existingDoings, setExistingDoings] = useState([]);
   const [doingSuggestions, setDoingSuggestions] = useState([]);
   const [doingOpen, setDoingOpen] = useState(false);
@@ -101,7 +102,6 @@ const UserPage = ({ onBack }) => {
   const doingRef = useRef(null);
   const locationRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
-  const [moodFilter, setMoodFilter] = useState('');
 
   // Collapse/expand states - collapsed by default
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -185,10 +185,7 @@ const UserPage = ({ onBack }) => {
       if (statusData) {
         next.doing = normalizeStatusValue(statusData.doing);
         next.location = normalizeStatusValue(statusData.location);
-        const normalizedMood = normalizeStatusValue(statusData.mood);
-        next.mood = normalizedMood || (moodOptions[0] || '');
-      } else if (!next.mood) {
-        next.mood = moodOptions[0] || '';
+        next.mood = normalizeStatusValue(statusData.moods);
       }
 
       return next;
@@ -200,7 +197,7 @@ const UserPage = ({ onBack }) => {
       ...prev,
       doing: '',
       location: '',
-      mood: moodOptions[0] || '',
+      mood: '',
       journalEntry: '',
       newSkill: '',
       newInterest: ''
@@ -209,6 +206,8 @@ const UserPage = ({ onBack }) => {
     setDoingOpen(false);
     setLocationSuggestions([]);
     setLocationOpen(false);
+    setMoodSuggestions([]);
+    setMoodOpen(false);
     setSelectedQuestSubmissions([]);
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
@@ -256,6 +255,18 @@ const UserPage = ({ onBack }) => {
       });
       setExistingLocations(normalizedLocs2);
 
+      const moodArr2 = Array.isArray(statusData2?.moods)
+        ? statusData2.moods
+        : (statusData2?.moods ? [statusData2.moods] : []);
+      const seenMood2 = new Set();
+      const normalizedMoods2 = [];
+      moodArr2.forEach((m) => {
+        const s = String(m).trim();
+        const key = s.toLowerCase();
+        if (s && !seenMood2.has(key)) { seenMood2.add(key); normalizedMoods2.push(s); }
+      });
+      setExistingMoods(normalizedMoods2);
+
       if (profile2) {
         const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
         const updatedInterests = Array.isArray(profile2.interests) ? profile2.interests : [];
@@ -294,7 +305,6 @@ const UserPage = ({ onBack }) => {
       fetchAchievementConfirmations(CHARACTER_ID)
     ])
       .then(([cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms]) => {
-        setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
         setAutoApproveTasks(!!cfg?.auto_approve_tasks);
         setCorrectPassword(cfg?.pwDailyUpdate || null);
 
@@ -340,6 +350,19 @@ const UserPage = ({ onBack }) => {
         });
         setExistingLocations(normalizedLocs);
 
+        // Prepare existing moods from status (array or string)
+        const moodArr = Array.isArray(statusData?.moods)
+          ? statusData.moods
+          : (statusData?.moods ? [statusData.moods] : []);
+        const seenMood = new Set();
+        const normalizedMoods = [];
+        moodArr.forEach((m) => {
+          const s = String(m).trim();
+          const key = s.toLowerCase();
+          if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
+        });
+        setExistingMoods(normalizedMoods);
+
         // Store all quests and filter incomplete ones
         setAllQuests(quests);
         const availableQuests = quests.filter(q => q.completedAt === null);
@@ -354,7 +377,6 @@ const UserPage = ({ onBack }) => {
       })
       .catch((error) => {
         console.error('❌ Error loading data:', error);
-        setMoodOptions([]);
         setCorrectPassword(null);
         setProfileData({ introduce: '', skills: [], interests: [] });
         setProfileLoaded(true); // Set loaded even on error to allow interaction
@@ -384,7 +406,6 @@ const UserPage = ({ onBack }) => {
         fetchAchievementConfirmations(CHARACTER_ID)
       ]);
 
-      setMoodOptions(Array.isArray(cfg?.moodOptions) ? cfg.moodOptions : []);
       setAutoApproveTasks(!!cfg?.auto_approve_tasks);
 
       // Update profile data
@@ -422,6 +443,18 @@ const UserPage = ({ onBack }) => {
         if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
       });
       setExistingLocations(normalizedLocs);
+
+      const moodArr = Array.isArray(statusData?.moods)
+        ? statusData.moods
+        : (statusData?.moods ? [statusData.moods] : []);
+      const seenMood = new Set();
+      const normalizedMoods = [];
+      moodArr.forEach((m) => {
+        const s = String(m).trim();
+        const key = s.toLowerCase();
+        if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
+      });
+      setExistingMoods(normalizedMoods);
 
       // Store all and filter incomplete quests
       setAllQuests(quests);
@@ -503,11 +536,7 @@ const UserPage = ({ onBack }) => {
     if (onBack) onBack();
   };
 
-  useEffect(() => {
-    if (!formData.mood && moodOptions.length) {
-      setFormData(prev => ({ ...prev, mood: moodOptions[0] }));
-    }
-  }, [moodOptions]);
+
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -563,6 +592,27 @@ const UserPage = ({ onBack }) => {
     setLocationOpen(list.length > 0);
   };
 
+  const updateMoodSuggestions = (value) => {
+    const q = String(value || '').trim().toLowerCase();
+    const pool = Array.isArray(existingMoods) ? existingMoods : [];
+    
+    if (!q) {
+      setMoodSuggestions(pool.slice(0, 10));
+      return;
+    }
+    const suggestions = pool.filter(m => m.toLowerCase().includes(q) || m.toLowerCase().startsWith(q));
+    setMoodSuggestions(suggestions.slice(0, 10));
+    setMoodOpen(suggestions.length > 0);
+  };
+
+  const openMoodDropdown = () => {
+    // Show all available options on focus/click
+    const pool = Array.isArray(existingMoods) ? existingMoods : [];
+    const list = pool.slice(0, 10);
+    setMoodSuggestions(list);
+    setMoodOpen(list.length > 0);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -575,6 +625,9 @@ const UserPage = ({ onBack }) => {
     }
     if (name === 'location') {
       updateLocationSuggestions(value);
+    }
+    if (name === 'mood') {
+      updateMoodSuggestions(value);
     }
   };
 
@@ -740,7 +793,7 @@ const UserPage = ({ onBack }) => {
 
           const oldDoing = getCurrentValue('doing');
           const oldLocation = getCurrentValue('location');
-          const oldMood = getCurrentValue('mood');
+          const oldMood = getCurrentValue('moods');
           const oldCaption = currentProfile?.caption || '';
 
           const statusResult = await saveStatus({
@@ -1200,7 +1253,7 @@ const UserPage = ({ onBack }) => {
       noteDate: new Date().toISOString().split('T')[0],
       doing: '',
       location: '',
-      mood: moodOptions[0] || '',
+      mood: '',
       journalEntry: '',
       introduce: profileData.introduce,
       newSkill: '',
@@ -1210,6 +1263,8 @@ const UserPage = ({ onBack }) => {
     setDoingOpen(false);
     setLocationSuggestions([]);
     setLocationOpen(false);
+    setMoodSuggestions([]);
+    setMoodOpen(false);
     setSelectedQuestSubmissions([]);
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
@@ -1951,41 +2006,41 @@ const UserPage = ({ onBack }) => {
 
                 <div className="form-group">
                   <label htmlFor="mood">Mood</label>
-                  <div className="select-wrap" ref={moodRef}>
-                    <button
-                      type="button"
+                  <div className="suggest-wrap" ref={moodRef}>
+                    <input
+                      type="text"
                       id="mood"
-                      className="select-display"
-                      aria-haspopup="listbox"
-                      aria-expanded={moodOpen}
-                      onClick={() => setMoodOpen(o => { const n = !o; if (n) setMoodFilter(''); return n; })}
-                    >
-                      {formData.mood || 'Select mood'}
-                      <span className="select-caret">▾</span>
-                    </button>
-                    {moodOpen && (
-                      <div className="select-options" role="listbox">
-                        <div className="select-search">
-                          <input
-                            type="text"
-                            placeholder="Search mood..."
-                            value={moodFilter}
-                            onChange={(e) => setMoodFilter(e.target.value)}
-                            autoFocus
-                          />
-                        </div>
-                        {(moodOptions.filter(opt => String(opt).toLowerCase().includes(moodFilter.trim().toLowerCase()))).map(opt => (
+                      name="mood"
+                      value={formData.mood}
+                      onChange={handleChange}
+                      placeholder="e.g., buồn ngủ, hạnh phúc"
+                      autoComplete="off"
+                      onFocus={openMoodDropdown}
+                      onClick={openMoodDropdown}
+                    />
+                    {formData.mood && (
+                      <button
+                        type="button"
+                        className="suggest-clear-btn"
+                        onClick={() => setFormData(prev => ({ ...prev, mood: '' }))}
+                        aria-label="Clear mood"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {moodOpen && moodSuggestions.length > 0 && (
+                      <div className="suggest-dropdown" role="listbox">
+                        {moodSuggestions.map((item) => (
                           <div
-                            key={opt}
+                            key={item}
                             role="option"
-                            aria-selected={formData.mood === opt}
-                            className={`select-option${formData.mood === opt ? ' selected' : ''}`}
+                            className="suggest-item"
                             onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, mood: opt }));
+                              setFormData(prev => ({ ...prev, mood: item }));
                               setMoodOpen(false);
                             }}
                           >
-                            {opt}
+                            {item}
                           </div>
                         ))}
                       </div>
