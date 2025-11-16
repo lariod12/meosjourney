@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
+
+// TODO: Migrate to NocoDB - these Firestore functions need to be replaced
+// Fetch functions removed - will use NocoDB hooks instead
+// import {
+//   fetchConfig,
+//   fetchStatus,
+//   fetchProfile,
+//   fetchQuests,
+//   fetchQuestConfirmations,
+//   fetchAchievements,
+//   fetchAchievementConfirmations,
+// } from '../../services/firestore';
+
+// Write operations still using Firestore (need migration)
 import {
-  fetchConfig,
-  fetchStatus,
-  fetchProfile,
   saveStatus,
   saveProfile,
   saveJournal,
-  fetchQuests,
-  fetchQuestConfirmations,
   saveQuestConfirmation,
   getQuestConfirmation,
-  fetchAchievements,
-  fetchAchievementConfirmations,
   saveAchievementConfirmation,
   getAchievementConfirmation,
   updateQuest,

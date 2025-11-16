@@ -5,7 +5,27 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/firestore';
+// TODO: Migrate to NocoDB - these Firestore functions need to be replaced
+// Fetch functions removed - will use NocoDB hooks/services instead
+// import { fetchConfig, fetchAchievements, fetchQuests, fetchQuestConfirmations, fetchAchievementConfirmations } from '../../services/firestore';
+
+// Write operations still using Firestore (need migration)
+import { 
+  setAutoApproveTasks, 
+  saveAchievement, 
+  updateAchievement, 
+  deleteAchievement, 
+  saveQuest, 
+  updateQuest, 
+  deleteQuest, 
+  deleteQuestConfirmation, 
+  deleteQuestConfirmationById, 
+  deleteAchievementConfirmation, 
+  deleteAchievementConfirmationById, 
+  updateProfileXP, 
+  saveJournal, 
+  CHARACTER_ID 
+} from '../../services/firestore';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
