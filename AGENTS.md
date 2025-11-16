@@ -78,3 +78,4 @@ src/
 - Do not run dev because server is already running 
 - Do not use pnpm deploy because we working on local no need to do this
 - Do not create .md file
+- You need to read README.md at root to know the context  

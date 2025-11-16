@@ -81,7 +81,7 @@ netlify deploy --prod --dir=dist
 
 GitHub Actions workflow đã được cấu hình. Chỉ cần:
 
-1. Push code lên GitHub:
+1. Push code to GitHub:
 ```bash
 git add .
 git commit -m "React migration complete"
@@ -649,6 +649,200 @@ ISC License - feel free to use this project for personal or commercial purposes.
 - **Fonts**: Google Fonts (Architects Daughter, Kalam, Patrick Hand)
 - **Icons**: Font Awesome 6.4.0
 - **Avatar Fallback**: DiceBear API
+
+---
+
+UI Versioning Guidelines (Front-end Only)
+
+This document defines how we version UI (User Interface) changes in the front-end.
+It does not cover business logic or backend changes — only visual and UX changes.
+
+Version format:
+<major>.<minor> — e.g. 1.0, 1.1, 2.0
+
+1. Goals
+Provide a consistent way to version UI changes.
+Make it clear how much the UI has changed between versions.
+Help the team:
+Communicate UI changes to PM/QA/Design.
+Track and compare UI versions.
+Separate UI versioning from backend/logic versioning.
+2. UI Version Definition
+2.1. major – Significant UI changes
+
+Increase the major version when UI changes are large enough that users:
+
+Need to re-learn how to use a screen or flow, or
+Experience a significantly changed main workflow, or
+See a clearly different overall look & feel.
+
+Cases where you should bump major (1.x → 2.0):
+
+Major redesign
+
+Global theme changes (colors, typography, style) → app looks “new”.
+Main layout changes (e.g., navigation moves from top bar to sidebar, or page layout is restructured).
+
+Core flow change
+
+A single-step form becomes a 3-step wizard.
+Important actions (search, filter, create, etc.) are moved to new locations or reorganized.
+
+Structural changes in key screens
+
+Form fields are regrouped and reordered based on a new logic.
+List view changes from table → cards (or vice versa), requiring users to adapt.
+
+Quick rule of thumb:
+
+If you feel you need to re-demo or re-explain the feature to users because the UI changed a lot → bump major.
+
+2.2. minor – Small / incremental UI changes
+
+Increase the minor version when:
+
+Users do not need to re-learn how to use the UI, and
+The main flow remains the same.
+
+Cases where you should bump minor (1.0 → 1.1 → 1.2…):
+
+Small UI additions or tweaks
+
+Add a button, icon, badge, tag, or tooltip.
+Add loading/skeleton states.
+
+Light layout adjustments
+
+Adjust margins/paddings, font-size, line-height.
+Minor changes to alignment or spacing that don’t affect flow.
+
+Small usability improvements
+
+Change button color for better clarity.
+Add labels, helper texts, or clearer error messages.
+
+UI bug fixes
+
+Fix broken layout on mobile.
+Fix text overflow, clipped elements, or misalignment.
+
+Quick rule of thumb:
+
+If users can still use the UI exactly as before, but it looks better, clearer, or less buggy → bump minor.
+
+3. Version Bump Rules
+
+Whenever there is a UI-related change (PR/MR touching front-end UI):
+
+If there is a significant UI/UX change (see 2.1)
+→ Increase major by 1, reset minor to 0.
+Examples:
+
+1.3 → 2.0
+2.5 → 3.0
+
+If there are only small UI changes (see 2.2)
+→ Increase minor by 1.
+Examples:
+
+1.0 → 1.1
+1.1 → 1.2
+
+If there is no UI change
+→ Do not change the UI version.
+
+Pseudo rule:
+
+if (breaking_ui_change) {
+  major += 1
+  minor = 0
+} else if (any_ui_change) {
+  minor += 1
+}
+
+4. Where to Store the UI Version
+
+Depending on the project structure, choose one of the following:
+
+A constant in code
+
+// uiVersion.ts
+export const UI_VERSION = '1.3';
+
+
+A separate config file
+
+// ui-version.json
+{
+  "version": "1.3"
+}
+
+
+A field in the front-end or UI package package.json
+
+{
+  "name": "my-frontend",
+  "version": "1.3",
+  "uiVersion": "1.3"
+}
+
+
+Recommendations:
+
+Place the UI version in a single, well-known location (e.g., one file or constant).
+Optionally display the UI version in:
+App footer,
+About page,
+Dev console (e.g., console.log('UI Version: 1.3')).
+5. Team Workflow
+
+Suggested workflow:
+
+When creating a UI-related PR/MR:
+
+Add a label:
+ui:minor-change for small changes.
+ui:major-change for large changes.
+Update UI_VERSION in the appropriate config file.
+
+Reviewer responsibilities:
+
+Confirm if the change is truly major or minor based on these rules.
+Request a major bump if the change is more impactful than the author assumed.
+
+Changelog (if used):
+
+For each UI version, add a short summary:
+UI 1.3: describe key visible changes.
+This can live in CHANGELOG.md or an internal release notes page.
+6. Examples
+Example 1 – Minor bump
+
+Changes:
+
+Adjust spacing in the order creation form.
+Add tooltips to info icons.
+Fix text overflow on mobile.
+
+→ UI version: 1.0 → 1.1
+→ Label: ui:minor-change
+
+Users will notice improvements but do not need to change their habits.
+
+Example 2 – Major bump
+
+Changes:
+
+Switch the entire app to a new dark theme.
+Move navigation from top bar to left sidebar.
+Change item list from table view to card view.
+
+→ UI version: 1.4 → 2.0
+→ Label: ui:major-change
+
+Users will feel that the app is “new” and must adapt to the new layout.
+
+If you want, I can also turn this into a formal internal guideline (with sections like Scope, Responsibilities, Definitions) or adapt the wording for your company’s documentation style (e.g., Confluence template).
 
 ---
 
