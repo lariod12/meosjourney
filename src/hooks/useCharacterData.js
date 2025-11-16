@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchStatus, fetchProfile, fetchConfig } from '../services';
+import { fetchStatus, fetchProfile, fetchConfig, fetchJournals } from '../services';
 
 /**
  * Custom hook for fetching character data
@@ -26,10 +26,11 @@ export const useCharacterData = (defaultData) => {
       setLoading(true);
 
       // Fetch all data in parallel
-      const [status, profile, config] = await Promise.all([
+      const [status, profile, config, journals] = await Promise.all([
         fetchStatus(),
         fetchProfile(),
-        fetchConfig()
+        fetchConfig(),
+        fetchJournals()
       ]);
 
       if (mountedRef.current) {
@@ -56,6 +57,9 @@ export const useCharacterData = (defaultData) => {
             moods: status?.moods || defaultData.status?.moods || [],
             timestamp: status?.timestamp ? new Date(status.timestamp) : new Date()
           },
+
+          // Journal data
+          journal: journals || [],
 
           // Config data (if needed)
           config: config || {}

@@ -279,4 +279,78 @@ export const fetchConfig = async () => {
   }
 };
 
+/**
+ * Fetch journals data from NocoDB
+ * Returns all journal entries sorted by created_time descending
+ * Fetches all records using pagination (NocoDB default pageSize is 25)
+ */
+export const fetchJournals = async () => {
+  try {
+    // Use static data in development
+    if (USE_STATIC_DATA) {
+      const staticData = await fetchStaticData();
+      // Static data doesn't have journals yet
+      return [];
+    }
+
+    // Use API in production - fetch all journals with pagination
+    let allJournals = [];
+    let page = 1;
+    let hasMore = true;
+    const pageSize = 100; // Fetch 100 per page
+
+    while (hasMore) {
+      const data = await nocoRequest(`${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${pageSize}`, {
+        method: 'GET',
+      });
+
+      if (data.list && data.list.length > 0) {
+        allJournals = allJournals.concat(data.list);
+        
+        // Check if there are more pages
+        hasMore = data.pageInfo && !data.pageInfo.isLastPage;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    if (allJournals.length === 0) {
+      console.warn('⚠️ No journal records found in NocoDB');
+      return [];
+    }
+
+    console.log(`📊 Fetched ${allJournals.length} journal entries from NocoDB`);
+
+    // Transform NocoDB journals to frontend format
+    const journals = allJournals.map(record => {
+      // Parse created_time to Date object
+      let timestamp = new Date();
+      if (record.created_time) {
+        timestamp = new Date(record.created_time);
+      }
+
+      // Format time for display (HH:mm AM/PM)
+      const timeStr = timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      return {
+        id: record.Id || record.title,
+        entry: record.caption || '',
+        time: timeStr,
+        timestamp: timestamp,
+        createdAt: record.CreatedAt
+      };
+    });
+
+    return journals;
+  } catch (error) {
+    console.error('❌ Error fetching journals from NocoDB:', error);
+    return [];
+  }
+};
+
 export { TABLE_IDS };
