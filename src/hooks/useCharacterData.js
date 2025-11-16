@@ -37,12 +37,17 @@ export const useCharacterData = (defaultData) => {
         const mergedData = {
           ...defaultData,
           // Profile data
-          name: profile?.title || defaultData.name,
+          name: profile?.name || defaultData.name,
           caption: profile?.caption || defaultData.caption,
           currentXP: profile?.currentXP || defaultData.currentXP || 0,
           maxXP: profile?.maxXP || defaultData.maxXP || 1000,
+          level: profile?.level || defaultData.level || 0,
           introduce: profile?.introduce || defaultData.introduce || '',
+          // Map arrays: NocoDB returns strings, frontend expects {name: string}
           interests: profile?.interests?.map(name => ({ name })) || defaultData.interests || [],
+          skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
+          // Social links
+          social: profile?.social || defaultData.social || {},
           
           // Status data
           status: {

@@ -134,18 +134,39 @@ export const fetchProfile = async () => {
       const staticData = await fetchStaticData();
       const profileRecord = staticData.profile.fields;
       
-      const interests = Array.isArray(profileRecord.interests)
-        ? profileRecord.interests
-        : (profileRecord.interests ? JSON.parse(profileRecord.interests) : []);
+      // Note: 'interests' field renamed to 'hobbies' in NocoDB
+      const hobbies = Array.isArray(profileRecord.hobbies)
+        ? profileRecord.hobbies
+        : (profileRecord.hobbies ? JSON.parse(profileRecord.hobbies) : []);
+
+      const skills = Array.isArray(profileRecord.skills)
+        ? profileRecord.skills
+        : (profileRecord.skills ? JSON.parse(profileRecord.skills) : []);
+
+      // Parse social_link array to object
+      let socialLinks = {};
+      if (Array.isArray(profileRecord.social_link)) {
+        profileRecord.social_link.forEach(item => {
+          Object.assign(socialLinks, item);
+        });
+      }
+
+      // Calculate level from XP
+      const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
+      const maxXP = profileRecord.max_xp || 1000;
+      const level = Math.floor(currentXP / maxXP);
 
       return {
         id: staticData.profile.id,
+        name: profileRecord.name || profileRecord.title || 'Character',
         caption: profileRecord.caption || '',
-        currentXP: parseInt(profileRecord.current_xp, 10) || 0,
-        maxXP: profileRecord.max_xp || 1000,
-        interests: interests,
+        currentXP: currentXP,
+        maxXP: maxXP,
+        level: level,
+        interests: hobbies,  // Map hobbies to interests for frontend compatibility
+        skills: skills,
         introduce: profileRecord.introduce || '',
-        title: profileRecord.title || '',
+        social: socialLinks,
         createdAt: profileRecord.CreatedAt,
         updatedAt: profileRecord.UpdatedAt
       };
@@ -164,18 +185,41 @@ export const fetchProfile = async () => {
     const profileRecord = data.list[0];
     
     // Parse JSON fields
-    const interests = Array.isArray(profileRecord.interests)
-      ? profileRecord.interests
-      : (profileRecord.interests ? JSON.parse(profileRecord.interests) : []);
+    // Note: 'interests' field renamed to 'hobbies' in NocoDB
+    const hobbies = Array.isArray(profileRecord.hobbies)
+      ? profileRecord.hobbies
+      : (profileRecord.hobbies ? JSON.parse(profileRecord.hobbies) : []);
+
+    const skills = Array.isArray(profileRecord.skills)
+      ? profileRecord.skills
+      : (profileRecord.skills ? JSON.parse(profileRecord.skills) : []);
+
+    // Parse social_link array to object
+    // NocoDB format: [{facebook: "url"}, {instagram: "url"}, ...]
+    // Frontend format: {facebook: "url", instagram: "url", ...}
+    let socialLinks = {};
+    if (Array.isArray(profileRecord.social_link)) {
+      profileRecord.social_link.forEach(item => {
+        Object.assign(socialLinks, item);
+      });
+    }
+
+    // Calculate level from XP (same logic as Firestore)
+    const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
+    const maxXP = profileRecord.max_xp || 1000;
+    const level = Math.floor(currentXP / maxXP);
 
     return {
       id: profileRecord.Id,
+      name: profileRecord.name || profileRecord.title || 'Character',
       caption: profileRecord.caption || '',
-      currentXP: parseInt(profileRecord.current_xp, 10) || 0,
-      maxXP: profileRecord.max_xp || 1000,
-      interests: interests,
+      currentXP: currentXP,
+      maxXP: maxXP,
+      level: level,
+      interests: hobbies,  // Map hobbies to interests for frontend compatibility
+      skills: skills,
       introduce: profileRecord.introduce || '',
-      title: profileRecord.title || '',
+      social: socialLinks,
       createdAt: profileRecord.CreatedAt,
       updatedAt: profileRecord.UpdatedAt
     };
