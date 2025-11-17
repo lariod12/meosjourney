@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
+// NocoDB imports for read operations
+import { fetchConfig } from '../../services/nocodb';
+
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
 // import {
-//   fetchConfig,
 //   fetchStatus,
 //   fetchProfile,
 //   fetchQuests,
@@ -220,6 +222,8 @@ const UserPage = ({ onBack }) => {
     setExpandedQuestSubmissions([]);
     setExpandedAchievementSubmissions([]);
 
+    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data refresh
+    /* 
     try {
       const [statusData2, profile2, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
         fetchStatus(CHARACTER_ID),
@@ -298,102 +302,41 @@ const UserPage = ({ onBack }) => {
     } catch (error) {
       console.error('⚠️ Failed to refresh data after submission:', error);
     }
+    */
   };
 
   useEffect(() => {
-    // Load config, profile, quests, achievements, and confirmations from Firestore
-    Promise.all([
-      fetchConfig(CHARACTER_ID),
-      fetchStatus(CHARACTER_ID),
-      fetchProfile(CHARACTER_ID),
-      fetchQuests(CHARACTER_ID),
-      fetchQuestConfirmations(CHARACTER_ID),
-      fetchAchievements(CHARACTER_ID),
-      fetchAchievementConfirmations(CHARACTER_ID)
-    ])
-      .then(([cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms]) => {
-        setAutoApproveTasks(!!cfg?.auto_approve_tasks);
-        setCorrectPassword(cfg?.pwDailyUpdate || null);
-
-        // Load profile data
-        if (profile) {
-          const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
-          const loadedInterests = Array.isArray(profile.interests) ? profile.interests : [];
-          
-          setProfileData({
-            introduce: profile.introduce || '',
-            skills: [...loadedSkills], // Create new array to ensure reactivity
-            interests: [...loadedInterests] // Create new array to ensure reactivity
-          });
+    // Load config from NocoDB
+    const loadConfig = async () => {
+      try {
+        // Fetch config from NocoDB service
+        const cfg = await fetchConfig();
+        
+        if (cfg) {
+          setAutoApproveTasks(!!cfg.autoApproveTasks);
+          setCorrectPassword(cfg.pwDailyUpdate || null);
+          console.log('✅ Config loaded from NocoDB:', cfg);
+        } else {
+          setCorrectPassword(null);
+          console.warn('⚠️ No config found in NocoDB');
         }
-        setProfileLoaded(true);
-
-        applyStatusProfileToForm(statusData, profile);
-
-        // Prepare existing doings from status (array or string)
-        const doingsArr = Array.isArray(statusData?.doing)
-          ? statusData.doing
-          : (statusData?.doing ? [statusData.doing] : []);
-        // Dedupe while preserving order and cast to string
-        const seen = new Set();
-        const normalized = [];
-        doingsArr.forEach((d) => {
-          const s = String(d).trim();
-          const key = s.toLowerCase();
-          if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
-        });
-        setExistingDoings(normalized);
-
-        // Prepare existing locations from status (array or string)
-        const locArr = Array.isArray(statusData?.location)
-          ? statusData.location
-          : (statusData?.location ? [statusData.location] : []);
-        const seenLoc = new Set();
-        const normalizedLocs = [];
-        locArr.forEach((l) => {
-          const s = String(l).trim();
-          const key = s.toLowerCase();
-          if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
-        });
-        setExistingLocations(normalizedLocs);
-
-        // Prepare existing moods from status (array or string)
-        const moodArr = Array.isArray(statusData?.moods)
-          ? statusData.moods
-          : (statusData?.moods ? [statusData.moods] : []);
-        const seenMood = new Set();
-        const normalizedMoods = [];
-        moodArr.forEach((m) => {
-          const s = String(m).trim();
-          const key = s.toLowerCase();
-          if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
-        });
-        setExistingMoods(normalizedMoods);
-
-        // Store all quests and filter incomplete ones
-        setAllQuests(quests);
-        const availableQuests = quests.filter(q => q.completedAt === null);
-        setAvailableQuests(availableQuests);
-        setQuestConfirmations(questConfirms);
-
-        // Store all achievements and filter incomplete ones
-        setAllAchievements(achievements);
-        const availableAchievements = achievements.filter(a => a.completedAt === null);
-        setAvailableAchievements(availableAchievements);
-        setAchievementConfirmations(achievementConfirms);
-      })
-      .catch((error) => {
-        console.error('❌ Error loading data:', error);
+      } catch (error) {
+        console.error('❌ Error loading config from NocoDB:', error);
         setCorrectPassword(null);
-        setProfileData({ introduce: '', skills: [], interests: [] });
-        setProfileLoaded(true); // Set loaded even on error to allow interaction
-        setAllQuests([]);
-        setAvailableQuests([]);
-        setQuestConfirmations([]);
-        setAllAchievements([]);
-        setAvailableAchievements([]);
-        setAchievementConfirmations([]);
-      });
+      }
+      
+      // Initialize empty data for other sections (will be migrated later)
+      setProfileData({ introduce: '', skills: [], interests: [] });
+      setProfileLoaded(true);
+      setAllQuests([]);
+      setAvailableQuests([]);
+      setQuestConfirmations([]);
+      setAllAchievements([]);
+      setAvailableAchievements([]);
+      setAchievementConfirmations([]);
+    };
+    
+    loadConfig();
   }, []);
 
   // Refresh data from database
@@ -402,6 +345,8 @@ const UserPage = ({ onBack }) => {
 
     setIsRefreshing(true);
 
+    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data refresh
+    /* 
     try {
       const [cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
         fetchConfig(CHARACTER_ID),
@@ -502,6 +447,20 @@ const UserPage = ({ onBack }) => {
     } finally {
       setIsRefreshing(false);
     }
+    */
+
+    // Temporary: Show info that refresh is disabled
+    setConfirmModal({
+      isOpen: true,
+      type: 'info',
+      title: 'Refresh Disabled',
+      message: 'Data refresh is temporarily disabled during NocoDB migration.',
+      confirmText: 'OK',
+      cancelText: null,
+      onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+    });
+    
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -784,6 +743,8 @@ const UserPage = ({ onBack }) => {
 
       if (hasStatusData) {
         try {
+          // TODO: Migrate to NocoDB - Temporarily commented out Firestore status fetch
+          /* 
           // Fetch current status and profile to detect changes
           const [currentStatus, currentProfile] = await Promise.all([
             fetchStatus(CHARACTER_ID),
@@ -802,6 +763,12 @@ const UserPage = ({ onBack }) => {
           const oldLocation = getCurrentValue('location');
           const oldMood = getCurrentValue('moods');
           const oldCaption = currentProfile?.caption || '';
+          */
+
+          const oldDoing = '';
+          const oldLocation = '';
+          const oldMood = '';
+          const oldCaption = '';
 
           const statusResult = await saveStatus({
             doing: formData.doing,
