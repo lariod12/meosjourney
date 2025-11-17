@@ -35,9 +35,9 @@ const StatusBox = () => {
           <div className="status-mood">
             <span className="status-label">{t('status.mood')}</span>
             <span>
-              {Array.isArray(data.status.moods)
-                ? (data.status.moods[0] || '')
-                : (data.status.moods || '')}
+              {Array.isArray(data.status.mood)
+                ? (data.status.mood[0] || '')
+                : (data.status.mood || '')}
             </span>
           </div>
           <div className="status-time">

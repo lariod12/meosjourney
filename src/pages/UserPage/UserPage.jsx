@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read operations
-import { fetchConfig, fetchProfile } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -195,7 +195,7 @@ const UserPage = ({ onBack }) => {
       if (statusData) {
         next.doing = normalizeStatusValue(statusData.doing);
         next.location = normalizeStatusValue(statusData.location);
-        next.mood = normalizeStatusValue(statusData.moods);
+        next.mood = normalizeStatusValue(statusData.mood);
       }
 
       return next;
@@ -267,9 +267,9 @@ const UserPage = ({ onBack }) => {
       });
       setExistingLocations(normalizedLocs2);
 
-      const moodArr2 = Array.isArray(statusData2?.moods)
-        ? statusData2.moods
-        : (statusData2?.moods ? [statusData2.moods] : []);
+      const moodArr2 = Array.isArray(statusData2?.mood)
+        ? statusData2.mood
+        : (statusData2?.mood ? [statusData2.mood] : []);
       const seenMood2 = new Set();
       const normalizedMoods2 = [];
       moodArr2.forEach((m) => {
@@ -307,13 +307,14 @@ const UserPage = ({ onBack }) => {
   };
 
   useEffect(() => {
-    // Load config and profile from NocoDB
+    // Load config, profile, and status from NocoDB
     const loadData = async () => {
       try {
-        // Fetch config and profile from NocoDB service
-        const [cfg, profile] = await Promise.all([
+        // Fetch config, profile, and status from NocoDB service
+        const [cfg, profile, statusData] = await Promise.all([
           fetchConfig(),
-          fetchProfile()
+          fetchProfile(),
+          fetchStatus()
         ]);
         
         // Load config data
@@ -337,12 +338,6 @@ const UserPage = ({ onBack }) => {
             interests: [...loadedInterests] // hobbies from NocoDB mapped to interests
           });
           
-          // Also update form data with introduce
-          setFormData(prev => ({
-            ...prev,
-            introduce: profile.introduce || ''
-          }));
-          
           console.log('✅ Profile loaded from NocoDB:', {
             introduce: profile.introduce,
             skills: loadedSkills.length,
@@ -351,6 +346,60 @@ const UserPage = ({ onBack }) => {
         } else {
           setProfileData({ introduce: '', skills: [], interests: [] });
           console.warn('⚠️ No profile found in NocoDB');
+        }
+
+        // Load status data and apply to form
+        if (statusData) {
+          // Prepare existing doings from status (array)
+          const doingsArr = Array.isArray(statusData.doing) ? statusData.doing : [];
+          const seen = new Set();
+          const normalized = [];
+          doingsArr.forEach((d) => {
+            const s = String(d).trim();
+            const key = s.toLowerCase();
+            if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
+          });
+          setExistingDoings(normalized);
+
+          // Prepare existing locations from status (array)
+          const locArr = Array.isArray(statusData.location) ? statusData.location : [];
+          const seenLoc = new Set();
+          const normalizedLocs = [];
+          locArr.forEach((l) => {
+            const s = String(l).trim();
+            const key = s.toLowerCase();
+            if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
+          });
+          setExistingLocations(normalizedLocs);
+
+          // Prepare existing moods from status (array) - using 'mood' not 'moods'
+          const moodArr = Array.isArray(statusData.mood) ? statusData.mood : [];
+          const seenMood = new Set();
+          const normalizedMoods = [];
+          moodArr.forEach((m) => {
+            const s = String(m).trim();
+            const key = s.toLowerCase();
+            if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
+          });
+          setExistingMoods(normalizedMoods);
+
+          // Apply status and profile to form
+          setFormData(prev => ({
+            ...prev,
+            doing: normalizeStatusValue(statusData.doing),
+            location: normalizeStatusValue(statusData.location),
+            mood: normalizeStatusValue(statusData.mood),
+            caption: profile?.caption || '',
+            introduce: profile?.introduce || ''
+          }));
+
+          console.log('✅ Status loaded from NocoDB:', {
+            doing: normalized.length,
+            location: normalizedLocs.length,
+            mood: normalizedMoods.length
+          });
+        } else {
+          console.warn('⚠️ No status found in NocoDB');
         }
         
         setProfileLoaded(true);
@@ -430,9 +479,9 @@ const UserPage = ({ onBack }) => {
       });
       setExistingLocations(normalizedLocs);
 
-      const moodArr = Array.isArray(statusData?.moods)
-        ? statusData.moods
-        : (statusData?.moods ? [statusData.moods] : []);
+      const moodArr = Array.isArray(statusData?.mood)
+        ? statusData.mood
+        : (statusData?.mood ? [statusData.mood] : []);
       const seenMood = new Set();
       const normalizedMoods = [];
       moodArr.forEach((m) => {

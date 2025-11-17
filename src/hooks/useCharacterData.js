@@ -54,7 +54,7 @@ export const useCharacterData = (defaultData) => {
           status: {
             doing: status?.doing || defaultData.status?.doing || [],
             location: status?.location || defaultData.status?.location || [],
-            moods: status?.moods || defaultData.status?.moods || [],
+            mood: status?.mood || defaultData.status?.mood || [],
             timestamp: status?.timestamp ? new Date(status.timestamp) : new Date()
           },
 

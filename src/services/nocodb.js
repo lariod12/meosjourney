@@ -29,26 +29,66 @@ const TABLE_IDS = {
   ATTACHMENTS_ALBUM: 'mxqvvqxqxqxqxqx' // placeholder
 };
 
+// Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
+const requestCache = new Map();
+const CACHE_DURATION = 5000; // 5 seconds
+
+const getCachedRequest = (key) => {
+  const cached = requestCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`📦 Using cached data for: ${key}`);
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedRequest = (key, data) => {
+  requestCache.set(key, { data, timestamp: Date.now() });
+};
+
 /**
- * Make a request to NocoDB API
+ * Make a request to NocoDB API with retry logic for rate limiting
  */
-const nocoRequest = async (endpoint, options = {}) => {
+const nocoRequest = async (endpoint, options = {}, retries = 3) => {
   const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'xc-token': NOCODB_TOKEN,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'xc-token': NOCODB_TOKEN,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
 
-  if (!response.ok) {
-    throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
+      // Handle rate limiting with exponential backoff
+      if (response.status === 429) {
+        if (attempt < retries) {
+          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
+      }
+
+      if (!response.ok) {
+        throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (attempt === retries) {
+        throw error;
+      }
+      // For network errors, also retry
+      const delay = Math.pow(2, attempt) * 1000;
+      console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
-
-  return response.json();
 };
 
 /**
@@ -68,6 +108,11 @@ const fetchStaticData = async () => {
  */
 export const fetchStatus = async () => {
   try {
+    // Check cache first
+    const cacheKey = 'status';
+    const cached = getCachedRequest(cacheKey);
+    if (cached) return cached;
+
     // Use static data in development
     if (USE_STATIC_DATA) {
       const staticData = await fetchStaticData();
@@ -76,7 +121,7 @@ export const fetchStatus = async () => {
       return {
         id: staticData.status.id,
         doing: statusRecord.current_activity || [],
-        moods: statusRecord.moods || [],
+        mood: statusRecord.mood || [], // Changed from 'moods' to 'mood' to match database column
         location: statusRecord.location || [],
         timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
         createdAt: statusRecord.CreatedAt,
@@ -101,23 +146,27 @@ export const fetchStatus = async () => {
       ? statusRecord.current_activity 
       : (statusRecord.current_activity ? JSON.parse(statusRecord.current_activity) : []);
     
-    const moods = Array.isArray(statusRecord.moods)
-      ? statusRecord.moods
-      : (statusRecord.moods ? JSON.parse(statusRecord.moods) : []);
+    const moods = Array.isArray(statusRecord.mood)
+      ? statusRecord.mood
+      : (statusRecord.mood ? JSON.parse(statusRecord.mood) : []);
     
     const location = Array.isArray(statusRecord.location)
       ? statusRecord.location
       : (statusRecord.location ? JSON.parse(statusRecord.location) : []);
 
-    return {
+    const result = {
       id: statusRecord.Id,
       doing: currentActivity,
-      moods: moods,
+      mood: moods, // Changed from 'moods' to 'mood' to match database column
       location: location,
       timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
       createdAt: statusRecord.CreatedAt,
       updatedAt: statusRecord.UpdatedAt
     };
+
+    // Cache the result
+    setCachedRequest('status', result);
+    return result;
   } catch (error) {
     console.error('❌ Error fetching status from NocoDB:', error);
     throw error;
@@ -129,6 +178,11 @@ export const fetchStatus = async () => {
  */
 export const fetchProfile = async () => {
   try {
+    // Check cache first
+    const cacheKey = 'profile';
+    const cached = getCachedRequest(cacheKey);
+    if (cached) return cached;
+
     // Use static data in development
     if (USE_STATIC_DATA) {
       const staticData = await fetchStaticData();
@@ -209,7 +263,7 @@ export const fetchProfile = async () => {
     const maxXP = profileRecord.max_xp || 1000;
     const level = Math.floor(currentXP / maxXP);
 
-    return {
+    const result = {
       id: profileRecord.Id,
       name: profileRecord.name || profileRecord.title || 'Character',
       caption: profileRecord.caption || '',
@@ -223,6 +277,10 @@ export const fetchProfile = async () => {
       createdAt: profileRecord.CreatedAt,
       updatedAt: profileRecord.UpdatedAt
     };
+
+    // Cache the result
+    setCachedRequest('profile', result);
+    return result;
   } catch (error) {
     console.error('❌ Error fetching profile from NocoDB:', error);
     throw error;
@@ -234,6 +292,11 @@ export const fetchProfile = async () => {
  */
 export const fetchConfig = async () => {
   try {
+    // Check cache first
+    const cacheKey = 'config';
+    const cached = getCachedRequest(cacheKey);
+    if (cached) return cached;
+
     // Use static data in development
     if (USE_STATIC_DATA) {
       const staticData = await fetchStaticData();
@@ -263,7 +326,7 @@ export const fetchConfig = async () => {
 
     const configRecord = data.list[0];
 
-    return {
+    const result = {
       id: configRecord.Id,
       autoApproveTasks: configRecord.auto_approve_tasks || false,
       levelGrowRate: configRecord.level_grow_rate || 10,
@@ -273,6 +336,10 @@ export const fetchConfig = async () => {
       createdAt: configRecord.CreatedAt,
       updatedAt: configRecord.UpdatedAt
     };
+
+    // Cache the result
+    setCachedRequest('config', result);
+    return result;
   } catch (error) {
     console.error('❌ Error fetching config from NocoDB:', error);
     throw error;

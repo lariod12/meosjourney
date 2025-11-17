@@ -295,7 +295,7 @@ export const fetchCharacterViewData = async (characterId = CHARACTER_ID, base = 
     const statusData = status ? {
       doing: status.doing || base.status?.doing || '',
       location: status.location || base.status?.location || '',
-      moods: status.moods || base.status?.moods || [],
+      mood: status.mood || base.status?.mood || [],
       timestamp: statusTimestamp
     } : base.status || {};
 
@@ -418,19 +418,19 @@ export const saveStatus = async (statusData, characterId = CHARACTER_ID) => {
       }
     }
 
-    // moods: same handling as doing and location
+    // mood: same handling as doing and location
     {
-      const existingMoodsRaw = Array.isArray(currentStatus?.moods)
-        ? currentStatus.moods
-        : (currentStatus?.moods ? [currentStatus.moods] : []);
+      const existingMoodsRaw = Array.isArray(currentStatus?.mood)
+        ? currentStatus.mood
+        : (currentStatus?.mood ? [currentStatus.mood] : []);
       const existingMoodsClean = normalizeArray(existingMoodsRaw);
 
       if (statusData.mood && statusData.mood.trim()) {
         const newMood = statusData.mood.trim();
         const dedup = existingMoodsClean.filter(v => v.toLowerCase() !== newMood.toLowerCase());
-        dataToSave.moods = [newMood, ...dedup];
+        dataToSave.mood = [newMood, ...dedup];
       } else if (existingMoodsClean.length !== existingMoodsRaw.length) {
-        dataToSave.moods = existingMoodsClean;
+        dataToSave.mood = existingMoodsClean;
       }
     }
 
