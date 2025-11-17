@@ -566,4 +566,75 @@ export const fetchQuestConfirmations = async () => {
   });
 };
 
+/**
+ * Update profile data in NocoDB
+ * Only updates fields that have changed
+ */
+export const updateProfile = async (profileData, oldProfileData) => {
+  try {
+    const updates = {};
+    let hasChanges = false;
+
+    // Check introduce field
+    if (profileData.introduce !== undefined && profileData.introduce !== oldProfileData.introduce) {
+      updates.introduce = profileData.introduce;
+      hasChanges = true;
+      console.log('📝 Profile introduce changed:', { old: oldProfileData.introduce, new: profileData.introduce });
+    }
+
+    // Check skills array
+    if (profileData.skills !== undefined) {
+      const oldSkills = JSON.stringify(oldProfileData.skills || []);
+      const newSkills = JSON.stringify(profileData.skills || []);
+      if (oldSkills !== newSkills) {
+        updates.skills = profileData.skills;
+        hasChanges = true;
+        console.log('📝 Profile skills changed:', { old: oldProfileData.skills, new: profileData.skills });
+      }
+    }
+
+    // Check interests/hobbies array (interests in frontend = hobbies in NocoDB)
+    if (profileData.interests !== undefined) {
+      const oldInterests = JSON.stringify(oldProfileData.interests || []);
+      const newInterests = JSON.stringify(profileData.interests || []);
+      if (oldInterests !== newInterests) {
+        updates.hobbies = profileData.interests; // Map interests to hobbies
+        hasChanges = true;
+        console.log('📝 Profile interests changed:', { old: oldProfileData.interests, new: profileData.interests });
+      }
+    }
+
+    if (!hasChanges) {
+      console.log('ℹ️ No profile changes detected');
+      return { success: true, message: 'No changes to save' };
+    }
+
+    // Get the profile record ID (assuming single profile record)
+    const profileRecords = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+      method: 'GET',
+    });
+
+    if (!profileRecords.list || profileRecords.list.length === 0) {
+      throw new Error('No profile record found');
+    }
+
+    const profileId = profileRecords.list[0].Id;
+
+    // Update the profile record
+    await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify([{
+        Id: profileId,
+        ...updates
+      }])
+    });
+
+    console.log('✅ Profile updated successfully in NocoDB');
+    return { success: true, message: 'Profile updated' };
+  } catch (error) {
+    console.error('❌ Error updating profile in NocoDB:', error);
+    throw error;
+  }
+};
+
 export { TABLE_IDS };

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
-// NocoDB imports for read operations
-import { fetchConfig, fetchProfile, fetchStatus } from '../../services/nocodb';
+// NocoDB imports for read and write operations
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -69,6 +69,11 @@ const UserPage = ({ onBack }) => {
     introduce: '',
     skills: [],
     interests: [] // Maps to 'hobbies' in NocoDB
+  });
+  const [originalProfileData, setOriginalProfileData] = useState({
+    introduce: '',
+    skills: [],
+    interests: []
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -331,11 +336,14 @@ const UserPage = ({ onBack }) => {
           const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
           const loadedInterests = Array.isArray(profile.interests) ? profile.interests : []; // interests is mapped from hobbies in nocodb service
           
-          setProfileData({
+          const loadedProfile = {
             introduce: profile.introduce || '',
             skills: [...loadedSkills],
             interests: [...loadedInterests] // hobbies from NocoDB mapped to interests
-          });
+          };
+          
+          setProfileData(loadedProfile);
+          setOriginalProfileData(JSON.parse(JSON.stringify(loadedProfile))); // Deep copy for comparison
           
           console.log('✅ Profile loaded from NocoDB:', {
             introduce: profile.introduce,
@@ -344,6 +352,7 @@ const UserPage = ({ onBack }) => {
           });
         } else {
           setProfileData({ introduce: '', skills: [], interests: [] });
+          setOriginalProfileData({ introduce: '', skills: [], interests: [] });
           console.warn('⚠️ No profile found in NocoDB');
         }
 
@@ -800,16 +809,25 @@ const UserPage = ({ onBack }) => {
 
       if (hasProfileData) {
         try {
-          const profileResult = await saveProfile({
+          // Use NocoDB to update profile
+          const profileResult = await updateProfile({
             introduce: formData.introduce,
             skills: profileData.skills,
             interests: profileData.interests
-          }, CHARACTER_ID);
+          }, originalProfileData);
 
           if (profileResult.success) {
-            results.push({ type: 'success', item: 'Profile Update' });
-          } else if (profileResult.message === 'No data to save') {
-            results.push({ type: 'success', item: 'Profile Update (no change)' });
+            if (profileResult.message === 'No changes to save') {
+              results.push({ type: 'success', item: 'Profile Update (no change)' });
+            } else {
+              results.push({ type: 'success', item: 'Profile Update' });
+              // Update original profile data after successful save
+              setOriginalProfileData({
+                introduce: formData.introduce,
+                skills: [...profileData.skills],
+                interests: [...profileData.interests]
+              });
+            }
           } else {
             console.warn('⚠️ Profile not saved:', profileResult.message);
             results.push({ type: 'failed', item: 'Profile Update' });
