@@ -5,9 +5,13 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
+
+// NocoDB imports for read operations
+import { fetchConfig } from '../../services/nocodb';
+
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
-// import { fetchConfig, fetchAchievements, fetchQuests, fetchQuestConfirmations, fetchAchievementConfirmations } from '../../services/firestore';
+// import { fetchAchievements, fetchQuests, fetchQuestConfirmations, fetchAchievementConfirmations } from '../../services/firestore';
 
 // Write operations still using Firestore (need migration)
 import { 
@@ -75,12 +79,25 @@ const AdminPage = ({ onBack }) => {
   });
 
   useEffect(() => {
-    fetchConfig(CHARACTER_ID)
-      .then(cfg => {
-        setCorrectPassword(cfg?.pwDailyUpdate || null);
-        setAutoApprove(!!cfg?.auto_approve_tasks);
-      })
-      .catch(() => setCorrectPassword(null));
+    // Load config from NocoDB
+    const loadConfig = async () => {
+      try {
+        const cfg = await fetchConfig();
+        if (cfg) {
+          setCorrectPassword(cfg.pwDailyUpdate || null);
+          setAutoApprove(!!cfg.autoApproveTasks);
+          console.log('✅ Admin config loaded from NocoDB');
+        } else {
+          setCorrectPassword(null);
+          console.warn('⚠️ No config found in NocoDB');
+        }
+      } catch (error) {
+        console.error('❌ Error loading config from NocoDB:', error);
+        setCorrectPassword(null);
+      }
+    };
+    
+    loadConfig();
   }, []);
 
   useEffect(() => {
@@ -104,6 +121,8 @@ const AdminPage = ({ onBack }) => {
   }, [isAuthenticated, activeTab]);
 
   const loadAchievements = async () => {
+    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data loading
+    /* 
     try {
       const [achievementsData, confirmationsData] = await Promise.all([
         fetchAchievements(CHARACTER_ID),
@@ -114,9 +133,17 @@ const AdminPage = ({ onBack }) => {
     } catch (error) {
       console.error('Error loading achievements:', error);
     }
+    */
+    
+    // Temporary: Set empty data for static UI
+    setAchievements([]);
+    setAchievementConfirmations([]);
+    console.log('⚠️ Achievement loading disabled during NocoDB migration');
   };
 
   const loadQuests = async () => {
+    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data loading
+    /* 
     try {
       const [questsData, confirmationsData] = await Promise.all([
         fetchQuests(CHARACTER_ID),
@@ -127,6 +154,12 @@ const AdminPage = ({ onBack }) => {
     } catch (error) {
       console.error('Error loading quests:', error);
     }
+    */
+    
+    // Temporary: Set empty data for static UI
+    setQuests([]);
+    setQuestConfirmations([]);
+    console.log('⚠️ Quest loading disabled during NocoDB migration');
   };
 
   // Refresh all data from database
