@@ -31,6 +31,7 @@ const TABLE_IDS = {
 
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
 const requestCache = new Map();
+const pendingRequests = new Map(); // Track in-flight requests
 const CACHE_DURATION = 5000; // 5 seconds
 
 const getCachedRequest = (key) => {
@@ -44,6 +45,34 @@ const getCachedRequest = (key) => {
 
 const setCachedRequest = (key, data) => {
   requestCache.set(key, { data, timestamp: Date.now() });
+};
+
+// Deduplicate concurrent requests - if same request is in-flight, return the same promise
+const deduplicateRequest = async (key, requestFn) => {
+  // Check cache first
+  const cached = getCachedRequest(key);
+  if (cached) return cached;
+
+  // Check if request is already in-flight
+  if (pendingRequests.has(key)) {
+    console.log(`⏳ Waiting for in-flight request: ${key}`);
+    return pendingRequests.get(key);
+  }
+
+  // Execute the request and store the promise
+  const promise = requestFn()
+    .then(data => {
+      setCachedRequest(key, data);
+      pendingRequests.delete(key);
+      return data;
+    })
+    .catch(error => {
+      pendingRequests.delete(key);
+      throw error;
+    });
+
+  pendingRequests.set(key, promise);
+  return promise;
 };
 
 /**
@@ -107,16 +136,14 @@ const fetchStaticData = async () => {
  * Returns the first (and only) status record
  */
 export const fetchStatus = async () => {
-  try {
-    // Check cache first
-    const cacheKey = 'status';
-    const cached = getCachedRequest(cacheKey);
-    if (cached) return cached;
-
-    // Use static data in development
-    if (USE_STATIC_DATA) {
-      const staticData = await fetchStaticData();
-      const statusRecord = staticData.status.fields;
+  const cacheKey = 'status';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        const statusRecord = staticData.status.fields;
       
       return {
         id: staticData.status.id,
@@ -154,7 +181,7 @@ export const fetchStatus = async () => {
       ? statusRecord.location
       : (statusRecord.location ? JSON.parse(statusRecord.location) : []);
 
-    const result = {
+    return {
       id: statusRecord.Id,
       doing: currentActivity,
       mood: moods, // Changed from 'moods' to 'mood' to match database column
@@ -163,30 +190,25 @@ export const fetchStatus = async () => {
       createdAt: statusRecord.CreatedAt,
       updatedAt: statusRecord.UpdatedAt
     };
-
-    // Cache the result
-    setCachedRequest('status', result);
-    return result;
-  } catch (error) {
-    console.error('❌ Error fetching status from NocoDB:', error);
-    throw error;
-  }
+    } catch (error) {
+      console.error('❌ Error fetching status from NocoDB:', error);
+      throw error;
+    }
+  });
 };
 
 /**
  * Fetch profile data from NocoDB
  */
 export const fetchProfile = async () => {
-  try {
-    // Check cache first
-    const cacheKey = 'profile';
-    const cached = getCachedRequest(cacheKey);
-    if (cached) return cached;
-
-    // Use static data in development
-    if (USE_STATIC_DATA) {
-      const staticData = await fetchStaticData();
-      const profileRecord = staticData.profile.fields;
+  const cacheKey = 'profile';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        const profileRecord = staticData.profile.fields;
       
       // Note: 'interests' field renamed to 'hobbies' in NocoDB
       const hobbies = Array.isArray(profileRecord.hobbies)
@@ -263,7 +285,7 @@ export const fetchProfile = async () => {
     const maxXP = profileRecord.max_xp || 1000;
     const level = Math.floor(currentXP / maxXP);
 
-    const result = {
+    return {
       id: profileRecord.Id,
       name: profileRecord.name || profileRecord.title || 'Character',
       caption: profileRecord.caption || '',
@@ -277,30 +299,25 @@ export const fetchProfile = async () => {
       createdAt: profileRecord.CreatedAt,
       updatedAt: profileRecord.UpdatedAt
     };
-
-    // Cache the result
-    setCachedRequest('profile', result);
-    return result;
-  } catch (error) {
-    console.error('❌ Error fetching profile from NocoDB:', error);
-    throw error;
-  }
+    } catch (error) {
+      console.error('❌ Error fetching profile from NocoDB:', error);
+      throw error;
+    }
+  });
 };
 
 /**
  * Fetch config data from NocoDB
  */
 export const fetchConfig = async () => {
-  try {
-    // Check cache first
-    const cacheKey = 'config';
-    const cached = getCachedRequest(cacheKey);
-    if (cached) return cached;
-
-    // Use static data in development
-    if (USE_STATIC_DATA) {
-      const staticData = await fetchStaticData();
-      const configRecord = staticData.config.fields;
+  const cacheKey = 'config';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        const configRecord = staticData.config.fields;
 
       return {
         id: staticData.config.id,
@@ -326,7 +343,7 @@ export const fetchConfig = async () => {
 
     const configRecord = data.list[0];
 
-    const result = {
+    return {
       id: configRecord.Id,
       autoApproveTasks: configRecord.auto_approve_tasks || false,
       levelGrowRate: configRecord.level_grow_rate || 10,
@@ -336,14 +353,11 @@ export const fetchConfig = async () => {
       createdAt: configRecord.CreatedAt,
       updatedAt: configRecord.UpdatedAt
     };
-
-    // Cache the result
-    setCachedRequest('config', result);
-    return result;
-  } catch (error) {
-    console.error('❌ Error fetching config from NocoDB:', error);
-    throw error;
-  }
+    } catch (error) {
+      console.error('❌ Error fetching config from NocoDB:', error);
+      throw error;
+    }
+  });
 };
 
 /**

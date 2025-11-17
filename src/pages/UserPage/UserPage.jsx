@@ -311,11 +311,10 @@ const UserPage = ({ onBack }) => {
     const loadData = async () => {
       try {
         // Fetch config, profile, and status from NocoDB service
-        const [cfg, profile, statusData] = await Promise.all([
-          fetchConfig(),
-          fetchProfile(),
-          fetchStatus()
-        ]);
+        // Using sequential calls instead of Promise.all to avoid rate limiting
+        const cfg = await fetchConfig();
+        const profile = await fetchProfile();
+        const statusData = await fetchStatus();
         
         // Load config data
         if (cfg) {
