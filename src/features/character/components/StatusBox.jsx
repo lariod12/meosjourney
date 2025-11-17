@@ -77,8 +77,8 @@ const StatusBox = () => {
       content: (
         <div className="hobbies-content">
           <div className="tags-container">
-            {data.interests.map((interest, index) => (
-              <span key={index} className="tag">{interest.name}</span>
+            {data.hobbies.map((hobby, index) => (
+              <span key={index} className="tag">{hobby.name}</span>
             ))}
           </div>
         </div>

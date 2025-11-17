@@ -239,7 +239,7 @@ export const fetchProfile = async () => {
         currentXP: currentXP,
         maxXP: maxXP,
         level: level,
-        interests: hobbies,  // Map hobbies to interests for frontend compatibility
+        hobbies: hobbies,
         skills: skills,
         introduce: profileRecord.introduce || '',
         social: socialLinks,
@@ -292,7 +292,7 @@ export const fetchProfile = async () => {
       currentXP: currentXP,
       maxXP: maxXP,
       level: level,
-      interests: hobbies,  // Map hobbies to interests for frontend compatibility
+      hobbies: hobbies,
       skills: skills,
       introduce: profileRecord.introduce || '',
       social: socialLinks,
@@ -593,14 +593,14 @@ export const updateProfile = async (profileData, oldProfileData) => {
       }
     }
 
-    // Check interests/hobbies array (interests in frontend = hobbies in NocoDB)
-    if (profileData.interests !== undefined) {
-      const oldInterests = JSON.stringify(oldProfileData.interests || []);
-      const newInterests = JSON.stringify(profileData.interests || []);
-      if (oldInterests !== newInterests) {
-        updates.hobbies = profileData.interests; // Map interests to hobbies
+    // Check hobbies array
+    if (profileData.hobbies !== undefined) {
+      const oldHobbies = JSON.stringify(oldProfileData.hobbies || []);
+      const newHobbies = JSON.stringify(profileData.hobbies || []);
+      if (oldHobbies !== newHobbies) {
+        updates.hobbies = profileData.hobbies;
         hasChanges = true;
-        console.log('📝 Profile interests changed:', { old: oldProfileData.interests, new: profileData.interests });
+        console.log('📝 Profile hobbies changed:', { old: oldProfileData.hobbies, new: profileData.hobbies });
       }
     }
 
@@ -620,16 +620,20 @@ export const updateProfile = async (profileData, oldProfileData) => {
 
     const profileId = profileRecords.list[0].Id;
 
+    // Debug: Log the update payload
+    const updatePayload = [{
+      Id: profileId,
+      ...updates
+    }];
+    console.log('🔍 Sending PATCH to NocoDB:', updatePayload);
+
     // Update the profile record
-    await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+    const response = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
       method: 'PATCH',
-      body: JSON.stringify([{
-        Id: profileId,
-        ...updates
-      }])
+      body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Profile updated successfully in NocoDB');
+    console.log('✅ Profile updated successfully in NocoDB:', response);
     return { success: true, message: 'Profile updated' };
   } catch (error) {
     console.error('❌ Error updating profile in NocoDB:', error);

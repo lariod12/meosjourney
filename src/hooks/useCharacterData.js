@@ -45,7 +45,7 @@ export const useCharacterData = (defaultData) => {
           level: profile?.level || defaultData.level || 0,
           introduce: profile?.introduce || defaultData.introduce || '',
           // Map arrays: NocoDB returns strings, frontend expects {name: string}
-          interests: profile?.interests?.map(name => ({ name })) || defaultData.interests || [],
+          hobbies: profile?.hobbies?.map(name => ({ name })) || defaultData.hobbies || [],
           skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
           // Social links
           social: profile?.social || defaultData.social || {},

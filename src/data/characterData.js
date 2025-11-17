@@ -16,7 +16,7 @@ export const characterData = {
         { name: "Motion Graphics" }
     ],
 
-    interests: [
+    hobbies: [
         { name: "Gaming" },
         { name: "Music" },
         { name: "Reading" },

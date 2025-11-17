@@ -60,20 +60,20 @@ const UserPage = ({ onBack }) => {
     journalEntry: '',
     introduce: '',
     newSkill: '',
-    newInterest: ''
+    newHobby: ''
   });
 
   // Profile data states
-  // Note: 'interests' in UI maps to 'hobbies' field in NocoDB profile table
+  // Note: 'Hobbys' in UI maps to 'hobbies' field in NocoDB profile table
   const [profileData, setProfileData] = useState({
     introduce: '',
     skills: [],
-    interests: [] // Maps to 'hobbies' in NocoDB
+    hobbies: [] // Maps to 'hobbies' in NocoDB
   });
   const [originalProfileData, setOriginalProfileData] = useState({
     introduce: '',
     skills: [],
-    interests: []
+    hobbies: []
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -215,7 +215,7 @@ const UserPage = ({ onBack }) => {
       mood: '',
       journalEntry: '',
       newSkill: '',
-      newInterest: ''
+      newHobby: ''
     }));
     setDoingSuggestions([]);
     setDoingOpen(false);
@@ -245,7 +245,7 @@ const UserPage = ({ onBack }) => {
         ...prev,
         journalEntry: '',
         newSkill: '',
-        newInterest: ''
+        newHobby: ''
       }));
 
       const doingsArr2 = Array.isArray(statusData2?.doing)
@@ -286,16 +286,16 @@ const UserPage = ({ onBack }) => {
 
       if (profile2) {
         const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
-        const updatedInterests = Array.isArray(profile2.interests) ? profile2.interests : [];
+        const updatedhobbies = Array.isArray(profile2.hobbies) ? profile2.hobbies : [];
 
         setProfileData({
           introduce: profile2.introduce || '',
           skills: [...updatedSkills],
-          interests: [...updatedInterests]
+          hobbies: [...updatedhobbies]
         });
 
       } else {
-        setProfileData({ introduce: '', skills: [], interests: [] });
+        setProfileData({ introduce: '', skills: [], hobbies: [] });
       }
 
       setAllQuests(quests);
@@ -331,15 +331,15 @@ const UserPage = ({ onBack }) => {
           console.warn('⚠️ No config found in NocoDB');
         }
 
-        // Load profile data (hobbies -> interests mapping)
+        // Load profile data (hobbies -> Hobbys mapping)
         if (profile) {
           const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
-          const loadedInterests = Array.isArray(profile.interests) ? profile.interests : []; // interests is mapped from hobbies in nocodb service
+          const loadedHobbies = Array.isArray(profile.hobbies) ? profile.hobbies : [];
           
           const loadedProfile = {
             introduce: profile.introduce || '',
             skills: [...loadedSkills],
-            interests: [...loadedInterests] // hobbies from NocoDB mapped to interests
+            hobbies: [...loadedHobbies]
           };
           
           setProfileData(loadedProfile);
@@ -348,11 +348,11 @@ const UserPage = ({ onBack }) => {
           console.log('✅ Profile loaded from NocoDB:', {
             introduce: profile.introduce,
             skills: loadedSkills.length,
-            interests: loadedInterests.length
+            hobbies: loadedHobbies.length
           });
         } else {
-          setProfileData({ introduce: '', skills: [], interests: [] });
-          setOriginalProfileData({ introduce: '', skills: [], interests: [] });
+          setProfileData({ introduce: '', skills: [], hobbies: [] });
+          setOriginalProfileData({ introduce: '', skills: [], hobbies: [] });
           console.warn('⚠️ No profile found in NocoDB');
         }
 
@@ -414,7 +414,7 @@ const UserPage = ({ onBack }) => {
       } catch (error) {
         console.error('❌ Error loading data from NocoDB:', error);
         setCorrectPassword(null);
-        setProfileData({ introduce: '', skills: [], interests: [] });
+        setProfileData({ introduce: '', skills: [], hobbies: [] });
         setProfileLoaded(true);
       }
       
@@ -454,12 +454,12 @@ const UserPage = ({ onBack }) => {
       // Update profile data
       if (profile) {
         const refreshedSkills = Array.isArray(profile.skills) ? profile.skills : [];
-        const refreshedInterests = Array.isArray(profile.interests) ? profile.interests : [];
+        const refreshedhobbies = Array.isArray(profile.hobbies) ? profile.hobbies : [];
         
         setProfileData({
           introduce: profile.introduce || '',
           skills: [...refreshedSkills], // Create new array to ensure reactivity
-          interests: [...refreshedInterests] // Create new array to ensure reactivity
+          hobbies: [...refreshedhobbies] // Create new array to ensure reactivity
         });
       }
 
@@ -725,39 +725,39 @@ const UserPage = ({ onBack }) => {
     }
   };
 
-  const handleAddInterest = async () => {
-    const interest = formData.newInterest.trim();
-    if (interest && !profileData.interests.includes(interest)) {
+  const handleAddHobby = async () => {
+    const hobby = formData.newHobby.trim();
+    if (hobby && !profileData.hobbies.includes(hobby)) {
       setProfileData(prev => ({
         ...prev,
-        interests: [...prev.interests, interest]
+        hobbies: [...prev.hobbies, hobby]
       }));
-      setFormData(prev => ({ ...prev, newInterest: '' }));
-      console.log('➕ Added interest:', interest, '| Current interests:', [...profileData.interests, interest]);
+      setFormData(prev => ({ ...prev, newHobby: '' }));
+      console.log('➕ Added hobby:', hobby, '| Current hobbies:', [...profileData.hobbies, hobby]);
       
-      // Save journal entry for interest addition
+      // Save journal entry for hobby addition
       try {
-        await saveProfileChangeJournal('added', 'interest', interest, CHARACTER_ID);
+        await saveProfileChangeJournal('added', 'hobby', hobby, CHARACTER_ID);
       } catch (journalError) {
-        console.warn('⚠️ Failed to save interest addition journal:', journalError);
+        console.warn('⚠️ Failed to save hobby addition journal:', journalError);
       }
-    } else if (interest && profileData.interests.includes(interest)) {
-      console.log('⚠️ Interest already exists:', interest);
+    } else if (hobby && profileData.hobbies.includes(hobby)) {
+      console.log('⚠️ Hobby already exists:', hobby);
     }
   };
 
-  const handleRemoveInterest = async (interestToRemove) => {
+  const handleRemoveHobby = async (hobbyToRemove) => {
     setProfileData(prev => ({
       ...prev,
-      interests: prev.interests.filter(interest => interest !== interestToRemove)
+      hobbies: prev.hobbies.filter(hobby => hobby !== hobbyToRemove)
     }));
-    console.log('➖ Removed interest:', interestToRemove);
+    console.log('➖ Removed hobby:', hobbyToRemove);
     
-    // Save journal entry for interest removal
+    // Save journal entry for hobby removal
     try {
-      await saveProfileChangeJournal('removed', 'interest', interestToRemove, CHARACTER_ID);
+      await saveProfileChangeJournal('removed', 'hobby', hobbyToRemove, CHARACTER_ID);
     } catch (journalError) {
-      console.warn('⚠️ Failed to save interest removal journal:', journalError);
+      console.warn('⚠️ Failed to save hobby removal journal:', journalError);
     }
   };
 
@@ -805,15 +805,25 @@ const UserPage = ({ onBack }) => {
       const results = [];
 
       // Submit Profile Update (if has data)
-      const hasProfileData = formData.introduce.trim() || profileData.skills.length > 0 || profileData.interests.length > 0;
+      const hasProfileData = formData.introduce.trim() || profileData.skills.length > 0 || profileData.hobbies.length > 0;
 
       if (hasProfileData) {
         try {
+          // Debug: Log profile data before update
+          console.log('🔍 Profile update data:', {
+            new: {
+              introduce: formData.introduce,
+              skills: profileData.skills,
+              hobbies: profileData.hobbies
+            },
+            original: originalProfileData
+          });
+          
           // Use NocoDB to update profile
           const profileResult = await updateProfile({
             introduce: formData.introduce,
             skills: profileData.skills,
-            interests: profileData.interests
+            hobbies: profileData.hobbies
           }, originalProfileData);
 
           if (profileResult.success) {
@@ -825,7 +835,7 @@ const UserPage = ({ onBack }) => {
               setOriginalProfileData({
                 introduce: formData.introduce,
                 skills: [...profileData.skills],
-                interests: [...profileData.interests]
+                hobbies: [...profileData.hobbies]
               });
             }
           } else {
@@ -1331,7 +1341,7 @@ const UserPage = ({ onBack }) => {
       journalEntry: '',
       introduce: profileData.introduce,
       newSkill: '',
-      newInterest: ''
+      newHobby: ''
     });
     setDoingSuggestions([]);
     setDoingOpen(false);
@@ -1918,41 +1928,41 @@ const UserPage = ({ onBack }) => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="newInterest">Interests {profileData.interests.length > 0 && `(${profileData.interests.length})`}</label>
+                  <label htmlFor="newHobby">Hobbys {profileData.hobbies.length > 0 && `(${profileData.hobbies.length})`}</label>
                   <div className="userpage-skill-input-section">
                     <input
                       type="text"
-                      id="newInterest"
-                      name="newInterest"
-                      value={formData.newInterest}
+                      id="newHobby"
+                      name="newHobby"
+                      value={formData.newHobby}
                       onChange={handleChange}
-                      placeholder="Add an interest..."
+                      placeholder="Add an Hobby..."
                       disabled={!profileLoaded}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          handleAddInterest();
+                          handleAddHobby();
                         }
                       }}
                     />
                     <button
                       type="button"
                       className="userpage-add-btn"
-                      onClick={handleAddInterest}
-                      disabled={!profileLoaded || !formData.newInterest.trim()}
+                      onClick={handleAddHobby}
+                      disabled={!profileLoaded || !formData.newHobby.trim()}
                     >
                       Add
                     </button>
                   </div>
-                  {profileData.interests.length > 0 && (
+                  {profileData.hobbies.length > 0 && (
                     <div className="userpage-tags-container">
-                      {profileData.interests.map((interest, index) => (
+                      {profileData.hobbies.map((Hobby, index) => (
                         <div key={index} className="userpage-tag">
-                          <span>{interest}</span>
+                          <span>{Hobby}</span>
                           <button
                             type="button"
                             className="userpage-tag-remove"
-                            onClick={() => handleRemoveInterest(interest)}
+                            onClick={() => handleRemoveHobby(Hobby)}
                           >
                             ✕
                           </button>
@@ -2927,4 +2937,5 @@ const UserPage = ({ onBack }) => {
 };
 
 export default UserPage;
+
 
