@@ -338,6 +338,7 @@ const UserPage = ({ onBack }) => {
           
           const loadedProfile = {
             introduce: profile.introduce || '',
+            caption: profile.caption || '',
             skills: [...loadedSkills],
             hobbies: [...loadedHobbies]
           };
@@ -805,7 +806,7 @@ const UserPage = ({ onBack }) => {
       const results = [];
 
       // Submit Profile Update (if has data)
-      const hasProfileData = formData.introduce.trim() || profileData.skills.length > 0 || profileData.hobbies.length > 0;
+      const hasProfileData = formData.introduce.trim() || formData.caption.trim() || profileData.skills.length > 0 || profileData.hobbies.length > 0;
 
       if (hasProfileData) {
         try {
@@ -813,6 +814,7 @@ const UserPage = ({ onBack }) => {
           console.log('🔍 Profile update data:', {
             new: {
               introduce: formData.introduce,
+              caption: formData.caption,
               skills: profileData.skills,
               hobbies: profileData.hobbies
             },
@@ -822,6 +824,7 @@ const UserPage = ({ onBack }) => {
           // Use NocoDB to update profile
           const profileResult = await updateProfile({
             introduce: formData.introduce,
+            caption: formData.caption,
             skills: profileData.skills,
             hobbies: profileData.hobbies
           }, originalProfileData);
@@ -834,6 +837,7 @@ const UserPage = ({ onBack }) => {
               // Update original profile data after successful save
               setOriginalProfileData({
                 introduce: formData.introduce,
+                caption: formData.caption,
                 skills: [...profileData.skills],
                 hobbies: [...profileData.hobbies]
               });
@@ -849,7 +853,7 @@ const UserPage = ({ onBack }) => {
       }
 
       // Submit Status Update (if has data)
-      const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.caption.trim() || formData.mood.trim();
+      const hasStatusData = formData.doing.trim() || formData.location.trim() || formData.mood.trim();
 
       if (hasStatusData) {
         try {
@@ -1883,6 +1887,20 @@ const UserPage = ({ onBack }) => {
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="caption">Caption</label>
+                  <input
+                    type="text"
+                    id="caption"
+                    name="caption"
+                    value={formData.caption}
+                    onChange={handleChange}
+                    placeholder="e.g., Forever Curious"
+                    autoComplete="off"
+                    disabled={!profileLoaded}
+                  />
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="newSkill">Skills {profileData.skills.length > 0 && `(${profileData.skills.length})`}</label>
                   <div className="userpage-skill-input-section">
                     <input
@@ -2073,19 +2091,6 @@ const UserPage = ({ onBack }) => {
                       </div>
                     )}
                   </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="caption">Caption</label>
-                  <input
-                    type="text"
-                    id="caption"
-                    name="caption"
-                    value={formData.caption}
-                    onChange={handleChange}
-                    placeholder="e.g., Forever Curios"
-                    autoComplete="off"
-                  />
                 </div>
 
                 <div className="form-group">

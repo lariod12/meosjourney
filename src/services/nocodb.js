@@ -582,6 +582,13 @@ export const updateProfile = async (profileData, oldProfileData) => {
       console.log('📝 Profile introduce changed:', { old: oldProfileData.introduce, new: profileData.introduce });
     }
 
+    // Check caption field
+    if (profileData.caption !== undefined && profileData.caption !== oldProfileData.caption) {
+      updates.caption = profileData.caption;
+      hasChanges = true;
+      console.log('📝 Profile caption changed:', { old: oldProfileData.caption, new: profileData.caption });
+    }
+
     // Check skills array
     if (profileData.skills !== undefined) {
       const oldSkills = JSON.stringify(oldProfileData.skills || []);
