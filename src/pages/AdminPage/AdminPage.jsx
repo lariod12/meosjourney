@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read operations
-import { fetchConfig } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -142,24 +142,23 @@ const AdminPage = ({ onBack }) => {
   };
 
   const loadQuests = async () => {
-    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data loading
-    /* 
     try {
-      const [questsData, confirmationsData] = await Promise.all([
-        fetchQuests(CHARACTER_ID),
-        fetchQuestConfirmations(CHARACTER_ID)
-      ]);
+      // Load quests and confirmations from NocoDB sequentially to avoid rate limiting
+      const questsData = await fetchQuests();
+      const confirmationsData = await fetchQuestConfirmations();
+      
       setQuests(questsData);
       setQuestConfirmations(confirmationsData);
+      console.log('✅ Quests loaded from NocoDB:', {
+        quests: questsData.length,
+        confirmations: confirmationsData.length
+      });
     } catch (error) {
-      console.error('Error loading quests:', error);
+      console.error('❌ Error loading quests from NocoDB:', error);
+      // Set empty data on error
+      setQuests([]);
+      setQuestConfirmations([]);
     }
-    */
-    
-    // Temporary: Set empty data for static UI
-    setQuests([]);
-    setQuestConfirmations([]);
-    console.log('⚠️ Quest loading disabled during NocoDB migration');
   };
 
   // Refresh all data from database
@@ -244,6 +243,29 @@ const AdminPage = ({ onBack }) => {
   const handlePasswordCancel = () => {
     setShowPasswordModal(false);
     if (onBack) onBack();
+  };
+
+  // Helper function to convert date (handles both Firestore Timestamp and regular Date/string)
+  const toDate = (dateValue) => {
+    if (!dateValue) return null;
+    
+    // Firestore Timestamp (has .seconds property)
+    if (dateValue.seconds) {
+      return toDate(dateValue);
+    }
+    
+    // Already a Date object
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    
+    // ISO string or other string format
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue);
+    }
+    
+    console.warn('Unknown date format:', dateValue);
+    return null;
   };
 
   const handleToggleAutoApprove = async () => {
@@ -873,67 +895,67 @@ const AdminPage = ({ onBack }) => {
   };
 
   // Helper function to get quest confirmation for a quest
-  const getQuestConfirmation = (questName) => {
-    // Sanitize quest name to match confirmation ID format
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    return questConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+  // Get quest confirmation by quest ID (1-1 relationship in NocoDB)
+  const getQuestConfirmationByQuestId = (questId) => {
+    // Find the quest to get its linked confirmation ID
+    const quest = quests.find(q => q.id === questId);
+    if (!quest) return null;
+    
+    // NocoDB: Match by the linked confirmation ID from quest.questsConfirmId
+    if (quest.questsConfirmId) {
+      return questConfirmations.find(c => c.id === quest.questsConfirmId);
+    }
+    
+    // Fallback: match by quest name (case-insensitive)
+    const normalizedQuestName = quest.name.trim().toLowerCase();
+    return questConfirmations.find(c => 
+      c.name && c.name.trim().toLowerCase() === normalizedQuestName
+    );
   };
 
-  // Get all confirmations for a quest (all dates)
-  const getQuestConfirmations = (questName) => {
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
+  const getQuestConfirmation = (questName) => {
+    // NocoDB: Match by quest name directly (case-insensitive)
+    const normalizedQuestName = questName.trim().toLowerCase();
+    return questConfirmations.find(c => 
+      c.name && c.name.trim().toLowerCase() === normalizedQuestName
+    );
+  };
 
-    // Find all confirmations that start with the sanitized quest name
-    return questConfirmations
-      .filter(c => c.id.startsWith(`${sanitizedName}_`))
-      .sort((a, b) => {
-        // Sort by date (newest first) - extract date from ID
-        const dateA = a.id.split('_').pop();
-        const dateB = b.id.split('_').pop();
-        return dateB.localeCompare(dateA);
-      });
+  // Get confirmation for a specific quest (1-1 relationship)
+  const getQuestConfirmations = (questId) => {
+    // NocoDB: Since it's 1-1 relationship, return array with single confirmation
+    const confirmation = getQuestConfirmationByQuestId(questId);
+    return confirmation ? [confirmation] : [];
+  };
+
+  // Get achievement confirmation by achievement ID (1-1 relationship in NocoDB)
+  const getAchievementConfirmationByAchievementId = (achievementId) => {
+    // Find the achievement to get its linked confirmation ID
+    const achievement = achievements.find(a => a.id === achievementId);
+    if (!achievement) return null;
+    
+    // In NocoDB, we need to match by the achievement's linked confirmation
+    // For now, match by achievement name as fallback
+    const normalizedAchievementName = achievement.name.trim().toLowerCase();
+    return achievementConfirmations.find(c => 
+      c.name && c.name.trim().toLowerCase() === normalizedAchievementName
+    );
   };
 
   // Helper function to get achievement confirmation for an achievement
   const getAchievementConfirmation = (achievementName) => {
-    // Sanitize achievement name to match confirmation ID format
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    return achievementConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+    // NocoDB: Match by achievement name directly (case-insensitive)
+    const normalizedAchievementName = achievementName.trim().toLowerCase();
+    return achievementConfirmations.find(c => 
+      c.name && c.name.trim().toLowerCase() === normalizedAchievementName
+    );
   };
 
-  // Get all confirmations for an achievement (all dates)
-  const getAchievementConfirmations = (achievementName) => {
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Find all confirmations that start with the sanitized achievement name
-    return achievementConfirmations
-      .filter(c => c.id.startsWith(`${sanitizedName}_`))
-      .sort((a, b) => {
-        // Sort by date (newest first) - extract date from ID
-        const dateA = a.id.split('_').pop();
-        const dateB = b.id.split('_').pop();
-        return dateB.localeCompare(dateA);
-      });
+  // Get confirmation for a specific achievement (1-1 relationship)
+  const getAchievementConfirmations = (achievementId) => {
+    // NocoDB: Since it's 1-1 relationship, return array with single confirmation
+    const confirmation = getAchievementConfirmationByAchievementId(achievementId);
+    return confirmation ? [confirmation] : [];
   };
 
   const handleReviewQuest = (quest) => {
@@ -1696,7 +1718,7 @@ const AdminPage = ({ onBack }) => {
                 const confirmation = getAchievementConfirmation(achievement.name);
                 const hasConfirmation = !!confirmation;
                 const isCompleted = achievement.completedAt !== null;
-                const allConfirmations = getAchievementConfirmations(achievement.name);
+                const allConfirmations = getAchievementConfirmations(achievement.id); // Use achievement.id for 1-1 relationship
 
                 return (
                   <div key={achievement.id} className="achievement-row">
@@ -1720,10 +1742,10 @@ const AdminPage = ({ onBack }) => {
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
                               <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
                               {achievement.createdAt && (
-                                <span>Created: {new Date(achievement.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Created: {toDate(achievement.createdAt).toLocaleDateString('vi-VN')}</span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(achievement.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -1743,11 +1765,16 @@ const AdminPage = ({ onBack }) => {
                               <div className="confirmations-list">
                                 {allConfirmations.map((conf, index) => {
                                   // Extract date from ID (format: name_YYMMDD)
-                                  const datePart = conf.id.split('_').pop();
-                                  const year = '20' + datePart.substring(0, 2);
-                                  const month = datePart.substring(2, 4);
-                                  const day = datePart.substring(4, 6);
-                                  const dateStr = `${day}/${month}/${year}`;
+                                  let dateStr = 'Unknown Date';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? conf.createdAt.toDate() : new Date(conf.createdAt);
+                                      const day = String(createdDate.getDate()).padStart(2, '0');
+                                      const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+                                      const year = createdDate.getFullYear();
+                                      dateStr = `${day}/${month}/${year}`;
+                                    } catch (e) { console.error('Error parsing date:', e); }
+                                  }
 
                                   // Format createdAt timestamp
                                   let createdAtStr = '';
@@ -1997,7 +2024,7 @@ const AdminPage = ({ onBack }) => {
                               <span>Status: {achievement.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
-                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
@@ -2007,7 +2034,7 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(achievement.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2088,7 +2115,7 @@ const AdminPage = ({ onBack }) => {
                 const confirmation = getQuestConfirmation(quest.name);
                 const hasConfirmation = !!confirmation;
                 const isCompleted = quest.completedAt !== null;
-                const allConfirmations = getQuestConfirmations(quest.name);
+                const allConfirmations = getQuestConfirmations(quest.id); // Use quest.id for 1-1 relationship
 
                 return (
                   <div key={quest.id} className="quest-row">
@@ -2109,10 +2136,10 @@ const AdminPage = ({ onBack }) => {
                               <span>XP: {quest.xp}</span>
                               <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
                               {quest.createdAt && (
-                                <span>Created: {new Date(quest.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN')}</span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(quest.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2132,11 +2159,16 @@ const AdminPage = ({ onBack }) => {
                               <div className="confirmations-list">
                                 {allConfirmations.map((conf, index) => {
                                   // Extract date from ID (format: name_YYMMDD)
-                                  const datePart = conf.id.split('_').pop();
-                                  const year = '20' + datePart.substring(0, 2);
-                                  const month = datePart.substring(2, 4);
-                                  const day = datePart.substring(4, 6);
-                                  const dateStr = `${day}/${month}/${year}`;
+                                  let dateStr = 'Unknown Date';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? conf.createdAt.toDate() : new Date(conf.createdAt);
+                                      const day = String(createdDate.getDate()).padStart(2, '0');
+                                      const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+                                      const year = createdDate.getFullYear();
+                                      dateStr = `${day}/${month}/${year}`;
+                                    } catch (e) { console.error('Error parsing date:', e); }
+                                  }
 
                                   // Format createdAt timestamp
                                   let createdAtStr = '';
@@ -2344,7 +2376,7 @@ const AdminPage = ({ onBack }) => {
                               <span>Status: {quest.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
-                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
@@ -2354,7 +2386,7 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(quest.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2431,3 +2463,5 @@ const AdminPage = ({ onBack }) => {
 };
 
 export default AdminPage;
+
+

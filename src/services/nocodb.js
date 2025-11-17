@@ -434,4 +434,136 @@ export const fetchJournals = async () => {
   }
 };
 
+/**
+ * Fetch quests data from NocoDB
+ * Returns all quest records
+ */
+export const fetchQuests = async () => {
+  const cacheKey = 'quests';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        // Static data doesn't have quests yet
+        return [];
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.QUESTS}/records?sort=-created_time`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No quest records found in NocoDB');
+        return [];
+      }
+
+      console.log(`📊 Fetched ${data.list.length} quests from NocoDB`);
+
+      // Transform NocoDB quests to frontend format
+      const quests = data.list.map(record => {
+        // Parse quest_name JSON array to get localized names
+        const questNameArray = Array.isArray(record.quest_name) ? record.quest_name : [];
+        const nameTranslations = {};
+        questNameArray.forEach(item => {
+          Object.assign(nameTranslations, item);
+        });
+
+        // Parse desc JSON array to get localized descriptions
+        const descArray = Array.isArray(record.desc) ? record.desc : [];
+        const descTranslations = {};
+        descArray.forEach(item => {
+          Object.assign(descTranslations, item);
+        });
+
+        // Get English name as default
+        const name = nameTranslations.en || nameTranslations.vi || record.title || 'Unnamed Quest';
+        const desc = descTranslations.en || descTranslations.vi || '';
+
+        // Debug: Log date fields
+        console.log(`🔍 Quest ID ${record.Id} dates:`, {
+          created_time: record.created_time,
+          completed_time: record.completed_time,
+          createdAt: record.created_time ? new Date(record.created_time) : null,
+          completedAt: record.completed_time ? new Date(record.completed_time) : null
+        });
+
+        return {
+          id: record.Id,
+          name: name,
+          nameTranslations: nameTranslations,
+          desc: desc,
+          descTranslations: descTranslations,
+          xp: record.xp || 0,
+          questsConfirmId: record.quests_confirm_id || null, // Link to quest_confirm
+          createdAt: record.created_time ? new Date(record.created_time) : null,
+          completedAt: record.completed_time ? new Date(record.completed_time) : null,
+          updatedAt: record.UpdatedAt
+        };
+      });
+
+      return quests;
+    } catch (error) {
+      console.error('❌ Error fetching quests from NocoDB:', error);
+      throw error;
+    }
+  });
+};
+
+/**
+ * Fetch quest confirmations data from NocoDB
+ * Returns all quest confirmation records
+ */
+export const fetchQuestConfirmations = async () => {
+  const cacheKey = 'quest_confirmations';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        // Static data doesn't have quest confirmations yet
+        return [];
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records?sort=-created_time`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No quest confirmation records found in NocoDB');
+        return [];
+      }
+
+      console.log(`📊 Fetched ${data.list.length} quest confirmations from NocoDB`);
+
+      // Transform NocoDB quest confirmations to frontend format
+      const confirmations = data.list.map(record => {
+        // Debug: Log confirmation date fields
+        console.log(`🔍 Quest Confirmation ID ${record.Id} dates:`, {
+          created_time: record.created_time,
+          CreatedAt: record.CreatedAt,
+          createdAt: record.created_time ? new Date(record.created_time) : new Date(record.CreatedAt)
+        });
+
+        return {
+          id: record.Id,
+          name: record.quest_name || record.title || 'Unnamed Quest',
+          desc: record.desc || '',
+          imgUrl: record.quest_img?.fields?.url || '', // Will need to handle attachment properly
+          createdAt: record.created_time ? new Date(record.created_time) : new Date(record.CreatedAt)
+        };
+      });
+
+      return confirmations;
+    } catch (error) {
+      console.error('❌ Error fetching quest confirmations from NocoDB:', error);
+      throw error;
+    }
+  });
+};
+
 export { TABLE_IDS };
