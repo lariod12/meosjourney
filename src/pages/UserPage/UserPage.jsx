@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read operations
-import { fetchConfig } from '../../services/nocodb';
+import { fetchConfig, fetchProfile } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -64,10 +64,11 @@ const UserPage = ({ onBack }) => {
   });
 
   // Profile data states
+  // Note: 'interests' in UI maps to 'hobbies' field in NocoDB profile table
   const [profileData, setProfileData] = useState({
     introduce: '',
     skills: [],
-    interests: []
+    interests: [] // Maps to 'hobbies' in NocoDB
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -306,12 +307,16 @@ const UserPage = ({ onBack }) => {
   };
 
   useEffect(() => {
-    // Load config from NocoDB
-    const loadConfig = async () => {
+    // Load config and profile from NocoDB
+    const loadData = async () => {
       try {
-        // Fetch config from NocoDB service
-        const cfg = await fetchConfig();
+        // Fetch config and profile from NocoDB service
+        const [cfg, profile] = await Promise.all([
+          fetchConfig(),
+          fetchProfile()
+        ]);
         
+        // Load config data
         if (cfg) {
           setAutoApproveTasks(!!cfg.autoApproveTasks);
           setCorrectPassword(cfg.pwDailyUpdate || null);
@@ -320,14 +325,43 @@ const UserPage = ({ onBack }) => {
           setCorrectPassword(null);
           console.warn('⚠️ No config found in NocoDB');
         }
+
+        // Load profile data (hobbies -> interests mapping)
+        if (profile) {
+          const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
+          const loadedInterests = Array.isArray(profile.interests) ? profile.interests : []; // interests is mapped from hobbies in nocodb service
+          
+          setProfileData({
+            introduce: profile.introduce || '',
+            skills: [...loadedSkills],
+            interests: [...loadedInterests] // hobbies from NocoDB mapped to interests
+          });
+          
+          // Also update form data with introduce
+          setFormData(prev => ({
+            ...prev,
+            introduce: profile.introduce || ''
+          }));
+          
+          console.log('✅ Profile loaded from NocoDB:', {
+            introduce: profile.introduce,
+            skills: loadedSkills.length,
+            interests: loadedInterests.length
+          });
+        } else {
+          setProfileData({ introduce: '', skills: [], interests: [] });
+          console.warn('⚠️ No profile found in NocoDB');
+        }
+        
+        setProfileLoaded(true);
       } catch (error) {
-        console.error('❌ Error loading config from NocoDB:', error);
+        console.error('❌ Error loading data from NocoDB:', error);
         setCorrectPassword(null);
+        setProfileData({ introduce: '', skills: [], interests: [] });
+        setProfileLoaded(true);
       }
       
       // Initialize empty data for other sections (will be migrated later)
-      setProfileData({ introduce: '', skills: [], interests: [] });
-      setProfileLoaded(true);
       setAllQuests([]);
       setAvailableQuests([]);
       setQuestConfirmations([]);
@@ -336,7 +370,7 @@ const UserPage = ({ onBack }) => {
       setAchievementConfirmations([]);
     };
     
-    loadConfig();
+    loadData();
   }, []);
 
   // Refresh data from database
