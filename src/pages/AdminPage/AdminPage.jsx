@@ -2136,7 +2136,13 @@ const AdminPage = ({ onBack }) => {
                               <span>XP: {quest.xp}</span>
                               <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
                               {quest.createdAt && (
-                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN')}</span>
+                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                               {quest.completedAt && (
                                 <span>Completed: {toDate(quest.completedAt).toLocaleDateString('vi-VN', {
