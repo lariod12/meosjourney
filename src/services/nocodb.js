@@ -801,6 +801,177 @@ export const saveJournal = async (journalData) => {
 };
 
 /**
+ * Fetch achievements data from NocoDB
+ * Returns all achievement records
+ */
+export const fetchAchievements = async () => {
+  const cacheKey = 'achievements';
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        // Static data doesn't have achievements yet
+        return [];
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records?sort=-created_time`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No achievement records found in NocoDB');
+        return [];
+      }
+
+      console.log(`📊 Fetched ${data.list.length} achievements from NocoDB`);
+      console.log('🔍 First achievement record:', data.list[0]);
+
+      // Transform NocoDB achievements to frontend format
+      const achievements = data.list.map(record => {
+        // Parse achievement_name JSON array to get localized names
+        const achievementNameArray = Array.isArray(record.achievement_name) ? record.achievement_name : [];
+        const nameTranslations = {};
+        achievementNameArray.forEach(item => {
+          Object.assign(nameTranslations, item);
+        });
+
+        // Parse desc JSON array to get localized descriptions
+        const descArray = Array.isArray(record.desc) ? record.desc : [];
+        const descTranslations = {};
+        descArray.forEach(item => {
+          Object.assign(descTranslations, item);
+        });
+
+        // Parse special_reward JSON array to get localized special rewards
+        const specialRewardArray = Array.isArray(record.special_reward) ? record.special_reward : [];
+        const specialRewardTranslations = {};
+        specialRewardArray.forEach(item => {
+          Object.assign(specialRewardTranslations, item);
+        });
+
+        // Get English name as default
+        const name = nameTranslations.en || nameTranslations.vi || record.title || 'Unnamed Achievement';
+        const desc = descTranslations.en || descTranslations.vi || '';
+        const specialReward = specialRewardTranslations.en || specialRewardTranslations.vi || '';
+
+        // Determine status based on achievement_confirm
+        // If achievement_confirm has value (linked record), it's pending review
+        // If no value, it's available (pending)
+        const hasConfirmation = record.achievement_confirm !== null && record.achievement_confirm !== undefined;
+
+        // Parse due_date to ICT timezone if exists
+        let dueDate = null;
+        if (record.due_date) {
+          try {
+            // NocoDB returns date in UTC format: "2025-12-06 00:00:00+00:00"
+            // Convert to ICT (UTC+7) for display
+            const utcDate = new Date(record.due_date);
+            // Convert to ICT by using toLocaleString
+            const ictDateStr = utcDate.toLocaleString('en-US', { 
+              timeZone: 'Asia/Bangkok',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+            dueDate = new Date(ictDateStr);
+          } catch (e) {
+            console.warn('⚠️ Failed to parse due_date:', record.due_date, e);
+            dueDate = record.due_date;
+          }
+        }
+
+        return {
+          id: record.Id,
+          name: name,
+          nameTranslations: nameTranslations,
+          desc: desc,
+          descTranslations: descTranslations,
+          specialReward: specialReward,
+          specialRewardTranslations: specialRewardTranslations,
+          icon: record.icon || '🏆',
+          xp: record.xp || 0,
+          dueDate: dueDate,
+          achievementConfirmId: record.achievement_confirm || null, // Link to achievement_confirm
+          hasConfirmation: hasConfirmation, // Helper flag
+          createdAt: record.created_time ? new Date(record.created_time) : null,
+          completedAt: record.completed_time ? new Date(record.completed_time) : null, // Completed timestamp
+          updatedAt: record.UpdatedAt
+        };
+      });
+
+      return achievements;
+    } catch (error) {
+      console.error('❌ Error fetching achievements from NocoDB:', error);
+      throw error;
+    }
+  });
+};
+
+/**
+ * Fetch achievement confirmations data from NocoDB
+ * Returns all achievement confirmation records with image data
+ */
+export const fetchAchievementConfirmations = async () => {
+  const cacheKey = 'achievement_confirmations';
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Use static data in development
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        // Static data doesn't have achievement confirmations yet
+        return [];
+      }
+
+      // Use API in production - fetch with nested data
+      const data = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records?sort=-created_time&nested[achievement_img][fields]=img_bw,title`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No achievement confirmation records found in NocoDB');
+        return [];
+      }
+
+      console.log(`📊 Fetched ${data.list.length} achievement confirmations from NocoDB`);
+
+      // Transform NocoDB achievement confirmations to frontend format
+      const confirmations = data.list.map(record => {
+        // Get image URL from nested achievement_img -> img_bw
+        let imageUrl = null;
+        if (record.achievement_img && Array.isArray(record.achievement_img.img_bw) && record.achievement_img.img_bw.length > 0) {
+          const imgBw = record.achievement_img.img_bw[0];
+          imageUrl = imgBw.signedUrl || imgBw.url || null;
+        }
+
+        return {
+          id: record.Id,
+          title: record.title || '',
+          achievementName: record.achievement_name || '',
+          desc: record.desc || '',
+          achievementsId: record.achievements_id || null,
+          imageUrl: imageUrl,
+          createdAt: record.created_time ? new Date(record.created_time) : null,
+          updatedAt: record.UpdatedAt
+        };
+      });
+
+      return confirmations;
+    } catch (error) {
+      console.error('❌ Error fetching achievement confirmations from NocoDB:', error);
+      throw error;
+    }
+  });
+};
+
+/**
  * Create achievement in NocoDB
  * @param {Object} achievementData - Achievement data
  * @param {string} achievementData.nameEn - English name

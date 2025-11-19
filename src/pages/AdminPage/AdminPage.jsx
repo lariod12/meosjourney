@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, createAchievement } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -121,24 +121,40 @@ const AdminPage = ({ onBack }) => {
   }, [isAuthenticated, activeTab]);
 
   const loadAchievements = async () => {
-    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data loading
-    /* 
     try {
+      console.log('📥 Loading achievements from NocoDB...');
       const [achievementsData, confirmationsData] = await Promise.all([
-        fetchAchievements(CHARACTER_ID),
-        fetchAchievementConfirmations(CHARACTER_ID)
+        fetchAchievements(),
+        fetchAchievementConfirmations()
       ]);
-      setAchievements(achievementsData);
+      
+      // Map achievements with status based on confirmation and completion
+      const achievementsWithStatus = achievementsData.map(achievement => {
+        // Status logic:
+        // - Completed: has both completed_time AND achievement_confirm
+        // - Pending Review: has achievement_confirm but no completed_time
+        // - Pending: no achievement_confirm
+        let status = 'pending';
+        if (achievement.completedAt && achievement.hasConfirmation) {
+          status = 'completed';
+        } else if (achievement.hasConfirmation) {
+          status = 'pending_review';
+        }
+
+        return {
+          ...achievement,
+          status
+        };
+      });
+
+      setAchievements(achievementsWithStatus);
       setAchievementConfirmations(confirmationsData);
+      console.log(`✅ Loaded ${achievementsWithStatus.length} achievements and ${confirmationsData.length} confirmations`);
     } catch (error) {
-      console.error('Error loading achievements:', error);
+      console.error('❌ Error loading achievements:', error);
+      setAchievements([]);
+      setAchievementConfirmations([]);
     }
-    */
-    
-    // Temporary: Set empty data for static UI
-    setAchievements([]);
-    setAchievementConfirmations([]);
-    console.log('⚠️ Achievement loading disabled during NocoDB migration');
   };
 
   const loadQuests = async () => {
@@ -817,7 +833,7 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imgUrl);
+            await deleteImageByUrl(conf.imageUrl);
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }
@@ -851,7 +867,7 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imgUrl);
+            await deleteImageByUrl(conf.imageUrl);
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }
@@ -940,16 +956,8 @@ const AdminPage = ({ onBack }) => {
 
   // Get achievement confirmation by achievement ID (1-1 relationship in NocoDB)
   const getAchievementConfirmationByAchievementId = (achievementId) => {
-    // Find the achievement to get its linked confirmation ID
-    const achievement = achievements.find(a => a.id === achievementId);
-    if (!achievement) return null;
-    
-    // In NocoDB, we need to match by the achievement's linked confirmation
-    // For now, match by achievement name as fallback
-    const normalizedAchievementName = achievement.name.trim().toLowerCase();
-    return achievementConfirmations.find(c => 
-      c.name && c.name.trim().toLowerCase() === normalizedAchievementName
-    );
+    // NocoDB: Match by achievementsId field in confirmation record
+    return achievementConfirmations.find(c => c.achievementsId === achievementId);
   };
 
   // Helper function to get achievement confirmation for an achievement
@@ -957,7 +965,7 @@ const AdminPage = ({ onBack }) => {
     // NocoDB: Match by achievement name directly (case-insensitive)
     const normalizedAchievementName = achievementName.trim().toLowerCase();
     return achievementConfirmations.find(c => 
-      c.name && c.name.trim().toLowerCase() === normalizedAchievementName
+      c.achievementName && c.achievementName.trim().toLowerCase() === normalizedAchievementName
     );
   };
 
@@ -1725,10 +1733,22 @@ const AdminPage = ({ onBack }) => {
                 const isEditing = editingId === achievement.id;
                 const isReviewing = reviewingId === achievement.id;
                 const isViewing = viewingId === achievement.id;
-                const confirmation = getAchievementConfirmation(achievement.name);
-                const hasConfirmation = !!confirmation;
+                // Use achievementConfirmId to check if has confirmation (more reliable than name matching)
+                const hasConfirmation = achievement.achievementConfirmId !== null && achievement.achievementConfirmId !== undefined;
+                const confirmation = hasConfirmation ? getAchievementConfirmationByAchievementId(achievement.id) : null;
                 const isCompleted = achievement.completedAt !== null;
                 const allConfirmations = getAchievementConfirmations(achievement.id); // Use achievement.id for 1-1 relationship
+                
+                // Debug log
+                console.log('🔍 Achievement row:', {
+                  id: achievement.id,
+                  name: achievement.name,
+                  completedAt: achievement.completedAt,
+                  isCompleted,
+                  hasConfirmation,
+                  achievementConfirmId: achievement.achievementConfirmId,
+                  confirmation
+                });
 
                 return (
                   <div key={achievement.id} className="achievement-row">
@@ -1750,7 +1770,13 @@ const AdminPage = ({ onBack }) => {
                             <div className="quest-details">
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
-                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {
+                                isCompleted && hasConfirmation 
+                                  ? '✅ Completed' 
+                                  : hasConfirmation 
+                                    ? '⏳ Pending Review' 
+                                    : '⏳ Pending'
+                              }</span>
                               {achievement.createdAt && (
                                 <span>Created: {toDate(achievement.createdAt).toLocaleDateString('vi-VN')}</span>
                               )}
@@ -1807,10 +1833,6 @@ const AdminPage = ({ onBack }) => {
 
                                   return (
                                     <div key={conf.id} className="confirmation-item">
-                                      <div className="confirmation-header">
-                                        <span className="confirmation-date">📅 {dateStr}</span>
-                                        <span className="confirmation-id">{conf.id}</span>
-                                      </div>
                                       {createdAtStr && (
                                         <div className="confirmation-created">
                                           <span className="created-label">Submitted at:</span>
@@ -1823,9 +1845,9 @@ const AdminPage = ({ onBack }) => {
                                           <p>{conf.desc}</p>
                                         </div>
                                       )}
-                                      {conf.imgUrl && (
+                                      {conf.imageUrl && (
                                         <div className="confirmation-image">
-                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                          <img src={conf.imageUrl} alt="Confirmation" />
                                         </div>
                                       )}
                                     </div>
@@ -1861,12 +1883,12 @@ const AdminPage = ({ onBack }) => {
                                 <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
                               </div>
 
-                              {confirmation.imgUrl && (
+                              {confirmation.imageUrl && (
                                 <div className="form-group">
                                   <label>Attached Image:</label>
                                   <div className="confirmation-image-container">
                                     <img
-                                      src={confirmation.imgUrl}
+                                      src={confirmation.imageUrl}
                                       alt="Achievement confirmation"
                                       className="confirmation-image"
                                     />
@@ -2030,8 +2052,22 @@ const AdminPage = ({ onBack }) => {
                             <div className="achievement-details">
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
-                              {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
-                              <span>Status: {achievement.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              {achievement.dueDate && (
+                                <span>Due: {new Date(achievement.dueDate).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
+                              )}
+                              <span>Status: {
+                                achievement.completedAt && hasConfirmation 
+                                  ? '✅ Completed' 
+                                  : hasConfirmation 
+                                    ? '⏳ Pending Review' 
+                                    : '⏳ Pending'
+                              }</span>
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
                                   📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {
@@ -2207,10 +2243,6 @@ const AdminPage = ({ onBack }) => {
 
                                   return (
                                     <div key={conf.id} className="confirmation-item">
-                                      <div className="confirmation-header">
-                                        <span className="confirmation-date">📅 {dateStr}</span>
-                                        <span className="confirmation-id">{conf.id}</span>
-                                      </div>
                                       {createdAtStr && (
                                         <div className="confirmation-created">
                                           <span className="created-label">Submitted at:</span>
@@ -2223,9 +2255,9 @@ const AdminPage = ({ onBack }) => {
                                           <p>{conf.desc}</p>
                                         </div>
                                       )}
-                                      {conf.imgUrl && (
+                                      {conf.imageUrl && (
                                         <div className="confirmation-image">
-                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                          <img src={conf.imageUrl} alt="Confirmation" />
                                         </div>
                                       )}
                                     </div>
@@ -2479,5 +2511,6 @@ const AdminPage = ({ onBack }) => {
 };
 
 export default AdminPage;
+
 
 
