@@ -800,4 +800,110 @@ export const saveJournal = async (journalData) => {
   }
 };
 
+/**
+ * Create achievement in NocoDB
+ * @param {Object} achievementData - Achievement data
+ * @param {string} achievementData.nameEn - English name
+ * @param {string} achievementData.nameVi - Vietnamese name
+ * @param {string} achievementData.descEn - English description
+ * @param {string} achievementData.descVi - Vietnamese description
+ * @param {string} achievementData.icon - Icon emoji
+ * @param {number} achievementData.xp - XP value
+ * @param {string} achievementData.specialRewardEn - English special reward (optional)
+ * @param {string} achievementData.specialRewardVi - Vietnamese special reward (optional)
+ * @param {string} achievementData.dueDate - Due date in YYYY-MM-DD format (optional)
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const createAchievement = async (achievementData) => {
+  try {
+    const { nameEn, nameVi, descEn, descVi, icon, xp, specialRewardEn, specialRewardVi, dueDate } = achievementData;
+
+    // Validate required fields
+    if (!nameEn || !nameVi) {
+      return { success: false, message: 'Achievement name (EN and VI) is required' };
+    }
+
+    // Get current ICT time
+    const now = new Date();
+    const ictDateStr = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    // Generate title: achievement_<year>-<month>-<day>_<hh>-<mm>
+    const title = `achievement_${year}-${month}-${day}_${hours}-${minutes}`;
+
+    // Format created_time with timezone offset
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    // Format achievement_name and desc as array of objects
+    const achievementName = [
+      { "en": nameEn },
+      { "vi": nameVi }
+    ];
+
+    const desc = [
+      { "en": descEn || '' },
+      { "vi": descVi || '' }
+    ];
+
+    // Format special_reward as array of objects (only if provided)
+    const specialReward = (specialRewardEn || specialRewardVi) ? [
+      { "en": specialRewardEn || '' },
+      { "vi": specialRewardVi || '' }
+    ] : null;
+
+    console.log('🔍 Special Reward Data:', {
+      specialRewardEn,
+      specialRewardVi,
+      specialReward
+    });
+
+    const payload = {
+      title: title,
+      achievement_name: achievementName,
+      desc: desc,
+      icon: icon || '🏆',
+      xp: xp || 0,
+      created_time: createdTime
+    };
+
+    // Add optional fields if provided
+    if (specialReward) {
+      payload.special_reward = specialReward;
+      console.log('✅ Added special_reward to payload:', payload.special_reward);
+    } else {
+      console.log('⚠️ No special_reward provided');
+    }
+
+    if (dueDate) {
+      payload.due_date = dueDate;
+    }
+
+    console.log('🔍 Sending Achievement POST to NocoDB:', JSON.stringify(payload, null, 2));
+
+    const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Achievement created successfully in NocoDB:', response);
+    return { success: true, message: 'Achievement created', data: response };
+  } catch (error) {
+    console.error('❌ Error creating achievement in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
 export { TABLE_IDS };

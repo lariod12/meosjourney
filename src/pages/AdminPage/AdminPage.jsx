@@ -6,8 +6,8 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
-// NocoDB imports for read operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations } from '../../services/nocodb';
+// NocoDB imports for read and write operations
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, createAchievement } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -462,26 +462,34 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const specialRewardEn = formData.specialReward.trim();
-      const specialRewardVi = formData.specialRewardVi.trim();
-      const hasSpecialReward = specialRewardEn.length > 0 || specialRewardVi.length > 0;
-      const specialRewardTranslations = hasSpecialReward
-        ? { en: specialRewardEn, vi: specialRewardVi }
-        : null;
-
       const achievementData = {
-        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
-        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
-        icon: formData.icon.trim(),
+        nameEn: formData.name.trim(),
+        nameVi: formData.nameVi.trim(),
+        descEn: formData.desc.trim(),
+        descVi: formData.descVi.trim(),
+        icon: formData.icon.trim() || '🏆',
         xp: Number(formData.xp) || 0,
-        specialReward: specialRewardTranslations,
+        specialRewardEn: formData.specialReward?.trim() || '',
+        specialRewardVi: formData.specialRewardVi?.trim() || '',
         dueDate: formData.dueDate || null
       };
 
-      const result = await saveAchievement(achievementData, CHARACTER_ID);
+      console.log('🔍 Creating achievement with data:', achievementData);
+
+      const result = await createAchievement(achievementData);
 
       if (result.success) {
-        await sendAdminAchievementCreatedNotification({ ...achievementData, id: result.id });
+        // Prepare data for Discord notification (using old format for compatibility)
+        const notificationData = {
+          name: { en: achievementData.nameEn, vi: achievementData.nameVi },
+          desc: { en: achievementData.descEn, vi: achievementData.descVi },
+          icon: achievementData.icon,
+          xp: achievementData.xp,
+          id: result.data?.Id || result.data?.id
+        };
+
+        await sendAdminAchievementCreatedNotification(notificationData);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
@@ -498,6 +506,8 @@ const AdminPage = ({ onBack }) => {
           },
           onCancel: null
         });
+      } else {
+        throw new Error(result.message || 'Failed to create achievement');
       }
     } catch (error) {
       console.error('❌ Error creating achievement:', error);
