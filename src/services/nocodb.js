@@ -80,7 +80,7 @@ const deduplicateRequest = async (key, requestFn) => {
  */
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
   const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
-  
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetch(url, {
@@ -137,59 +137,59 @@ const fetchStaticData = async () => {
  */
 export const fetchStatus = async () => {
   const cacheKey = 'status';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Use static data in development
       if (USE_STATIC_DATA) {
         const staticData = await fetchStaticData();
         const statusRecord = staticData.status.fields;
-      
+
+        return {
+          id: staticData.status.id,
+          doing: statusRecord.current_activity || [],
+          mood: statusRecord.mood || [], // Changed from 'moods' to 'mood' to match database column
+          location: statusRecord.location || [],
+          timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
+          createdAt: statusRecord.CreatedAt,
+          updatedAt: statusRecord.UpdatedAt
+        };
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No status record found in NocoDB');
+        return null;
+      }
+
+      const statusRecord = data.list[0];
+
+      // Parse JSON fields
+      const currentActivity = Array.isArray(statusRecord.current_activity)
+        ? statusRecord.current_activity
+        : (statusRecord.current_activity ? JSON.parse(statusRecord.current_activity) : []);
+
+      const moods = Array.isArray(statusRecord.mood)
+        ? statusRecord.mood
+        : (statusRecord.mood ? JSON.parse(statusRecord.mood) : []);
+
+      const location = Array.isArray(statusRecord.location)
+        ? statusRecord.location
+        : (statusRecord.location ? JSON.parse(statusRecord.location) : []);
+
       return {
-        id: staticData.status.id,
-        doing: statusRecord.current_activity || [],
-        mood: statusRecord.mood || [], // Changed from 'moods' to 'mood' to match database column
-        location: statusRecord.location || [],
+        id: statusRecord.Id,
+        doing: currentActivity,
+        mood: moods, // Changed from 'moods' to 'mood' to match database column
+        location: location,
         timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
         createdAt: statusRecord.CreatedAt,
         updatedAt: statusRecord.UpdatedAt
       };
-    }
-
-    // Use API in production
-    const data = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
-      method: 'GET',
-    });
-
-    if (!data.list || data.list.length === 0) {
-      console.warn('⚠️ No status record found in NocoDB');
-      return null;
-    }
-
-    const statusRecord = data.list[0];
-    
-    // Parse JSON fields
-    const currentActivity = Array.isArray(statusRecord.current_activity) 
-      ? statusRecord.current_activity 
-      : (statusRecord.current_activity ? JSON.parse(statusRecord.current_activity) : []);
-    
-    const moods = Array.isArray(statusRecord.mood)
-      ? statusRecord.mood
-      : (statusRecord.mood ? JSON.parse(statusRecord.mood) : []);
-    
-    const location = Array.isArray(statusRecord.location)
-      ? statusRecord.location
-      : (statusRecord.location ? JSON.parse(statusRecord.location) : []);
-
-    return {
-      id: statusRecord.Id,
-      doing: currentActivity,
-      mood: moods, // Changed from 'moods' to 'mood' to match database column
-      location: location,
-      timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
-      createdAt: statusRecord.CreatedAt,
-      updatedAt: statusRecord.UpdatedAt
-    };
     } catch (error) {
       console.error('❌ Error fetching status from NocoDB:', error);
       throw error;
@@ -202,14 +202,65 @@ export const fetchStatus = async () => {
  */
 export const fetchProfile = async () => {
   const cacheKey = 'profile';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Use static data in development
       if (USE_STATIC_DATA) {
         const staticData = await fetchStaticData();
         const profileRecord = staticData.profile.fields;
-      
+
+        // Note: 'interests' field renamed to 'hobbies' in NocoDB
+        const hobbies = Array.isArray(profileRecord.hobbies)
+          ? profileRecord.hobbies
+          : (profileRecord.hobbies ? JSON.parse(profileRecord.hobbies) : []);
+
+        const skills = Array.isArray(profileRecord.skills)
+          ? profileRecord.skills
+          : (profileRecord.skills ? JSON.parse(profileRecord.skills) : []);
+
+        // Parse social_link array to object
+        let socialLinks = {};
+        if (Array.isArray(profileRecord.social_link)) {
+          profileRecord.social_link.forEach(item => {
+            Object.assign(socialLinks, item);
+          });
+        }
+
+        // Calculate level from XP
+        const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
+        const maxXP = profileRecord.max_xp || 1000;
+        const level = Math.floor(currentXP / maxXP);
+
+        return {
+          id: staticData.profile.id,
+          name: profileRecord.name || profileRecord.title || 'Character',
+          caption: profileRecord.caption || '',
+          currentXP: currentXP,
+          maxXP: maxXP,
+          level: level,
+          hobbies: hobbies,
+          skills: skills,
+          introduce: profileRecord.introduce || '',
+          social: socialLinks,
+          createdAt: profileRecord.CreatedAt,
+          updatedAt: profileRecord.UpdatedAt
+        };
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No profile record found in NocoDB');
+        return null;
+      }
+
+      const profileRecord = data.list[0];
+
+      // Parse JSON fields
       // Note: 'interests' field renamed to 'hobbies' in NocoDB
       const hobbies = Array.isArray(profileRecord.hobbies)
         ? profileRecord.hobbies
@@ -220,6 +271,8 @@ export const fetchProfile = async () => {
         : (profileRecord.skills ? JSON.parse(profileRecord.skills) : []);
 
       // Parse social_link array to object
+      // NocoDB format: [{facebook: "url"}, {instagram: "url"}, ...]
+      // Frontend format: {facebook: "url", instagram: "url", ...}
       let socialLinks = {};
       if (Array.isArray(profileRecord.social_link)) {
         profileRecord.social_link.forEach(item => {
@@ -227,13 +280,13 @@ export const fetchProfile = async () => {
         });
       }
 
-      // Calculate level from XP
+      // Calculate level from XP (same logic as Firestore)
       const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
       const maxXP = profileRecord.max_xp || 1000;
       const level = Math.floor(currentXP / maxXP);
 
       return {
-        id: staticData.profile.id,
+        id: profileRecord.Id,
         name: profileRecord.name || profileRecord.title || 'Character',
         caption: profileRecord.caption || '',
         currentXP: currentXP,
@@ -246,59 +299,6 @@ export const fetchProfile = async () => {
         createdAt: profileRecord.CreatedAt,
         updatedAt: profileRecord.UpdatedAt
       };
-    }
-
-    // Use API in production
-    const data = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
-      method: 'GET',
-    });
-
-    if (!data.list || data.list.length === 0) {
-      console.warn('⚠️ No profile record found in NocoDB');
-      return null;
-    }
-
-    const profileRecord = data.list[0];
-    
-    // Parse JSON fields
-    // Note: 'interests' field renamed to 'hobbies' in NocoDB
-    const hobbies = Array.isArray(profileRecord.hobbies)
-      ? profileRecord.hobbies
-      : (profileRecord.hobbies ? JSON.parse(profileRecord.hobbies) : []);
-
-    const skills = Array.isArray(profileRecord.skills)
-      ? profileRecord.skills
-      : (profileRecord.skills ? JSON.parse(profileRecord.skills) : []);
-
-    // Parse social_link array to object
-    // NocoDB format: [{facebook: "url"}, {instagram: "url"}, ...]
-    // Frontend format: {facebook: "url", instagram: "url", ...}
-    let socialLinks = {};
-    if (Array.isArray(profileRecord.social_link)) {
-      profileRecord.social_link.forEach(item => {
-        Object.assign(socialLinks, item);
-      });
-    }
-
-    // Calculate level from XP (same logic as Firestore)
-    const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
-    const maxXP = profileRecord.max_xp || 1000;
-    const level = Math.floor(currentXP / maxXP);
-
-    return {
-      id: profileRecord.Id,
-      name: profileRecord.name || profileRecord.title || 'Character',
-      caption: profileRecord.caption || '',
-      currentXP: currentXP,
-      maxXP: maxXP,
-      level: level,
-      hobbies: hobbies,
-      skills: skills,
-      introduce: profileRecord.introduce || '',
-      social: socialLinks,
-      createdAt: profileRecord.CreatedAt,
-      updatedAt: profileRecord.UpdatedAt
-    };
     } catch (error) {
       console.error('❌ Error fetching profile from NocoDB:', error);
       throw error;
@@ -311,7 +311,7 @@ export const fetchProfile = async () => {
  */
 export const fetchConfig = async () => {
   const cacheKey = 'config';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Use static data in development
@@ -319,8 +319,32 @@ export const fetchConfig = async () => {
         const staticData = await fetchStaticData();
         const configRecord = staticData.config.fields;
 
+        return {
+          id: staticData.config.id,
+          autoApproveTasks: configRecord.auto_approve_tasks || false,
+          levelGrowRate: configRecord.level_grow_rate || 10,
+          pwDailyUpdate: configRecord.pw_daily_update || '',
+          version: configRecord.version || '1.0',
+          xpMultiplier: parseFloat(configRecord.xp_multiplier) || 1,
+          createdAt: configRecord.CreatedAt,
+          updatedAt: configRecord.UpdatedAt
+        };
+      }
+
+      // Use API in production
+      const data = await nocoRequest(`${TABLE_IDS.CONFIG}/records`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No config record found in NocoDB');
+        return null;
+      }
+
+      const configRecord = data.list[0];
+
       return {
-        id: staticData.config.id,
+        id: configRecord.Id,
         autoApproveTasks: configRecord.auto_approve_tasks || false,
         levelGrowRate: configRecord.level_grow_rate || 10,
         pwDailyUpdate: configRecord.pw_daily_update || '',
@@ -329,30 +353,6 @@ export const fetchConfig = async () => {
         createdAt: configRecord.CreatedAt,
         updatedAt: configRecord.UpdatedAt
       };
-    }
-
-    // Use API in production
-    const data = await nocoRequest(`${TABLE_IDS.CONFIG}/records`, {
-      method: 'GET',
-    });
-
-    if (!data.list || data.list.length === 0) {
-      console.warn('⚠️ No config record found in NocoDB');
-      return null;
-    }
-
-    const configRecord = data.list[0];
-
-    return {
-      id: configRecord.Id,
-      autoApproveTasks: configRecord.auto_approve_tasks || false,
-      levelGrowRate: configRecord.level_grow_rate || 10,
-      pwDailyUpdate: configRecord.pw_daily_update || '',
-      version: configRecord.version || '1.0',
-      xpMultiplier: parseFloat(configRecord.xp_multiplier) || 1,
-      createdAt: configRecord.CreatedAt,
-      updatedAt: configRecord.UpdatedAt
-    };
     } catch (error) {
       console.error('❌ Error fetching config from NocoDB:', error);
       throw error;
@@ -387,7 +387,7 @@ export const fetchJournals = async () => {
 
       if (data.list && data.list.length > 0) {
         allJournals = allJournals.concat(data.list);
-        
+
         // Check if there are more pages
         hasMore = data.pageInfo && !data.pageInfo.isLastPage;
         page++;
@@ -440,7 +440,7 @@ export const fetchJournals = async () => {
  */
 export const fetchQuests = async () => {
   const cacheKey = 'quests';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Use static data in development
@@ -518,7 +518,7 @@ export const fetchQuests = async () => {
  */
 export const fetchQuestConfirmations = async () => {
   const cacheKey = 'quest_confirmations';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Use static data in development
@@ -645,6 +645,158 @@ export const updateProfile = async (profileData, oldProfileData) => {
   } catch (error) {
     console.error('❌ Error updating profile in NocoDB:', error);
     throw error;
+  }
+};
+
+/**
+ * Save status data to NocoDB
+ * Updates the existing status record
+ */
+export const saveStatus = async (statusData) => {
+  try {
+    // Get the current status record to find the ID
+    const currentStatus = await fetchStatus();
+
+    if (!currentStatus || !currentStatus.id) {
+      throw new Error('No status record found to update');
+    }
+
+    const updates = {};
+
+    // Map frontend fields to NocoDB columns
+    // Note: NocoDB columns are JSON/Array, so we wrap strings in arrays if needed
+    if (statusData.doing !== undefined) {
+      updates.current_activity = statusData.doing ? [statusData.doing] : [];
+    }
+
+    if (statusData.location !== undefined) {
+      updates.location = statusData.location ? [statusData.location] : [];
+    }
+
+    if (statusData.mood !== undefined) {
+      updates.mood = statusData.mood ? [statusData.mood] : [];
+    }
+
+    // If no updates, return success
+    if (Object.keys(updates).length === 0) {
+      return { success: true, message: 'No data to save' };
+    }
+
+    const updatePayload = [{
+      Id: currentStatus.id,
+      ...updates
+    }];
+
+    console.log('🔍 Sending Status PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Status updated successfully in NocoDB:', response);
+    return { success: true, message: 'Status updated' };
+  } catch (error) {
+    console.error('❌ Error saving status to NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Save journal entry to NocoDB
+ * Creates a new journal record
+ */
+export const saveJournal = async (journalData) => {
+  try {
+    if (!journalData.caption) {
+      return { success: false, message: 'Journal entry is empty' };
+    }
+
+    // Generate title with format: journal_<year>-<month>-<day>_<hh>-<mm>-<ss>-<3 random digits>
+    // Use ICT timezone (UTC+7) for all date/time calculations
+    const now = new Date();
+    
+    // Convert to ICT (UTC+7) by using toLocaleString with Asia/Bangkok timezone
+    const ictDateStr = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    // Generate 3 random digits
+    const randomDigits = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+    const title = `journal_${year}-${month}-${day}_${hours}-${minutes}-${seconds}-${randomDigits}`;
+
+    // Format with timezone offset: YYYY-MM-DDTHH:mm:ss+07:00 (ISO 8601 with ICT timezone)
+    // This tells NocoDB that the time is already in ICT, not UTC
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    // Handle History Record (Check/Create and Link)
+    const historyTitle = `history_${year}-${month}-${day}`;
+    const historyDateStr = `${year}-${month}-${day}`;
+    let historyId = null;
+
+    try {
+      // Check if history record exists for today
+      const historyQuery = await nocoRequest(`${TABLE_IDS.HISTORY}/records?where=(title,eq,${historyTitle})`, {
+        method: 'GET'
+      });
+
+      if (historyQuery.list && historyQuery.list.length > 0) {
+        historyId = historyQuery.list[0].Id;
+        console.log('✅ Found existing history record:', historyTitle);
+      } else {
+        // Create new history record
+        console.log('Pm Creating new history record:', historyTitle);
+        const newHistoryPayload = {
+          title: historyTitle,
+          created_time: historyDateStr
+        };
+
+        const createHistoryResponse = await nocoRequest(`${TABLE_IDS.HISTORY}/records`, {
+          method: 'POST',
+          body: JSON.stringify(newHistoryPayload)
+        });
+
+        // Handle response which could be the record or an object containing it
+        historyId = createHistoryResponse.Id || (createHistoryResponse.list && createHistoryResponse.list[0]?.Id);
+        console.log('✅ Created new history record:', historyTitle);
+      }
+    } catch (historyError) {
+      console.error('⚠️ Failed to handle history record:', historyError);
+      // Proceed without linking if history operations fail
+    }
+
+    const payload = {
+      title: title,
+      caption: journalData.caption,
+      created_time: createdTime,
+      ...(historyId && { history: historyId }) // Link to history record
+    };
+
+    console.log('🔍 Sending Journal POST to NocoDB:', payload);
+
+    const response = await nocoRequest(`${TABLE_IDS.JOURNALS}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Journal saved successfully in NocoDB:', response);
+    return { success: true, message: 'Journal saved' };
+  } catch (error) {
+    console.error('❌ Error saving journal to NocoDB:', error);
+    return { success: false, message: error.message };
   }
 };
 
