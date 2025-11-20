@@ -499,6 +499,7 @@ const AdminPage = ({ onBack }) => {
         const notificationData = {
           name: { en: achievementData.nameEn, vi: achievementData.nameVi },
           desc: { en: achievementData.descEn, vi: achievementData.descVi },
+          specialReward: { en: achievementData.specialRewardEn, vi: achievementData.specialRewardVi },
           icon: achievementData.icon,
           xp: achievementData.xp,
           id: result.data?.Id || result.data?.id
