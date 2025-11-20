@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -548,15 +548,28 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const questData = {
-        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
-        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
-        xp: Number(formData.xp)
+        nameEn: formData.name.trim(),
+        nameVi: formData.nameVi.trim(),
+        descEn: formData.desc.trim(),
+        descVi: formData.descVi.trim(),
+        xp: Number(formData.xp) || 0
       };
 
-      const result = await saveQuest(questData, CHARACTER_ID);
+      console.log('🔍 Creating quest with data:', questData);
+
+      const result = await createQuest(questData);
 
       if (result.success) {
-        await sendAdminQuestCreatedNotification({ ...questData, id: result.id });
+        // Prepare data for Discord notification (using old format for compatibility)
+        const notificationData = {
+          name: { en: questData.nameEn, vi: questData.nameVi },
+          desc: { en: questData.descEn, vi: questData.descVi },
+          xp: questData.xp,
+          id: result.data?.Id || result.data?.id
+        };
+
+        await sendAdminQuestCreatedNotification(notificationData);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
@@ -573,6 +586,8 @@ const AdminPage = ({ onBack }) => {
           },
           onCancel: null
         });
+      } else {
+        throw new Error(result.message || 'Failed to create quest');
       }
     } catch (error) {
       console.error('❌ Error creating quest:', error);

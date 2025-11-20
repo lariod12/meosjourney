@@ -972,6 +972,83 @@ export const fetchAchievementConfirmations = async () => {
 };
 
 /**
+ * Create quest in NocoDB
+ * @param {Object} questData - Quest data
+ * @param {string} questData.nameEn - English name
+ * @param {string} questData.nameVi - Vietnamese name
+ * @param {string} questData.descEn - English description
+ * @param {string} questData.descVi - Vietnamese description
+ * @param {number} questData.xp - XP value
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const createQuest = async (questData) => {
+  try {
+    const { nameEn, nameVi, descEn, descVi, xp } = questData;
+
+    // Validate required fields
+    if (!nameEn || !nameVi) {
+      return { success: false, message: 'Quest name (EN and VI) is required' };
+    }
+
+    // Get current ICT time
+    const now = new Date();
+    const ictDateStr = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    // Generate title: quest_<year>-<month>-<day>_<hh>-<mm>
+    const title = `quest_${year}-${month}-${day}_${hours}-${minutes}`;
+
+    // Format created_time with timezone offset
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    // Format quest_name and desc as array of objects
+    const questName = [
+      { "en": nameEn },
+      { "vi": nameVi }
+    ];
+
+    const desc = [
+      { "en": descEn || '' },
+      { "vi": descVi || '' }
+    ];
+
+    const payload = {
+      title: title,
+      quest_name: questName,
+      desc: desc,
+      xp: xp || 0,
+      created_time: createdTime
+    };
+
+    console.log('🔍 Sending Quest POST to NocoDB:', payload);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Quest created successfully in NocoDB:', response);
+    return { success: true, message: 'Quest created', data: response };
+  } catch (error) {
+    console.error('❌ Error creating quest in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Create achievement in NocoDB
  * @param {Object} achievementData - Achievement data
  * @param {string} achievementData.nameEn - English name
