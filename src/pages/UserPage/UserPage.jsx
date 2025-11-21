@@ -1792,7 +1792,6 @@ const UserPage = ({ onBack }) => {
       };
     });
 
-    console.log('📋 [Review Section] Completed Quests:', completed.length, completed.map(q => ({ id: q.id, name: q.name })));
     return completed;
   };
 
@@ -1816,7 +1815,6 @@ const UserPage = ({ onBack }) => {
       };
     });
 
-    console.log('📋 [Review Section] Failed Quests:', failed.length, failed.map(q => ({ id: q.id, name: q.name, hasConfirmation: !!q.confirmation })));
     return failed;
   };
 
@@ -1836,7 +1834,6 @@ const UserPage = ({ onBack }) => {
       return isNotCompleted && isNotOverdue;
     });
 
-    console.log('📋 [Review Section] Pending Quests:', activePending.length, activePending.map(q => ({ id: q.id, name: q.name })));
     return activePending;
   };
 
@@ -1854,7 +1851,6 @@ const UserPage = ({ onBack }) => {
       };
     });
 
-    console.log('📋 [Review Section] Completed Achievements:', completed.length, completed.map(a => ({ id: a.id, name: a.name })));
     return completed;
   };
 
@@ -1879,7 +1875,6 @@ const UserPage = ({ onBack }) => {
       };
     });
 
-    console.log('📋 [Review Section] Failed Achievements:', failed.length, failed.map(a => ({ id: a.id, name: a.name, hasConfirmation: !!a.confirmation, dueDate: a.dueDate })));
     return failed;
   };
 
@@ -1899,7 +1894,6 @@ const UserPage = ({ onBack }) => {
       return isNotCompleted && isNotOverdue;
     });
 
-    console.log('📋 [Review Section] Pending Achievements:', activePending.length, activePending.map(a => ({ id: a.id, name: a.name, dueDate: a.dueDate })));
     return activePending;
   };
 
