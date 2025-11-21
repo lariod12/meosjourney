@@ -1596,6 +1596,7 @@ export const saveQuestConfirmation = async (confirmData) => {
 
 /**
  * Delete quest confirmation from NocoDB
+ * Also deletes linked attachment from attachments_gallery
  * @param {string} confirmationId - Quest confirmation ID to delete
  * @returns {Promise<Object>} Result object with success status
  */
@@ -1605,15 +1606,44 @@ export const deleteQuestConfirmation = async (confirmationId) => {
       return { success: false, message: 'Quest confirmation ID is required' };
     }
 
-    console.log('🔍 Sending Quest Confirmation DELETE to NocoDB:', confirmationId);
+    console.log('🔍 Deleting Quest Confirmation:', confirmationId);
 
+    // Step 1: Find and delete linked attachment from attachments_gallery
+    try {
+      const attachmentsData = await nocoRequest(
+        `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?where=(quests_confirm_id,eq,${confirmationId})`,
+        { method: 'GET' }
+      );
+
+      if (attachmentsData.list && attachmentsData.list.length > 0) {
+        const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
+        
+        console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        
+        await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+          method: 'DELETE',
+          body: JSON.stringify(attachmentIds)
+        });
+
+        console.log('✅ Linked attachments deleted successfully');
+      } else {
+        console.log('ℹ️ No linked attachments found for this confirmation');
+      }
+    } catch (attachmentError) {
+      console.warn('⚠️ Failed to delete linked attachments:', attachmentError.message);
+      // Continue with confirmation deletion even if attachment deletion fails
+    }
+
+    // Step 2: Delete the quest confirmation record
+    console.log('🗑️ Deleting quest confirmation record');
+    
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'DELETE',
       body: JSON.stringify([{ Id: confirmationId }])
     });
 
     console.log('✅ Quest confirmation deleted successfully in NocoDB:', response);
-    return { success: true, message: 'Quest confirmation deleted' };
+    return { success: true, message: 'Quest confirmation and linked attachments deleted' };
   } catch (error) {
     console.error('❌ Error deleting quest confirmation in NocoDB:', error);
     return { success: false, message: error.message };
