@@ -1481,10 +1481,13 @@ const UserPage = ({ onBack }) => {
 
   const getAvailableQuestsForDropdown = () => {
     const selectedQuestIds = selectedQuestSubmissions.map(s => s.questId);
-    // Filter out quests that are already selected OR have pending confirmation
+    // Filter out quests that are already selected OR have pending confirmation OR are overdue
     return availableQuests.filter(q => {
       if (selectedQuestIds.includes(q.id)) return false;
-      return !hasQuestConfirmation(q.id);
+      if (hasQuestConfirmation(q.id)) return false;
+      // Filter out overdue quests (daily quests expire after creation day)
+      if (isSubmissionOverdue(q, 'quest')) return false;
+      return true;
     });
   };
 
