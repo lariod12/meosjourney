@@ -509,7 +509,7 @@ export const fetchQuests = async () => {
 
 /**
  * Fetch quest confirmations data from NocoDB
- * Returns all quest confirmation records
+ * Returns all quest confirmation records with image data from attachments_gallery
  */
 export const fetchQuestConfirmations = async () => {
   const cacheKey = 'quest_confirmations';
@@ -523,7 +523,7 @@ export const fetchQuestConfirmations = async () => {
         return [];
       }
 
-      // Use API in production
+      // Step 1: Fetch quest confirmations
       const data = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records?sort=-created_time`, {
         method: 'GET',
       });
@@ -535,20 +535,63 @@ export const fetchQuestConfirmations = async () => {
 
       console.log(`📊 Fetched ${data.list.length} quest confirmations from NocoDB`);
 
-      // Transform NocoDB quest confirmations to frontend format
+      // Step 2: Fetch all attachments_gallery records that link to these confirmations
+      const attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,quests_confirm_id`, {
+        method: 'GET',
+      });
+
+      // Create a map of confirmationId -> attachment for quick lookup
+      const attachmentMap = new Map();
+      if (attachmentsData.list) {
+        attachmentsData.list.forEach(attachment => {
+          if (attachment.quests_confirm_id) {
+            attachmentMap.set(attachment.quests_confirm_id, attachment);
+          }
+        });
+      }
+
+      console.log(`📊 Fetched ${attachmentsData.list?.length || 0} attachments, ${attachmentMap.size} linked to confirmations`);
+
+      // Step 3: Transform and combine data
       const confirmations = data.list.map(record => {
-        // Debug: Log confirmation date fields
-        console.log(`🔍 Quest Confirmation ID ${record.Id} dates:`, {
+        // Get linked attachment from map
+        const attachment = attachmentMap.get(record.Id);
+        
+        let imgUrl = null;
+        if (attachment && attachment.img_bw) {
+          try {
+            // Parse img_bw if it's a string (NocoDB returns it as JSON string)
+            let imgBwArray = attachment.img_bw;
+            if (typeof imgBwArray === 'string') {
+              imgBwArray = JSON.parse(imgBwArray);
+            }
+            
+            // Get first image from array
+            if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
+              const imgBw = imgBwArray[0];
+              // Prefer signedUrl for S3 access, fallback to url
+              imgUrl = imgBw.signedUrl || imgBw.url || null;
+            }
+          } catch (parseError) {
+            console.warn('⚠️ Failed to parse img_bw for confirmation:', record.Id, parseError);
+          }
+        }
+
+        // Debug: Log confirmation with image data
+        console.log(`🔍 Quest Confirmation ID ${record.Id}:`, {
           created_time: record.created_time,
-          CreatedAt: record.CreatedAt,
-          createdAt: record.created_time ? new Date(record.created_time) : new Date(record.CreatedAt)
+          status: record.status,
+          hasImage: !!imgUrl,
+          hasAttachment: !!attachment,
+          imgUrl: imgUrl ? imgUrl.substring(0, 80) + '...' : null
         });
 
         return {
           id: record.Id,
           name: record.quest_name || record.title || 'Unnamed Quest',
           desc: record.desc || '',
-          imgUrl: record.quest_img?.fields?.url || '', // Will need to handle attachment properly
+          imgUrl: imgUrl,
+          status: record.status || 'pending',
           createdAt: record.created_time ? new Date(record.created_time) : new Date(record.CreatedAt)
         };
       });
