@@ -814,6 +814,7 @@
   margin: 15px 0;
   font-size: 16px;
   color: #666666;
+  flex-wrap: wrap;
 }
 
 .quest-status-cell {

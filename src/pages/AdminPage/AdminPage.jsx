@@ -936,6 +936,24 @@ const AdminPage = ({ onBack }) => {
     setDeleteTarget({ id: null, name: '', type: '' });
   };
 
+  // Helper function to check if a daily quest is overdue (failed)
+  // Daily quest chỉ có hạn trong ngày được tạo - same logic as UserPage
+  const isQuestOverdue = (quest) => {
+    if (!quest.createdAt) {
+      return false;
+    }
+
+    // Get today's date at midnight (00:00:00) for accurate date comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const createdDate = new Date(quest.createdAt.seconds ? quest.createdAt.seconds * 1000 : quest.createdAt);
+    createdDate.setHours(0, 0, 0, 0); // Reset to midnight for date-only comparison
+
+    // If created before today, it's overdue
+    return createdDate < today;
+  };
+
   // Helper function to get quest confirmation for a quest
   // Get quest confirmation by quest ID (1-1 relationship in NocoDB)
   const getQuestConfirmationByQuestId = (questId) => {
@@ -2177,6 +2195,7 @@ const AdminPage = ({ onBack }) => {
                 const confirmation = getQuestConfirmation(quest.name);
                 const hasConfirmation = !!confirmation;
                 const isCompleted = quest.completedAt !== null;
+                const isFailed = !isCompleted && isQuestOverdue(quest); // Check if quest is overdue and not completed
                 const allConfirmations = getQuestConfirmations(quest.id); // Use quest.id for 1-1 relationship
 
                 return (
@@ -2196,7 +2215,13 @@ const AdminPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {
+                                isCompleted 
+                                  ? '✅ Completed' 
+                                  : isFailed 
+                                    ? '❌ Failed' 
+                                    : '⏳ Pending'
+                              }</span>
                               {quest.createdAt && (
                                 <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
@@ -2437,7 +2462,22 @@ const AdminPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {quest.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              <span>Status: {
+                                isCompleted 
+                                  ? '✅ Completed' 
+                                  : isFailed 
+                                    ? '❌ Failed' 
+                                    : hasConfirmation 
+                                      ? '⏳ Pending Review' 
+                                      : '⏳ Pending'
+                              }</span>
+                              {quest.createdAt && (
+                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })}</span>
+                              )}
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
                                   📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {

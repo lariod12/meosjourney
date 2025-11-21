@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -433,13 +433,38 @@ const UserPage = ({ onBack }) => {
         setProfileLoaded(true);
       }
 
-      // Initialize empty data for other sections (will be migrated later)
-      setAllQuests([]);
-      setAvailableQuests([]);
-      setQuestConfirmations([]);
-      setAllAchievements([]);
-      setAvailableAchievements([]);
-      setAchievementConfirmations([]);
+      // Load quests and achievements from NocoDB
+      try {
+        console.log('📥 Loading quests and achievements from NocoDB...');
+        const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
+          fetchQuests(),
+          fetchQuestConfirmations(),
+          fetchAchievements(),
+          fetchAchievementConfirmations()
+        ]);
+
+        // Filter available quests (not completed)
+        const availableQuestsData = questsData.filter(q => q.completedAt === null);
+        setAllQuests(questsData);
+        setAvailableQuests(availableQuestsData);
+        setQuestConfirmations(questConfirmsData);
+
+        // Filter available achievements (not completed)
+        const availableAchievementsData = achievementsData.filter(a => a.completedAt === null);
+        setAllAchievements(achievementsData);
+        setAvailableAchievements(availableAchievementsData);
+        setAchievementConfirmations(achievementConfirmsData);
+
+        console.log(`✅ Loaded ${questsData.length} quests (${availableQuestsData.length} available) and ${achievementsData.length} achievements (${availableAchievementsData.length} available)`);
+      } catch (error) {
+        console.error('❌ Error loading quests/achievements from NocoDB:', error);
+        setAllQuests([]);
+        setAvailableQuests([]);
+        setQuestConfirmations([]);
+        setAllAchievements([]);
+        setAvailableAchievements([]);
+        setAchievementConfirmations([]);
+      }
     };
 
     loadData();
@@ -1459,26 +1484,20 @@ const UserPage = ({ onBack }) => {
     // Filter out quests that are already selected OR have pending confirmation
     return availableQuests.filter(q => {
       if (selectedQuestIds.includes(q.id)) return false;
-      return !hasQuestConfirmation(q.name);
+      return !hasQuestConfirmation(q.id);
     });
   };
 
   // Check if quest has ANY confirmation (not just today)
-  const hasQuestConfirmation = (questName) => {
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Check if any confirmation ID starts with this quest name
-    return questConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
+  const hasQuestConfirmation = (questId) => {
+    // NocoDB: Match by questsId field in confirmation record
+    return questConfirmations.some(c => c.questsId === questId);
   };
 
   // Get all quest submissions (quests that have confirmation) - include completed
   const getAllQuestSubmissions = () => {
-    const questsWithConfirmation = allQuests.filter(q => hasQuestConfirmation(q.name)).map(quest => {
-      const confirmation = getQuestConfirmationData(quest.name);
+    const questsWithConfirmation = allQuests.filter(q => hasQuestConfirmation(q.id)).map(quest => {
+      const confirmation = getQuestConfirmationData(quest.id);
       return {
         ...quest,
         confirmation
@@ -1489,18 +1508,9 @@ const UserPage = ({ onBack }) => {
   };
 
   // Get quest confirmation data (get the most recent one if multiple exist)
-  const getQuestConfirmationData = (questName) => {
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Find all confirmations for this quest
-    const matchingConfirmations = questConfirmations.filter(c => c.id.startsWith(sanitizedName + '_'));
-
-    // Return the most recent one (last in array, assuming sorted by date in ID)
-    return matchingConfirmations.length > 0 ? matchingConfirmations[matchingConfirmations.length - 1] : null;
+  const getQuestConfirmationData = (questId) => {
+    // NocoDB: Find confirmation by questsId
+    return questConfirmations.find(c => c.questsId === questId) || null;
   };
 
   // Achievement submission handlers
@@ -1617,21 +1627,15 @@ const UserPage = ({ onBack }) => {
   };
 
   // Check if achievement has ANY confirmation (not just today)
-  const hasAchievementConfirmation = (achievementName) => {
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Check if any confirmation ID starts with this achievement name
-    return achievementConfirmations.some(c => c.id.startsWith(sanitizedName + '_'));
+  const hasAchievementConfirmation = (achievementId) => {
+    // NocoDB: Match by achievementsId field in confirmation record
+    return achievementConfirmations.some(c => c.achievementsId === achievementId);
   };
 
   // Get all achievement submissions (achievements that have confirmation) - include completed
   const getAllAchievementSubmissions = () => {
-    const achievementsWithConfirmation = allAchievements.filter(a => hasAchievementConfirmation(a.name)).map(achievement => {
-      const confirmation = getAchievementConfirmationData(achievement.name);
+    const achievementsWithConfirmation = allAchievements.filter(a => hasAchievementConfirmation(a.id)).map(achievement => {
+      const confirmation = getAchievementConfirmationData(achievement.id);
       return {
         ...achievement,
         confirmation
@@ -1642,18 +1646,9 @@ const UserPage = ({ onBack }) => {
   };
 
   // Get achievement confirmation data (get the most recent one if multiple exist)
-  const getAchievementConfirmationData = (achievementName) => {
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Find all confirmations for this achievement
-    const matchingConfirmations = achievementConfirmations.filter(c => c.id.startsWith(sanitizedName + '_'));
-
-    // Return the most recent one (last in array, assuming sorted by date in ID)
-    return matchingConfirmations.length > 0 ? matchingConfirmations[matchingConfirmations.length - 1] : null;
+  const getAchievementConfirmationData = (achievementId) => {
+    // NocoDB: Find confirmation by achievementsId
+    return achievementConfirmations.find(c => c.achievementsId === achievementId) || null;
   };
 
   // Helper function to check if a submission is overdue
