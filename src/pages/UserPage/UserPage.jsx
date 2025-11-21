@@ -1138,8 +1138,10 @@ const UserPage = ({ onBack }) => {
             try {
               const questData = {
                 name: submission.questTitle,
+                nameTranslations: submission.questNameTranslations || {},
                 xp: submission.questXp || 0,
-                desc: submission.questDesc || ''
+                desc: submission.questDesc || '',
+                descTranslations: submission.questDescTranslations || {}
               };
 
               const userData = {
@@ -1162,7 +1164,13 @@ const UserPage = ({ onBack }) => {
             if (autoApproveTasks && questConfirmResult.shouldAutoComplete) {
               try {
                 await sendAdminQuestCompletedNotification(
-                  { name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 },
+                  { 
+                    name: submission.questTitle, 
+                    nameTranslations: submission.questNameTranslations || {},
+                    desc: submission.questDesc || '', 
+                    descTranslations: submission.questDescTranslations || {},
+                    xp: submission.questXp || 0 
+                  },
                   { desc: submission.description || '', imgUrl }
                 );
               } catch (e) { console.warn('⚠️ Discord admin quest notification failed:', e); }
@@ -1468,7 +1476,9 @@ const UserPage = ({ onBack }) => {
     setSelectedQuestSubmissions(prev => [...prev, {
       questId: quest.id,
       questTitle: quest.name,
+      questNameTranslations: quest.nameTranslations || {},
       questDesc: quest.desc || '',
+      questDescTranslations: quest.descTranslations || {},
       questXp: quest.xp,
       description: '',
       image: null,

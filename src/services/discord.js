@@ -78,6 +78,42 @@ const resolveLocalizedText = (value, fallback = '') => {
     return value;
   }
 
+  // Handle array format from NocoDB: [{"en":"..."}, {"vi":"..."}]
+  if (Array.isArray(value)) {
+    // Convert array to object for easier access
+    const translations = {};
+    value.forEach(item => {
+      if (typeof item === 'object' && item !== null) {
+        Object.assign(translations, item);
+      }
+    });
+
+    // Prefer Vietnamese first for Discord messages
+    if (typeof translations.vi === 'string' && translations.vi.trim()) {
+      return translations.vi.trim();
+    }
+
+    if (typeof translations.en === 'string' && translations.en.trim()) {
+      return translations.en.trim();
+    }
+
+    // Fallback to first available string
+    const firstString = Object.values(translations).find(
+      (entry) => typeof entry === 'string' && entry.trim()
+    );
+
+    if (firstString) {
+      return firstString.trim();
+    }
+
+    // If array contains strings directly
+    const firstDirectString = value.find((entry) => typeof entry === 'string' && entry.trim());
+    if (firstDirectString) {
+      return firstDirectString.trim();
+    }
+  }
+
+  // Handle object format: {en: "...", vi: "..."}
   if (typeof value === 'object' && value !== null) {
     const { en, vi, ...rest } = value;
 
@@ -94,13 +130,6 @@ const resolveLocalizedText = (value, fallback = '') => {
       (entry) => typeof entry === 'string' && entry.trim()
     );
 
-    if (firstString) {
-      return firstString.trim();
-    }
-  }
-
-  if (Array.isArray(value)) {
-    const firstString = value.find((entry) => typeof entry === 'string' && entry.trim());
     if (firstString) {
       return firstString.trim();
     }
