@@ -550,14 +550,23 @@ const UserPage = ({ onBack }) => {
 
   const updateDoingSuggestions = (value) => {
     const q = String(value || '').trim().toLowerCase();
+    const pool = Array.isArray(existingDoings) ? existingDoings : [];
+    
     if (!q) {
-      setDoingSuggestions([]);
-      setDoingOpen(false);
+      setDoingSuggestions(pool.slice(0, 10));
       return;
     }
-    const suggestions = existingDoings.filter(d => d.toLowerCase().includes(q) || d.toLowerCase().startsWith(q));
+    const suggestions = pool.filter(d => d.toLowerCase().includes(q) || d.toLowerCase().startsWith(q));
     setDoingSuggestions(suggestions.slice(0, 10));
     setDoingOpen(suggestions.length > 0);
+  };
+
+  const openDoingDropdown = () => {
+    // Show all available options on focus/click
+    const pool = Array.isArray(existingDoings) ? existingDoings : [];
+    const list = pool.slice(0, 10);
+    setDoingSuggestions(list);
+    setDoingOpen(list.length > 0);
   };
 
   const updateLocationSuggestions = (value) => {
@@ -1909,6 +1918,8 @@ const UserPage = ({ onBack }) => {
                       onChange={handleChange}
                       placeholder="e.g., Studying character design"
                       autoComplete="off"
+                      onFocus={openDoingDropdown}
+                      onClick={openDoingDropdown}
                     />
                     {formData.doing && (
                       <button
