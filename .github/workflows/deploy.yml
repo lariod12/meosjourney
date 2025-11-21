@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+# Only run if commit message starts with "public:"
+# Example: "public: update homepage design"
+
 permissions:
   contents: read
   pages: write
@@ -19,6 +22,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: github-pages   # dùng env `github-pages`
+    # Skip job if commit message doesn't start with "public:"
+    if: startsWith(github.event.head_commit.message, 'public:') || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
