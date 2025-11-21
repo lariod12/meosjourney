@@ -18,8 +18,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: github-pages
-    
+    environment: github-pages   # dùng env `github-pages`
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,11 +36,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # --- LOG ENV TỪ ENVIRONMENT ---
+      - name: Print Vite env from environment (debug)
+        run: |
+          echo "VITE_NOCODB_BASE_URL=$VITE_NOCODB_BASE_URL"
+          echo "VITE_NOCODB_TOKEN length: ${#VITE_NOCODB_TOKEN}"
+        env:
+          VITE_NOCODB_BASE_URL: ${{ vars.VITE_NOCODB_BASE_URL }}
+          VITE_NOCODB_TOKEN: ${{ vars.VITE_NOCODB_TOKEN }}
+
+      # --- BUILD VỚI ENV ĐÚNG ---
       - name: Build
         env:
           VITE_NOCODB_BASE_URL: ${{ vars.VITE_NOCODB_BASE_URL }}
           VITE_NOCODB_TOKEN: ${{ vars.VITE_NOCODB_TOKEN }}
-        run: pnpm run build
+        run: |
+          echo "Starting Vite build..."
+          pnpm run build
+          echo "Vite build finished."
+
+      # --- OPTIONAL: LIỆT KÊ DIST ĐỂ CHECK ---
+      - name: List dist content (debug)
+        run: |
+          echo "=== dist directory content ==="
+          ls -R ./dist || echo "dist not found"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -53,6 +72,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
