@@ -209,6 +209,38 @@ const UserPage = ({ onBack }) => {
     });
   };
 
+  const reloadDataAfterSubmit = async () => {
+    try {
+      // Clear cache to force fresh data
+      clearCache();
+      clearNocoDBCache();
+      
+      // Reload quests and achievements data
+      const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
+        fetchQuests(),
+        fetchQuestConfirmations(),
+        fetchAchievements(),
+        fetchAchievementConfirmations()
+      ]);
+
+      // Update state with fresh data
+      const availableQuestsData = questsData.filter(q => q.completedAt === null);
+      setAllQuests(questsData);
+      setAvailableQuests(availableQuestsData);
+      setQuestConfirmations(questConfirmsData);
+
+      const availableAchievementsData = achievementsData.filter(a => a.completedAt === null);
+      setAllAchievements(achievementsData);
+      setAvailableAchievements(availableAchievementsData);
+      setAchievementConfirmations(achievementConfirmsData);
+
+      // Notify HomePage to refresh
+      try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+    } catch (error) {
+      console.error('❌ Error reloading data after submit:', error);
+    }
+  };
+
   const resetUserPageState = async () => {
     setFormData(prev => ({
       ...prev,
@@ -319,7 +351,7 @@ const UserPage = ({ onBack }) => {
       setDataLoading(true);
       
       try {
-        console.log('📥 Starting data load from NocoDB...');
+
         
         // Phase 1: Load critical data (config, profile, status) in parallel
         // These are cached and deduplicated automatically
@@ -333,7 +365,7 @@ const UserPage = ({ onBack }) => {
         if (cfg) {
           setAutoApproveTasks(!!cfg.autoApproveTasks);
           setCorrectPassword(cfg.pwDailyUpdate || null);
-          console.log('✅ Config loaded');
+
         } else {
           setCorrectPassword(null);
           console.warn('⚠️ No config found');
@@ -353,7 +385,7 @@ const UserPage = ({ onBack }) => {
 
           setProfileData(loadedProfile);
           setOriginalProfileData(JSON.parse(JSON.stringify(loadedProfile)));
-          console.log('✅ Profile loaded');
+
         } else {
           setProfileData({ introduce: '', skills: [], hobbies: [] });
           setOriginalProfileData({ introduce: '', skills: [], hobbies: [] });
@@ -414,7 +446,7 @@ const UserPage = ({ onBack }) => {
             introduce: profile?.introduce || ''
           }));
 
-          console.log('✅ Status loaded');
+
         } else {
           setOriginalStatusData({ doing: '', location: '', mood: '', caption: '' });
           console.warn('⚠️ No status found');
@@ -426,7 +458,7 @@ const UserPage = ({ onBack }) => {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Phase 2: Load quests and achievements data in staggered batches
-        console.log('📥 Loading quests and achievements...');
+
         
         // Batch 2a: Load quests data
         const [questsData, questConfirmsData] = await Promise.all([
@@ -455,7 +487,7 @@ const UserPage = ({ onBack }) => {
         setAvailableAchievements(availableAchievementsData);
         setAchievementConfirmations(achievementConfirmsData);
 
-        console.log(`✅ Loaded ${questsData.length} quests (${availableQuestsData.length} available), ${achievementsData.length} achievements (${availableAchievementsData.length} available)`);
+
 
         // Phase 3: Check and update overdue quest confirmations
         try {
@@ -486,7 +518,7 @@ const UserPage = ({ onBack }) => {
           }
 
           if (overdueUpdates.length > 0) {
-            console.log(`🔄 Updating ${overdueUpdates.length} overdue confirmations...`);
+
             await batchUpdateQuestConfirmationStatus(overdueUpdates);
             
             setQuestConfirmations(prev => 
@@ -496,13 +528,13 @@ const UserPage = ({ onBack }) => {
               })
             );
             
-            console.log(`✅ Updated ${overdueUpdates.length} overdue confirmations`);
+
           }
         } catch (overdueError) {
           console.error('❌ Error checking overdue confirmations:', overdueError);
         }
 
-        console.log('✅ All data loaded successfully');
+
       } catch (error) {
         console.error('❌ Error loading data from NocoDB:', error);
         setCorrectPassword(null);
@@ -789,7 +821,7 @@ const UserPage = ({ onBack }) => {
         skills: [...prev.skills, skill]
       }));
       setFormData(prev => ({ ...prev, newSkill: '' }));
-      console.log('➕ Added skill:', skill, '| Current skills:', [...profileData.skills, skill]);
+
 
       // Save journal entry for skill addition
       try {
@@ -798,7 +830,7 @@ const UserPage = ({ onBack }) => {
         console.warn('⚠️ Failed to save skill addition journal:', journalError);
       }
     } else if (skill && profileData.skills.includes(skill)) {
-      console.log('⚠️ Skill already exists:', skill);
+
     }
   };
 
@@ -807,7 +839,7 @@ const UserPage = ({ onBack }) => {
       ...prev,
       skills: prev.skills.filter(skill => skill !== skillToRemove)
     }));
-    console.log('➖ Removed skill:', skillToRemove);
+
 
     // Save journal entry for skill removal
     try {
@@ -825,7 +857,7 @@ const UserPage = ({ onBack }) => {
         hobbies: [...prev.hobbies, hobby]
       }));
       setFormData(prev => ({ ...prev, newHobby: '' }));
-      console.log('➕ Added hobby:', hobby, '| Current hobbies:', [...profileData.hobbies, hobby]);
+
 
       // Save journal entry for hobby addition
       try {
@@ -834,7 +866,7 @@ const UserPage = ({ onBack }) => {
         console.warn('⚠️ Failed to save hobby addition journal:', journalError);
       }
     } else if (hobby && profileData.hobbies.includes(hobby)) {
-      console.log('⚠️ Hobby already exists:', hobby);
+
     }
   };
 
@@ -843,7 +875,7 @@ const UserPage = ({ onBack }) => {
       ...prev,
       hobbies: prev.hobbies.filter(hobby => hobby !== hobbyToRemove)
     }));
-    console.log('➖ Removed hobby:', hobbyToRemove);
+
 
     // Save journal entry for hobby removal
     try {
@@ -901,17 +933,6 @@ const UserPage = ({ onBack }) => {
 
       if (hasProfileData) {
         try {
-          // Debug: Log profile data before update
-          console.log('🔍 Profile update data:', {
-            new: {
-              introduce: formData.introduce,
-              caption: formData.caption,
-              skills: profileData.skills,
-              hobbies: profileData.hobbies
-            },
-            original: originalProfileData
-          });
-
           // Use NocoDB to update profile
           const profileResult = await updateProfile({
             introduce: formData.introduce,
@@ -1100,7 +1121,7 @@ const UserPage = ({ onBack }) => {
                   status: questConfirmResult.autoApproved ? 'completed' : 'pending'
                 }];
               });
-              console.log('✅ Quest confirmation added to UI state');
+
             }
 
             // Persist across blocks to evaluate after admin notify
@@ -1131,9 +1152,9 @@ const UserPage = ({ onBack }) => {
               setAvailableQuests(prev => prev.filter(q => q.id !== submission.questId));
               didAutoApprove = true;
               
-              console.log('✅ Quest auto-approved and completed (within deadline)');
+
             } else if (autoApproveTasks && !questConfirmResult.shouldAutoComplete) {
-              console.log('⚠️ Quest marked as failed (overdue), auto-approve disabled');
+
             }
 
             // Send Discord notification for quest submission
@@ -1257,7 +1278,7 @@ const UserPage = ({ onBack }) => {
                   status: achConfirmResult.autoApproved ? 'completed' : 'pending'
                 }];
               });
-              console.log('✅ Achievement confirmation added to UI state');
+
             }
 
             // Persist across blocks to evaluate after admin notify
@@ -1296,9 +1317,9 @@ const UserPage = ({ onBack }) => {
               setAvailableAchievements(prev => prev.filter(a => a.id !== submission.achievementId));
               didAutoApprove = true;
               
-              console.log('✅ Achievement auto-approved and completed (within deadline)');
+
             } else if (autoApproveTasks && !achConfirmResult.shouldAutoComplete) {
-              console.log('⚠️ Achievement marked as failed (overdue), auto-approve disabled');
+
             }
 
             // Send Discord notification for achievement submission
@@ -1409,6 +1430,9 @@ const UserPage = ({ onBack }) => {
 
         if (successItems.length > 0) {
           resetUserPageState();
+          
+          // Reload data after successful submit
+          reloadDataAfterSubmit();
         }
 
         setConfirmModal({
@@ -1554,8 +1578,6 @@ const UserPage = ({ onBack }) => {
       ));
     };
     reader.readAsDataURL(file);
-
-    console.log('📷 Image selected:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
   };
 
   const handleRemoveQuestImage = (index) => {
@@ -1611,7 +1633,7 @@ const UserPage = ({ onBack }) => {
     const displayDesc = getLocalizedDesc(achievement);
     const displayReward = getLocalizedReward(achievement);
 
-    console.log('➕ Adding achievement submission:', displayName);
+
     setSelectedAchievementSubmissions(prev => [...prev, {
       achievementId: achievement.id,
       achievementTitle: displayName,
@@ -1633,7 +1655,7 @@ const UserPage = ({ onBack }) => {
   };
 
   const handleRemoveAchievementSubmission = (index) => {
-    console.log('➖ Removing achievement submission at index:', index);
+
     setSelectedAchievementSubmissions(prev => prev.filter((_, i) => i !== index));
     setExpandedAchievementSubmissions(prev => prev.filter((_, i) => i !== index));
   };
@@ -1695,8 +1717,6 @@ const UserPage = ({ onBack }) => {
       ));
     };
     reader.readAsDataURL(file);
-
-    console.log('📷 Image selected:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
   };
 
   const handleRemoveAchievementImage = (index) => {
@@ -2080,7 +2100,7 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Status Update section clicked');
+
                 setStatusExpanded(!statusExpanded);
               }}
             >
@@ -2227,7 +2247,7 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Daily Journal section clicked');
+
                 setJournalExpanded(!journalExpanded);
               }}
             >
@@ -2402,7 +2422,7 @@ const UserPage = ({ onBack }) => {
             <h2
               className="section-title clickable"
               onClick={() => {
-                console.log('Achievements Update section clicked');
+
                 setAchievementsExpanded(prev => {
                   const next = !prev;
                   if (next) setAchievementPickerCollapsed(false);
