@@ -407,7 +407,7 @@ export const fetchJournals = async (limit = 7, offset = 0) => {
       return [];
     }
 
-    console.log(`📊 Fetched ${data.list.length} journal entries from NocoDB (limit: ${limit}, offset: ${offset})`);
+    // Fetched journals
 
     // Transform NocoDB journals to frontend format
     const journals = data.list.map(record => {
@@ -478,7 +478,7 @@ export const fetchAllJournals = async () => {
       }
     }
 
-    console.log(`📊 Fetched ${allJournals.length} total journal entries from NocoDB`);
+    // Fetched all journals
 
     // Transform to frontend format
     const journals = allJournals.map(record => {
@@ -535,7 +535,7 @@ export const fetchQuests = async () => {
         return [];
       }
 
-      console.log(`📊 Fetched ${data.list.length} quests from NocoDB`);
+      // Fetched quests
 
       // Transform NocoDB quests to frontend format
       const quests = data.list.map(record => {
@@ -608,7 +608,7 @@ export const fetchQuestConfirmations = async () => {
         return [];
       }
 
-      console.log(`📊 Fetched ${data.list.length} quest confirmations from NocoDB`);
+      // Fetched quest confirmations
 
       // Step 2: Fetch all attachments_gallery records that link to these confirmations
       const attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,quests_confirm_id`, {
@@ -625,7 +625,7 @@ export const fetchQuestConfirmations = async () => {
         });
       }
 
-      console.log(`📊 Fetched ${attachmentsData.list?.length || 0} attachments, ${attachmentMap.size} linked to confirmations`);
+      // Fetched attachments
 
       // Step 3: Transform and combine data
       const confirmations = data.list.map(record => {
@@ -652,14 +652,7 @@ export const fetchQuestConfirmations = async () => {
           }
         }
 
-        // Debug: Log confirmation with image data
-        console.log(`🔍 Quest Confirmation ID ${record.Id}:`, {
-          created_time: record.created_time,
-          status: record.status,
-          hasImage: !!imgUrl,
-          hasAttachment: !!attachment,
-          imgUrl: imgUrl ? imgUrl.substring(0, 80) + '...' : null
-        });
+        // Quest confirmation processed
 
         return {
           id: record.Id,
@@ -978,8 +971,7 @@ export const fetchAchievements = async () => {
         return [];
       }
 
-      console.log(`📊 Fetched ${data.list.length} achievements from NocoDB`);
-      console.log('🔍 First achievement record:', data.list[0]);
+      // Fetched achievements
 
       // Transform NocoDB achievements to frontend format
       const achievements = data.list.map(record => {
@@ -1092,7 +1084,7 @@ export const fetchAchievementConfirmations = async () => {
         return [];
       }
 
-      console.log(`📊 Fetched ${data.list.length} achievement confirmations from NocoDB`);
+      // Fetched achievement confirmations
 
       // Step 2: Fetch all attachments_gallery records that link to these confirmations
       const attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,achievements_confirm_id`, {
@@ -1109,7 +1101,7 @@ export const fetchAchievementConfirmations = async () => {
         });
       }
 
-      console.log(`📊 Fetched ${attachmentsData.list?.length || 0} attachments, ${attachmentMap.size} linked to achievement confirmations`);
+      // Fetched achievement attachments
 
       // Step 3: Transform and combine data
       const confirmations = data.list.map(record => {
@@ -1136,13 +1128,7 @@ export const fetchAchievementConfirmations = async () => {
           }
         }
 
-        // Debug: Log confirmation with image data
-        console.log(`🔍 Achievement Confirmation ID ${record.Id}:`, {
-          created_time: record.created_time,
-          hasImage: !!imageUrl,
-          hasAttachment: !!attachment,
-          imageUrl: imageUrl ? imageUrl.substring(0, 80) + '...' : null
-        });
+        // Achievement confirmation processed
 
         return {
           id: record.Id,

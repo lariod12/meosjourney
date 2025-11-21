@@ -47,12 +47,10 @@ const QuestsTab = () => {
   const total = todayQuests.length;
 
   const handleQuestClick = (quest) => {
-    console.log('🎯 Quest clicked:', quest.name);
     setSelectedQuest(quest);
   };
 
   const handleCloseModal = () => {
-    console.log('❌ Closing quest detail modal');
     setSelectedQuest(null);
   };
 

@@ -21,7 +21,6 @@ const HistoryTab = () => {
   useEffect(() => {
     if (data.journal && data.journal.length > 0 && loadedJournals.length === 0) {
       setLoadedJournals(data.journal);
-      console.log(`📊 Initialized with ${data.journal.length} journals from initial load`);
     }
   }, [data.journal]);
 
@@ -36,7 +35,6 @@ const HistoryTab = () => {
       if (moreJournals.length === 0) {
         // No more data
         setHasMore(false);
-        console.log('✅ All journals loaded');
       } else {
         // Filter out duplicates by ID before appending
         setLoadedJournals(prev => {
@@ -45,12 +43,10 @@ const HistoryTab = () => {
           return [...prev, ...newJournals];
         });
         setCurrentOffset(prev => prev + moreJournals.length);
-        console.log(`✅ Loaded ${moreJournals.length} more journals (total: ${loadedJournals.length + moreJournals.length})`);
         
         // Check if we got less than requested (means no more data)
         if (moreJournals.length < LOAD_MORE_BATCH) {
           setHasMore(false);
-          console.log('✅ Reached end of journals');
         }
       }
     } catch (error) {
@@ -70,7 +66,6 @@ const HistoryTab = () => {
       const hasScrollbar = listElement.scrollHeight > listElement.clientHeight;
       
       if (!hasScrollbar && loadedJournals.length > 0) {
-        console.log('📊 No scrollbar detected, loading more journals...');
         loadMoreJournals();
       }
     };

@@ -39,7 +39,6 @@ export default function AchievementsTab() {
               key={achievement.id}
               className={`achievement-item ${isCompleted ? 'completed' : ''}`}
               onClick={() => {
-                console.log('🎯 Achievement clicked:', achievement.name);
                 setSelectedAchievement(achievement);
               }}
             >
