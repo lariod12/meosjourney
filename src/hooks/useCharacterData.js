@@ -25,15 +25,15 @@ export const useCharacterData = (defaultData) => {
       fetchingRef.current = true;
       setLoading(true);
 
-      // Fetch all data in parallel
-      const [status, profile, config, journals, quests, achievements] = await Promise.all([
-        fetchStatus(),
-        fetchProfile(),
-        fetchConfig(),
-        fetchJournals(),
-        fetchQuests(),
-        fetchAchievements()
-      ]);
+      // Fetch data sequentially to avoid rate limiting
+      // Requests are queued internally with 200ms delay between calls
+      // Cache will be used if data was fetched recently (30s cache)
+      const status = await fetchStatus();
+      const profile = await fetchProfile();
+      const config = await fetchConfig();
+      const journals = await fetchJournals();
+      const quests = await fetchQuests();
+      const achievements = await fetchAchievements();
 
       if (mountedRef.current) {
         // Merge with default data

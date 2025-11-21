@@ -316,7 +316,7 @@ const UserPage = ({ onBack }) => {
     const loadData = async () => {
       try {
         // Fetch config, profile, and status from NocoDB service
-        // Using sequential calls instead of Promise.all to avoid rate limiting
+        // These calls will use cache if available (30s cache duration)
         const cfg = await fetchConfig();
         const profile = await fetchProfile();
         const statusData = await fetchStatus();
@@ -430,14 +430,14 @@ const UserPage = ({ onBack }) => {
       }
 
       // Load quests and achievements from NocoDB
+      // These calls will be queued and cached to prevent rate limiting
       try {
         console.log('📥 Loading quests and achievements from NocoDB...');
-        const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
-          fetchQuests(),
-          fetchQuestConfirmations(),
-          fetchAchievements(),
-          fetchAchievementConfirmations()
-        ]);
+        // Load sequentially to avoid rate limiting (requests are queued internally)
+        const questsData = await fetchQuests();
+        const questConfirmsData = await fetchQuestConfirmations();
+        const achievementsData = await fetchAchievements();
+        const achievementConfirmsData = await fetchAchievementConfirmations();
 
         // Filter available quests (not completed)
         const availableQuestsData = questsData.filter(q => q.completedAt === null);

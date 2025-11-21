@@ -32,7 +32,7 @@ const TABLE_IDS = {
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
 const requestCache = new Map();
 const pendingRequests = new Map(); // Track in-flight requests
-const CACHE_DURATION = 5000; // 5 seconds
+const CACHE_DURATION = 30000; // 30 seconds - increased from 5s to reduce API calls
 
 const getCachedRequest = (key) => {
   const cached = requestCache.get(key);
@@ -75,49 +75,116 @@ const deduplicateRequest = async (key, requestFn) => {
   return promise;
 };
 
+// Request queue for rate limiting
+let requestQueue = [];
+let isProcessingQueue = false;
+const REQUEST_DELAY = 200; // 200ms delay between requests
+
+const queueRequest = async (requestFn) => {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ requestFn, resolve, reject });
+    processQueue();
+  });
+};
+
+const processQueue = async () => {
+  if (isProcessingQueue || requestQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (requestQueue.length > 0) {
+    const { requestFn, resolve, reject } = requestQueue.shift();
+    
+    try {
+      const result = await requestFn();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+    
+    // Add delay between requests to avoid rate limiting
+    if (requestQueue.length > 0) {
+      await new Promise(r => setTimeout(r, REQUEST_DELAY));
+    }
+  }
+  
+  isProcessingQueue = false;
+};
+
 /**
  * Make a request to NocoDB API with retry logic for rate limiting
  */
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
-  const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
+  // Use queue for GET requests to prevent rate limiting
+  const isGetRequest = !options.method || options.method === 'GET';
+  
+  const makeRequest = async () => {
+    const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'xc-token': NOCODB_TOKEN,
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'xc-token': NOCODB_TOKEN,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        });
 
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        if (attempt < retries) {
-          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-          console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
+        // Handle rate limiting with exponential backoff
+        if (response.status === 429) {
+          if (attempt < retries) {
+            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+            console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
         }
-        throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
-      }
 
-      if (!response.ok) {
-        throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
-      }
+        if (!response.ok) {
+          throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
+        }
 
-      return response.json();
-    } catch (error) {
-      if (attempt === retries) {
-        throw error;
+        return response.json();
+      } catch (error) {
+        if (attempt === retries) {
+          throw error;
+        }
+        // For network errors, also retry
+        const delay = Math.pow(2, attempt) * 1000;
+        console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-      // For network errors, also retry
-      const delay = Math.pow(2, attempt) * 1000;
-      console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
     }
+  };
+  
+  // Queue GET requests to avoid rate limiting
+  if (isGetRequest) {
+    return queueRequest(makeRequest);
   }
+  
+  // Execute write requests immediately (POST, PATCH, DELETE)
+  return makeRequest();
+};
+
+/**
+ * Clear all cached requests
+ * Use this when you need to force fresh data (e.g., after updates)
+ */
+export const clearNocoDBCache = () => {
+  requestCache.clear();
+  pendingRequests.clear();
+  console.log('🗑️ NocoDB cache cleared');
+};
+
+/**
+ * Clear specific cached request by key
+ */
+export const clearCachedRequest = (key) => {
+  requestCache.delete(key);
+  console.log(`🗑️ Cleared cache for: ${key}`);
 };
 
 /**
