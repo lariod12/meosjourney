@@ -1154,4 +1154,83 @@ export const createAchievement = async (achievementData) => {
   }
 };
 
+/**
+ * Save quest confirmation to NocoDB
+ * Creates a new quest confirmation record and links it to the quest
+ * @param {Object} confirmData - Confirmation data
+ * @param {string} confirmData.questId - Quest ID to link to
+ * @param {string} confirmData.questName - Quest name
+ * @param {string} confirmData.desc - Description
+ * @param {string} confirmData.imgUrl - Image URL (optional)
+ * @returns {Promise<Object>} Result object with success status and confirmation ID
+ */
+export const saveQuestConfirmation = async (confirmData) => {
+  try {
+    const { questId, questName, desc, imgUrl } = confirmData;
+
+    if (!questId) {
+      return { success: false, message: 'Quest ID is required' };
+    }
+
+    // Get current ICT time
+    const now = new Date();
+    const ictDateStr = now.toLocaleString('en-US', { 
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    // Generate title: quest_confirm_<year>-<month>-<day>_<hh>-<mm>
+    const title = `quest_confirm_${year}-${month}-${day}_${hours}-${minutes}`;
+
+    // Format created_time with timezone offset
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    const payload = {
+      title: title,
+      quest_name: questName || '',
+      desc: desc || '',
+      created_time: createdTime,
+      quest: questId // Link to quest record (1-1 relationship)
+    };
+
+    // Add image URL if provided
+    if (imgUrl) {
+      payload.quest_img = imgUrl;
+    }
+
+    console.log('🔍 Sending Quest Confirmation POST to NocoDB:', payload);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Quest confirmation created successfully in NocoDB:', response);
+
+    // Extract the confirmation ID from response
+    const confirmationId = response.Id || (response.list && response.list[0]?.Id);
+
+    return { 
+      success: true, 
+      message: 'Quest confirmation saved', 
+      id: confirmationId,
+      data: response 
+    };
+  } catch (error) {
+    console.error('❌ Error saving quest confirmation to NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
 export { TABLE_IDS };

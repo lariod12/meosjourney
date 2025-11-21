@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -18,7 +18,6 @@ import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, save
 // Write operations still using Firestore (need migration)
 import {
   saveProfile,
-  saveQuestConfirmation,
   getQuestConfirmation,
   saveAchievementConfirmation,
   getAchievementConfirmation,
@@ -1035,10 +1034,27 @@ const UserPage = ({ onBack }) => {
           // 3. Save confirmation to quests-confirm collection (will override if exists)
           try {
             const questConfirmResult = await saveQuestConfirmation({
-              name: submission.questTitle,
+              questId: submission.questId,
+              questName: submission.questTitle,
               desc: submission.description || '',
               imgUrl: imgUrl
-            }, CHARACTER_ID);
+            });
+
+            // Optimistically update UI - add confirmation to state immediately
+            if (questConfirmResult?.id) {
+              setQuestConfirmations(prev => {
+                const rest = prev.filter(c => c.questsId !== submission.questId);
+                return [...rest, { 
+                  id: questConfirmResult.id, 
+                  name: submission.questTitle, 
+                  desc: submission.description || '', 
+                  imgUrl, 
+                  questsId: submission.questId,
+                  createdAt: new Date() 
+                }];
+              });
+              console.log('✅ Quest confirmation added to UI state');
+            }
 
             // Persist across blocks to evaluate after admin notify
             let xpResult = null;
@@ -1061,15 +1077,9 @@ const UserPage = ({ onBack }) => {
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
 
-              // Optimistically update UI
+              // Optimistically update UI for auto-approve
               setAllQuests(prev => prev.map(q => q.id === submission.questId ? { ...q, completedAt: new Date() } : q));
               setAvailableQuests(prev => prev.filter(q => q.id !== submission.questId));
-              if (questConfirmResult?.id) {
-                setQuestConfirmations(prev => {
-                  const rest = prev.filter(c => c.id !== questConfirmResult.id);
-                  return [...rest, { id: questConfirmResult.id, name: submission.questTitle, desc: submission.description || '', imgUrl, createdAt: new Date() }];
-                });
-              }
               didAutoApprove = true;
             }
 
@@ -1118,6 +1128,10 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Discord level-up notification failed:', e); }
             }
+
+            // Remove quest from selected submissions after successful submit
+            setSelectedQuestSubmissions(prev => prev.filter((_, idx) => idx !== i));
+            setExpandedQuestSubmissions(prev => prev.filter((_, idx) => idx !== i));
 
             results.push({
               type: 'success',
@@ -1177,6 +1191,22 @@ const UserPage = ({ onBack }) => {
               imgUrl: imgUrl
             }, CHARACTER_ID);
 
+            // Optimistically update UI - add confirmation to state immediately
+            if (achConfirmResult?.id) {
+              setAchievementConfirmations(prev => {
+                const rest = prev.filter(c => c.achievementsId !== submission.achievementId);
+                return [...rest, { 
+                  id: achConfirmResult.id, 
+                  achievementName: submission.achievementTitle, 
+                  desc: submission.description || '', 
+                  imageUrl: imgUrl,
+                  achievementsId: submission.achievementId,
+                  createdAt: new Date() 
+                }];
+              });
+              console.log('✅ Achievement confirmation added to UI state');
+            }
+
             // Persist across blocks to evaluate after admin notify
             let xpResult = null;
             if (autoApproveTasks) {
@@ -1206,15 +1236,9 @@ const UserPage = ({ onBack }) => {
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
 
-              // Optimistically update UI
+              // Optimistically update UI for auto-approve
               setAllAchievements(prev => prev.map(a => a.id === submission.achievementId ? { ...a, completedAt: new Date() } : a));
               setAvailableAchievements(prev => prev.filter(a => a.id !== submission.achievementId));
-              if (achConfirmResult?.id) {
-                setAchievementConfirmations(prev => {
-                  const rest = prev.filter(c => c.id !== achConfirmResult.id);
-                  return [...rest, { id: achConfirmResult.id, name: submission.achievementTitle, desc: submission.description || '', imgUrl, createdAt: new Date() }];
-                });
-              }
               didAutoApprove = true;
             }
 
@@ -1276,6 +1300,10 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Discord level-up notification failed:', e); }
             }
+
+            // Remove achievement from selected submissions after successful submit
+            setSelectedAchievementSubmissions(prev => prev.filter((_, idx) => idx !== i));
+            setExpandedAchievementSubmissions(prev => prev.filter((_, idx) => idx !== i));
 
             results.push({
               type: 'success',
