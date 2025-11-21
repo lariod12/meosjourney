@@ -75,98 +75,50 @@ const deduplicateRequest = async (key, requestFn) => {
   return promise;
 };
 
-// Request queue for rate limiting
-let requestQueue = [];
-let isProcessingQueue = false;
-const REQUEST_DELAY = 150; // 150ms delay between requests (optimized from 200ms)
-
-const queueRequest = async (requestFn) => {
-  return new Promise((resolve, reject) => {
-    requestQueue.push({ requestFn, resolve, reject });
-    processQueue();
-  });
-};
-
-const processQueue = async () => {
-  if (isProcessingQueue || requestQueue.length === 0) return;
-  
-  isProcessingQueue = true;
-  
-  while (requestQueue.length > 0) {
-    const { requestFn, resolve, reject } = requestQueue.shift();
-    
-    try {
-      const result = await requestFn();
-      resolve(result);
-    } catch (error) {
-      reject(error);
-    }
-    
-    // Add delay between requests to avoid rate limiting
-    if (requestQueue.length > 0) {
-      await new Promise(r => setTimeout(r, REQUEST_DELAY));
-    }
-  }
-  
-  isProcessingQueue = false;
-};
-
 /**
  * Make a request to NocoDB API with retry logic for rate limiting
+ * Requests are executed in parallel when using Promise.all for better performance
  */
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
-  // Use queue for GET requests to prevent rate limiting
-  const isGetRequest = !options.method || options.method === 'GET';
-  
-  const makeRequest = async () => {
-    const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
+  const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
 
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            'xc-token': NOCODB_TOKEN,
-            'Content-Type': 'application/json',
-            ...options.headers,
-          },
-        });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'xc-token': NOCODB_TOKEN,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
 
-        // Handle rate limiting with exponential backoff
-        if (response.status === 429) {
-          if (attempt < retries) {
-            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-            console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          }
-          throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
+      // Handle rate limiting with exponential backoff
+      if (response.status === 429) {
+        if (attempt < retries) {
+          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
         }
-
-        if (!response.ok) {
-          throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
-        }
-
-        return response.json();
-      } catch (error) {
-        if (attempt === retries) {
-          throw error;
-        }
-        // For network errors, also retry
-        const delay = Math.pow(2, attempt) * 1000;
-        console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
       }
+
+      if (!response.ok) {
+        throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (attempt === retries) {
+        throw error;
+      }
+      // For network errors, also retry
+      const delay = Math.pow(2, attempt) * 1000;
+      console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
-  };
-  
-  // Queue GET requests to avoid rate limiting
-  if (isGetRequest) {
-    return queueRequest(makeRequest);
   }
-  
-  // Execute write requests immediately (POST, PATCH, DELETE)
-  return makeRequest();
 };
 
 /**
@@ -429,10 +381,13 @@ export const fetchConfig = async () => {
 
 /**
  * Fetch journals data from NocoDB
- * Returns all journal entries sorted by created_time descending
- * Fetches all records using pagination (NocoDB default pageSize is 25)
+ * Returns journal entries sorted by created_time descending
+ * 
+ * @param {number} limit - Maximum number of journals to fetch (default: 7 for initial load)
+ * @param {number} offset - Number of records to skip (for pagination)
+ * @returns {Promise<Array>} Array of journal entries
  */
-export const fetchJournals = async () => {
+export const fetchJournals = async (limit = 7, offset = 0) => {
   try {
     // Use static data in development
     if (USE_STATIC_DATA) {
@@ -441,37 +396,21 @@ export const fetchJournals = async () => {
       return [];
     }
 
-    // Use API in production - fetch all journals with pagination
-    let allJournals = [];
-    let page = 1;
-    let hasMore = true;
-    const pageSize = 100; // Fetch 100 per page
+    // Use API in production - fetch with limit and offset
+    const data = await nocoRequest(
+      `${TABLE_IDS.JOURNALS}/records?sort=-created_time&limit=${limit}&offset=${offset}`,
+      { method: 'GET' }
+    );
 
-    while (hasMore) {
-      const data = await nocoRequest(`${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${pageSize}`, {
-        method: 'GET',
-      });
-
-      if (data.list && data.list.length > 0) {
-        allJournals = allJournals.concat(data.list);
-
-        // Check if there are more pages
-        hasMore = data.pageInfo && !data.pageInfo.isLastPage;
-        page++;
-      } else {
-        hasMore = false;
-      }
-    }
-
-    if (allJournals.length === 0) {
+    if (!data.list || data.list.length === 0) {
       console.warn('⚠️ No journal records found in NocoDB');
       return [];
     }
 
-    console.log(`📊 Fetched ${allJournals.length} journal entries from NocoDB`);
+    console.log(`📊 Fetched ${data.list.length} journal entries from NocoDB (limit: ${limit}, offset: ${offset})`);
 
     // Transform NocoDB journals to frontend format
-    const journals = allJournals.map(record => {
+    const journals = data.list.map(record => {
       // Parse created_time to Date object
       let timestamp = new Date();
       if (record.created_time) {
@@ -497,6 +436,75 @@ export const fetchJournals = async () => {
     return journals;
   } catch (error) {
     console.error('❌ Error fetching journals from NocoDB:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all journals data from NocoDB (for lazy loading)
+ * Returns all journal entries sorted by created_time descending
+ */
+export const fetchAllJournals = async () => {
+  try {
+    if (USE_STATIC_DATA) {
+      const staticData = await fetchStaticData();
+      return [];
+    }
+
+    // Fetch all journals with pagination
+    let allJournals = [];
+    let page = 1;
+    let hasMore = true;
+    const pageSize = 100;
+    const maxPages = 5; // Limit to 5 pages (500 journals max)
+
+    while (hasMore && page <= maxPages) {
+      const data = await nocoRequest(
+        `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${pageSize}`,
+        { method: 'GET' }
+      );
+
+      if (data.list && data.list.length > 0) {
+        allJournals = allJournals.concat(data.list);
+        hasMore = data.pageInfo && !data.pageInfo.isLastPage;
+        page++;
+        
+        // Add delay between pages to avoid rate limiting
+        if (hasMore && page <= maxPages) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    console.log(`📊 Fetched ${allJournals.length} total journal entries from NocoDB`);
+
+    // Transform to frontend format
+    const journals = allJournals.map(record => {
+      let timestamp = new Date();
+      if (record.created_time) {
+        timestamp = new Date(record.created_time);
+      }
+
+      const timeStr = timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      return {
+        id: record.Id || record.title,
+        entry: record.caption || '',
+        time: timeStr,
+        timestamp: timestamp,
+        createdAt: record.CreatedAt
+      };
+    });
+
+    return journals;
+  } catch (error) {
+    console.error('❌ Error fetching all journals from NocoDB:', error);
     return [];
   }
 };

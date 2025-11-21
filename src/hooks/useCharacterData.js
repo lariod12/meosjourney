@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchStatus, fetchProfile, fetchConfig, fetchJournals, fetchQuests, fetchAchievements } from '../services';
+import { fetchStatus, fetchProfile, fetchConfig, fetchJournals, fetchAllJournals, fetchQuests, fetchAchievements } from '../services';
 
 /**
  * Custom hook for fetching character data
@@ -25,15 +25,24 @@ export const useCharacterData = (defaultData) => {
       fetchingRef.current = true;
       setLoading(true);
 
-      // Fetch data sequentially to avoid rate limiting
-      // Requests are queued internally with 200ms delay between calls
-      // Cache will be used if data was fetched recently (30s cache)
-      const status = await fetchStatus();
-      const profile = await fetchProfile();
-      const config = await fetchConfig();
-      const journals = await fetchJournals();
-      const quests = await fetchQuests();
-      const achievements = await fetchAchievements();
+      // Fetch data in staggered batches to avoid rate limiting
+      // Batch 1: Critical data (profile, status, config) - load immediately
+      const [status, profile, config] = await Promise.all([
+        fetchStatus(),
+        fetchProfile(),
+        fetchConfig()
+      ]);
+
+      // Longer delay before batch 2 to avoid rate limiting (especially with pagination)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Batch 2: Content data (journals, quests, achievements) - load after delay
+      // Only fetch 7 recent journals initially for faster loading
+      const [journals, quests, achievements] = await Promise.all([
+        fetchJournals(7), // Fetch only 7 recent journals initially
+        fetchQuests(),
+        fetchAchievements()
+      ]);
 
       if (mountedRef.current) {
         // Merge with default data

@@ -1099,6 +1099,30 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
 }
 
+/* Skeleton Loader for History - Minimal single line */
+.history-skeleton-loader {
+    padding: 20px;
+    margin: 10px 0;
+}
+
+.history-skeleton-loader .skeleton-line {
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border: 2px solid var(--black);
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 /* Ensure content fits within container - handled above */
 
 /* Visual hint removed for cleaner interface */
