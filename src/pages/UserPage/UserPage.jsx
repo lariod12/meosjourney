@@ -2360,7 +2360,7 @@ const UserPage = ({ onBack }) => {
                                     <IconRenderer iconName={achievement.icon} size={20} />
                                   )}
                                   {' '}{displayName}
-                                  {achievement.dueDate && <span className="confirmation-badge">📅 {achievement.dueDate}</span>}
+                                  {achievement.dueDate && <span className="confirmation-badge">📅 {typeof achievement.dueDate === 'string' ? achievement.dueDate : new Date(achievement.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>}
                                 </span>
                                 <span className="quest-dropdown-xp">
                                   {achievement.xp > 0 && `+${achievement.xp} XP`}
@@ -2402,7 +2402,7 @@ const UserPage = ({ onBack }) => {
                             <p className="quest-submission-desc">{submission.achievementDesc}</p>
                           )}
                           {submission.achievementDueDate && (
-                            <p className="quest-submission-desc">📅 Due: {submission.achievementDueDate}</p>
+                            <p className="quest-submission-desc">📅 Due: {typeof submission.achievementDueDate === 'string' ? submission.achievementDueDate : new Date(submission.achievementDueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                           )}
                         </div>
                         <button
@@ -2591,7 +2591,7 @@ const UserPage = ({ onBack }) => {
                                       <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
                                     )}
                                     {achievement.dueDate && (
-                                      <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                      <p className="pending-item-desc">📅 Due: {typeof achievement.dueDate === 'string' ? achievement.dueDate : new Date(achievement.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                                     )}
                                     {achievement.confirmation?.desc && (
                                       <p className="pending-item-desc">{achievement.confirmation.desc}</p>
@@ -2659,7 +2659,7 @@ const UserPage = ({ onBack }) => {
                                       <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
                                     )}
                                     {quest.dueDate && (
-                                      <p className="pending-item-date overdue">⚠️ Due: {quest.dueDate} (Overdue)</p>
+                                      <p className="pending-item-date overdue">⚠️ Due: {typeof quest.dueDate === 'string' ? quest.dueDate : new Date(quest.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} (Overdue)</p>
                                     )}
                                     {quest.confirmation?.desc && (
                                       <p className="pending-item-desc">{quest.confirmation.desc}</p>
@@ -2721,7 +2721,7 @@ const UserPage = ({ onBack }) => {
                                       <p className="pending-item-date">📅 Submitted: {formattedDate}</p>
                                     )}
                                     {achievement.dueDate && (
-                                      <p className="pending-item-date overdue">⚠️ Due: {achievement.dueDate} (Overdue)</p>
+                                      <p className="pending-item-date overdue">⚠️ Due: {typeof achievement.dueDate === 'string' ? achievement.dueDate : new Date(achievement.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} (Overdue)</p>
                                     )}
                                     {achievement.confirmation?.desc && (
                                       <p className="pending-item-desc">{achievement.confirmation.desc}</p>
@@ -2874,7 +2874,7 @@ const UserPage = ({ onBack }) => {
                                       <p className="pending-item-date completed">✅ Completed: {formattedCompletedDate}</p>
                                     )}
                                     {achievement.dueDate && (
-                                      <p className="pending-item-desc">📅 Due: {achievement.dueDate}</p>
+                                      <p className="pending-item-desc">📅 Due: {typeof achievement.dueDate === 'string' ? achievement.dueDate : new Date(achievement.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                                     )}
                                     {achievement.confirmation?.desc && (
                                       <p className="pending-item-desc">{achievement.confirmation.desc}</p>
