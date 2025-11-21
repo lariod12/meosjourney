@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -30,6 +30,7 @@ import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdmin
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
+import { LoadingDialog } from '../../components/common';
 
 const SESSION_KEY = 'meos05_access';
 
@@ -76,6 +77,7 @@ const UserPage = ({ onBack }) => {
     caption: ''
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true); // Loading state for all data
 
   // Daily Quests Update states
   const [availableQuests, setAvailableQuests] = useState([]);
@@ -312,26 +314,32 @@ const UserPage = ({ onBack }) => {
   };
 
   useEffect(() => {
-    // Load config, profile, and status from NocoDB
+    // Load all data from NocoDB in optimized sequence
     const loadData = async () => {
+      setDataLoading(true);
+      
       try {
-        // Fetch config, profile, and status from NocoDB service
-        // These calls will use cache if available (30s cache duration)
-        const cfg = await fetchConfig();
-        const profile = await fetchProfile();
-        const statusData = await fetchStatus();
+        console.log('📥 Starting data load from NocoDB...');
+        
+        // Phase 1: Load critical data (config, profile, status) in parallel
+        // These are cached and deduplicated automatically
+        const [cfg, profile, statusData] = await Promise.all([
+          fetchConfig(),
+          fetchProfile(),
+          fetchStatus()
+        ]);
 
         // Load config data
         if (cfg) {
           setAutoApproveTasks(!!cfg.autoApproveTasks);
           setCorrectPassword(cfg.pwDailyUpdate || null);
-          console.log('✅ Config loaded from NocoDB:', cfg);
+          console.log('✅ Config loaded');
         } else {
           setCorrectPassword(null);
-          console.warn('⚠️ No config found in NocoDB');
+          console.warn('⚠️ No config found');
         }
 
-        // Load profile data (hobbies -> Hobbys mapping)
+        // Load profile data
         if (profile) {
           const loadedSkills = Array.isArray(profile.skills) ? profile.skills : [];
           const loadedHobbies = Array.isArray(profile.hobbies) ? profile.hobbies : [];
@@ -344,22 +352,17 @@ const UserPage = ({ onBack }) => {
           };
 
           setProfileData(loadedProfile);
-          setOriginalProfileData(JSON.parse(JSON.stringify(loadedProfile))); // Deep copy for comparison
-
-          console.log('✅ Profile loaded from NocoDB:', {
-            introduce: profile.introduce,
-            skills: loadedSkills.length,
-            hobbies: loadedHobbies.length
-          });
+          setOriginalProfileData(JSON.parse(JSON.stringify(loadedProfile)));
+          console.log('✅ Profile loaded');
         } else {
           setProfileData({ introduce: '', skills: [], hobbies: [] });
           setOriginalProfileData({ introduce: '', skills: [], hobbies: [] });
-          console.warn('⚠️ No profile found in NocoDB');
+          console.warn('⚠️ No profile found');
         }
 
-        // Load status data and apply to form
+        // Load status data
         if (statusData) {
-          // Prepare existing doings from status (array)
+          // Prepare existing doings
           const doingsArr = Array.isArray(statusData.doing) ? statusData.doing : [];
           const seen = new Set();
           const normalized = [];
@@ -370,7 +373,7 @@ const UserPage = ({ onBack }) => {
           });
           setExistingDoings(normalized);
 
-          // Prepare existing locations from status (array)
+          // Prepare existing locations
           const locArr = Array.isArray(statusData.location) ? statusData.location : [];
           const seenLoc = new Set();
           const normalizedLocs = [];
@@ -381,7 +384,7 @@ const UserPage = ({ onBack }) => {
           });
           setExistingLocations(normalizedLocs);
 
-          // Prepare existing moods from status (array) - using 'mood' not 'moods'
+          // Prepare existing moods
           const moodArr = Array.isArray(statusData.mood) ? statusData.mood : [];
           const seenMood = new Set();
           const normalizedMoods = [];
@@ -392,7 +395,7 @@ const UserPage = ({ onBack }) => {
           });
           setExistingMoods(normalizedMoods);
 
-          // Save original status data for comparison
+          // Save original status data
           const originalStatus = {
             doing: normalizeStatusValue(statusData.doing),
             location: normalizeStatusValue(statusData.location),
@@ -401,7 +404,7 @@ const UserPage = ({ onBack }) => {
           };
           setOriginalStatusData(originalStatus);
 
-          // Apply status and profile to form
+          // Apply to form
           setFormData(prev => ({
             ...prev,
             doing: originalStatus.doing,
@@ -411,91 +414,71 @@ const UserPage = ({ onBack }) => {
             introduce: profile?.introduce || ''
           }));
 
-          console.log('✅ Status loaded from NocoDB:', {
-            doing: normalized.length,
-            location: normalizedLocs.length,
-            mood: normalizedMoods.length
-          });
+          console.log('✅ Status loaded');
         } else {
           setOriginalStatusData({ doing: '', location: '', mood: '', caption: '' });
-          console.warn('⚠️ No status found in NocoDB');
+          console.warn('⚠️ No status found');
         }
 
         setProfileLoaded(true);
-      } catch (error) {
-        console.error('❌ Error loading data from NocoDB:', error);
-        setCorrectPassword(null);
-        setProfileData({ introduce: '', skills: [], hobbies: [] });
-        setProfileLoaded(true);
-      }
 
-      // Load quests and achievements from NocoDB
-      // These calls will be queued and cached to prevent rate limiting
-      try {
-        console.log('📥 Loading quests and achievements from NocoDB...');
-        // Load sequentially to avoid rate limiting (requests are queued internally)
-        const questsData = await fetchQuests();
-        const questConfirmsData = await fetchQuestConfirmations();
-        const achievementsData = await fetchAchievements();
-        const achievementConfirmsData = await fetchAchievementConfirmations();
+        // Phase 2: Load quests and achievements data in parallel
+        // These are queued internally to prevent rate limiting
+        console.log('📥 Loading quests and achievements...');
+        
+        const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
+          fetchQuests(),
+          fetchQuestConfirmations(),
+          fetchAchievements(),
+          fetchAchievementConfirmations()
+        ]);
 
-        // Filter available quests (not completed)
+        // Process quests
         const availableQuestsData = questsData.filter(q => q.completedAt === null);
         setAllQuests(questsData);
         setAvailableQuests(availableQuestsData);
         setQuestConfirmations(questConfirmsData);
 
-        // Filter available achievements (not completed)
+        // Process achievements
         const availableAchievementsData = achievementsData.filter(a => a.completedAt === null);
         setAllAchievements(achievementsData);
         setAvailableAchievements(availableAchievementsData);
         setAchievementConfirmations(achievementConfirmsData);
 
-        console.log(`✅ Loaded ${questsData.length} quests (${availableQuestsData.length} available) and ${achievementsData.length} achievements (${availableAchievementsData.length} available)`);
+        console.log(`✅ Loaded ${questsData.length} quests (${availableQuestsData.length} available), ${achievementsData.length} achievements (${availableAchievementsData.length} available)`);
 
-        // Check and update overdue quest confirmations to 'failed' status
+        // Phase 3: Check and update overdue quest confirmations
         try {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
           const overdueUpdates = [];
 
-          // Check each quest confirmation
           for (const confirmation of questConfirmsData) {
-            // Skip if already failed or completed
             if (confirmation.status === 'failed' || confirmation.status === 'completed') {
               continue;
             }
 
-            // Find the linked quest
             const linkedQuest = questsData.find(q => q.id === confirmation.questsId);
-            if (!linkedQuest) continue;
+            if (!linkedQuest || linkedQuest.completedAt) continue;
 
-            // Skip if quest is already completed
-            if (linkedQuest.completedAt) continue;
-
-            // Check if quest is overdue (created before today)
             if (linkedQuest.createdAt) {
               const createdDate = new Date(linkedQuest.createdAt);
               createdDate.setHours(0, 0, 0, 0);
 
               if (createdDate < today) {
-                // Quest is overdue, mark confirmation as failed
                 overdueUpdates.push({
                   id: confirmation.id,
                   status: 'failed'
                 });
-                console.log(`⚠️ Quest "${linkedQuest.name}" is overdue, marking confirmation as failed`);
               }
             }
           }
 
-          // Batch update overdue confirmations
           if (overdueUpdates.length > 0) {
-            console.log(`🔄 Updating ${overdueUpdates.length} overdue quest confirmations to failed status...`);
+            console.log(`🔄 Updating ${overdueUpdates.length} overdue confirmations...`);
             await batchUpdateQuestConfirmationStatus(overdueUpdates);
             
-            // Update local state to reflect changes
             setQuestConfirmations(prev => 
               prev.map(c => {
                 const update = overdueUpdates.find(u => u.id === c.id);
@@ -503,20 +486,26 @@ const UserPage = ({ onBack }) => {
               })
             );
             
-            console.log(`✅ Updated ${overdueUpdates.length} overdue quest confirmations`);
+            console.log(`✅ Updated ${overdueUpdates.length} overdue confirmations`);
           }
         } catch (overdueError) {
-          console.error('❌ Error checking/updating overdue quest confirmations:', overdueError);
-          // Don't fail the entire load if overdue check fails
+          console.error('❌ Error checking overdue confirmations:', overdueError);
         }
+
+        console.log('✅ All data loaded successfully');
       } catch (error) {
-        console.error('❌ Error loading quests/achievements from NocoDB:', error);
+        console.error('❌ Error loading data from NocoDB:', error);
+        setCorrectPassword(null);
+        setProfileData({ introduce: '', skills: [], hobbies: [] });
+        setProfileLoaded(true);
         setAllQuests([]);
         setAvailableQuests([]);
         setQuestConfirmations([]);
         setAllAchievements([]);
         setAvailableAchievements([]);
         setAchievementConfirmations([]);
+      } finally {
+        setDataLoading(false);
       }
     };
 
@@ -963,6 +952,7 @@ const UserPage = ({ onBack }) => {
 
             // Invalidate cache and notify Home to refresh immediately
             try { clearCache(); } catch { }
+            try { clearNocoDBCache(); } catch { }
             try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
 
             // Create journal entries for changed fields
@@ -1038,6 +1028,7 @@ const UserPage = ({ onBack }) => {
           if (journalResult.success) {
             results.push({ type: 'success', item: 'Journal' });
             try { clearCache(); } catch { }
+            try { clearNocoDBCache(); } catch { }
             try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
           } else {
             results.push({ type: 'failed', item: 'Journal' });
@@ -1123,6 +1114,7 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
+              try { clearNocoDBCache(); } catch { }
 
               // Optimistically update UI for auto-approve
               setAllQuests(prev => prev.map(q => q.id === submission.questId ? { ...q, completedAt: new Date() } : q));
@@ -1287,6 +1279,7 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
+              try { clearNocoDBCache(); } catch { }
 
               // Optimistically update UI for auto-approve
               setAllAchievements(prev => prev.map(a => a.id === submission.achievementId ? { ...a, completedAt: new Date() } : a));
@@ -1913,6 +1906,11 @@ const UserPage = ({ onBack }) => {
     return null;
   }
 
+  // Show loading screen while data is being fetched
+  if (dataLoading) {
+    return <LoadingDialog />;
+  }
+
   const formattedDate = new Date(formData.noteDate).toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -1953,12 +1951,6 @@ const UserPage = ({ onBack }) => {
 
             {profileExpanded && (
               <div className="section-content">
-                {!profileLoaded && (
-                  <div className="userpage-loading-message">
-                    Loading profile data...
-                  </div>
-                )}
-
                 <div className="form-group">
                   <label htmlFor="introduce">Introduction</label>
                   <textarea

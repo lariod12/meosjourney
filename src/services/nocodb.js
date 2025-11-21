@@ -32,7 +32,7 @@ const TABLE_IDS = {
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
 const requestCache = new Map();
 const pendingRequests = new Map(); // Track in-flight requests
-const CACHE_DURATION = 30000; // 30 seconds - increased from 5s to reduce API calls
+const CACHE_DURATION = 60000; // 60 seconds (1 minute) - increased to reduce API calls
 
 const getCachedRequest = (key) => {
   const cached = requestCache.get(key);
@@ -78,7 +78,7 @@ const deduplicateRequest = async (key, requestFn) => {
 // Request queue for rate limiting
 let requestQueue = [];
 let isProcessingQueue = false;
-const REQUEST_DELAY = 200; // 200ms delay between requests
+const REQUEST_DELAY = 150; // 150ms delay between requests (optimized from 200ms)
 
 const queueRequest = async (requestFn) => {
   return new Promise((resolve, reject) => {
