@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, updateQuest } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -21,7 +21,6 @@ import {
   getQuestConfirmation,
   saveAchievementConfirmation,
   getAchievementConfirmation,
-  updateQuest,
   updateAchievement,
   updateProfileXP,
   CHARACTER_ID
@@ -1060,7 +1059,7 @@ const UserPage = ({ onBack }) => {
             let xpResult = null;
             if (autoApproveTasks) {
               try {
-                await updateQuest(submission.questId, { completedAt: new Date() }, CHARACTER_ID);
+                await updateQuest(submission.questId, { completedAt: new Date() });
               } catch (e) { console.warn('⚠️ Auto-approve quest update failed:', e.message); }
               try {
                 xpResult = await updateProfileXP(submission.questXp || 0, CHARACTER_ID);

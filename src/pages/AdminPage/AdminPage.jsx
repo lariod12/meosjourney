@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateQuestConfirmationStatus } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -20,7 +20,6 @@ import {
   updateAchievement, 
   deleteAchievement, 
   saveQuest, 
-  updateQuest, 
   deleteQuest, 
   deleteQuestConfirmation, 
   deleteQuestConfirmationById, 
@@ -1048,7 +1047,18 @@ const AdminPage = ({ onBack }) => {
       // Keep image and confirmation for record
       await updateQuest(quest.id, {
         completedAt: new Date()
-      }, CHARACTER_ID);
+      });
+
+      // Update quest confirmation status to 'completed'
+      if (confirmation?.id) {
+        try {
+          await updateQuestConfirmationStatus(confirmation.id, 'completed');
+          console.log('✅ Quest confirmation status updated to completed');
+        } catch (statusError) {
+          console.warn('⚠️ Could not update quest confirmation status:', statusError.message);
+          // Continue even if status update fails
+        }
+      }
 
       // Update profile XP
       let xpResult = null;
@@ -1172,36 +1182,30 @@ const AdminPage = ({ onBack }) => {
         throw new Error('Quest confirmation not found');
       }
 
-      // 1. Delete image from Storage if exists
-      if (confirmation.imgUrl) {
+      // Update quest confirmation status to 'failed' instead of deleting
+      if (confirmation?.id) {
         try {
-          await deleteImageByUrl(confirmation.imgUrl);
-          console.log('✅ Image deleted from Storage');
-        } catch (imgError) {
-          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
-          // Continue even if image deletion fails
+          await updateQuestConfirmationStatus(confirmation.id, 'failed');
+          console.log('✅ Quest confirmation status updated to failed');
+        } catch (statusError) {
+          throw new Error(`Failed to update quest confirmation status: ${statusError.message}`);
         }
       }
 
-      // 2. Delete quest confirmation from Firestore using the actual confirmation ID
-      await deleteQuestConfirmationById(confirmation.id, CHARACTER_ID);
-
-      // Update local state immediately to remove confirmation and change button to Edit
+      // Update local state immediately to reflect failed status
       setQuestConfirmations(prevConfirmations => 
-        prevConfirmations.filter(c => !c.id.startsWith(
-          quest.name.trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 50) + '_'
-        ))
+        prevConfirmations.map(c => 
+          c.id === confirmation.id 
+            ? { ...c, status: 'failed' }
+            : c
+        )
       );
 
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Quest Rejected',
-        message: `Quest confirmation for "${quest.name}" has been rejected and removed.`,
+        message: `Quest confirmation for "${quest.name}" has been marked as failed.`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {

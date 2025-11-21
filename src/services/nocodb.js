@@ -1155,6 +1155,107 @@ export const createAchievement = async (achievementData) => {
 };
 
 /**
+ * Update quest confirmation status in NocoDB
+ * @param {string} confirmationId - Quest confirmation ID to update
+ * @param {string} status - Status value ('pending', 'completed', 'failed')
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const updateQuestConfirmationStatus = async (confirmationId, status) => {
+  try {
+    if (!confirmationId) {
+      return { success: false, message: 'Quest confirmation ID is required' };
+    }
+
+    if (!['pending', 'completed', 'failed'].includes(status)) {
+      return { success: false, message: 'Invalid status value' };
+    }
+
+    const updatePayload = [{
+      Id: confirmationId,
+      status: status
+    }];
+
+    console.log('🔍 Sending Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Quest confirmation status updated successfully in NocoDB:', response);
+    return { success: true, message: 'Quest confirmation status updated' };
+  } catch (error) {
+    console.error('❌ Error updating quest confirmation status in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Update quest in NocoDB
+ * @param {string} questId - Quest ID to update
+ * @param {Object} updates - Fields to update
+ * @param {Date} updates.completedAt - Completion timestamp (optional)
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const updateQuest = async (questId, updates) => {
+  try {
+    if (!questId) {
+      return { success: false, message: 'Quest ID is required' };
+    }
+
+    const payload = {};
+
+    // Handle completedAt field
+    if (updates.completedAt) {
+      // Get current ICT time
+      const completedDate = updates.completedAt instanceof Date ? updates.completedAt : new Date(updates.completedAt);
+      
+      const ictDateStr = completedDate.toLocaleString('en-US', { 
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+      const [datePart, timePart] = ictDateStr.split(', ');
+      const [month, day, year] = datePart.split('/');
+      const [hours, minutes, seconds] = timePart.split(':');
+
+      // Format completed_time with timezone offset
+      payload.completed_time = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+    }
+
+    // If no updates, return success
+    if (Object.keys(payload).length === 0) {
+      return { success: true, message: 'No updates to apply' };
+    }
+
+    const updatePayload = [{
+      Id: questId,
+      ...payload
+    }];
+
+    console.log('🔍 Sending Quest PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Quest updated successfully in NocoDB:', response);
+    return { success: true, message: 'Quest updated' };
+  } catch (error) {
+    console.error('❌ Error updating quest in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Save quest confirmation to NocoDB
  * Creates a new quest confirmation record and links it to the quest
  * @param {Object} confirmData - Confirmation data
@@ -1201,7 +1302,8 @@ export const saveQuestConfirmation = async (confirmData) => {
       quest_name: questName || '',
       desc: desc || '',
       created_time: createdTime,
-      quest: questId // Link to quest record (1-1 relationship)
+      quest: questId, // Link to quest record (1-1 relationship)
+      status: 'pending' // Set initial status as pending
     };
 
     // Add image URL if provided
