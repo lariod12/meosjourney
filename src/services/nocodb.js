@@ -251,10 +251,10 @@ export const fetchProfile = async () => {
           });
         }
 
-        // Calculate level from XP
+        // Get XP and level from database
         const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
-        const maxXP = profileRecord.max_xp || 1000;
-        const level = Math.floor(currentXP / maxXP);
+        const maxXP = parseInt(profileRecord.max_xp, 10) || 1000;
+        const level = parseInt(profileRecord.level, 10) || 0;
 
         return {
           id: staticData.profile.id,
@@ -304,10 +304,10 @@ export const fetchProfile = async () => {
         });
       }
 
-      // Calculate level from XP
+      // Get XP and level from database
       const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
-      const maxXP = profileRecord.max_xp || 1000;
-      const level = Math.floor(currentXP / maxXP);
+      const maxXP = parseInt(profileRecord.max_xp, 10) || 1000;
+      const level = parseInt(profileRecord.level, 10) || 0;
 
       return {
         id: profileRecord.Id,
@@ -800,39 +800,63 @@ export const updateProfile = async (profileData, oldProfileData) => {
 
 /**
  * Update profile XP and handle level-ups
- * @param {number} xpToAdd - Amount of XP to add
+ * @param {number} xpToAdd - Amount of XP to add (before multiplier)
  * @returns {Promise<Object>} Result with XP and level info
  */
 export const updateProfileXP = async (xpToAdd) => {
   try {
-    // Get current profile
-    const profile = await fetchProfile();
+    // Get current profile and config
+    const [profile, config] = await Promise.all([
+      fetchProfile(),
+      fetchConfig()
+    ]);
     
     if (!profile) {
       throw new Error('No profile found');
     }
 
+    if (!config) {
+      throw new Error('No config found');
+    }
+
+    // Apply XP multiplier from config
+    const xpMultiplier = parseFloat(config.xpMultiplier) || 1;
+    const actualXpToAdd = Math.floor(xpToAdd * xpMultiplier);
+    
+    console.log(`💫 XP Multiplier: ${xpMultiplier}x (${xpToAdd} → ${actualXpToAdd})`);
+
     const currentXP = parseInt(profile.currentXP, 10) || 0;
     const currentLevel = parseInt(profile.level, 10) || 0;
-    const maxXP = parseInt(profile.maxXP, 10) || 1000;
+    let currentMaxXP = parseInt(profile.maxXP, 10) || 1000;
+    
+    // Get level grow rate from config (percentage)
+    const levelGrowRate = parseInt(config.levelGrowRate, 10) || 10;
     
     // Add XP
-    let newXP = currentXP + xpToAdd;
+    let newXP = currentXP + actualXpToAdd;
     let newLevel = currentLevel;
+    let newMaxXP = currentMaxXP;
     let leveledUp = false;
+    let levelsGained = 0;
 
     // Check for level up (can level up multiple times if XP is high enough)
-    // maxXP stays constant - does not increase with level
+    // maxXP increases by level_grow_rate% each level
     // When leveling up, excess XP is reduced by half
-    while (newXP >= maxXP) {
-      newXP -= maxXP;
+    while (newXP >= newMaxXP) {
+      newXP -= newMaxXP;
       newLevel += 1;
+      levelsGained += 1;
       leveledUp = true;
+      
+      // Increase maxXP by level_grow_rate% for next level
+      newMaxXP = Math.floor(newMaxXP * (1 + levelGrowRate / 100));
       
       // Reduce excess XP by half (penalty for leveling up)
       newXP = Math.floor(newXP / 2);
       
-      console.log(`🎉 LEVEL UP! New level: ${newLevel}, Remaining XP after penalty: ${newXP}`);
+      console.log(`🎉 LEVEL UP! Level ${newLevel - 1} → ${newLevel}`);
+      console.log(`📊 New max XP: ${newMaxXP} (+${levelGrowRate}%)`);
+      console.log(`⚡ Remaining XP after penalty: ${newXP}`);
     }
 
     // Get the profile record ID
@@ -846,11 +870,12 @@ export const updateProfileXP = async (xpToAdd) => {
 
     const profileId = profileRecords.list[0].Id;
 
-    // Update profile with new XP and level
+    // Update profile with new XP, level, and maxXP
     const updatePayload = [{
       Id: profileId,
       current_xp: newXP,
-      level: newLevel
+      level: newLevel,
+      max_xp: newMaxXP
     }];
 
     await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
@@ -858,17 +883,22 @@ export const updateProfileXP = async (xpToAdd) => {
       body: JSON.stringify(updatePayload)
     });
 
-    console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
+    console.log(`✅ Profile updated: XP ${currentXP} + ${actualXpToAdd} = ${newXP} | Level ${currentLevel} → ${newLevel} | MaxXP ${currentMaxXP} → ${newMaxXP}`);
     
     return { 
       success: true, 
       oldXP: currentXP, 
       newXP, 
-      addedXP: xpToAdd,
+      addedXP: actualXpToAdd,
+      rawXP: xpToAdd,
+      xpMultiplier: xpMultiplier,
       oldLevel: currentLevel,
       newLevel,
+      levelsGained,
       leveledUp,
-      maxXP
+      oldMaxXP: currentMaxXP,
+      maxXP: newMaxXP,
+      levelGrowRate: levelGrowRate
     };
 
   } catch (error) {
