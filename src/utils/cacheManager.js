@@ -5,6 +5,8 @@
 
 const CACHE_KEY = 'meo_journey_home_cache';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const REFRESH_COOLDOWN_KEY = 'meo_journey_refresh_cooldown';
+const REFRESH_COOLDOWN_DURATION = 60 * 1000; // 1 minute in milliseconds
 
 /**
  * Serialize Date objects for caching
@@ -120,6 +122,72 @@ export const clearCache = () => {
     console.log('🗑️ Cache cleared successfully');
   } catch (error) {
     console.error('❌ Error clearing cache:', error);
+  }
+};
+
+/**
+ * Check if refresh is allowed (not in cooldown)
+ * @returns {boolean} True if refresh is allowed
+ */
+export const canRefresh = () => {
+  try {
+    const cooldownData = localStorage.getItem(REFRESH_COOLDOWN_KEY);
+    if (!cooldownData) return true;
+
+    const { timestamp } = JSON.parse(cooldownData);
+    const now = Date.now();
+    const timeSinceLastRefresh = now - timestamp;
+
+    return timeSinceLastRefresh >= REFRESH_COOLDOWN_DURATION;
+  } catch (error) {
+    console.error('❌ Error checking refresh cooldown:', error);
+    return true;
+  }
+};
+
+/**
+ * Get remaining cooldown time in seconds
+ * @returns {number} Remaining seconds, or 0 if no cooldown
+ */
+export const getRemainingCooldown = () => {
+  try {
+    const cooldownData = localStorage.getItem(REFRESH_COOLDOWN_KEY);
+    if (!cooldownData) return 0;
+
+    const { timestamp } = JSON.parse(cooldownData);
+    const now = Date.now();
+    const timeSinceLastRefresh = now - timestamp;
+    const remaining = REFRESH_COOLDOWN_DURATION - timeSinceLastRefresh;
+
+    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+  } catch (error) {
+    console.error('❌ Error getting remaining cooldown:', error);
+    return 0;
+  }
+};
+
+/**
+ * Set refresh cooldown timestamp
+ */
+export const setRefreshCooldown = () => {
+  try {
+    const cooldownData = {
+      timestamp: Date.now()
+    };
+    localStorage.setItem(REFRESH_COOLDOWN_KEY, JSON.stringify(cooldownData));
+  } catch (error) {
+    console.error('❌ Error setting refresh cooldown:', error);
+  }
+};
+
+/**
+ * Clear refresh cooldown (use when data is updated from UserPage)
+ */
+export const clearRefreshCooldown = () => {
+  try {
+    localStorage.removeItem(REFRESH_COOLDOWN_KEY);
+  } catch (error) {
+    console.error('❌ Error clearing refresh cooldown:', error);
   }
 };
 

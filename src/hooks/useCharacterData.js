@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchStatus, fetchProfile, fetchConfig, fetchJournals, fetchAllJournals, fetchQuests, fetchAchievements } from '../services';
+import { getCachedData, setCachedData, canRefresh, setRefreshCooldown, getRemainingCooldown } from '../utils/cacheManager';
 
 /**
  * Custom hook for fetching character data
  * Fetches data from NocoDB (primary data source)
+ * Implements 1-minute refresh cooldown to prevent spam
  * 
  * @param {Object} defaultData - Default character data
  * @returns {Object} { data, loading, error, refetch }
@@ -14,16 +16,38 @@ export const useCharacterData = (defaultData) => {
   const [error, setError] = useState(null);
   const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
+  const dataLoadedRef = useRef(false); // Track if data has been loaded successfully
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) {
+      console.log('⏳ Fetch already in progress, skipping...');
       return;
+    }
+
+    // Check refresh cooldown (only after initial load)
+    if (dataLoadedRef.current && !forceRefresh && !canRefresh()) {
+      const remainingSeconds = getRemainingCooldown();
+      console.log(`⏱️ Refresh cooldown active. Please wait ${remainingSeconds}s`);
+      return;
+    }
+
+    // Try to use cached data first (only on initial load)
+    if (!forceRefresh && !dataLoadedRef.current) {
+      const cachedData = getCachedData();
+      if (cachedData) {
+        console.log('✅ Using cached data');
+        setData(cachedData);
+        setLoading(false);
+        dataLoadedRef.current = true;
+        return;
+      }
     }
 
     try {
       fetchingRef.current = true;
       setLoading(true);
+      console.log('🔄 Fetching fresh data from NocoDB...');
 
       // Fetch data in staggered batches to avoid rate limiting
       // Batch 1: Critical data (profile, status, config) - load immediately
@@ -87,6 +111,15 @@ export const useCharacterData = (defaultData) => {
         setData(mergedData);
         setLoading(false);
         setError(null);
+        dataLoadedRef.current = true;
+
+        // Cache the data after successful load
+        setCachedData(mergedData);
+        
+        // Set refresh cooldown after successful fetch
+        setRefreshCooldown();
+        
+        console.log('✅ Data loaded and cached successfully');
       }
     } catch (err) {
       console.error('❌ Error fetching character data:', err);

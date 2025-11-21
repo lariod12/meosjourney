@@ -3,7 +3,7 @@ import './UserPage.css';
 
 import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
-import { clearCache } from '../../utils/cacheManager';
+import { clearCache, clearRefreshCooldown } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
 import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
@@ -190,8 +190,9 @@ const UserPage = ({ onBack }) => {
 
   const reloadDataAfterSubmit = async () => {
     try {
-      // Clear cache to force fresh data
+      // Clear cache and cooldown to allow immediate refresh
       clearCache();
+      clearRefreshCooldown();
       clearNocoDBCache();
       
       // Reload quests and achievements data
@@ -773,8 +774,9 @@ const UserPage = ({ onBack }) => {
           if (statusResult.success) {
             results.push({ type: 'success', item: 'Status' });
 
-            // Invalidate cache and notify Home to refresh immediately
+            // Invalidate cache and cooldown, notify Home to refresh immediately
             try { clearCache(); } catch { }
+            try { clearRefreshCooldown(); } catch { }
             try { clearNocoDBCache(); } catch { }
             try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
 
@@ -851,6 +853,7 @@ const UserPage = ({ onBack }) => {
           if (journalResult.success) {
             results.push({ type: 'success', item: 'Journal' });
             try { clearCache(); } catch { }
+            try { clearRefreshCooldown(); } catch { }
             try { clearNocoDBCache(); } catch { }
             try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
           } else {
@@ -926,6 +929,7 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
+              try { clearRefreshCooldown(); } catch { }
               try { clearNocoDBCache(); } catch { }
 
               // Optimistically update UI for auto-approve
@@ -1080,6 +1084,7 @@ const UserPage = ({ onBack }) => {
                 }
               } catch (e) { console.warn('⚠️ Auto-approve level up journal save failed:', e.message); }
               try { clearCache(); } catch { }
+              try { clearRefreshCooldown(); } catch { }
               try { clearNocoDBCache(); } catch { }
 
               // Optimistically update UI for auto-approve
