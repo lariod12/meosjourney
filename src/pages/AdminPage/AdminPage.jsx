@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateQuestConfirmationStatus } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateQuestConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -21,7 +21,7 @@ import {
   deleteAchievement, 
   saveQuest, 
   deleteQuest, 
-  deleteQuestConfirmation, 
+  // deleteQuestConfirmation, // Commented out - using NocoDB version
   deleteQuestConfirmationById, 
   deleteAchievementConfirmation, 
   deleteAchievementConfirmationById, 
@@ -955,21 +955,19 @@ const AdminPage = ({ onBack }) => {
 
   // Helper function to get quest confirmation for a quest
   // Get quest confirmation by quest ID (1-1 relationship in NocoDB)
+  // Only returns confirmation if quest has questsConfirmId link
   const getQuestConfirmationByQuestId = (questId) => {
     // Find the quest to get its linked confirmation ID
     const quest = quests.find(q => q.id === questId);
     if (!quest) return null;
     
-    // NocoDB: Match by the linked confirmation ID from quest.questsConfirmId
-    if (quest.questsConfirmId) {
-      return questConfirmations.find(c => c.id === quest.questsConfirmId);
+    // NocoDB: Only check by the linked confirmation ID from quest.questsConfirmId
+    // If no link exists, return null (quest has no active confirmation)
+    if (!quest.questsConfirmId) {
+      return null;
     }
     
-    // Fallback: match by quest name (case-insensitive)
-    const normalizedQuestName = quest.name.trim().toLowerCase();
-    return questConfirmations.find(c => 
-      c.name && c.name.trim().toLowerCase() === normalizedQuestName
-    );
+    return questConfirmations.find(c => c.id === quest.questsConfirmId) || null;
   };
 
   const getQuestConfirmation = (questName) => {
@@ -1037,7 +1035,8 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getQuestConfirmation(quest.name);
+      // Get confirmation by quest ID (checks quest_confirm link)
+      const confirmation = getQuestConfirmationByQuestId(quest.id);
 
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
@@ -1176,42 +1175,49 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getQuestConfirmation(quest.name);
+      // Get confirmation by quest ID (checks quest_confirm link)
+      const confirmation = getQuestConfirmationByQuestId(quest.id);
 
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
       }
 
-      // Update quest confirmation status to 'failed' instead of deleting
-      if (confirmation?.id) {
-        try {
-          await updateQuestConfirmationStatus(confirmation.id, 'failed');
-          console.log('✅ Quest confirmation status updated to failed');
-        } catch (statusError) {
-          throw new Error(`Failed to update quest confirmation status: ${statusError.message}`);
-        }
+      // Simply delete the quest confirmation record
+      // This will automatically unlink it from the quest
+      const result = await deleteQuestConfirmation(confirmation.id);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete quest confirmation');
       }
 
-      // Update local state immediately to reflect failed status
+      console.log('✅ Quest confirmation deleted');
+
+      // Update local state immediately for instant UI update
       setQuestConfirmations(prevConfirmations => 
-        prevConfirmations.map(c => 
-          c.id === confirmation.id 
-            ? { ...c, status: 'failed' }
-            : c
+        prevConfirmations.filter(c => c.id !== confirmation.id)
+      );
+
+      setQuests(prevQuests => 
+        prevQuests.map(q => 
+          q.id === quest.id 
+            ? { ...q, questsConfirmId: null }
+            : q
         )
       );
 
+      // Close review modal immediately after state update
+      setReviewingId(null);
+
+      // Show success message
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Quest Rejected',
-        message: `Quest confirmation for "${quest.name}" has been marked as failed.`,
+        message: `Quest confirmation for "${quest.name}" has been rejected and deleted.`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
-          setReviewingId(null);
-          loadQuests(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -2179,11 +2185,12 @@ const AdminPage = ({ onBack }) => {
             <div className="quests-table">
               {quests
                 .sort((a, b) => {
-                  // Get confirmation status for both quests
-                  const aConfirmation = getQuestConfirmation(a.name);
-                  const bConfirmation = getQuestConfirmation(b.name);
-                  const aHasReview = !!aConfirmation && !a.completedAt;
-                  const bHasReview = !!bConfirmation && !b.completedAt;
+                  // Get confirmation status for both quests using quest ID (checks quest_confirm link)
+                  const aConfirmation = getQuestConfirmationByQuestId(a.id);
+                  const bConfirmation = getQuestConfirmationByQuestId(b.id);
+                  // Only show review if confirmation exists, not completed, and not failed
+                  const aHasReview = !!aConfirmation && !a.completedAt && aConfirmation.status !== 'failed';
+                  const bHasReview = !!bConfirmation && !b.completedAt && bConfirmation.status !== 'failed';
                   
                   // Items with Review status go to top
                   if (aHasReview && !bHasReview) return -1;
@@ -2196,8 +2203,10 @@ const AdminPage = ({ onBack }) => {
                 const isEditing = editingId === quest.id;
                 const isReviewing = reviewingId === quest.id;
                 const isViewing = viewingId === quest.id;
-                const confirmation = getQuestConfirmation(quest.name);
-                const hasConfirmation = !!confirmation;
+                // Get confirmation by quest ID (checks quest_confirm link in quest table)
+                const confirmation = getQuestConfirmationByQuestId(quest.id);
+                // Only consider as having confirmation if linked and status is not 'failed'
+                const hasConfirmation = !!confirmation && confirmation.status !== 'failed';
                 const isCompleted = quest.completedAt !== null;
                 const isFailed = !isCompleted && isQuestOverdue(quest); // Check if quest is overdue and not completed
                 const allConfirmations = getQuestConfirmations(quest.id); // Use quest.id for 1-1 relationship

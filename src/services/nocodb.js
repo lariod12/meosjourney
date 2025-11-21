@@ -482,13 +482,8 @@ export const fetchQuests = async () => {
         const name = nameTranslations.en || nameTranslations.vi || record.title || 'Unnamed Quest';
         const desc = descTranslations.en || descTranslations.vi || '';
 
-        // Debug: Log date fields
-        console.log(`🔍 Quest ID ${record.Id} dates:`, {
-          created_time: record.created_time,
-          completed_time: record.completed_time,
-          createdAt: record.created_time ? new Date(record.created_time) : null,
-          completedAt: record.completed_time ? new Date(record.completed_time) : null
-        });
+        // Get quest_confirm link ID (NocoDB returns this as quests_confirm_id)
+        const questConfirmId = record.quests_confirm_id || null;
 
         return {
           id: record.Id,
@@ -497,7 +492,7 @@ export const fetchQuests = async () => {
           desc: desc,
           descTranslations: descTranslations,
           xp: record.xp || 0,
-          questsConfirmId: record.quests_confirm_id || null, // Link to quest_confirm
+          questsConfirmId: questConfirmId, // Link to quest_confirm (ID of linked record)
           createdAt: record.created_time ? new Date(record.created_time) : null,
           completedAt: record.completed_time ? new Date(record.completed_time) : null,
           updatedAt: record.UpdatedAt
@@ -715,9 +710,9 @@ export const saveJournal = async (journalData) => {
     // Generate title with format: journal_<year>-<month>-<day>_<hh>-<mm>-<ss>-<3 random digits>
     // Use ICT timezone (UTC+7) for all date/time calculations
     const now = new Date();
-    
+
     // Convert to ICT (UTC+7) by using toLocaleString with Asia/Bangkok timezone
-    const ictDateStr = now.toLocaleString('en-US', { 
+    const ictDateStr = now.toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
       month: '2-digit',
@@ -870,7 +865,7 @@ export const fetchAchievements = async () => {
             // Convert to ICT (UTC+7) for display
             const utcDate = new Date(record.due_date);
             // Convert to ICT by using toLocaleString
-            const ictDateStr = utcDate.toLocaleString('en-US', { 
+            const ictDateStr = utcDate.toLocaleString('en-US', {
               timeZone: 'Asia/Bangkok',
               year: 'numeric',
               month: '2-digit',
@@ -992,7 +987,7 @@ export const createQuest = async (questData) => {
 
     // Get current ICT time
     const now = new Date();
-    const ictDateStr = now.toLocaleString('en-US', { 
+    const ictDateStr = now.toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
       month: '2-digit',
@@ -1073,7 +1068,7 @@ export const createAchievement = async (achievementData) => {
 
     // Get current ICT time
     const now = new Date();
-    const ictDateStr = now.toLocaleString('en-US', { 
+    const ictDateStr = now.toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
       month: '2-digit',
@@ -1229,6 +1224,62 @@ export const batchUpdateQuestConfirmationStatus = async (updates) => {
 };
 
 /**
+ * Unlink quest confirmation from quest in NocoDB
+ * Removes the relationship between quest and quest_confirm
+ * @param {string} questId - Quest ID to unlink from
+ * @param {string} confirmationId - Confirmation ID to unlink (required for negative ID method)
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const unlinkQuestConfirmation = async (questId, confirmationId) => {
+  try {
+    if (!questId) {
+      return { success: false, message: 'Quest ID is required' };
+    }
+
+    // NocoDB Link field unlink syntax for one-to-one relationship:
+    // Need to unlink from BOTH sides of the relationship
+    
+    // 1. Unlink from quest side (quest.quest_confirm = null)
+    const questUpdatePayload = [{
+      Id: questId,
+      quest_confirm: null
+    }];
+
+    console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest side):', questUpdatePayload);
+
+    const questResponse = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(questUpdatePayload)
+    });
+
+    console.log('✅ Quest side unlinked:', questResponse);
+
+    // 2. Unlink from quest_confirm side (quest_confirm.quest = null)
+    if (confirmationId) {
+      const confirmUpdatePayload = [{
+        Id: confirmationId,
+        quest: null
+      }];
+
+      console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest_confirm side):', confirmUpdatePayload);
+
+      const confirmResponse = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
+        method: 'PATCH',
+        body: JSON.stringify(confirmUpdatePayload)
+      });
+
+      console.log('✅ Quest_confirm side unlinked:', confirmResponse);
+    }
+
+    return { success: true, message: 'Quest confirmation unlinked from both sides' };
+
+  } catch (error) {
+    console.error('❌ Error unlinking quest confirmation in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Update quest in NocoDB
  * @param {string} questId - Quest ID to update
  * @param {Object} updates - Fields to update
@@ -1247,8 +1298,8 @@ export const updateQuest = async (questId, updates) => {
     if (updates.completedAt) {
       // Get current ICT time
       const completedDate = updates.completedAt instanceof Date ? updates.completedAt : new Date(updates.completedAt);
-      
-      const ictDateStr = completedDate.toLocaleString('en-US', { 
+
+      const ictDateStr = completedDate.toLocaleString('en-US', {
         timeZone: 'Asia/Bangkok',
         year: 'numeric',
         month: '2-digit',
@@ -1313,7 +1364,7 @@ export const saveQuestConfirmation = async (confirmData) => {
 
     // Get current ICT time
     const now = new Date();
-    const ictDateStr = now.toLocaleString('en-US', { 
+    const ictDateStr = now.toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
       month: '2-digit',
@@ -1361,14 +1412,40 @@ export const saveQuestConfirmation = async (confirmData) => {
     // Extract the confirmation ID from response
     const confirmationId = response.Id || (response.list && response.list[0]?.Id);
 
-    return { 
-      success: true, 
-      message: 'Quest confirmation saved', 
+    return {
+      success: true,
+      message: 'Quest confirmation saved',
       id: confirmationId,
-      data: response 
+      data: response
     };
   } catch (error) {
     console.error('❌ Error saving quest confirmation to NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Delete quest confirmation from NocoDB
+ * @param {string} confirmationId - Quest confirmation ID to delete
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const deleteQuestConfirmation = async (confirmationId) => {
+  try {
+    if (!confirmationId) {
+      return { success: false, message: 'Quest confirmation ID is required' };
+    }
+
+    console.log('🔍 Sending Quest Confirmation DELETE to NocoDB:', confirmationId);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
+      method: 'DELETE',
+      body: JSON.stringify([{ Id: confirmationId }])
+    });
+
+    console.log('✅ Quest confirmation deleted successfully in NocoDB:', response);
+    return { success: true, message: 'Quest confirmation deleted' };
+  } catch (error) {
+    console.error('❌ Error deleting quest confirmation in NocoDB:', error);
     return { success: false, message: error.message };
   }
 };
