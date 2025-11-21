@@ -1071,12 +1071,18 @@ const UserPage = ({ onBack }) => {
           }
 
           // 2. Save confirmation to NocoDB (with image upload to attachments_gallery)
+          // Pass quest creation date and auto-approve flag for overdue check
           try {
+            // Find the quest to get its creation date
+            const quest = allQuests.find(q => q.id === submission.questId);
+            
             const questConfirmResult = await saveQuestConfirmation({
               questId: submission.questId,
               questName: submission.questTitle,
               desc: submission.description || '',
-              imageFile: submission.image // Pass the File object directly
+              imageFile: submission.image, // Pass the File object directly
+              questCreatedAt: quest?.createdAt, // Pass quest creation date for overdue check
+              autoApprove: autoApproveTasks // Pass auto-approve flag
             });
 
             // Optimistically update UI - add confirmation to state immediately
@@ -1089,7 +1095,8 @@ const UserPage = ({ onBack }) => {
                   desc: submission.description || '', 
                   imgUrl, 
                   questsId: submission.questId,
-                  createdAt: new Date() 
+                  createdAt: new Date(),
+                  status: questConfirmResult.autoApproved ? 'completed' : 'pending'
                 }];
               });
               console.log('✅ Quest confirmation added to UI state');
@@ -1097,7 +1104,8 @@ const UserPage = ({ onBack }) => {
 
             // Persist across blocks to evaluate after admin notify
             let xpResult = null;
-            if (autoApproveTasks) {
+            // Only auto-complete if the confirmation was auto-approved (not overdue)
+            if (autoApproveTasks && questConfirmResult.shouldAutoComplete) {
               try {
                 await updateQuest(submission.questId, { completedAt: new Date() });
               } catch (e) { console.warn('⚠️ Auto-approve quest update failed:', e.message); }
@@ -1120,6 +1128,10 @@ const UserPage = ({ onBack }) => {
               setAllQuests(prev => prev.map(q => q.id === submission.questId ? { ...q, completedAt: new Date() } : q));
               setAvailableQuests(prev => prev.filter(q => q.id !== submission.questId));
               didAutoApprove = true;
+              
+              console.log('✅ Quest auto-approved and completed (within deadline)');
+            } else if (autoApproveTasks && !questConfirmResult.shouldAutoComplete) {
+              console.log('⚠️ Quest marked as failed (overdue), auto-approve disabled');
             }
 
             // Send Discord notification for quest submission
@@ -1146,8 +1158,8 @@ const UserPage = ({ onBack }) => {
               // Don't fail the entire submission if Discord fails
             }
 
-            // Then notify admin (only when auto-approve is ON) to ensure ordering
-            if (autoApproveTasks) {
+            // Then notify admin (only when auto-approve is ON and quest was auto-completed) to ensure ordering
+            if (autoApproveTasks && questConfirmResult.shouldAutoComplete) {
               try {
                 await sendAdminQuestCompletedNotification(
                   { name: submission.questTitle, desc: submission.questDesc || '', xp: submission.questXp || 0 },
@@ -1207,12 +1219,18 @@ const UserPage = ({ onBack }) => {
           }
 
           // 2. Save confirmation to NocoDB (with image upload to attachments_gallery)
+          // Pass achievement due date and auto-approve flag for overdue check
           try {
+            // Find the achievement to get its due date
+            const achievement = allAchievements.find(a => a.id === submission.achievementId);
+            
             const achConfirmResult = await saveAchievementConfirmation({
               achievementId: submission.achievementId,
               achievementName: submission.achievementTitle,
               desc: submission.description || '',
-              imageFile: submission.image // Pass the File object directly
+              imageFile: submission.image, // Pass the File object directly
+              achievementDueDate: achievement?.dueDate, // Pass achievement due date for overdue check
+              autoApprove: autoApproveTasks // Pass auto-approve flag
             });
 
             // Optimistically update UI - add confirmation to state immediately
@@ -1225,7 +1243,8 @@ const UserPage = ({ onBack }) => {
                   desc: submission.description || '', 
                   imageUrl: null, // Image URL will be available after fetch
                   achievementsId: submission.achievementId,
-                  createdAt: new Date() 
+                  createdAt: new Date(),
+                  status: achConfirmResult.autoApproved ? 'completed' : 'pending'
                 }];
               });
               console.log('✅ Achievement confirmation added to UI state');
@@ -1233,7 +1252,8 @@ const UserPage = ({ onBack }) => {
 
             // Persist across blocks to evaluate after admin notify
             let xpResult = null;
-            if (autoApproveTasks) {
+            // Only auto-complete if the confirmation was auto-approved (not overdue)
+            if (autoApproveTasks && achConfirmResult.shouldAutoComplete) {
               try {
                 await updateAchievement(submission.achievementId, { completedAt: new Date() }, CHARACTER_ID);
               } catch (e) { console.warn('⚠️ Auto-approve achievement update failed:', e.message); }
@@ -1264,6 +1284,10 @@ const UserPage = ({ onBack }) => {
               setAllAchievements(prev => prev.map(a => a.id === submission.achievementId ? { ...a, completedAt: new Date() } : a));
               setAvailableAchievements(prev => prev.filter(a => a.id !== submission.achievementId));
               didAutoApprove = true;
+              
+              console.log('✅ Achievement auto-approved and completed (within deadline)');
+            } else if (autoApproveTasks && !achConfirmResult.shouldAutoComplete) {
+              console.log('⚠️ Achievement marked as failed (overdue), auto-approve disabled');
             }
 
             // Send Discord notification for achievement submission
@@ -1295,8 +1319,8 @@ const UserPage = ({ onBack }) => {
               // Don't fail the entire submission if Discord fails
             }
 
-            // Then notify admin (only when auto-approve is ON) to ensure ordering
-            if (autoApproveTasks) {
+            // Then notify admin (only when auto-approve is ON and achievement was auto-completed) to ensure ordering
+            if (autoApproveTasks && achConfirmResult.shouldAutoComplete) {
               try {
                 await sendAdminAchievementCompletedNotification(
                   {

@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -15,7 +15,6 @@ import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, f
 
 // Write operations still using Firestore (need migration)
 import { 
-  setAutoApproveTasks, 
   saveAchievement, 
   // updateAchievement, // Commented out - using NocoDB version
   deleteAchievement, 
@@ -288,7 +287,7 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
     try {
       const next = !autoApprove;
-      await setAutoApproveTasks(next, CHARACTER_ID);
+      await updateAutoApproveTasks(next);
       setAutoApprove(next);
       setConfirmModal({
         isOpen: true,

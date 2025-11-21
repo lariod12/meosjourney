@@ -605,6 +605,45 @@ export const fetchQuestConfirmations = async () => {
 };
 
 /**
+ * Update config auto_approve_tasks field in NocoDB
+ * @param {boolean} enabled - Auto-approve enabled flag
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const updateAutoApproveTasks = async (enabled) => {
+  try {
+    // Get the config record ID (assuming single config record)
+    const configRecords = await nocoRequest(`${TABLE_IDS.CONFIG}/records`, {
+      method: 'GET',
+    });
+
+    if (!configRecords.list || configRecords.list.length === 0) {
+      throw new Error('No config record found');
+    }
+
+    const configId = configRecords.list[0].Id;
+
+    // Update the config record
+    const updatePayload = [{
+      Id: configId,
+      auto_approve_tasks: !!enabled
+    }];
+
+    console.log('🔍 Sending Config auto_approve_tasks PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.CONFIG}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Config auto_approve_tasks updated successfully in NocoDB:', response);
+    return { success: true, value: !!enabled };
+  } catch (error) {
+    console.error('❌ Error updating auto_approve_tasks in NocoDB:', error);
+    throw new Error(`Failed to update config: ${error.message}`);
+  }
+};
+
+/**
  * Update profile data in NocoDB
  * Only updates fields that have changed
  */
@@ -1637,6 +1676,78 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
 };
 
 /**
+ * Check if a quest is overdue (created before today in ICT timezone)
+ * @param {Date} createdAt - Quest creation date
+ * @returns {boolean} True if quest is overdue
+ */
+export const isQuestOverdue = (createdAt) => {
+  if (!createdAt) return false;
+
+  // Get today's date in ICT timezone (UTC+7)
+  const now = new Date();
+  const ictDateStr = now.toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false
+  });
+  const [month, day, year] = ictDateStr.split(', ')[0].split('/');
+  const todayICT = new Date(`${year}-${month}-${day}T00:00:00+07:00`);
+
+  // Convert createdAt to ICT timezone
+  const createdDate = new Date(createdAt);
+  const createdICTStr = createdDate.toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false
+  });
+  const [cMonth, cDay, cYear] = createdICTStr.split(', ')[0].split('/');
+  const createdICT = new Date(`${cYear}-${cMonth}-${cDay}T00:00:00+07:00`);
+
+  // Quest is overdue if created before today
+  return createdICT < todayICT;
+};
+
+/**
+ * Check if an achievement is overdue (past due date in ICT timezone)
+ * @param {Date} dueDate - Achievement due date
+ * @returns {boolean} True if achievement is overdue
+ */
+export const isAchievementOverdue = (dueDate) => {
+  if (!dueDate) return false;
+
+  // Get today's date in ICT timezone (UTC+7)
+  const now = new Date();
+  const ictDateStr = now.toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false
+  });
+  const [month, day, year] = ictDateStr.split(', ')[0].split('/');
+  const todayICT = new Date(`${year}-${month}-${day}T00:00:00+07:00`);
+
+  // Convert dueDate to ICT timezone
+  const dueDateObj = new Date(dueDate);
+  const dueICTStr = dueDateObj.toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false
+  });
+  const [dMonth, dDay, dYear] = dueICTStr.split(', ')[0].split('/');
+  const dueICT = new Date(`${dYear}-${dMonth}-${dDay}T00:00:00+07:00`);
+
+  // Achievement is overdue if due date is before today
+  return dueICT < todayICT;
+};
+
+/**
  * Save quest confirmation to NocoDB
  * Creates a new quest confirmation record and links it to the quest
  * If image is provided, uploads to attachments_gallery
@@ -1646,11 +1757,13 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
  * @param {string} confirmData.desc - Description
  * @param {File} confirmData.imageFile - Image file to upload (optional)
  * @param {string} confirmData.imgUrl - Legacy image URL (optional, for backward compatibility)
+ * @param {Date} confirmData.questCreatedAt - Quest creation date (for overdue check)
+ * @param {boolean} confirmData.autoApprove - Auto-approve flag from config
  * @returns {Promise<Object>} Result object with success status and confirmation ID
  */
 export const saveQuestConfirmation = async (confirmData) => {
   try {
-    const { questId, questName, desc, imageFile, imgUrl } = confirmData;
+    const { questId, questName, desc, imageFile, imgUrl, questCreatedAt, autoApprove } = confirmData;
 
     if (!questId) {
       return { success: false, message: 'Quest ID is required' };
@@ -1680,13 +1793,33 @@ export const saveQuestConfirmation = async (confirmData) => {
     // Format created_time with timezone offset
     const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
 
+    // Determine initial status based on auto-approve and overdue check
+    let initialStatus = 'pending';
+    let shouldAutoComplete = false;
+
+    if (autoApprove) {
+      // Check if quest is overdue (created before today)
+      const isOverdue = isQuestOverdue(questCreatedAt);
+      
+      if (isOverdue) {
+        // Quest is overdue - mark as failed, auto-approve is disabled
+        initialStatus = 'failed';
+        console.log('⚠️ Quest is overdue, marking as failed (auto-approve disabled)');
+      } else {
+        // Quest is within deadline - auto-approve as completed
+        initialStatus = 'completed';
+        shouldAutoComplete = true;
+        console.log('✅ Quest is within deadline, auto-approving as completed');
+      }
+    }
+
     const payload = {
       title: title,
       quest_name: questName || '',
       desc: desc || '',
       created_time: createdTime,
       quest: questId, // Link to quest record (1-1 relationship)
-      status: 'pending' // Set initial status as pending
+      status: initialStatus
     };
 
     console.log('🔍 Sending Quest Confirmation POST to NocoDB:', payload);
@@ -1728,6 +1861,8 @@ export const saveQuestConfirmation = async (confirmData) => {
       message: 'Quest confirmation saved',
       id: confirmationId,
       attachmentId: attachmentId,
+      shouldAutoComplete: shouldAutoComplete, // Flag to indicate if quest should be auto-completed
+      autoApproved: shouldAutoComplete,
       data: response
     };
   } catch (error) {
@@ -1899,11 +2034,13 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
  * @param {string} confirmData.achievementName - Achievement name
  * @param {string} confirmData.desc - Description
  * @param {File} confirmData.imageFile - Image file to upload (optional)
+ * @param {Date} confirmData.achievementDueDate - Achievement due date (for overdue check)
+ * @param {boolean} confirmData.autoApprove - Auto-approve flag from config
  * @returns {Promise<Object>} Result object with success status and confirmation ID
  */
 export const saveAchievementConfirmation = async (confirmData) => {
   try {
-    const { achievementId, achievementName, desc, imageFile } = confirmData;
+    const { achievementId, achievementName, desc, imageFile, achievementDueDate, autoApprove } = confirmData;
 
     if (!achievementId) {
       return { success: false, message: 'Achievement ID is required' };
@@ -1933,13 +2070,40 @@ export const saveAchievementConfirmation = async (confirmData) => {
     // Format created_time with timezone offset
     const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
 
+    // Determine initial status based on auto-approve and overdue check
+    let initialStatus = 'pending';
+    let shouldAutoComplete = false;
+
+    if (autoApprove) {
+      // Check if achievement has due date and is overdue
+      if (achievementDueDate) {
+        const isOverdue = isAchievementOverdue(achievementDueDate);
+        
+        if (isOverdue) {
+          // Achievement is overdue - mark as failed, auto-approve is disabled
+          initialStatus = 'failed';
+          console.log('⚠️ Achievement is overdue, marking as failed (auto-approve disabled)');
+        } else {
+          // Achievement is within deadline - auto-approve as completed
+          initialStatus = 'completed';
+          shouldAutoComplete = true;
+          console.log('✅ Achievement is within deadline, auto-approving as completed');
+        }
+      } else {
+        // No due date - auto-approve as completed
+        initialStatus = 'completed';
+        shouldAutoComplete = true;
+        console.log('✅ Achievement has no due date, auto-approving as completed');
+      }
+    }
+
     const payload = {
       title: title,
       achievement_name: achievementName || '',
       desc: desc || '',
       created_time: createdTime,
       achievements_id: achievementId, // Link to achievement record using FK field (1-1 relationship)
-      status: 'pending' // Set initial status as pending
+      status: initialStatus
     };
 
     console.log('🔍 Sending Achievement Confirmation POST to NocoDB:', payload);
@@ -1976,6 +2140,8 @@ export const saveAchievementConfirmation = async (confirmData) => {
       message: 'Achievement confirmation saved',
       id: confirmationId,
       attachmentId: attachmentId,
+      shouldAutoComplete: shouldAutoComplete, // Flag to indicate if achievement should be auto-completed
+      autoApproved: shouldAutoComplete,
       data: response
     };
   } catch (error) {
