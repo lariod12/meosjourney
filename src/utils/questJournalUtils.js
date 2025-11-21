@@ -2,7 +2,7 @@
  * Utility functions for creating journal entries from quest completions and status changes
  */
 
-import { saveJournal } from '../services/firestore';
+import { saveJournal } from '../services/nocodb';
 
 const extractLocalizedField = (value, fallback = '') => {
   if (!value && value !== 0) {
@@ -212,7 +212,7 @@ export const generateProfileChangeJournalEntry = (action, type, item) => {
   // Format: [Profile Update] Removed interest: Gaming
   const actionText = action === 'added' ? 'Added' : 'Removed';
   const typeText = type === 'skill' ? 'skill' : 'interest';
-  
+
   return `[Profile Update] ${actionText} ${typeText}: ${item}`;
 };
 

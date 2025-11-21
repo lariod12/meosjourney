@@ -36,6 +36,9 @@ jobs:
         run: pnpm install
 
       - name: Build
+        env:
+          VITE_NOCODB_BASE_URL: ${{ vars.VITE_NOCODB_BASE_URL }}
+          VITE_NOCODB_TOKEN: ${{ vars.VITE_NOCODB_TOKEN }}
         run: pnpm run build
 
       - name: Upload artifact

@@ -5,7 +5,9 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
-import { fetchConfig, setAutoApproveTasks, saveAchievement, fetchAchievements, updateAchievement, deleteAchievement, saveQuest, fetchQuests, updateQuest, deleteQuest, fetchQuestConfirmations, deleteQuestConfirmation, deleteQuestConfirmationById, fetchAchievementConfirmations, deleteAchievementConfirmation, deleteAchievementConfirmationById, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/firestore';
+import { LoadingDialog } from '../../components/common';
+
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, deleteQuest, deleteAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks, clearNocoDBCache, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/nocodb';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
@@ -19,6 +21,7 @@ const AdminPage = ({ onBack }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false); // Loading state for data
   const [activeTab, setActiveTab] = useState('create-achievement');
   const [autoApprove, setAutoApprove] = useState(false);
   const [achievements, setAchievements] = useState([]);
@@ -55,12 +58,25 @@ const AdminPage = ({ onBack }) => {
   });
 
   useEffect(() => {
-    fetchConfig(CHARACTER_ID)
-      .then(cfg => {
-        setCorrectPassword(cfg?.pwDailyUpdate || null);
-        setAutoApprove(!!cfg?.auto_approve_tasks);
-      })
-      .catch(() => setCorrectPassword(null));
+    // Load config from NocoDB
+    const loadConfig = async () => {
+      try {
+        const cfg = await fetchConfig();
+        if (cfg) {
+          setCorrectPassword(cfg.pwDailyUpdate || null);
+          setAutoApprove(!!cfg.autoApproveTasks);
+          console.log('✅ Admin config loaded from NocoDB');
+        } else {
+          setCorrectPassword(null);
+          console.warn('⚠️ No config found in NocoDB');
+        }
+      } catch (error) {
+        console.error('❌ Error loading config from NocoDB:', error);
+        setCorrectPassword(null);
+      }
+    };
+    
+    loadConfig();
   }, []);
 
   useEffect(() => {
@@ -75,37 +91,76 @@ const AdminPage = ({ onBack }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (activeTab === 'manage-achievements') {
-        loadAchievements();
-      } else if (activeTab === 'manage-quests') {
-        loadQuests();
-      }
+      loadAllData();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated]);
+
+  const loadAllData = async () => {
+    setDataLoading(true);
+    
+    try {
+      console.log('📥 Loading all data from NocoDB...');
+      // Load both quests and achievements in parallel
+      await Promise.all([
+        loadAchievements(),
+        loadQuests()
+      ]);
+      console.log('✅ All admin data loaded');
+    } catch (error) {
+      console.error('❌ Error loading admin data:', error);
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
   const loadAchievements = async () => {
     try {
+      console.log('📥 Loading achievements from NocoDB...');
       const [achievementsData, confirmationsData] = await Promise.all([
-        fetchAchievements(CHARACTER_ID),
-        fetchAchievementConfirmations(CHARACTER_ID)
+        fetchAchievements(),
+        fetchAchievementConfirmations()
       ]);
-      setAchievements(achievementsData);
+      
+      // Map achievements with status based on confirmation and completion
+      const achievementsWithStatus = achievementsData.map(achievement => {
+        let status = 'pending';
+        if (achievement.completedAt && achievement.hasConfirmation) {
+          status = 'completed';
+        } else if (achievement.hasConfirmation) {
+          status = 'pending_review';
+        }
+
+        return {
+          ...achievement,
+          status
+        };
+      });
+
+      setAchievements(achievementsWithStatus);
       setAchievementConfirmations(confirmationsData);
+      console.log(`✅ Loaded ${achievementsWithStatus.length} achievements, ${confirmationsData.length} confirmations`);
     } catch (error) {
-      console.error('Error loading achievements:', error);
+      console.error('❌ Error loading achievements:', error);
+      setAchievements([]);
+      setAchievementConfirmations([]);
     }
   };
 
   const loadQuests = async () => {
     try {
+      console.log('📥 Loading quests from NocoDB...');
       const [questsData, confirmationsData] = await Promise.all([
-        fetchQuests(CHARACTER_ID),
-        fetchQuestConfirmations(CHARACTER_ID)
+        fetchQuests(),
+        fetchQuestConfirmations()
       ]);
+      
       setQuests(questsData);
       setQuestConfirmations(confirmationsData);
+      console.log(`✅ Loaded ${questsData.length} quests, ${confirmationsData.length} confirmations`);
     } catch (error) {
-      console.error('Error loading quests:', error);
+      console.error('❌ Error loading quests:', error);
+      setQuests([]);
+      setQuestConfirmations([]);
     }
   };
 
@@ -117,13 +172,15 @@ const AdminPage = ({ onBack }) => {
     setIsRefreshing(true);
 
     try {
-      if (activeTab === 'manage-achievements' || activeTab === 'create-achievement') {
-        await loadAchievements();
-      }
+      // Clear cache first to force fresh data
+      clearCache();
+      clearNocoDBCache();
 
-      if (activeTab === 'manage-quests' || activeTab === 'create-quest') {
-        await loadQuests();
-      }
+      // Reload all data (both quests and achievements)
+      await Promise.all([
+        loadAchievements(),
+        loadQuests()
+      ]);
 
       // Show success notification
       setConfirmModal({
@@ -193,12 +250,30 @@ const AdminPage = ({ onBack }) => {
     if (onBack) onBack();
   };
 
+  // Helper function to convert date
+  const toDate = (dateValue) => {
+    if (!dateValue) return null;
+    
+    // Already a Date object
+    if (dateValue instanceof Date) {
+      return dateValue;
+    }
+    
+    // ISO string or other string format
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue);
+    }
+    
+    console.warn('Unknown date format:', dateValue);
+    return null;
+  };
+
   const handleToggleAutoApprove = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       const next = !autoApprove;
-      await setAutoApproveTasks(next, CHARACTER_ID);
+      await updateAutoApproveTasks(next);
       setAutoApprove(next);
       setConfirmModal({
         isOpen: true,
@@ -387,26 +462,35 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const specialRewardEn = formData.specialReward.trim();
-      const specialRewardVi = formData.specialRewardVi.trim();
-      const hasSpecialReward = specialRewardEn.length > 0 || specialRewardVi.length > 0;
-      const specialRewardTranslations = hasSpecialReward
-        ? { en: specialRewardEn, vi: specialRewardVi }
-        : null;
-
       const achievementData = {
-        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
-        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
-        icon: formData.icon.trim(),
+        nameEn: formData.name.trim(),
+        nameVi: formData.nameVi.trim(),
+        descEn: formData.desc.trim(),
+        descVi: formData.descVi.trim(),
+        icon: formData.icon.trim() || '🏆',
         xp: Number(formData.xp) || 0,
-        specialReward: specialRewardTranslations,
+        specialRewardEn: formData.specialReward?.trim() || '',
+        specialRewardVi: formData.specialRewardVi?.trim() || '',
         dueDate: formData.dueDate || null
       };
 
-      const result = await saveAchievement(achievementData, CHARACTER_ID);
+      console.log('🔍 Creating achievement with data:', achievementData);
+
+      const result = await createAchievement(achievementData);
 
       if (result.success) {
-        await sendAdminAchievementCreatedNotification({ ...achievementData, id: result.id });
+        // Prepare data for Discord notification (using old format for compatibility)
+        const notificationData = {
+          name: { en: achievementData.nameEn, vi: achievementData.nameVi },
+          desc: { en: achievementData.descEn, vi: achievementData.descVi },
+          specialReward: { en: achievementData.specialRewardEn, vi: achievementData.specialRewardVi },
+          icon: achievementData.icon,
+          xp: achievementData.xp,
+          id: result.data?.Id || result.data?.id
+        };
+
+        await sendAdminAchievementCreatedNotification(notificationData);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
@@ -423,6 +507,8 @@ const AdminPage = ({ onBack }) => {
           },
           onCancel: null
         });
+      } else {
+        throw new Error(result.message || 'Failed to create achievement');
       }
     } catch (error) {
       console.error('❌ Error creating achievement:', error);
@@ -446,15 +532,28 @@ const AdminPage = ({ onBack }) => {
 
     try {
       const questData = {
-        name: { en: formData.name.trim(), vi: formData.nameVi.trim() },
-        desc: { en: formData.desc.trim(), vi: formData.descVi.trim() },
-        xp: Number(formData.xp)
+        nameEn: formData.name.trim(),
+        nameVi: formData.nameVi.trim(),
+        descEn: formData.desc.trim(),
+        descVi: formData.descVi.trim(),
+        xp: Number(formData.xp) || 0
       };
 
-      const result = await saveQuest(questData, CHARACTER_ID);
+      console.log('🔍 Creating quest with data:', questData);
+
+      const result = await createQuest(questData);
 
       if (result.success) {
-        await sendAdminQuestCreatedNotification({ ...questData, id: result.id });
+        // Prepare data for Discord notification (using old format for compatibility)
+        const notificationData = {
+          name: { en: questData.nameEn, vi: questData.nameVi },
+          desc: { en: questData.descEn, vi: questData.descVi },
+          xp: questData.xp,
+          id: result.data?.Id || result.data?.id
+        };
+
+        await sendAdminQuestCreatedNotification(notificationData);
+
         setConfirmModal({
           isOpen: true,
           type: 'success',
@@ -471,6 +570,8 @@ const AdminPage = ({ onBack }) => {
           },
           onCancel: null
         });
+      } else {
+        throw new Error(result.message || 'Failed to create quest');
       }
     } catch (error) {
       console.error('❌ Error creating quest:', error);
@@ -516,7 +617,10 @@ const AdminPage = ({ onBack }) => {
     return null;
   }
 
-
+  // Show loading screen while data is being fetched
+  if (dataLoading) {
+    return <LoadingDialog />;
+  }
 
   const handleUpdate = async (achievementId) => {
     const nameEn = formData.name.trim();
@@ -732,7 +836,7 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imgUrl);
+            await deleteImageByUrl(conf.imageUrl);
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }
@@ -740,13 +844,13 @@ const AdminPage = ({ onBack }) => {
 
         if (conf) {
           try {
-            await deleteQuestConfirmationById(conf.id, CHARACTER_ID);
+            await deleteQuestConfirmation(conf.id);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
           }
         }
 
-        await deleteQuest(deleteTarget.id, CHARACTER_ID);
+        await deleteQuest(deleteTarget.id);
 
         setConfirmModal({
           isOpen: true,
@@ -766,7 +870,7 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imgUrl);
+            await deleteImageByUrl(conf.imageUrl);
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }
@@ -774,13 +878,13 @@ const AdminPage = ({ onBack }) => {
 
         if (conf) {
           try {
-            await deleteAchievementConfirmationById(conf.id, CHARACTER_ID);
+            await deleteAchievementConfirmation(conf.id);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
           }
         }
 
-        await deleteAchievement(deleteTarget.id, CHARACTER_ID);
+        await deleteAchievement(deleteTarget.id);
 
         setConfirmModal({
           isOpen: true,
@@ -819,68 +923,76 @@ const AdminPage = ({ onBack }) => {
     setDeleteTarget({ id: null, name: '', type: '' });
   };
 
-  // Helper function to get quest confirmation for a quest
-  const getQuestConfirmation = (questName) => {
-    // Sanitize quest name to match confirmation ID format
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
+  // Helper function to check if a daily quest is overdue (failed)
+  // Daily quest chỉ có hạn trong ngày được tạo - same logic as UserPage
+  const isQuestOverdue = (quest) => {
+    if (!quest.createdAt) {
+      return false;
+    }
 
-    // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    return questConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+    // Get today's date at midnight (00:00:00) for accurate date comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const createdDate = new Date(quest.createdAt.seconds ? quest.createdAt.seconds * 1000 : quest.createdAt);
+    createdDate.setHours(0, 0, 0, 0); // Reset to midnight for date-only comparison
+
+    // If created before today, it's overdue
+    return createdDate < today;
   };
 
-  // Get all confirmations for a quest (all dates)
-  const getQuestConfirmations = (questName) => {
-    const sanitizedName = questName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
+  // Helper function to get quest confirmation for a quest
+  // Get quest confirmation by quest ID (1-1 relationship in NocoDB)
+  // Only returns confirmation if quest has questsConfirmId link
+  const getQuestConfirmationByQuestId = (questId) => {
+    // Find the quest to get its linked confirmation ID
+    const quest = quests.find(q => q.id === questId);
+    if (!quest) return null;
+    
+    // NocoDB: Only check by the linked confirmation ID from quest.questsConfirmId
+    // If no link exists, return null (quest has no active confirmation)
+    if (!quest.questsConfirmId) {
+      return null;
+    }
+    
+    return questConfirmations.find(c => c.id === quest.questsConfirmId) || null;
+  };
 
-    // Find all confirmations that start with the sanitized quest name
-    return questConfirmations
-      .filter(c => c.id.startsWith(`${sanitizedName}_`))
-      .sort((a, b) => {
-        // Sort by date (newest first) - extract date from ID
-        const dateA = a.id.split('_').pop();
-        const dateB = b.id.split('_').pop();
-        return dateB.localeCompare(dateA);
-      });
+  const getQuestConfirmation = (questName) => {
+    // NocoDB: Match by quest name directly (case-insensitive)
+    const normalizedQuestName = questName.trim().toLowerCase();
+    return questConfirmations.find(c => 
+      c.name && c.name.trim().toLowerCase() === normalizedQuestName
+    );
+  };
+
+  // Get confirmation for a specific quest (1-1 relationship)
+  const getQuestConfirmations = (questId) => {
+    // NocoDB: Since it's 1-1 relationship, return array with single confirmation
+    const confirmation = getQuestConfirmationByQuestId(questId);
+    return confirmation ? [confirmation] : [];
+  };
+
+  // Get achievement confirmation by achievement ID (1-1 relationship in NocoDB)
+  const getAchievementConfirmationByAchievementId = (achievementId) => {
+    // NocoDB: Match by achievementsId field in confirmation record
+    return achievementConfirmations.find(c => c.achievementsId === achievementId);
   };
 
   // Helper function to get achievement confirmation for an achievement
   const getAchievementConfirmation = (achievementName) => {
-    // Sanitize achievement name to match confirmation ID format
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Look for ANY confirmation that starts with the sanitized name (not just today's)
-    return achievementConfirmations.find(c => c.id.startsWith(`${sanitizedName}_`));
+    // NocoDB: Match by achievement name directly (case-insensitive)
+    const normalizedAchievementName = achievementName.trim().toLowerCase();
+    return achievementConfirmations.find(c => 
+      c.achievementName && c.achievementName.trim().toLowerCase() === normalizedAchievementName
+    );
   };
 
-  // Get all confirmations for an achievement (all dates)
-  const getAchievementConfirmations = (achievementName) => {
-    const sanitizedName = achievementName.trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 50);
-
-    // Find all confirmations that start with the sanitized achievement name
-    return achievementConfirmations
-      .filter(c => c.id.startsWith(`${sanitizedName}_`))
-      .sort((a, b) => {
-        // Sort by date (newest first) - extract date from ID
-        const dateA = a.id.split('_').pop();
-        const dateB = b.id.split('_').pop();
-        return dateB.localeCompare(dateA);
-      });
+  // Get confirmation for a specific achievement (1-1 relationship)
+  const getAchievementConfirmations = (achievementId) => {
+    // NocoDB: Since it's 1-1 relationship, return array with single confirmation
+    const confirmation = getAchievementConfirmationByAchievementId(achievementId);
+    return confirmation ? [confirmation] : [];
   };
 
   const handleReviewQuest = (quest) => {
@@ -911,7 +1023,8 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getQuestConfirmation(quest.name);
+      // Get confirmation by quest ID (checks quest_confirm link)
+      const confirmation = getQuestConfirmationByQuestId(quest.id);
 
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
@@ -921,7 +1034,18 @@ const AdminPage = ({ onBack }) => {
       // Keep image and confirmation for record
       await updateQuest(quest.id, {
         completedAt: new Date()
-      }, CHARACTER_ID);
+      });
+
+      // Update quest confirmation status to 'completed'
+      if (confirmation?.id) {
+        try {
+          await updateQuestConfirmationStatus(confirmation.id, 'completed');
+          console.log('✅ Quest confirmation status updated to completed');
+        } catch (statusError) {
+          console.warn('⚠️ Could not update quest confirmation status:', statusError.message);
+          // Continue even if status update fails
+        }
+      }
 
       // Update profile XP
       let xpResult = null;
@@ -958,6 +1082,7 @@ const AdminPage = ({ onBack }) => {
 
       // Clear cache to force homepage refresh with new XP
       clearCache();
+      clearNocoDBCache();
 
       // Build success message with level up info if applicable
       let successMessage = `Quest "${quest.name}" has been marked as completed and added to journal!`;
@@ -1039,48 +1164,49 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getQuestConfirmation(quest.name);
+      // Get confirmation by quest ID (checks quest_confirm link)
+      const confirmation = getQuestConfirmationByQuestId(quest.id);
 
       if (!confirmation) {
         throw new Error('Quest confirmation not found');
       }
 
-      // 1. Delete image from Storage if exists
-      if (confirmation.imgUrl) {
-        try {
-          await deleteImageByUrl(confirmation.imgUrl);
-          console.log('✅ Image deleted from Storage');
-        } catch (imgError) {
-          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
-          // Continue even if image deletion fails
-        }
+      // Simply delete the quest confirmation record
+      // This will automatically unlink it from the quest
+      const result = await deleteQuestConfirmation(confirmation.id);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete quest confirmation');
       }
 
-      // 2. Delete quest confirmation from Firestore using the actual confirmation ID
-      await deleteQuestConfirmationById(confirmation.id, CHARACTER_ID);
+      console.log('✅ Quest confirmation deleted');
 
-      // Update local state immediately to remove confirmation and change button to Edit
+      // Update local state immediately for instant UI update
       setQuestConfirmations(prevConfirmations => 
-        prevConfirmations.filter(c => !c.id.startsWith(
-          quest.name.trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 50) + '_'
-        ))
+        prevConfirmations.filter(c => c.id !== confirmation.id)
       );
 
+      setQuests(prevQuests => 
+        prevQuests.map(q => 
+          q.id === quest.id 
+            ? { ...q, questsConfirmId: null }
+            : q
+        )
+      );
+
+      // Close review modal immediately after state update
+      setReviewingId(null);
+
+      // Show success message
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Quest Rejected',
-        message: `Quest confirmation for "${quest.name}" has been rejected and removed.`,
+        message: `Quest confirmation for "${quest.name}" has been rejected and deleted.`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
-          setReviewingId(null);
-          loadQuests(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -1105,7 +1231,8 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getAchievementConfirmation(achievement.name);
+      // Get confirmation by achievement ID (checks achievement_confirm link)
+      const confirmation = getAchievementConfirmationByAchievementId(achievement.id);
 
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
@@ -1115,7 +1242,18 @@ const AdminPage = ({ onBack }) => {
       // Keep image and confirmation for record
       await updateAchievement(achievement.id, {
         completedAt: new Date()
-      }, CHARACTER_ID);
+      });
+
+      // Update achievement confirmation status to 'completed'
+      if (confirmation?.id) {
+        try {
+          await updateAchievementConfirmationStatus(confirmation.id, 'completed');
+          console.log('✅ Achievement confirmation status updated to completed');
+        } catch (statusError) {
+          console.warn('⚠️ Could not update achievement confirmation status:', statusError.message);
+          // Continue even if status update fails
+        }
+      }
 
       // Update profile XP
       let xpResult = null;
@@ -1153,6 +1291,7 @@ const AdminPage = ({ onBack }) => {
 
       // Clear cache to force homepage refresh with new XP
       clearCache();
+      clearNocoDBCache();
 
       // Build success message with level up info if applicable
       let successMessage = `Achievement "${achievement.name}" has been marked as completed and added to journal!`;
@@ -1236,50 +1375,49 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getAchievementConfirmation(achievement.name);
+      // Get confirmation by achievement ID (checks achievement_confirm link)
+      const confirmation = getAchievementConfirmationByAchievementId(achievement.id);
 
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
       }
 
-      // 1. Delete image from Storage if exists
-      if (confirmation.imgUrl) {
-        try {
-          console.log('🗑️ Deleting achievement confirmation image...');
-          await deleteImageByUrl(confirmation.imgUrl);
-          console.log('✅ Image deleted from Storage');
-        } catch (imgError) {
-          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
-          // Continue even if image deletion fails
-        }
+      // Simply delete the achievement confirmation record
+      // This will automatically delete linked attachments from attachments_gallery
+      const result = await deleteAchievementConfirmation(confirmation.id);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete achievement confirmation');
       }
 
-      // 2. Delete achievement confirmation from Firestore using the actual confirmation ID
-      console.log('🗑️ Deleting achievement confirmation with ID:', confirmation.id);
-      await deleteAchievementConfirmationById(confirmation.id, CHARACTER_ID);
+      console.log('✅ Achievement confirmation deleted');
 
-      // Update local state immediately to remove confirmation and change button to Edit
+      // Update local state immediately for instant UI update
       setAchievementConfirmations(prevConfirmations => 
-        prevConfirmations.filter(c => !c.id.startsWith(
-          achievement.name.trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 50) + '_'
-        ))
+        prevConfirmations.filter(c => c.id !== confirmation.id)
       );
 
+      setAchievements(prevAchievements => 
+        prevAchievements.map(a => 
+          a.id === achievement.id 
+            ? { ...a, achievementConfirmId: null, hasConfirmation: false }
+            : a
+        )
+      );
+
+      // Close review modal immediately after state update
+      setReviewingId(null);
+
+      // Show success message
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Achievement Rejected',
-        message: `Achievement confirmation for "${achievement.name}" has been rejected and removed.`,
+        message: `Achievement confirmation for "${achievement.name}" has been rejected and deleted.`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
-          setReviewingId(null);
-          loadAchievements(); // Still reload to ensure data consistency
         },
         onCancel: null
       });
@@ -1640,10 +1778,22 @@ const AdminPage = ({ onBack }) => {
                 const isEditing = editingId === achievement.id;
                 const isReviewing = reviewingId === achievement.id;
                 const isViewing = viewingId === achievement.id;
-                const confirmation = getAchievementConfirmation(achievement.name);
-                const hasConfirmation = !!confirmation;
+                // Use achievementConfirmId to check if has confirmation (more reliable than name matching)
+                const hasConfirmation = achievement.achievementConfirmId !== null && achievement.achievementConfirmId !== undefined;
+                const confirmation = hasConfirmation ? getAchievementConfirmationByAchievementId(achievement.id) : null;
                 const isCompleted = achievement.completedAt !== null;
-                const allConfirmations = getAchievementConfirmations(achievement.name);
+                const allConfirmations = getAchievementConfirmations(achievement.id); // Use achievement.id for 1-1 relationship
+                
+                // Debug log
+                console.log('🔍 Achievement row:', {
+                  id: achievement.id,
+                  name: achievement.name,
+                  completedAt: achievement.completedAt,
+                  isCompleted,
+                  hasConfirmation,
+                  achievementConfirmId: achievement.achievementConfirmId,
+                  confirmation
+                });
 
                 return (
                   <div key={achievement.id} className="achievement-row">
@@ -1665,12 +1815,18 @@ const AdminPage = ({ onBack }) => {
                             <div className="quest-details">
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
-                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {
+                                isCompleted && hasConfirmation 
+                                  ? '✅ Completed' 
+                                  : hasConfirmation 
+                                    ? '⏳ Pending Review' 
+                                    : '⏳ Pending'
+                              }</span>
                               {achievement.createdAt && (
-                                <span>Created: {new Date(achievement.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Created: {toDate(achievement.createdAt).toLocaleDateString('vi-VN')}</span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(achievement.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -1690,11 +1846,16 @@ const AdminPage = ({ onBack }) => {
                               <div className="confirmations-list">
                                 {allConfirmations.map((conf, index) => {
                                   // Extract date from ID (format: name_YYMMDD)
-                                  const datePart = conf.id.split('_').pop();
-                                  const year = '20' + datePart.substring(0, 2);
-                                  const month = datePart.substring(2, 4);
-                                  const day = datePart.substring(4, 6);
-                                  const dateStr = `${day}/${month}/${year}`;
+                                  let dateStr = 'Unknown Date';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? conf.createdAt.toDate() : new Date(conf.createdAt);
+                                      const day = String(createdDate.getDate()).padStart(2, '0');
+                                      const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+                                      const year = createdDate.getFullYear();
+                                      dateStr = `${day}/${month}/${year}`;
+                                    } catch (e) { console.error('Error parsing date:', e); }
+                                  }
 
                                   // Format createdAt timestamp
                                   let createdAtStr = '';
@@ -1717,10 +1878,6 @@ const AdminPage = ({ onBack }) => {
 
                                   return (
                                     <div key={conf.id} className="confirmation-item">
-                                      <div className="confirmation-header">
-                                        <span className="confirmation-date">📅 {dateStr}</span>
-                                        <span className="confirmation-id">{conf.id}</span>
-                                      </div>
                                       {createdAtStr && (
                                         <div className="confirmation-created">
                                           <span className="created-label">Submitted at:</span>
@@ -1733,9 +1890,9 @@ const AdminPage = ({ onBack }) => {
                                           <p>{conf.desc}</p>
                                         </div>
                                       )}
-                                      {conf.imgUrl && (
+                                      {conf.imageUrl && (
                                         <div className="confirmation-image">
-                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                          <img src={conf.imageUrl} alt="Confirmation" />
                                         </div>
                                       )}
                                     </div>
@@ -1771,12 +1928,12 @@ const AdminPage = ({ onBack }) => {
                                 <p className="confirmation-desc">{confirmation.desc || 'No description provided'}</p>
                               </div>
 
-                              {confirmation.imgUrl && (
+                              {confirmation.imageUrl && (
                                 <div className="form-group">
                                   <label>Attached Image:</label>
                                   <div className="confirmation-image-container">
                                     <img
-                                      src={confirmation.imgUrl}
+                                      src={confirmation.imageUrl}
                                       alt="Achievement confirmation"
                                       className="confirmation-image"
                                     />
@@ -1940,11 +2097,25 @@ const AdminPage = ({ onBack }) => {
                             <div className="achievement-details">
                               {achievement.xp > 0 && <span>XP: {achievement.xp}</span>}
                               {achievement.specialReward && <span>Reward: {achievement.specialReward}</span>}
-                              {achievement.dueDate && <span>Due: {achievement.dueDate}</span>}
-                              <span>Status: {achievement.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              {achievement.dueDate && (
+                                <span>Due: {new Date(achievement.dueDate).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
+                              )}
+                              <span>Status: {
+                                achievement.completedAt && hasConfirmation 
+                                  ? '✅ Completed' 
+                                  : hasConfirmation 
+                                    ? '⏳ Pending Review' 
+                                    : '⏳ Pending'
+                              }</span>
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
-                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
@@ -1954,7 +2125,7 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {achievement.completedAt && (
-                                <span>Completed: {new Date(achievement.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(achievement.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2015,11 +2186,12 @@ const AdminPage = ({ onBack }) => {
             <div className="quests-table">
               {quests
                 .sort((a, b) => {
-                  // Get confirmation status for both quests
-                  const aConfirmation = getQuestConfirmation(a.name);
-                  const bConfirmation = getQuestConfirmation(b.name);
-                  const aHasReview = !!aConfirmation && !a.completedAt;
-                  const bHasReview = !!bConfirmation && !b.completedAt;
+                  // Get confirmation status for both quests using quest ID (checks quest_confirm link)
+                  const aConfirmation = getQuestConfirmationByQuestId(a.id);
+                  const bConfirmation = getQuestConfirmationByQuestId(b.id);
+                  // Only show review if confirmation exists, not completed, and not failed
+                  const aHasReview = !!aConfirmation && !a.completedAt && aConfirmation.status !== 'failed';
+                  const bHasReview = !!bConfirmation && !b.completedAt && bConfirmation.status !== 'failed';
                   
                   // Items with Review status go to top
                   if (aHasReview && !bHasReview) return -1;
@@ -2032,10 +2204,13 @@ const AdminPage = ({ onBack }) => {
                 const isEditing = editingId === quest.id;
                 const isReviewing = reviewingId === quest.id;
                 const isViewing = viewingId === quest.id;
-                const confirmation = getQuestConfirmation(quest.name);
-                const hasConfirmation = !!confirmation;
+                // Get confirmation by quest ID (checks quest_confirm link in quest table)
+                const confirmation = getQuestConfirmationByQuestId(quest.id);
+                // Only consider as having confirmation if linked and status is not 'failed'
+                const hasConfirmation = !!confirmation && confirmation.status !== 'failed';
                 const isCompleted = quest.completedAt !== null;
-                const allConfirmations = getQuestConfirmations(quest.name);
+                const isFailed = !isCompleted && isQuestOverdue(quest); // Check if quest is overdue and not completed
+                const allConfirmations = getQuestConfirmations(quest.id); // Use quest.id for 1-1 relationship
 
                 return (
                   <div key={quest.id} className="quest-row">
@@ -2054,12 +2229,24 @@ const AdminPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {isCompleted ? '✅ Completed' : '⏳ Pending'}</span>
+                              <span>Status: {
+                                isCompleted 
+                                  ? '✅ Completed' 
+                                  : isFailed 
+                                    ? '❌ Failed' 
+                                    : '⏳ Pending'
+                              }</span>
                               {quest.createdAt && (
-                                <span>Created: {new Date(quest.createdAt.seconds * 1000).toLocaleDateString('vi-VN')}</span>
+                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}</span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(quest.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2079,11 +2266,16 @@ const AdminPage = ({ onBack }) => {
                               <div className="confirmations-list">
                                 {allConfirmations.map((conf, index) => {
                                   // Extract date from ID (format: name_YYMMDD)
-                                  const datePart = conf.id.split('_').pop();
-                                  const year = '20' + datePart.substring(0, 2);
-                                  const month = datePart.substring(2, 4);
-                                  const day = datePart.substring(4, 6);
-                                  const dateStr = `${day}/${month}/${year}`;
+                                  let dateStr = 'Unknown Date';
+                                  if (conf.createdAt) {
+                                    try {
+                                      const createdDate = conf.createdAt.toDate ? conf.createdAt.toDate() : new Date(conf.createdAt);
+                                      const day = String(createdDate.getDate()).padStart(2, '0');
+                                      const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+                                      const year = createdDate.getFullYear();
+                                      dateStr = `${day}/${month}/${year}`;
+                                    } catch (e) { console.error('Error parsing date:', e); }
+                                  }
 
                                   // Format createdAt timestamp
                                   let createdAtStr = '';
@@ -2106,10 +2298,6 @@ const AdminPage = ({ onBack }) => {
 
                                   return (
                                     <div key={conf.id} className="confirmation-item">
-                                      <div className="confirmation-header">
-                                        <span className="confirmation-date">📅 {dateStr}</span>
-                                        <span className="confirmation-id">{conf.id}</span>
-                                      </div>
                                       {createdAtStr && (
                                         <div className="confirmation-created">
                                           <span className="created-label">Submitted at:</span>
@@ -2122,9 +2310,9 @@ const AdminPage = ({ onBack }) => {
                                           <p>{conf.desc}</p>
                                         </div>
                                       )}
-                                      {conf.imgUrl && (
+                                      {conf.imageUrl && (
                                         <div className="confirmation-image">
-                                          <img src={conf.imgUrl} alt="Confirmation" />
+                                          <img src={conf.imageUrl} alt="Confirmation" />
                                         </div>
                                       )}
                                     </div>
@@ -2288,10 +2476,25 @@ const AdminPage = ({ onBack }) => {
                             {quest.desc && <p className="quest-desc">{quest.desc}</p>}
                             <div className="quest-details">
                               <span>XP: {quest.xp}</span>
-                              <span>Status: {quest.completedAt !== null ? '✅ Completed' : (hasConfirmation ? '⏳ Pending' : '⏳ Pending')}</span>
+                              <span>Status: {
+                                isCompleted 
+                                  ? '✅ Completed' 
+                                  : isFailed 
+                                    ? '❌ Failed' 
+                                    : hasConfirmation 
+                                      ? '⏳ Pending Review' 
+                                      : '⏳ Pending'
+                              }</span>
+                              {quest.createdAt && (
+                                <span>Created: {toDate(quest.createdAt).toLocaleDateString('vi-VN', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric'
+                                })}</span>
+                              )}
                               {hasConfirmation && confirmation?.createdAt && (
                                 <span className="submission-date">
-                                  📅 Submitted: {new Date(confirmation.createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                  📅 Submitted: {toDate(confirmation.createdAt).toLocaleDateString('vi-VN', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
@@ -2301,7 +2504,7 @@ const AdminPage = ({ onBack }) => {
                                 </span>
                               )}
                               {quest.completedAt && (
-                                <span>Completed: {new Date(quest.completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
+                                <span>Completed: {toDate(quest.completedAt).toLocaleDateString('vi-VN', {
                                   day: '2-digit',
                                   month: '2-digit',
                                   year: 'numeric',
@@ -2378,3 +2581,6 @@ const AdminPage = ({ onBack }) => {
 };
 
 export default AdminPage;
+
+
+

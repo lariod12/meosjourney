@@ -447,18 +447,6 @@ body {
    Profile Update Section
    ======================================== */
 
-.userpage-loading-message {
-    font-family: 'Playfair Display', serif;
-    font-size: 16px;
-    color: #666666;
-    text-align: center;
-    padding: 20px;
-    font-style: italic;
-    background-color: #f9f9f9;
-    border: 2px dashed #cccccc;
-    margin-bottom: 20px;
-}
-
 .userpage-skill-input-section {
     display: flex;
     gap: 10px;

@@ -35,9 +35,9 @@ const StatusBox = () => {
           <div className="status-mood">
             <span className="status-label">{t('status.mood')}</span>
             <span>
-              {Array.isArray(data.status.moods)
-                ? (data.status.moods[0] || '')
-                : (data.status.moods || '')}
+              {Array.isArray(data.status.mood)
+                ? (data.status.mood[0] || '')
+                : (data.status.mood || '')}
             </span>
           </div>
           <div className="status-time">
@@ -77,8 +77,8 @@ const StatusBox = () => {
       content: (
         <div className="hobbies-content">
           <div className="tags-container">
-            {data.interests.map((interest, index) => (
-              <span key={index} className="tag">{interest.name}</span>
+            {data.hobbies.map((hobby, index) => (
+              <span key={index} className="tag">{hobby.name}</span>
             ))}
           </div>
         </div>

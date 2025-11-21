@@ -24,19 +24,14 @@ export const getTodayRange = () => {
 
 /**
  * Check if a timestamp is from today (Vietnam timezone)
- * @param {Date|Timestamp} timestamp - Firestore Timestamp or Date object
+ * @param {Date|string|number} timestamp - Date object, ISO string, or timestamp
  * @returns {boolean}
  */
 export const isToday = (timestamp) => {
   if (!timestamp) return false;
   
-  // Convert Firestore Timestamp to Date
-  let date = timestamp;
-  if (typeof timestamp.toDate === 'function') {
-    date = timestamp.toDate();
-  } else if (!(timestamp instanceof Date)) {
-    date = new Date(timestamp);
-  }
+  // Convert to Date if needed
+  let date = timestamp instanceof Date ? timestamp : new Date(timestamp);
   
   const { startOfDay, endOfDay } = getTodayRange();
   
