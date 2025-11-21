@@ -5,9 +5,10 @@ import DeleteConfirmModal from '../../components/DeleteConfirmModal/DeleteConfir
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
+import { LoadingDialog } from '../../components/common';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks, clearNocoDBCache } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -41,6 +42,7 @@ const AdminPage = ({ onBack }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false); // Loading state for data
   const [activeTab, setActiveTab] = useState('create-achievement');
   const [autoApprove, setAutoApprove] = useState(false);
   const [achievements, setAchievements] = useState([]);
@@ -110,13 +112,27 @@ const AdminPage = ({ onBack }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (activeTab === 'manage-achievements') {
-        loadAchievements();
-      } else if (activeTab === 'manage-quests') {
-        loadQuests();
-      }
+      loadAllData();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated]);
+
+  const loadAllData = async () => {
+    setDataLoading(true);
+    
+    try {
+      console.log('📥 Loading all data from NocoDB...');
+      // Load both quests and achievements in parallel
+      await Promise.all([
+        loadAchievements(),
+        loadQuests()
+      ]);
+      console.log('✅ All admin data loaded');
+    } catch (error) {
+      console.error('❌ Error loading admin data:', error);
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
   const loadAchievements = async () => {
     try {
@@ -128,10 +144,6 @@ const AdminPage = ({ onBack }) => {
       
       // Map achievements with status based on confirmation and completion
       const achievementsWithStatus = achievementsData.map(achievement => {
-        // Status logic:
-        // - Completed: has both completed_time AND achievement_confirm
-        // - Pending Review: has achievement_confirm but no completed_time
-        // - Pending: no achievement_confirm
         let status = 'pending';
         if (achievement.completedAt && achievement.hasConfirmation) {
           status = 'completed';
@@ -147,7 +159,7 @@ const AdminPage = ({ onBack }) => {
 
       setAchievements(achievementsWithStatus);
       setAchievementConfirmations(confirmationsData);
-      console.log(`✅ Loaded ${achievementsWithStatus.length} achievements and ${confirmationsData.length} confirmations`);
+      console.log(`✅ Loaded ${achievementsWithStatus.length} achievements, ${confirmationsData.length} confirmations`);
     } catch (error) {
       console.error('❌ Error loading achievements:', error);
       setAchievements([]);
@@ -157,19 +169,17 @@ const AdminPage = ({ onBack }) => {
 
   const loadQuests = async () => {
     try {
-      // Load quests and confirmations from NocoDB sequentially to avoid rate limiting
-      const questsData = await fetchQuests();
-      const confirmationsData = await fetchQuestConfirmations();
+      console.log('📥 Loading quests from NocoDB...');
+      const [questsData, confirmationsData] = await Promise.all([
+        fetchQuests(),
+        fetchQuestConfirmations()
+      ]);
       
       setQuests(questsData);
       setQuestConfirmations(confirmationsData);
-      console.log('✅ Quests loaded from NocoDB:', {
-        quests: questsData.length,
-        confirmations: confirmationsData.length
-      });
+      console.log(`✅ Loaded ${questsData.length} quests, ${confirmationsData.length} confirmations`);
     } catch (error) {
-      console.error('❌ Error loading quests from NocoDB:', error);
-      // Set empty data on error
+      console.error('❌ Error loading quests:', error);
       setQuests([]);
       setQuestConfirmations([]);
     }
@@ -183,13 +193,15 @@ const AdminPage = ({ onBack }) => {
     setIsRefreshing(true);
 
     try {
-      if (activeTab === 'manage-achievements' || activeTab === 'create-achievement') {
-        await loadAchievements();
-      }
+      // Clear cache first to force fresh data
+      clearCache();
+      clearNocoDBCache();
 
-      if (activeTab === 'manage-quests' || activeTab === 'create-quest') {
-        await loadQuests();
-      }
+      // Reload all data (both quests and achievements)
+      await Promise.all([
+        loadAchievements(),
+        loadQuests()
+      ]);
 
       // Show success notification
       setConfirmModal({
@@ -631,7 +643,10 @@ const AdminPage = ({ onBack }) => {
     return null;
   }
 
-
+  // Show loading screen while data is being fetched
+  if (dataLoading) {
+    return <LoadingDialog />;
+  }
 
   const handleUpdate = async (achievementId) => {
     const nameEn = formData.name.trim();
@@ -1093,6 +1108,7 @@ const AdminPage = ({ onBack }) => {
 
       // Clear cache to force homepage refresh with new XP
       clearCache();
+      clearNocoDBCache();
 
       // Build success message with level up info if applicable
       let successMessage = `Quest "${quest.name}" has been marked as completed and added to journal!`;
@@ -1301,6 +1317,7 @@ const AdminPage = ({ onBack }) => {
 
       // Clear cache to force homepage refresh with new XP
       clearCache();
+      clearNocoDBCache();
 
       // Build success message with level up info if applicable
       let successMessage = `Achievement "${achievement.name}" has been marked as completed and added to journal!`;
