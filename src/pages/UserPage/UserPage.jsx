@@ -245,12 +245,6 @@ const UserPage = ({ onBack }) => {
 
   // Debug: Log formData changes
   useEffect(() => {
-    console.log('🔄 FormData updated:', {
-      doing: formData.doing,
-      location: formData.location,
-      mood: formData.mood,
-      caption: formData.caption
-    });
   }, [formData.doing, formData.location, formData.mood, formData.caption]);
 
   useEffect(() => {
