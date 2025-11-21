@@ -1072,28 +1072,13 @@ const UserPage = ({ onBack }) => {
             }
           }
 
-          // 2. Upload new image to Storage if exists (non-blocking)
-          if (submission.image) {
-            try {
-              const uploadResult = await uploadQuestConfirmImage(
-                submission.image,
-                submission.questTitle
-              );
-              imgUrl = uploadResult.url;
-            } catch (uploadError) {
-              console.warn('⚠️ Image upload failed, saving without image:', uploadError.message);
-              uploadWarning = ' (image upload failed)';
-              // Continue to save data without image
-            }
-          }
-
-          // 3. Save confirmation to quests-confirm collection (will override if exists)
+          // 2. Save confirmation to NocoDB (with image upload to attachments_gallery)
           try {
             const questConfirmResult = await saveQuestConfirmation({
               questId: submission.questId,
               questName: submission.questTitle,
               desc: submission.description || '',
-              imgUrl: imgUrl
+              imageFile: submission.image // Pass the File object directly
             });
 
             // Optimistically update UI - add confirmation to state immediately

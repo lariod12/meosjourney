@@ -1345,18 +1345,127 @@ export const updateQuest = async (questId, updates) => {
 };
 
 /**
+ * Upload image to attachments_gallery and link to quest_confirm
+ * @param {File} imageFile - Image file to upload
+ * @param {string} title - Title for the attachment record
+ * @param {string} questConfirmId - Quest confirmation ID to link to
+ * @returns {Promise<Object>} Result with attachment gallery ID
+ */
+export const uploadQuestConfirmationImage = async (imageFile, title, questConfirmId) => {
+  try {
+    if (!imageFile || !title) {
+      return { success: false, message: 'Image file and title are required' };
+    }
+
+    // Step 1: Create the attachment gallery record with only title
+    const recordPayload = {
+      title: title
+    };
+
+    console.log('🔍 Creating attachment gallery record:', recordPayload);
+
+    const recordResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'POST',
+      body: JSON.stringify(recordPayload)
+    });
+
+    const attachmentId = recordResponse.Id || (recordResponse.list && recordResponse.list[0]?.Id);
+
+    if (!attachmentId) {
+      throw new Error('Failed to create attachment gallery record');
+    }
+
+    console.log('✅ Attachment gallery record created:', attachmentId);
+
+    // Step 2: Upload the image to img_bw column using NocoDB storage API
+    // NocoDB file upload endpoint: /api/v2/tables/{tableId}/columns/{columnId}
+    const formData = new FormData();
+    formData.append('file', imageFile);
+
+    // Upload to NocoDB storage first
+    const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
+    
+    const storageResponse = await fetch(storageUploadUrl, {
+      method: 'POST',
+      headers: {
+        'xc-token': NOCODB_TOKEN,
+      },
+      body: formData
+    });
+
+    if (!storageResponse.ok) {
+      const errorText = await storageResponse.text();
+      throw new Error(`Storage upload failed: ${storageResponse.status} - ${errorText}`);
+    }
+
+    const storageResult = await storageResponse.json();
+    console.log('✅ Image uploaded to NocoDB storage:', storageResult);
+
+    // Step 3: Update the record with the uploaded file info
+    const updatePayload = [{
+      Id: attachmentId,
+      img_bw: storageResult // NocoDB returns array of file objects
+    }];
+
+    console.log('🔍 Updating record with image:', updatePayload);
+
+    await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Record updated with image');
+
+    // Step 4: Link the attachment to quest_confirm if ID provided
+    if (questConfirmId) {
+      // Try using the foreign key field directly instead of the link field
+      const linkPayload = [{
+        Id: attachmentId,
+        quests_confirm_id: questConfirmId // Use foreign key field name
+      }];
+
+      console.log('🔍 Linking attachment to quest_confirm (using FK):', linkPayload);
+
+      const linkResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+        method: 'PATCH',
+        body: JSON.stringify(linkPayload)
+      });
+
+      console.log('✅ Attachment linked to quest_confirm. Response:', linkResponse);
+      
+      // Verify the link was created
+      const verifyResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records/${attachmentId}`, {
+        method: 'GET'
+      });
+      console.log('🔍 Verify attachment record after FK link:', verifyResponse);
+    }
+
+    return {
+      success: true,
+      attachmentId: attachmentId,
+      data: storageResult
+    };
+  } catch (error) {
+    console.error('❌ Error uploading quest confirmation image:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Save quest confirmation to NocoDB
  * Creates a new quest confirmation record and links it to the quest
+ * If image is provided, uploads to attachments_gallery
  * @param {Object} confirmData - Confirmation data
  * @param {string} confirmData.questId - Quest ID to link to
  * @param {string} confirmData.questName - Quest name
  * @param {string} confirmData.desc - Description
- * @param {string} confirmData.imgUrl - Image URL (optional)
+ * @param {File} confirmData.imageFile - Image file to upload (optional)
+ * @param {string} confirmData.imgUrl - Legacy image URL (optional, for backward compatibility)
  * @returns {Promise<Object>} Result object with success status and confirmation ID
  */
 export const saveQuestConfirmation = async (confirmData) => {
   try {
-    const { questId, questName, desc, imgUrl } = confirmData;
+    const { questId, questName, desc, imageFile, imgUrl } = confirmData;
 
     if (!questId) {
       return { success: false, message: 'Quest ID is required' };
@@ -1395,11 +1504,6 @@ export const saveQuestConfirmation = async (confirmData) => {
       status: 'pending' // Set initial status as pending
     };
 
-    // Add image URL if provided
-    if (imgUrl) {
-      payload.quest_img = imgUrl;
-    }
-
     console.log('🔍 Sending Quest Confirmation POST to NocoDB:', payload);
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
@@ -1412,10 +1516,33 @@ export const saveQuestConfirmation = async (confirmData) => {
     // Extract the confirmation ID from response
     const confirmationId = response.Id || (response.list && response.list[0]?.Id);
 
+    // Upload image to attachments_gallery if provided
+    let attachmentId = null;
+    if (imageFile && confirmationId) {
+      try {
+        const uploadResult = await uploadQuestConfirmationImage(imageFile, title, confirmationId);
+        if (uploadResult.success) {
+          attachmentId = uploadResult.attachmentId;
+          console.log('✅ Image uploaded and linked to quest confirmation');
+          
+          // Note: In NocoDB one-to-one relationship with belongs-to side,
+          // we only need to update the belongs-to side (attachments_gallery.quest_confirm)
+          // The other side (quests_confirm.quest_img) will be automatically linked
+          console.log('ℹ️ One-to-one link established from belongs-to side (attachments_gallery)');
+        } else {
+          console.warn('⚠️ Image upload failed:', uploadResult.message);
+        }
+      } catch (uploadError) {
+        console.warn('⚠️ Image upload failed:', uploadError.message);
+        // Continue without image
+      }
+    }
+
     return {
       success: true,
       message: 'Quest confirmation saved',
       id: confirmationId,
+      attachmentId: attachmentId,
       data: response
     };
   } catch (error) {
