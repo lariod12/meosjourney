@@ -271,6 +271,7 @@ export const fetchProfile = async () => {
       }
 
       // Use API in production
+      // Step 1: Fetch profile record
       const data = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
         method: 'GET',
       });
@@ -281,6 +282,36 @@ export const fetchProfile = async () => {
       }
 
       const profileRecord = data.list[0];
+
+      // Step 2: Fetch avatar image from attachments_gallery (if linked)
+      let avatarUrl = null;
+      try {
+        const attachmentsData = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
+          { method: 'GET' }
+        );
+
+        if (attachmentsData.list && attachmentsData.list.length > 0) {
+          const attachment = attachmentsData.list[0];
+          
+          if (attachment.img_bw) {
+            // Parse img_bw if it's a string (NocoDB returns it as JSON string)
+            let imgBwArray = attachment.img_bw;
+            if (typeof imgBwArray === 'string') {
+              imgBwArray = JSON.parse(imgBwArray);
+            }
+            
+            // Get first image from array
+            if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
+              const imgBw = imgBwArray[0];
+              // Prefer signedUrl for S3 access, fallback to url
+              avatarUrl = imgBw.signedUrl || imgBw.url || null;
+            }
+          }
+        }
+      } catch (avatarError) {
+        console.warn('⚠️ Failed to fetch avatar image:', avatarError);
+      }
 
       // Parse JSON fields
       // Note: 'interests' field renamed to 'hobbies' in NocoDB
@@ -318,6 +349,7 @@ export const fetchProfile = async () => {
         skills: skills,
         introduce: profileRecord.introduce || '',
         social: socialLinks,
+        avatarUrl: avatarUrl, // Add avatar URL
         createdAt: profileRecord.CreatedAt,
         updatedAt: profileRecord.UpdatedAt
       };

@@ -4,6 +4,7 @@ export const characterData = {
     level: 0,
     currentXP: 0,
     maxXP: 1000,
+    avatarUrl: null, // Will be loaded from NocoDB (profile -> avatar_img -> img_bw)
     
     skills: [
         { name: "Photoshop" },

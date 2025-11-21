@@ -12,7 +12,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { data, loading } = useCharacterData(characterData);
 
-  // Show loading dialog while fetching data
+  // Show loading dialog while fetching data (includes avatar)
   if (loading) {
     return <LoadingDialog />;
   }

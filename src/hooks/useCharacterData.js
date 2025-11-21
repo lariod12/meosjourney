@@ -60,6 +60,8 @@ export const useCharacterData = (defaultData) => {
           skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
           // Social links
           social: profile?.social || defaultData.social || {},
+          // Avatar URL from NocoDB
+          avatarUrl: profile?.avatarUrl || null,
           
           // Status data
           status: {
