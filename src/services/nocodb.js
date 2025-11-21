@@ -42,7 +42,6 @@ const CACHE_DURATION = 60000; // 60 seconds (1 minute) - increased to reduce API
 const getCachedRequest = (key) => {
   const cached = requestCache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log(`📦 Using cached data for: ${key}`);
     return cached.data;
   }
   return null;
@@ -141,7 +140,6 @@ export const clearNocoDBCache = () => {
  */
 export const clearCachedRequest = (key) => {
   requestCache.delete(key);
-  console.log(`🗑️ Cleared cache for: ${key}`);
 };
 
 /**
@@ -762,7 +760,6 @@ export const updateProfile = async (profileData, oldProfileData) => {
     }
 
     if (!hasChanges) {
-      console.log('ℹ️ No profile changes detected');
       return { success: true, message: 'No changes to save' };
     }
 
@@ -777,20 +774,16 @@ export const updateProfile = async (profileData, oldProfileData) => {
 
     const profileId = profileRecords.list[0].Id;
 
-    // Debug: Log the update payload
+    // Update the profile record
     const updatePayload = [{
       Id: profileId,
       ...updates
     }];
-    console.log('🔍 Sending PATCH to NocoDB:', updatePayload);
 
-    // Update the profile record
-    const response = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+    await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
-
-    console.log('✅ Profile updated successfully in NocoDB:', response);
     return { success: true, message: 'Profile updated' };
   } catch (error) {
     console.error('❌ Error updating profile in NocoDB:', error);
@@ -822,8 +815,6 @@ export const updateProfileXP = async (xpToAdd) => {
     // Apply XP multiplier from config
     const xpMultiplier = parseFloat(config.xpMultiplier) || 1;
     const actualXpToAdd = Math.floor(xpToAdd * xpMultiplier);
-    
-    console.log(`💫 XP Multiplier: ${xpMultiplier}x (${xpToAdd} → ${actualXpToAdd})`);
 
     const currentXP = parseInt(profile.currentXP, 10) || 0;
     const currentLevel = parseInt(profile.level, 10) || 0;
@@ -853,10 +844,6 @@ export const updateProfileXP = async (xpToAdd) => {
       
       // Reduce excess XP by half (penalty for leveling up)
       newXP = Math.floor(newXP / 2);
-      
-      console.log(`🎉 LEVEL UP! Level ${newLevel - 1} → ${newLevel}`);
-      console.log(`📊 New max XP: ${newMaxXP} (+${levelGrowRate}%)`);
-      console.log(`⚡ Remaining XP after penalty: ${newXP}`);
     }
 
     // Get the profile record ID
@@ -882,8 +869,6 @@ export const updateProfileXP = async (xpToAdd) => {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
-
-    console.log(`✅ Profile updated: XP ${currentXP} + ${actualXpToAdd} = ${newXP} | Level ${currentLevel} → ${newLevel} | MaxXP ${currentMaxXP} → ${newMaxXP}`);
     
     return { 
       success: true, 
@@ -1711,14 +1696,10 @@ export const updateQuest = async (questId, updates) => {
       ...payload
     }];
 
-    console.log('🔍 Sending Quest PATCH to NocoDB:', updatePayload);
-
-    const response = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
+    await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
-
-    console.log('✅ Quest updated successfully in NocoDB:', response);
     return { success: true, message: 'Quest updated' };
   } catch (error) {
     console.error('❌ Error updating quest in NocoDB:', error);
@@ -2032,7 +2013,7 @@ export const saveQuestConfirmation = async (confirmData) => {
         // Quest is within deadline - auto-approve as completed
         initialStatus = 'completed';
         shouldAutoComplete = true;
-        console.log('✅ Quest is within deadline, auto-approving as completed');
+  
       }
     }
 
