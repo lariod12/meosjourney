@@ -1,28 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
-// NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache } from '../../services/nocodb';
-
-// TODO: Migrate to NocoDB - these Firestore functions need to be replaced
-// Fetch functions removed - will use NocoDB hooks instead
-// import {
-//   fetchStatus,
-//   fetchProfile,
-//   fetchQuests,
-//   fetchQuestConfirmations,
-//   fetchAchievements,
-//   fetchAchievementConfirmations,
-// } from '../../services/firestore';
-
-// Write operations still using Firestore (need migration)
-import {
-  saveProfile,
-  getQuestConfirmation,
-  getAchievementConfirmation,
-  updateProfileXP,
-  CHARACTER_ID
-} from '../../services/firestore';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
@@ -261,88 +240,6 @@ const UserPage = ({ onBack }) => {
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
     setExpandedAchievementSubmissions([]);
-
-    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data refresh
-    /* 
-    try {
-      const [statusData2, profile2, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
-        fetchStatus(CHARACTER_ID),
-        fetchProfile(CHARACTER_ID),
-        fetchQuests(CHARACTER_ID),
-        fetchQuestConfirmations(CHARACTER_ID),
-        fetchAchievements(CHARACTER_ID),
-        fetchAchievementConfirmations(CHARACTER_ID)
-      ]);
-
-      applyStatusProfileToForm(statusData2, profile2);
-      setFormData(prev => ({
-        ...prev,
-        journalEntry: '',
-        newSkill: '',
-        newHobby: ''
-      }));
-
-      const doingsArr2 = Array.isArray(statusData2?.doing)
-        ? statusData2.doing
-        : (statusData2?.doing ? [statusData2.doing] : []);
-      const seenDoings = new Set();
-      const normalizedDoings = [];
-      doingsArr2.forEach((d) => {
-        const s = String(d).trim();
-        const key = s.toLowerCase();
-        if (s && !seenDoings.has(key)) { seenDoings.add(key); normalizedDoings.push(s); }
-      });
-      setExistingDoings(normalizedDoings);
-
-      const locArr2 = Array.isArray(statusData2?.location)
-        ? statusData2.location
-        : (statusData2?.location ? [statusData2.location] : []);
-      const seenLoc2 = new Set();
-      const normalizedLocs2 = [];
-      locArr2.forEach((l) => {
-        const s = String(l).trim();
-        const key = s.toLowerCase();
-        if (s && !seenLoc2.has(key)) { seenLoc2.add(key); normalizedLocs2.push(s); }
-      });
-      setExistingLocations(normalizedLocs2);
-
-      const moodArr2 = Array.isArray(statusData2?.mood)
-        ? statusData2.mood
-        : (statusData2?.mood ? [statusData2.mood] : []);
-      const seenMood2 = new Set();
-      const normalizedMoods2 = [];
-      moodArr2.forEach((m) => {
-        const s = String(m).trim();
-        const key = s.toLowerCase();
-        if (s && !seenMood2.has(key)) { seenMood2.add(key); normalizedMoods2.push(s); }
-      });
-      setExistingMoods(normalizedMoods2);
-
-      if (profile2) {
-        const updatedSkills = Array.isArray(profile2.skills) ? profile2.skills : [];
-        const updatedhobbies = Array.isArray(profile2.hobbies) ? profile2.hobbies : [];
-
-        setProfileData({
-          introduce: profile2.introduce || '',
-          skills: [...updatedSkills],
-          hobbies: [...updatedhobbies]
-        });
-
-      } else {
-        setProfileData({ introduce: '', skills: [], hobbies: [] });
-      }
-
-      setAllQuests(quests);
-      setAvailableQuests(quests.filter(q => q.completedAt === null));
-      setQuestConfirmations(questConfirms);
-
-      setAllAchievements(achievements);
-      setAvailableAchievements(achievements.filter(a => a.completedAt === null));
-      setAchievementConfirmations(achievementConfirms);
-    } catch (error) {
-      console.error('⚠️ Failed to refresh data after submission:', error);
-    }
-    */
   };
 
   useEffect(() => {
@@ -560,111 +457,6 @@ const UserPage = ({ onBack }) => {
 
     setIsRefreshing(true);
 
-    // TODO: Migrate to NocoDB - Temporarily commented out Firestore data refresh
-    /* 
-    try {
-      const [cfg, statusData, profile, quests, questConfirms, achievements, achievementConfirms] = await Promise.all([
-        fetchConfig(CHARACTER_ID),
-        fetchStatus(CHARACTER_ID),
-        fetchProfile(CHARACTER_ID),
-        fetchQuests(CHARACTER_ID),
-        fetchQuestConfirmations(CHARACTER_ID),
-        fetchAchievements(CHARACTER_ID),
-        fetchAchievementConfirmations(CHARACTER_ID)
-      ]);
-
-      setAutoApproveTasks(!!cfg?.auto_approve_tasks);
-
-      // Update profile data
-      if (profile) {
-        const refreshedSkills = Array.isArray(profile.skills) ? profile.skills : [];
-        const refreshedhobbies = Array.isArray(profile.hobbies) ? profile.hobbies : [];
-        
-        setProfileData({
-          introduce: profile.introduce || '',
-          skills: [...refreshedSkills], // Create new array to ensure reactivity
-          hobbies: [...refreshedhobbies] // Create new array to ensure reactivity
-        });
-      }
-
-      const doingsArr = Array.isArray(statusData?.doing)
-        ? statusData.doing
-        : (statusData?.doing ? [statusData.doing] : []);
-      const seen = new Set();
-      const normalized = [];
-      doingsArr.forEach((d) => {
-        const s = String(d).trim();
-        const key = s.toLowerCase();
-        if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
-      });
-      setExistingDoings(normalized);
-
-      const locArr = Array.isArray(statusData?.location)
-        ? statusData.location
-        : (statusData?.location ? [statusData.location] : []);
-      const seenLoc = new Set();
-      const normalizedLocs = [];
-      locArr.forEach((l) => {
-        const s = String(l).trim();
-        const key = s.toLowerCase();
-        if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
-      });
-      setExistingLocations(normalizedLocs);
-
-      const moodArr = Array.isArray(statusData?.mood)
-        ? statusData.mood
-        : (statusData?.mood ? [statusData.mood] : []);
-      const seenMood = new Set();
-      const normalizedMoods = [];
-      moodArr.forEach((m) => {
-        const s = String(m).trim();
-        const key = s.toLowerCase();
-        if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
-      });
-      setExistingMoods(normalizedMoods);
-
-      // Store all and filter incomplete quests
-      setAllQuests(quests);
-      const availableQuests = quests.filter(q => q.completedAt === null);
-      setAvailableQuests(availableQuests);
-      setQuestConfirmations(questConfirms);
-
-      // Store all and filter incomplete achievements
-      setAllAchievements(achievements);
-      const availableAchievements = achievements.filter(a => a.completedAt === null);
-      setAvailableAchievements(availableAchievements);
-      setAchievementConfirmations(achievementConfirms);
-
-      applyStatusProfileToForm(statusData, profile);
-
-      // Show success notification
-      setConfirmModal({
-        isOpen: true,
-        type: 'success',
-        title: 'Refreshed',
-        message: 'Data updated successfully!',
-        confirmText: 'OK',
-        cancelText: null, // No cancel button for success
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
-
-    } catch (error) {
-      console.error('❌ Error refreshing data:', error);
-      setConfirmModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Refresh Failed',
-        message: `Failed to refresh data: ${error.message}`,
-        confirmText: 'OK',
-        cancelText: null, // No cancel button for error
-        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-    */
-
-    // Temporary: Show info that refresh is disabled
     setConfirmModal({
       isOpen: true,
       type: 'info',
@@ -1081,18 +873,7 @@ const UserPage = ({ onBack }) => {
           let imgUrl = '';
           let uploadWarning = '';
 
-          // 1. Check if confirmation already exists and delete old image
-          const existingConfirmation = await getQuestConfirmation(submission.questTitle, CHARACTER_ID);
-          if (existingConfirmation && existingConfirmation.imgUrl) {
-            try {
-              await deleteImageByUrl(existingConfirmation.imgUrl);
-            } catch (deleteError) {
-              console.warn('⚠️ Could not delete old image:', deleteError.message);
-              // Continue even if deletion fails
-            }
-          }
-
-          // 2. Save confirmation to NocoDB (with image upload to attachments_gallery)
+          // Save confirmation to NocoDB (with image upload to attachments_gallery)
           // Pass quest creation date and auto-approve flag for overdue check
           try {
             // Find the quest to get its creation date
@@ -1238,18 +1019,7 @@ const UserPage = ({ onBack }) => {
 
           let uploadWarning = '';
 
-          // 1. Check if confirmation already exists and delete old image
-          const existingConfirmation = await getAchievementConfirmation(submission.achievementTitle, CHARACTER_ID);
-          if (existingConfirmation && existingConfirmation.imgUrl) {
-            try {
-              await deleteImageByUrl(existingConfirmation.imgUrl);
-            } catch (deleteError) {
-              console.warn('⚠️ Could not delete old image:', deleteError.message);
-              // Continue even if deletion fails
-            }
-          }
-
-          // 2. Save confirmation to NocoDB (with image upload to attachments_gallery)
+          // Save confirmation to NocoDB (with image upload to attachments_gallery)
           // Pass achievement due date and auto-approve flag for overdue check
           try {
             // Find the achievement to get its due date

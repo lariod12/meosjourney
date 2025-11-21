@@ -1,39 +1,34 @@
 /**
  * Cache Manager for Home Page Data
- * Prevents spam refresh by caching Firebase data in localStorage
+ * Prevents spam refresh by caching data in localStorage
  */
 
 const CACHE_KEY = 'meo_journey_home_cache';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 /**
- * Serialize Firestore Timestamp objects for caching
- * Converts Date objects to {type: "firestore/timestamp/1.0", seconds, nanoseconds}
+ * Serialize Date objects for caching
  * @param {any} obj - Object to serialize
  * @returns {any} Serialized object
  */
-const serializeTimestamps = (obj) => {
+const serializeDates = (obj) => {
   if (!obj) return obj;
 
-  // Convert Date objects to Firestore Timestamp format
+  // Convert Date objects to ISO strings
   if (obj instanceof Date) {
-    return {
-      type: 'firestore/timestamp/1.0',
-      seconds: Math.floor(obj.getTime() / 1000),
-      nanoseconds: (obj.getTime() % 1000) * 1000000
-    };
+    return { __date: obj.toISOString() };
   }
 
   // Handle arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => serializeTimestamps(item));
+    return obj.map(item => serializeDates(item));
   }
 
   // Handle objects
   if (typeof obj === 'object') {
     const result = {};
     for (const key in obj) {
-      result[key] = serializeTimestamps(obj[key]);
+      result[key] = serializeDates(obj[key]);
     }
     return result;
   }
@@ -42,46 +37,31 @@ const serializeTimestamps = (obj) => {
 };
 
 /**
- * Deserialize Firestore Timestamp objects from cached data
- * Converts {type: "firestore/timestamp/1.0", seconds, nanoseconds} back to Date
- * Also handles plain {seconds, nanoseconds} objects
+ * Deserialize Date objects from cached data
  * @param {any} obj - Object to deserialize
  * @returns {any} Deserialized object
  */
-const deserializeTimestamps = (obj) => {
+const deserializeDates = (obj) => {
   if (!obj) return obj;
 
   // Handle primitive types
   if (typeof obj !== 'object') return obj;
 
-  // Check if this is a serialized Firestore Timestamp object
-  if (obj.type === 'firestore/timestamp/1.0' && typeof obj.seconds === 'number') {
-    return new Date(obj.seconds * 1000 + (obj.nanoseconds || 0) / 1000000);
-  }
-
-  // Check if this is a plain Firestore Timestamp object {seconds, nanoseconds}
-  // Must have ONLY seconds and nanoseconds properties (and no other keys except maybe __proto__)
-  const keys = Object.keys(obj);
-  if (
-    keys.length === 2 &&
-    keys.includes('seconds') &&
-    keys.includes('nanoseconds') &&
-    typeof obj.seconds === 'number' &&
-    typeof obj.nanoseconds === 'number'
-  ) {
-    return new Date(obj.seconds * 1000 + obj.nanoseconds / 1000000);
+  // Check if this is a serialized Date object
+  if (obj.__date && typeof obj.__date === 'string') {
+    return new Date(obj.__date);
   }
 
   // Handle arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => deserializeTimestamps(item));
+    return obj.map(item => deserializeDates(item));
   }
 
-  // Handle nested objects - recursively deserialize all properties
+  // Handle nested objects
   const result = {};
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
-      result[key] = deserializeTimestamps(obj[key]);
+      result[key] = deserializeDates(obj[key]);
     }
   }
   return result;
@@ -101,8 +81,7 @@ export const getCachedData = () => {
 
     // Check if cache is still valid
     if (now - timestamp < CACHE_DURATION) {
-      // Deserialize Firestore Timestamps before returning
-      const deserializedData = deserializeTimestamps(data);
+      const deserializedData = deserializeDates(data);
       return deserializedData;
     }
 
@@ -119,8 +98,7 @@ export const getCachedData = () => {
  */
 export const setCachedData = (data) => {
   try {
-    // Serialize Firestore Timestamps before caching
-    const serializedData = serializeTimestamps(data);
+    const serializedData = serializeDates(data);
     
     const cacheObject = {
       data: serializedData,

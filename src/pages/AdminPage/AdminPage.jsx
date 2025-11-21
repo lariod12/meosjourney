@@ -7,28 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 import { LoadingDialog } from '../../components/common';
 
-// NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks, clearNocoDBCache } from '../../services/nocodb';
-
-// TODO: Migrate to NocoDB - these Firestore functions need to be replaced
-// Fetch functions removed - will use NocoDB hooks/services instead
-// import { fetchAchievements, fetchQuests, fetchQuestConfirmations, fetchAchievementConfirmations } from '../../services/firestore';
-
-// Write operations still using Firestore (need migration)
-import { 
-  saveAchievement, 
-  // updateAchievement, // Commented out - using NocoDB version
-  deleteAchievement, 
-  saveQuest, 
-  deleteQuest, 
-  // deleteQuestConfirmation, // Commented out - using NocoDB version
-  deleteQuestConfirmationById, 
-  // deleteAchievementConfirmation, // Commented out - using NocoDB version
-  deleteAchievementConfirmationById, 
-  updateProfileXP, 
-  saveJournal, 
-  CHARACTER_ID 
-} from '../../services/firestore';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, deleteQuest, deleteAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks, clearNocoDBCache, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/nocodb';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 import { deleteImageByUrl } from '../../services/storage';
@@ -271,14 +250,9 @@ const AdminPage = ({ onBack }) => {
     if (onBack) onBack();
   };
 
-  // Helper function to convert date (handles both Firestore Timestamp and regular Date/string)
+  // Helper function to convert date
   const toDate = (dateValue) => {
     if (!dateValue) return null;
-    
-    // Firestore Timestamp (has .seconds property)
-    if (dateValue.seconds) {
-      return toDate(dateValue);
-    }
     
     // Already a Date object
     if (dateValue instanceof Date) {
@@ -870,13 +844,13 @@ const AdminPage = ({ onBack }) => {
 
         if (conf) {
           try {
-            await deleteQuestConfirmationById(conf.id, CHARACTER_ID);
+            await deleteQuestConfirmation(conf.id);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
           }
         }
 
-        await deleteQuest(deleteTarget.id, CHARACTER_ID);
+        await deleteQuest(deleteTarget.id);
 
         setConfirmModal({
           isOpen: true,
@@ -904,13 +878,13 @@ const AdminPage = ({ onBack }) => {
 
         if (conf) {
           try {
-            await deleteAchievementConfirmationById(conf.id, CHARACTER_ID);
+            await deleteAchievementConfirmation(conf.id);
           } catch (confError) {
             console.warn('⚠️ Could not delete confirmation:', confError.message);
           }
         }
 
-        await deleteAchievement(deleteTarget.id, CHARACTER_ID);
+        await deleteAchievement(deleteTarget.id);
 
         setConfirmModal({
           isOpen: true,

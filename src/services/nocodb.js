@@ -9,10 +9,15 @@
  * API Token: Set in .env.development as VITE_NOCODB_TOKEN
  */
 
+import { CHARACTER_ID } from '../config/constants';
+
 const NOCODB_BASE_URL = import.meta.env.VITE_NOCODB_BASE_URL;
 const NOCODB_TOKEN = import.meta.env.VITE_NOCODB_TOKEN;
 const NOCODB_BASE_ID = import.meta.env.VITE_NOCODB_BASE_ID;
 const USE_STATIC_DATA = import.meta.env.VITE_NOCODB_USE_STATIC === 'true';
+
+// Export CHARACTER_ID for use in other modules
+export { CHARACTER_ID };
 
 // Table IDs from NocoDB export
 const TABLE_IDS = {
@@ -299,7 +304,7 @@ export const fetchProfile = async () => {
         });
       }
 
-      // Calculate level from XP (same logic as Firestore)
+      // Calculate level from XP
       const currentXP = parseInt(profileRecord.current_xp, 10) || 0;
       const maxXP = profileRecord.max_xp || 1000;
       const level = Math.floor(currentXP / maxXP);
@@ -790,6 +795,85 @@ export const updateProfile = async (profileData, oldProfileData) => {
   } catch (error) {
     console.error('❌ Error updating profile in NocoDB:', error);
     throw error;
+  }
+};
+
+/**
+ * Update profile XP and handle level-ups
+ * @param {number} xpToAdd - Amount of XP to add
+ * @returns {Promise<Object>} Result with XP and level info
+ */
+export const updateProfileXP = async (xpToAdd) => {
+  try {
+    // Get current profile
+    const profile = await fetchProfile();
+    
+    if (!profile) {
+      throw new Error('No profile found');
+    }
+
+    const currentXP = parseInt(profile.currentXP, 10) || 0;
+    const currentLevel = parseInt(profile.level, 10) || 0;
+    const maxXP = parseInt(profile.maxXP, 10) || 1000;
+    
+    // Add XP
+    let newXP = currentXP + xpToAdd;
+    let newLevel = currentLevel;
+    let leveledUp = false;
+
+    // Check for level up (can level up multiple times if XP is high enough)
+    // maxXP stays constant - does not increase with level
+    // When leveling up, excess XP is reduced by half
+    while (newXP >= maxXP) {
+      newXP -= maxXP;
+      newLevel += 1;
+      leveledUp = true;
+      
+      // Reduce excess XP by half (penalty for leveling up)
+      newXP = Math.floor(newXP / 2);
+      
+      console.log(`🎉 LEVEL UP! New level: ${newLevel}, Remaining XP after penalty: ${newXP}`);
+    }
+
+    // Get the profile record ID
+    const profileRecords = await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+      method: 'GET',
+    });
+
+    if (!profileRecords.list || profileRecords.list.length === 0) {
+      throw new Error('No profile record found');
+    }
+
+    const profileId = profileRecords.list[0].Id;
+
+    // Update profile with new XP and level
+    const updatePayload = [{
+      Id: profileId,
+      current_xp: newXP,
+      level: newLevel
+    }];
+
+    await nocoRequest(`${TABLE_IDS.PROFILE}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log(`✅ Profile XP updated: ${currentXP} + ${xpToAdd} = ${newXP} (Level: ${newLevel})`);
+    
+    return { 
+      success: true, 
+      oldXP: currentXP, 
+      newXP, 
+      addedXP: xpToAdd,
+      oldLevel: currentLevel,
+      newLevel,
+      leveledUp,
+      maxXP
+    };
+
+  } catch (error) {
+    console.error('❌ Error updating profile XP:', error);
+    throw new Error(`Failed to update XP: ${error.message}`);
   }
 };
 
@@ -1329,6 +1413,54 @@ export const createAchievement = async (achievementData) => {
     return { success: true, message: 'Achievement created', data: response };
   } catch (error) {
     console.error('❌ Error creating achievement in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Delete quest from NocoDB
+ * @param {string} questId - Quest ID to delete
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const deleteQuest = async (questId) => {
+  try {
+    if (!questId) {
+      return { success: false, message: 'Quest ID is required' };
+    }
+
+    await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
+      method: 'DELETE',
+      body: JSON.stringify([{ Id: questId }])
+    });
+
+    console.log('✅ Quest deleted successfully from NocoDB');
+    return { success: true, message: 'Quest deleted' };
+  } catch (error) {
+    console.error('❌ Error deleting quest from NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Delete achievement from NocoDB
+ * @param {string} achievementId - Achievement ID to delete
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const deleteAchievement = async (achievementId) => {
+  try {
+    if (!achievementId) {
+      return { success: false, message: 'Achievement ID is required' };
+    }
+
+    await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records`, {
+      method: 'DELETE',
+      body: JSON.stringify([{ Id: achievementId }])
+    });
+
+    console.log('✅ Achievement deleted successfully from NocoDB');
+    return { success: true, message: 'Achievement deleted' };
+  } catch (error) {
+    console.error('❌ Error deleting achievement from NocoDB:', error);
     return { success: false, message: error.message };
   }
 };

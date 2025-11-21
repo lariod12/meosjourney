@@ -50,16 +50,10 @@ export default function AchievementModal({ achievement, onClose }) {
             <div className="achievement-modal-due-date">
               {t('modal.achievement.due_date')} {(() => {
                 try {
-                  // Handle different date formats
-                  let date;
-                  if (typeof achievement.dueDate === 'string') {
-                    date = new Date(achievement.dueDate);
-                  } else if (achievement.dueDate.toDate) {
-                    // Firestore Timestamp
-                    date = achievement.dueDate.toDate();
-                  } else {
-                    date = new Date(achievement.dueDate);
-                  }
+                  // Convert to Date object
+                  const date = achievement.dueDate instanceof Date 
+                    ? achievement.dueDate 
+                    : new Date(achievement.dueDate);
                   
                   // Check if date is valid
                   if (isNaN(date.getTime())) {
