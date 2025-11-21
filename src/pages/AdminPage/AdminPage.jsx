@@ -7,7 +7,7 @@ import IconPicker from '../../components/IconPicker/IconPicker';
 import IconRenderer from '../../components/IconRenderer/IconRenderer';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateQuestConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation } from '../../services/nocodb';
+import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks/services instead
@@ -17,13 +17,13 @@ import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, f
 import { 
   setAutoApproveTasks, 
   saveAchievement, 
-  updateAchievement, 
+  // updateAchievement, // Commented out - using NocoDB version
   deleteAchievement, 
   saveQuest, 
   deleteQuest, 
   // deleteQuestConfirmation, // Commented out - using NocoDB version
   deleteQuestConfirmationById, 
-  deleteAchievementConfirmation, 
+  // deleteAchievementConfirmation, // Commented out - using NocoDB version
   deleteAchievementConfirmationById, 
   updateProfileXP, 
   saveJournal, 
@@ -1242,7 +1242,8 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getAchievementConfirmation(achievement.name);
+      // Get confirmation by achievement ID (checks achievement_confirm link)
+      const confirmation = getAchievementConfirmationByAchievementId(achievement.id);
 
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
@@ -1252,7 +1253,18 @@ const AdminPage = ({ onBack }) => {
       // Keep image and confirmation for record
       await updateAchievement(achievement.id, {
         completedAt: new Date()
-      }, CHARACTER_ID);
+      });
+
+      // Update achievement confirmation status to 'completed'
+      if (confirmation?.id) {
+        try {
+          await updateAchievementConfirmationStatus(confirmation.id, 'completed');
+          console.log('✅ Achievement confirmation status updated to completed');
+        } catch (statusError) {
+          console.warn('⚠️ Could not update achievement confirmation status:', statusError.message);
+          // Continue even if status update fails
+        }
+      }
 
       // Update profile XP
       let xpResult = null;
@@ -1373,50 +1385,49 @@ const AdminPage = ({ onBack }) => {
     setIsSubmitting(true);
 
     try {
-      const confirmation = getAchievementConfirmation(achievement.name);
+      // Get confirmation by achievement ID (checks achievement_confirm link)
+      const confirmation = getAchievementConfirmationByAchievementId(achievement.id);
 
       if (!confirmation) {
         throw new Error('Achievement confirmation not found');
       }
 
-      // 1. Delete image from Storage if exists
-      if (confirmation.imgUrl) {
-        try {
-          console.log('🗑️ Deleting achievement confirmation image...');
-          await deleteImageByUrl(confirmation.imgUrl);
-          console.log('✅ Image deleted from Storage');
-        } catch (imgError) {
-          console.warn('⚠️ Could not delete image, continuing anyway:', imgError.message);
-          // Continue even if image deletion fails
-        }
+      // Simply delete the achievement confirmation record
+      // This will automatically delete linked attachments from attachments_gallery
+      const result = await deleteAchievementConfirmation(confirmation.id);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete achievement confirmation');
       }
 
-      // 2. Delete achievement confirmation from Firestore using the actual confirmation ID
-      console.log('🗑️ Deleting achievement confirmation with ID:', confirmation.id);
-      await deleteAchievementConfirmationById(confirmation.id, CHARACTER_ID);
+      console.log('✅ Achievement confirmation deleted');
 
-      // Update local state immediately to remove confirmation and change button to Edit
+      // Update local state immediately for instant UI update
       setAchievementConfirmations(prevConfirmations => 
-        prevConfirmations.filter(c => !c.id.startsWith(
-          achievement.name.trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 50) + '_'
-        ))
+        prevConfirmations.filter(c => c.id !== confirmation.id)
       );
 
+      setAchievements(prevAchievements => 
+        prevAchievements.map(a => 
+          a.id === achievement.id 
+            ? { ...a, achievementConfirmId: null, hasConfirmation: false }
+            : a
+        )
+      );
+
+      // Close review modal immediately after state update
+      setReviewingId(null);
+
+      // Show success message
       setConfirmModal({
         isOpen: true,
         type: 'success',
         title: 'Achievement Rejected',
-        message: `Achievement confirmation for "${achievement.name}" has been rejected and removed.`,
+        message: `Achievement confirmation for "${achievement.name}" has been rejected and deleted.`,
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false }));
-          setReviewingId(null);
-          loadAchievements(); // Still reload to ensure data consistency
         },
         onCancel: null
       });

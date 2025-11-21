@@ -954,7 +954,7 @@ export const fetchAchievements = async () => {
 
 /**
  * Fetch achievement confirmations data from NocoDB
- * Returns all achievement confirmation records with image data
+ * Returns all achievement confirmation records with image data from attachments_gallery
  */
 export const fetchAchievementConfirmations = async () => {
   const cacheKey = 'achievement_confirmations';
@@ -968,8 +968,8 @@ export const fetchAchievementConfirmations = async () => {
         return [];
       }
 
-      // Use API in production - fetch with nested data
-      const data = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records?sort=-created_time&nested[achievement_img][fields]=img_bw,title`, {
+      // Step 1: Fetch achievement confirmations
+      const data = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records?sort=-created_time`, {
         method: 'GET',
       });
 
@@ -980,14 +980,55 @@ export const fetchAchievementConfirmations = async () => {
 
       console.log(`📊 Fetched ${data.list.length} achievement confirmations from NocoDB`);
 
-      // Transform NocoDB achievement confirmations to frontend format
+      // Step 2: Fetch all attachments_gallery records that link to these confirmations
+      const attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,achievements_confirm_id`, {
+        method: 'GET',
+      });
+
+      // Create a map of confirmationId -> attachment for quick lookup
+      const attachmentMap = new Map();
+      if (attachmentsData.list) {
+        attachmentsData.list.forEach(attachment => {
+          if (attachment.achievements_confirm_id) {
+            attachmentMap.set(attachment.achievements_confirm_id, attachment);
+          }
+        });
+      }
+
+      console.log(`📊 Fetched ${attachmentsData.list?.length || 0} attachments, ${attachmentMap.size} linked to achievement confirmations`);
+
+      // Step 3: Transform and combine data
       const confirmations = data.list.map(record => {
-        // Get image URL from nested achievement_img -> img_bw
+        // Get linked attachment from map
+        const attachment = attachmentMap.get(record.Id);
+        
         let imageUrl = null;
-        if (record.achievement_img && Array.isArray(record.achievement_img.img_bw) && record.achievement_img.img_bw.length > 0) {
-          const imgBw = record.achievement_img.img_bw[0];
-          imageUrl = imgBw.signedUrl || imgBw.url || null;
+        if (attachment && attachment.img_bw) {
+          try {
+            // Parse img_bw if it's a string (NocoDB returns it as JSON string)
+            let imgBwArray = attachment.img_bw;
+            if (typeof imgBwArray === 'string') {
+              imgBwArray = JSON.parse(imgBwArray);
+            }
+            
+            // Get first image from array
+            if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
+              const imgBw = imgBwArray[0];
+              // Prefer signedUrl for S3 access, fallback to url
+              imageUrl = imgBw.signedUrl || imgBw.url || null;
+            }
+          } catch (parseError) {
+            console.warn('⚠️ Failed to parse img_bw for achievement confirmation:', record.Id, parseError);
+          }
         }
+
+        // Debug: Log confirmation with image data
+        console.log(`🔍 Achievement Confirmation ID ${record.Id}:`, {
+          created_time: record.created_time,
+          hasImage: !!imageUrl,
+          hasAttachment: !!attachment,
+          imageUrl: imageUrl ? imageUrl.substring(0, 80) + '...' : null
+        });
 
         return {
           id: record.Id,
@@ -1229,6 +1270,42 @@ export const updateQuestConfirmationStatus = async (confirmationId, status) => {
 };
 
 /**
+ * Update achievement confirmation status in NocoDB
+ * @param {string} confirmationId - Achievement confirmation ID to update
+ * @param {string} status - Status value ('pending', 'completed', 'failed')
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const updateAchievementConfirmationStatus = async (confirmationId, status) => {
+  try {
+    if (!confirmationId) {
+      return { success: false, message: 'Achievement confirmation ID is required' };
+    }
+
+    if (!['pending', 'completed', 'failed'].includes(status)) {
+      return { success: false, message: 'Invalid status value' };
+    }
+
+    const updatePayload = [{
+      Id: confirmationId,
+      status: status
+    }];
+
+    console.log('🔍 Sending Achievement Confirmation Status PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Achievement confirmation status updated successfully in NocoDB:', response);
+    return { success: true, message: 'Achievement confirmation status updated' };
+  } catch (error) {
+    console.error('❌ Error updating achievement confirmation status in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Batch update multiple quest confirmation statuses in NocoDB
  * @param {Array<{id: string, status: string}>} updates - Array of updates with id and status
  * @returns {Promise<Object>} Result object with success status
@@ -1383,6 +1460,71 @@ export const updateQuest = async (questId, updates) => {
     return { success: true, message: 'Quest updated' };
   } catch (error) {
     console.error('❌ Error updating quest in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Update achievement in NocoDB
+ * @param {string} achievementId - Achievement ID to update
+ * @param {Object} updates - Fields to update
+ * @param {Date} updates.completedAt - Completion timestamp (optional)
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const updateAchievement = async (achievementId, updates) => {
+  try {
+    if (!achievementId) {
+      return { success: false, message: 'Achievement ID is required' };
+    }
+
+    const payload = {};
+
+    // Handle completedAt field
+    if (updates.completedAt) {
+      // Get current ICT time
+      const completedDate = updates.completedAt instanceof Date ? updates.completedAt : new Date(updates.completedAt);
+
+      const ictDateStr = completedDate.toLocaleString('en-US', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+      const [datePart, timePart] = ictDateStr.split(', ');
+      const [month, day, year] = datePart.split('/');
+      const [hours, minutes, seconds] = timePart.split(':');
+
+      // Format completed_time with timezone offset
+      payload.completed_time = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+    }
+
+    // If no updates, return success
+    if (Object.keys(payload).length === 0) {
+      return { success: true, message: 'No updates to apply' };
+    }
+
+    const updatePayload = [{
+      Id: achievementId,
+      ...payload
+    }];
+
+    console.log('🔍 Sending Achievement PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Achievement updated successfully in NocoDB:', response);
+    return { success: true, message: 'Achievement updated' };
+  } catch (error) {
+    console.error('❌ Error updating achievement in NocoDB:', error);
     return { success: false, message: error.message };
   }
 };
@@ -1646,6 +1788,254 @@ export const deleteQuestConfirmation = async (confirmationId) => {
     return { success: true, message: 'Quest confirmation and linked attachments deleted' };
   } catch (error) {
     console.error('❌ Error deleting quest confirmation in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Upload image to attachments_gallery and link to achievement_confirm
+ * @param {File} imageFile - Image file to upload
+ * @param {string} title - Title for the attachment record
+ * @param {string} achievementConfirmId - Achievement confirmation ID to link to
+ * @returns {Promise<Object>} Result with attachment gallery ID
+ */
+export const uploadAchievementConfirmationImage = async (imageFile, title, achievementConfirmId) => {
+  try {
+    if (!imageFile || !title) {
+      return { success: false, message: 'Image file and title are required' };
+    }
+
+    // Step 1: Create the attachment gallery record with only title
+    const recordPayload = {
+      title: title
+    };
+
+    console.log('🔍 Creating attachment gallery record for achievement:', recordPayload);
+
+    const recordResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'POST',
+      body: JSON.stringify(recordPayload)
+    });
+
+    const attachmentId = recordResponse.Id || (recordResponse.list && recordResponse.list[0]?.Id);
+
+    if (!attachmentId) {
+      throw new Error('Failed to create attachment gallery record');
+    }
+
+    console.log('✅ Attachment gallery record created:', attachmentId);
+
+    // Step 2: Upload the image to NocoDB storage
+    const formData = new FormData();
+    formData.append('file', imageFile);
+
+    const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
+    
+    const storageResponse = await fetch(storageUploadUrl, {
+      method: 'POST',
+      headers: {
+        'xc-token': NOCODB_TOKEN,
+      },
+      body: formData
+    });
+
+    if (!storageResponse.ok) {
+      const errorText = await storageResponse.text();
+      throw new Error(`Storage upload failed: ${storageResponse.status} - ${errorText}`);
+    }
+
+    const storageResult = await storageResponse.json();
+    console.log('✅ Image uploaded to NocoDB storage for achievement');
+
+    // Step 3: Update the record with the uploaded file info
+    const updatePayload = [{
+      Id: attachmentId,
+      img_bw: storageResult
+    }];
+
+    console.log('🔍 Updating record with image');
+
+    await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log('✅ Record updated with image');
+
+    // Step 4: Link the attachment to achievement_confirm if ID provided
+    if (achievementConfirmId) {
+      const linkPayload = [{
+        Id: attachmentId,
+        achievements_confirm_id: achievementConfirmId // Use foreign key field name
+      }];
+
+      console.log('🔍 Linking attachment to achievement_confirm (using FK):', linkPayload);
+
+      const linkResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+        method: 'PATCH',
+        body: JSON.stringify(linkPayload)
+      });
+
+      console.log('✅ Attachment linked to achievement_confirm. Response:', linkResponse);
+    }
+
+    return {
+      success: true,
+      attachmentId: attachmentId,
+      data: storageResult
+    };
+  } catch (error) {
+    console.error('❌ Error uploading achievement confirmation image:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Save achievement confirmation to NocoDB
+ * Creates a new achievement confirmation record and links it to the achievement
+ * If image is provided, uploads to attachments_gallery
+ * @param {Object} confirmData - Confirmation data
+ * @param {string} confirmData.achievementId - Achievement ID to link to
+ * @param {string} confirmData.achievementName - Achievement name
+ * @param {string} confirmData.desc - Description
+ * @param {File} confirmData.imageFile - Image file to upload (optional)
+ * @returns {Promise<Object>} Result object with success status and confirmation ID
+ */
+export const saveAchievementConfirmation = async (confirmData) => {
+  try {
+    const { achievementId, achievementName, desc, imageFile } = confirmData;
+
+    if (!achievementId) {
+      return { success: false, message: 'Achievement ID is required' };
+    }
+
+    // Get current ICT time
+    const now = new Date();
+    const ictDateStr = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    // Parse the ICT date string (format: "MM/DD/YYYY, HH:mm:ss")
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    // Generate title: achievement_confirm_<year>-<month>-<day>_<hh>-<mm>
+    const title = `achievement_confirm_${year}-${month}-${day}_${hours}-${minutes}`;
+
+    // Format created_time with timezone offset
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    const payload = {
+      title: title,
+      achievement_name: achievementName || '',
+      desc: desc || '',
+      created_time: createdTime,
+      achievements_id: achievementId, // Link to achievement record using FK field (1-1 relationship)
+      status: 'pending' // Set initial status as pending
+    };
+
+    console.log('🔍 Sending Achievement Confirmation POST to NocoDB:', payload);
+
+    const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Achievement confirmation created successfully in NocoDB:', response);
+
+    // Extract the confirmation ID from response
+    const confirmationId = response.Id || (response.list && response.list[0]?.Id);
+
+    // Upload image to attachments_gallery if provided
+    let attachmentId = null;
+    if (imageFile && confirmationId) {
+      try {
+        const uploadResult = await uploadAchievementConfirmationImage(imageFile, title, confirmationId);
+        if (uploadResult.success) {
+          attachmentId = uploadResult.attachmentId;
+          console.log('✅ Image uploaded and linked to achievement confirmation');
+        } else {
+          console.warn('⚠️ Image upload failed:', uploadResult.message);
+        }
+      } catch (uploadError) {
+        console.warn('⚠️ Image upload failed:', uploadError.message);
+        // Continue without image
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Achievement confirmation saved',
+      id: confirmationId,
+      attachmentId: attachmentId,
+      data: response
+    };
+  } catch (error) {
+    console.error('❌ Error saving achievement confirmation to NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Delete achievement confirmation from NocoDB
+ * Also deletes linked attachment from attachments_gallery
+ * @param {string} confirmationId - Achievement confirmation ID to delete
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const deleteAchievementConfirmation = async (confirmationId) => {
+  try {
+    if (!confirmationId) {
+      return { success: false, message: 'Achievement confirmation ID is required' };
+    }
+
+    console.log('🔍 Deleting Achievement Confirmation:', confirmationId);
+
+    // Step 1: Find and delete linked attachment from attachments_gallery
+    try {
+      const attachmentsData = await nocoRequest(
+        `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?where=(achievements_confirm_id,eq,${confirmationId})`,
+        { method: 'GET' }
+      );
+
+      if (attachmentsData.list && attachmentsData.list.length > 0) {
+        const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
+        
+        console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        
+        await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+          method: 'DELETE',
+          body: JSON.stringify(attachmentIds)
+        });
+
+        console.log('✅ Linked attachments deleted successfully');
+      } else {
+        console.log('ℹ️ No linked attachments found for this achievement confirmation');
+      }
+    } catch (attachmentError) {
+      console.warn('⚠️ Failed to delete linked attachments:', attachmentError.message);
+      // Continue with confirmation deletion even if attachment deletion fails
+    }
+
+    // Step 2: Delete the achievement confirmation record
+    console.log('🗑️ Deleting achievement confirmation record');
+    
+    const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
+      method: 'DELETE',
+      body: JSON.stringify([{ Id: confirmationId }])
+    });
+
+    console.log('✅ Achievement confirmation deleted successfully in NocoDB:', response);
+    return { success: true, message: 'Achievement confirmation and linked attachments deleted' };
+  } catch (error) {
+    console.error('❌ Error deleting achievement confirmation in NocoDB:', error);
     return { success: false, message: error.message };
   }
 };
