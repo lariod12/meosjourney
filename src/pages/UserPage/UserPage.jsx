@@ -99,9 +99,9 @@ const UserPage = ({ onBack }) => {
   const locationRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
 
-  // Collapse/expand states - collapsed by default
+  // Collapse/expand states - Status expanded by default to show current data
   const [profileExpanded, setProfileExpanded] = useState(false);
-  const [statusExpanded, setStatusExpanded] = useState(false);
+  const [statusExpanded, setStatusExpanded] = useState(true); // Expanded by default
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
@@ -243,6 +243,16 @@ const UserPage = ({ onBack }) => {
     setExpandedAchievementSubmissions([]);
   };
 
+  // Debug: Log formData changes
+  useEffect(() => {
+    console.log('🔄 FormData updated:', {
+      doing: formData.doing,
+      location: formData.location,
+      mood: formData.mood,
+      caption: formData.caption
+    });
+  }, [formData.doing, formData.location, formData.mood, formData.caption]);
+
   useEffect(() => {
     // Load all data from NocoDB in optimized sequence
     const loadData = async () => {
@@ -292,6 +302,8 @@ const UserPage = ({ onBack }) => {
 
         // Load status data
         if (statusData) {
+          console.log('📊 Raw status data from NocoDB:', statusData);
+          
           // Prepare existing doings
           const doingsArr = Array.isArray(statusData.doing) ? statusData.doing : [];
           const seen = new Set();
@@ -302,6 +314,7 @@ const UserPage = ({ onBack }) => {
             if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
           });
           setExistingDoings(normalized);
+          console.log('✅ Existing doings:', normalized);
 
           // Prepare existing locations
           const locArr = Array.isArray(statusData.location) ? statusData.location : [];
@@ -335,6 +348,13 @@ const UserPage = ({ onBack }) => {
           setOriginalStatusData(originalStatus);
 
           // Apply to form
+          console.log('📝 Loading status data into form:', {
+            doing: originalStatus.doing,
+            location: originalStatus.location,
+            mood: originalStatus.mood,
+            caption: originalStatus.caption
+          });
+          
           setFormData(prev => ({
             ...prev,
             doing: originalStatus.doing,
