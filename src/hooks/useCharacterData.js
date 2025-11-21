@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchStatus, fetchProfile, fetchConfig, fetchJournals } from '../services';
+import { fetchStatus, fetchProfile, fetchConfig, fetchJournals, fetchQuests, fetchAchievements } from '../services';
 
 /**
  * Custom hook for fetching character data
@@ -26,11 +26,13 @@ export const useCharacterData = (defaultData) => {
       setLoading(true);
 
       // Fetch all data in parallel
-      const [status, profile, config, journals] = await Promise.all([
+      const [status, profile, config, journals, quests, achievements] = await Promise.all([
         fetchStatus(),
         fetchProfile(),
         fetchConfig(),
-        fetchJournals()
+        fetchJournals(),
+        fetchQuests(),
+        fetchAchievements()
       ]);
 
       if (mountedRef.current) {
@@ -60,6 +62,12 @@ export const useCharacterData = (defaultData) => {
 
           // Journal data
           journal: journals || [],
+
+          // Quests data (with nameTranslations and descTranslations from NocoDB)
+          quests: quests || defaultData.quests || [],
+
+          // Achievements data (with nameTranslations, descTranslations, specialRewardTranslations from NocoDB)
+          achievements: achievements || defaultData.achievements || [],
 
           // Config data (if needed)
           config: config || {}

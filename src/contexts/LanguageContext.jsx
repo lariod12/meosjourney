@@ -19,7 +19,7 @@ export const useLanguage = () => {
   return ctx;
 };
 
-export const LanguageProvider = ({ initialLang = 'VI', children }) => {
+export const LanguageProvider = ({ initialLang = 'vi', children }) => {
   const [lang, setLang] = useState(initialLang);
 
   const getLocalized = useCallback((translations, fallback = '') => {
@@ -38,24 +38,35 @@ export const LanguageProvider = ({ initialLang = 'VI', children }) => {
       return normalizedFallback;
     }
 
+    // Handle array format from NocoDB: [{"en":"..."}, {"vi":"..."}]
+    let translationsObj = translations;
+    if (Array.isArray(translations)) {
+      translationsObj = {};
+      translations.forEach(item => {
+        if (typeof item === 'object' && item !== null) {
+          Object.assign(translationsObj, item);
+        }
+      });
+    }
+
     const currentKey = (typeof lang === 'string' ? lang : 'en').toLowerCase();
-    const primary = normalizeToString(translations[currentKey]);
+    const primary = normalizeToString(translationsObj[currentKey]);
     if (primary) {
       return primary;
     }
 
     const fallbackKey = currentKey === 'vi' ? 'en' : 'vi';
-    const alternate = normalizeToString(translations[fallbackKey]);
+    const alternate = normalizeToString(translationsObj[fallbackKey]);
     if (alternate) {
       return alternate;
     }
 
-    const enValue = normalizeToString(translations.en);
+    const enValue = normalizeToString(translationsObj.en);
     if (enValue) {
       return enValue;
     }
 
-    const viValue = normalizeToString(translations.vi);
+    const viValue = normalizeToString(translationsObj.vi);
     if (viValue) {
       return viValue;
     }
