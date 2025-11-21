@@ -1191,6 +1191,44 @@ export const updateQuestConfirmationStatus = async (confirmationId, status) => {
 };
 
 /**
+ * Batch update multiple quest confirmation statuses in NocoDB
+ * @param {Array<{id: string, status: string}>} updates - Array of updates with id and status
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const batchUpdateQuestConfirmationStatus = async (updates) => {
+  try {
+    if (!updates || updates.length === 0) {
+      return { success: true, message: 'No updates to apply' };
+    }
+
+    // Validate all updates
+    for (const update of updates) {
+      if (!update.id || !['pending', 'completed', 'failed'].includes(update.status)) {
+        return { success: false, message: 'Invalid update data' };
+      }
+    }
+
+    const updatePayload = updates.map(u => ({
+      Id: u.id,
+      status: u.status
+    }));
+
+    console.log('🔍 Sending Batch Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+
+    const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    console.log(`✅ ${updates.length} quest confirmation statuses updated successfully in NocoDB`);
+    return { success: true, message: `${updates.length} quest confirmations updated` };
+  } catch (error) {
+    console.error('❌ Error batch updating quest confirmation statuses in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Update quest in NocoDB
  * @param {string} questId - Quest ID to update
  * @param {Object} updates - Fields to update

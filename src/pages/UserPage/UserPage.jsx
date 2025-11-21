@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 // NocoDB imports for read and write operations
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, updateQuest } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, updateQuest, batchUpdateQuestConfirmationStatus } from '../../services/nocodb';
 
 // TODO: Migrate to NocoDB - these Firestore functions need to be replaced
 // Fetch functions removed - will use NocoDB hooks instead
@@ -454,6 +454,63 @@ const UserPage = ({ onBack }) => {
         setAchievementConfirmations(achievementConfirmsData);
 
         console.log(`✅ Loaded ${questsData.length} quests (${availableQuestsData.length} available) and ${achievementsData.length} achievements (${availableAchievementsData.length} available)`);
+
+        // Check and update overdue quest confirmations to 'failed' status
+        try {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const overdueUpdates = [];
+
+          // Check each quest confirmation
+          for (const confirmation of questConfirmsData) {
+            // Skip if already failed or completed
+            if (confirmation.status === 'failed' || confirmation.status === 'completed') {
+              continue;
+            }
+
+            // Find the linked quest
+            const linkedQuest = questsData.find(q => q.id === confirmation.questsId);
+            if (!linkedQuest) continue;
+
+            // Skip if quest is already completed
+            if (linkedQuest.completedAt) continue;
+
+            // Check if quest is overdue (created before today)
+            if (linkedQuest.createdAt) {
+              const createdDate = new Date(linkedQuest.createdAt);
+              createdDate.setHours(0, 0, 0, 0);
+
+              if (createdDate < today) {
+                // Quest is overdue, mark confirmation as failed
+                overdueUpdates.push({
+                  id: confirmation.id,
+                  status: 'failed'
+                });
+                console.log(`⚠️ Quest "${linkedQuest.name}" is overdue, marking confirmation as failed`);
+              }
+            }
+          }
+
+          // Batch update overdue confirmations
+          if (overdueUpdates.length > 0) {
+            console.log(`🔄 Updating ${overdueUpdates.length} overdue quest confirmations to failed status...`);
+            await batchUpdateQuestConfirmationStatus(overdueUpdates);
+            
+            // Update local state to reflect changes
+            setQuestConfirmations(prev => 
+              prev.map(c => {
+                const update = overdueUpdates.find(u => u.id === c.id);
+                return update ? { ...c, status: 'failed' } : c;
+              })
+            );
+            
+            console.log(`✅ Updated ${overdueUpdates.length} overdue quest confirmations`);
+          }
+        } catch (overdueError) {
+          console.error('❌ Error checking/updating overdue quest confirmations:', overdueError);
+          // Don't fail the entire load if overdue check fails
+        }
       } catch (error) {
         console.error('❌ Error loading quests/achievements from NocoDB:', error);
         setAllQuests([]);
