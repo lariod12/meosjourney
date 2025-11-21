@@ -13,7 +13,6 @@ import { CHARACTER_ID } from '../config/constants';
 
 const NOCODB_BASE_URL = import.meta.env.VITE_NOCODB_BASE_URL;
 const NOCODB_TOKEN = import.meta.env.VITE_NOCODB_TOKEN;
-const NOCODB_BASE_ID = import.meta.env.VITE_NOCODB_BASE_ID;
 const USE_STATIC_DATA = import.meta.env.VITE_NOCODB_USE_STATIC === 'true';
 
 // Export CHARACTER_ID for use in other modules
@@ -293,14 +292,14 @@ export const fetchProfile = async () => {
 
         if (attachmentsData.list && attachmentsData.list.length > 0) {
           const attachment = attachmentsData.list[0];
-          
+
           if (attachment.img_bw) {
             // Parse img_bw if it's a string (NocoDB returns it as JSON string)
             let imgBwArray = attachment.img_bw;
             if (typeof imgBwArray === 'string') {
               imgBwArray = JSON.parse(imgBwArray);
             }
-            
+
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
@@ -503,7 +502,7 @@ export const fetchAllJournals = async () => {
         allJournals = allJournals.concat(data.list);
         hasMore = data.pageInfo && !data.pageInfo.isLastPage;
         page++;
-        
+
         // Add delay between pages to avoid rate limiting
         if (hasMore && page <= maxPages) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -666,7 +665,7 @@ export const fetchQuestConfirmations = async () => {
       const confirmations = data.list.map(record => {
         // Get linked attachment from map
         const attachment = attachmentMap.get(record.Id);
-        
+
         let imgUrl = null;
         if (attachment && attachment.img_bw) {
           try {
@@ -675,7 +674,7 @@ export const fetchQuestConfirmations = async () => {
             if (typeof imgBwArray === 'string') {
               imgBwArray = JSON.parse(imgBwArray);
             }
-            
+
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
@@ -835,7 +834,7 @@ export const updateProfileXP = async (xpToAdd) => {
       fetchProfile(),
       fetchConfig()
     ]);
-    
+
     if (!profile) {
       throw new Error('No profile found');
     }
@@ -851,10 +850,10 @@ export const updateProfileXP = async (xpToAdd) => {
     const currentXP = parseInt(profile.currentXP, 10) || 0;
     const currentLevel = parseInt(profile.level, 10) || 0;
     let currentMaxXP = parseInt(profile.maxXP, 10) || 1000;
-    
+
     // Get level grow rate from config (percentage)
     const levelGrowRate = parseInt(config.levelGrowRate, 10) || 10;
-    
+
     // Add XP
     let newXP = currentXP + actualXpToAdd;
     let newLevel = currentLevel;
@@ -870,10 +869,10 @@ export const updateProfileXP = async (xpToAdd) => {
       newLevel += 1;
       levelsGained += 1;
       leveledUp = true;
-      
+
       // Increase maxXP by level_grow_rate% for next level
       newMaxXP = Math.floor(newMaxXP * (1 + levelGrowRate / 100));
-      
+
       // Reduce excess XP by half (penalty for leveling up)
       newXP = Math.floor(newXP / 2);
     }
@@ -901,11 +900,11 @@ export const updateProfileXP = async (xpToAdd) => {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
-    
-    return { 
-      success: true, 
-      oldXP: currentXP, 
-      newXP, 
+
+    return {
+      success: true,
+      oldXP: currentXP,
+      newXP,
       addedXP: actualXpToAdd,
       rawXP: xpToAdd,
       xpMultiplier: xpMultiplier,
@@ -1238,7 +1237,7 @@ export const fetchAchievementConfirmations = async () => {
       const confirmations = data.list.map(record => {
         // Get linked attachment from map
         const attachment = attachmentMap.get(record.Id);
-        
+
         let imageUrl = null;
         if (attachment && attachment.img_bw) {
           try {
@@ -1247,7 +1246,7 @@ export const fetchAchievementConfirmations = async () => {
             if (typeof imgBwArray === 'string') {
               imgBwArray = JSON.parse(imgBwArray);
             }
-            
+
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
@@ -1637,7 +1636,7 @@ export const unlinkQuestConfirmation = async (questId, confirmationId) => {
 
     // NocoDB Link field unlink syntax for one-to-one relationship:
     // Need to unlink from BOTH sides of the relationship
-    
+
     // 1. Unlink from quest side (quest.quest_confirm = null)
     const questUpdatePayload = [{
       Id: questId,
@@ -1844,7 +1843,7 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
 
     // Upload to NocoDB storage first
     const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
-    
+
     const storageResponse = await fetch(storageUploadUrl, {
       method: 'POST',
       headers: {
@@ -1892,7 +1891,7 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
       });
 
       console.log('✅ Attachment linked to quest_confirm. Response:', linkResponse);
-      
+
       // Verify the link was created
       const verifyResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records/${attachmentId}`, {
         method: 'GET'
@@ -2036,7 +2035,7 @@ export const saveQuestConfirmation = async (confirmData) => {
     if (autoApprove) {
       // Check if quest is overdue (created before today)
       const isOverdue = isQuestOverdue(questCreatedAt);
-      
+
       if (isOverdue) {
         // Quest is overdue - mark as failed, auto-approve is disabled
         initialStatus = 'failed';
@@ -2045,7 +2044,7 @@ export const saveQuestConfirmation = async (confirmData) => {
         // Quest is within deadline - auto-approve as completed
         initialStatus = 'completed';
         shouldAutoComplete = true;
-  
+
       }
     }
 
@@ -2078,7 +2077,7 @@ export const saveQuestConfirmation = async (confirmData) => {
         if (uploadResult.success) {
           attachmentId = uploadResult.attachmentId;
           console.log('✅ Image uploaded and linked to quest confirmation');
-          
+
           // Note: In NocoDB one-to-one relationship with belongs-to side,
           // we only need to update the belongs-to side (attachments_gallery.quest_confirm)
           // The other side (quests_confirm.quest_img) will be automatically linked
@@ -2130,9 +2129,9 @@ export const deleteQuestConfirmation = async (confirmationId) => {
 
       if (attachmentsData.list && attachmentsData.list.length > 0) {
         const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
-        
+
         console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
-        
+
         await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
           method: 'DELETE',
           body: JSON.stringify(attachmentIds)
@@ -2149,7 +2148,7 @@ export const deleteQuestConfirmation = async (confirmationId) => {
 
     // Step 2: Delete the quest confirmation record
     console.log('🗑️ Deleting quest confirmation record');
-    
+
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'DELETE',
       body: JSON.stringify([{ Id: confirmationId }])
@@ -2201,7 +2200,7 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
     formData.append('file', imageFile);
 
     const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
-    
+
     const storageResponse = await fetch(storageUploadUrl, {
       method: 'POST',
       headers: {
@@ -2314,7 +2313,7 @@ export const saveAchievementConfirmation = async (confirmData) => {
       // Check if achievement has due date and is overdue
       if (achievementDueDate) {
         const isOverdue = isAchievementOverdue(achievementDueDate);
-        
+
         if (isOverdue) {
           // Achievement is overdue - mark as failed, auto-approve is disabled
           initialStatus = 'failed';
@@ -2409,9 +2408,9 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
 
       if (attachmentsData.list && attachmentsData.list.length > 0) {
         const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
-        
+
         console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
-        
+
         await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
           method: 'DELETE',
           body: JSON.stringify(attachmentIds)
@@ -2428,7 +2427,7 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
 
     // Step 2: Delete the achievement confirmation record
     console.log('🗑️ Deleting achievement confirmation record');
-    
+
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
       method: 'DELETE',
       body: JSON.stringify([{ Id: confirmationId }])
