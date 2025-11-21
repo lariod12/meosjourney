@@ -422,13 +422,23 @@ const UserPage = ({ onBack }) => {
 
         setProfileLoaded(true);
 
-        // Phase 2: Load quests and achievements data in parallel
-        // These are queued internally to prevent rate limiting
+        // Delay before Phase 2 to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Phase 2: Load quests and achievements data in staggered batches
         console.log('📥 Loading quests and achievements...');
         
-        const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
+        // Batch 2a: Load quests data
+        const [questsData, questConfirmsData] = await Promise.all([
           fetchQuests(),
-          fetchQuestConfirmations(),
+          fetchQuestConfirmations()
+        ]);
+
+        // Small delay before batch 2b
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Batch 2b: Load achievements data
+        const [achievementsData, achievementConfirmsData] = await Promise.all([
           fetchAchievements(),
           fetchAchievementConfirmations()
         ]);
