@@ -2453,6 +2453,28 @@ export const savePhotoAlbum = async (albumData) => {
   try {
     const { description, imageFiles } = albumData;
 
+    const getUTC7Timestamp = () => {
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      const parts = formatter.formatToParts(new Date()).reduce((acc, part) => {
+        if (part.type !== 'literal') {
+          acc[part.type] = part.value;
+        }
+        return acc;
+      }, {});
+
+      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+07:00`;
+    };
+
     if (!imageFiles || imageFiles.length === 0) {
       return { success: false, message: 'At least one image is required' };
     }
@@ -2495,7 +2517,8 @@ export const savePhotoAlbum = async (albumData) => {
     // Step 2: Create the album record with description and images
     const payload = {
       desc: description || '',
-      img: uploadedImages
+      img: uploadedImages,
+      created_time: getUTC7Timestamp()
     };
 
     const response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_ALBUM}/records`, {
