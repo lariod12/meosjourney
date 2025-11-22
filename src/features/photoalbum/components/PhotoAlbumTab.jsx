@@ -18,6 +18,7 @@ const PhotoAlbumTab = () => {
   const [itemsPerView, setItemsPerView] = useState(() =>
     getItemsPerView(typeof window !== 'undefined' ? window.innerWidth : 1024)
   );
+  const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
 
   useEffect(() => {
@@ -32,12 +33,14 @@ const PhotoAlbumTab = () => {
   useEffect(() => {
     if (selectedAlbum) {
       setCarouselIndex(0);
+      setZoomedImage(null);
     }
   }, [selectedAlbum]);
 
   useEffect(() => {
     if (!selectedAlbum) {
       setCarouselIndex(0);
+      setZoomedImage(null);
       return;
     }
 
@@ -56,12 +59,20 @@ const PhotoAlbumTab = () => {
   const handlePrev = () => {
     if (!canGoPrev) return;
     setCarouselIndex((prev) => Math.max(prev - itemsPerView, 0));
+    setZoomedImage(null);
   };
 
   const handleNext = () => {
     if (!canGoNext) return;
     setCarouselIndex((prev) => Math.min(prev + itemsPerView, maxCarouselIndex));
+    setZoomedImage(null);
   };
+
+  const handleImageClick = (image, index) => {
+    setZoomedImage({ image, index });
+  };
+
+  const closeZoom = () => setZoomedImage(null);
 
   // Format datetime based on language
   const formatDateTime = (date, isVietnamese = true) => {
@@ -221,12 +232,17 @@ const PhotoAlbumTab = () => {
 
               <div className={`photoalbum-modal-grid photoalbum-modal-grid-${itemsPerView}`}>
                 {visibleImages.map((image, index) => (
-                  <div key={`${carouselIndex}-${index}`} className="photoalbum-modal-image">
+                  <button
+                    key={`${carouselIndex}-${index}`}
+                    className="photoalbum-modal-image"
+                    type="button"
+                    onClick={() => handleImageClick(image, carouselIndex + index)}
+                  >
                     <img
                       src={image.signedUrl || image.url}
                       alt={`${selectedAlbum.desc || 'Album'} ${carouselIndex + index + 1}`}
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -249,6 +265,21 @@ const PhotoAlbumTab = () => {
                   {lang === 'VI' ? 'Ghi chú' : 'Note'}
                 </div>
                 <div className="photoalbum-modal-desc">{selectedAlbum.desc}</div>
+              </div>
+            )}
+
+            {zoomedImage && (
+              <div className="photoalbum-zoom-overlay" onClick={closeZoom}>
+                <div className="photoalbum-zoom-content" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="photoalbum-zoom-close" onClick={closeZoom}>
+                    ✕
+                  </button>
+                  <img
+                    src={zoomedImage.image.signedUrl || zoomedImage.image.url}
+                    alt={`${selectedAlbum.desc || 'Album'} ${zoomedImage.index + 1}`}
+                    className="photoalbum-zoom-image"
+                  />
+                </div>
               </div>
             )}
           </div>
