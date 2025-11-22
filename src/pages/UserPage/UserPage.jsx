@@ -721,10 +721,50 @@ const UserPage = ({ onBack }) => {
     }
   };
 
+  const hasValidAlbumImages = () => albumImages.every((img) => !!img?.file);
+
+  const validateAlbumSection = () => {
+    const hasAlbumDescription = formData.albumDescription.trim().length > 0;
+    const hasImages = albumImages.length > 0;
+    const imagesAreValid = hasValidAlbumImages();
+
+    if (hasAlbumDescription && !hasImages) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'missing image for album',
+        message: 'please add at least one image before submitting the Photo Album section.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+      });
+      return false;
+    }
+
+    if (hasImages && !imagesAreValid) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Ảnh không hợp lệ',
+        message: 'Có ảnh trong danh sách album bị thiếu file. Hãy tải lại ảnh và thử lại.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isSubmitting) return;
+
+    if (!validateAlbumSection()) {
+      return;
+    }
 
     // Show confirmation dialog first
     setConfirmModal({
@@ -910,6 +950,9 @@ const UserPage = ({ onBack }) => {
 
       // Submit Photo Album (if has images)
       if (albumImages.length > 0) {
+        if (!hasValidAlbumImages()) {
+          results.push({ type: 'failed', item: 'Photo Album (missing files)' });
+        } else {
         try {
           const albumResult = await savePhotoAlbum({
             description: formData.albumDescription,
@@ -927,6 +970,7 @@ const UserPage = ({ onBack }) => {
         } catch (error) {
           console.error('❌ Error saving photo album:', error);
           results.push({ type: 'failed', item: 'Photo Album' });
+        }
         }
       }
 
