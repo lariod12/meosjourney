@@ -250,10 +250,55 @@
   margin-top: 8px;
 }
 
+.photoalbum-modal-carousel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.photoalbum-modal-nav-button {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 26px;
+  font-family: 'Patrick Hand', cursive;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  min-width: 48px;
+}
+
+.photoalbum-modal-nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.photoalbum-modal-nav-button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
 .photoalbum-modal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
+  flex: 1;
+}
+
+.photoalbum-modal-grid-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.photoalbum-modal-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.photoalbum-modal-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .photoalbum-modal-image {
@@ -320,8 +365,18 @@
   }
 
   .photoalbum-modal-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
+  }
+
+  .photoalbum-modal-carousel {
+    gap: 8px;
+  }
+
+  .photoalbum-modal-nav-button {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    min-width: 44px;
   }
 }
 
@@ -363,8 +418,19 @@
   }
 
   .photoalbum-modal-grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+  }
+
+  .photoalbum-modal-carousel {
+    gap: 6px;
+  }
+
+  .photoalbum-modal-nav-button {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+    font-size: 20px;
+    min-width: 40px;
   }
 
   .photoalbum-modal-image {

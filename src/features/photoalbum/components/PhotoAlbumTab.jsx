@@ -3,11 +3,65 @@ import { fetchPhotoAlbums } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
 import './PhotoAlbumTab.css';
 
+const getItemsPerView = (width) => {
+  if (!width) return 3;
+  if (width <= 480) return 1;
+  if (width <= 768) return 2;
+  return 3;
+};
+
 const PhotoAlbumTab = () => {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [itemsPerView, setItemsPerView] = useState(() =>
+    getItemsPerView(typeof window !== 'undefined' ? window.innerWidth : 1024)
+  );
   const { t, lang } = useLanguage();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerView(getItemsPerView(window.innerWidth));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (selectedAlbum) {
+      setCarouselIndex(0);
+    }
+  }, [selectedAlbum]);
+
+  useEffect(() => {
+    if (!selectedAlbum) {
+      setCarouselIndex(0);
+      return;
+    }
+
+    const totalImages = selectedAlbum.img?.length || 0;
+    const maxStartIndex = Math.max(0, totalImages - itemsPerView);
+    setCarouselIndex((prev) => Math.min(prev, maxStartIndex));
+  }, [itemsPerView, selectedAlbum]);
+
+  const modalImages = selectedAlbum?.img || [];
+  const maxCarouselIndex = Math.max(0, modalImages.length - itemsPerView);
+  const visibleImages = modalImages.slice(carouselIndex, carouselIndex + itemsPerView);
+  const shouldShowCarouselNav = modalImages.length > itemsPerView;
+  const canGoPrev = carouselIndex > 0;
+  const canGoNext = carouselIndex < maxCarouselIndex;
+
+  const handlePrev = () => {
+    if (!canGoPrev) return;
+    setCarouselIndex((prev) => Math.max(prev - itemsPerView, 0));
+  };
+
+  const handleNext = () => {
+    if (!canGoNext) return;
+    setCarouselIndex((prev) => Math.min(prev + itemsPerView, maxCarouselIndex));
+  };
 
   // Format datetime based on language
   const formatDateTime = (date, isVietnamese = true) => {
@@ -152,15 +206,41 @@ const PhotoAlbumTab = () => {
               );
             })()}
 
-            <div className="photoalbum-modal-grid">
-              {(selectedAlbum.img || []).map((image, index) => (
-                <div key={index} className="photoalbum-modal-image">
-                  <img
-                    src={image.signedUrl || image.url}
-                    alt={`${selectedAlbum.desc || 'Album'} ${index + 1}`}
-                  />
-                </div>
-              ))}
+            <div className="photoalbum-modal-carousel">
+              {shouldShowCarouselNav && (
+                <button
+                  type="button"
+                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-prev"
+                  onClick={handlePrev}
+                  disabled={!canGoPrev}
+                  aria-label="Previous images"
+                >
+                  ‹
+                </button>
+              )}
+
+              <div className={`photoalbum-modal-grid photoalbum-modal-grid-${itemsPerView}`}>
+                {visibleImages.map((image, index) => (
+                  <div key={`${carouselIndex}-${index}`} className="photoalbum-modal-image">
+                    <img
+                      src={image.signedUrl || image.url}
+                      alt={`${selectedAlbum.desc || 'Album'} ${carouselIndex + index + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {shouldShowCarouselNav && (
+                <button
+                  type="button"
+                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-next"
+                  onClick={handleNext}
+                  disabled={!canGoNext}
+                  aria-label="Next images"
+                >
+                  ›
+                </button>
+              )}
             </div>
 
             {selectedAlbum.desc && (
