@@ -226,32 +226,6 @@ const UserPage = ({ onBack }) => {
     }
   };
 
-  const resetUserPageState = async () => {
-    setFormData(prev => ({
-      ...prev,
-      doing: '',
-      location: '',
-      mood: '',
-      journalEntry: '',
-      newSkill: '',
-      newHobby: '',
-      albumDescription: ''
-    }));
-    setDoingSuggestions([]);
-    setDoingOpen(false);
-    setLocationSuggestions([]);
-    setLocationOpen(false);
-    setMoodSuggestions([]);
-    setMoodOpen(false);
-    setSelectedQuestSubmissions([]);
-    setSelectedAchievementSubmissions([]);
-    setExpandedQuestSubmissions([]);
-    setExpandedAchievementSubmissions([]);
-    // Clear album images and revoke object URLs
-    albumImages.forEach(img => URL.revokeObjectURL(img.preview));
-    setAlbumImages([]);
-  };
-
   // Debug: Log formData changes
   useEffect(() => {
   }, [formData.doing, formData.location, formData.mood, formData.caption]);
@@ -1313,8 +1287,6 @@ const UserPage = ({ onBack }) => {
         }
 
         if (successItems.length > 0) {
-          resetUserPageState();
-          
           // Reload data after successful submit
           reloadDataAfterSubmit();
         }
@@ -1356,33 +1328,6 @@ const UserPage = ({ onBack }) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleReset = () => {
-    setFormData({
-      noteDate: new Date().toISOString().split('T')[0],
-      doing: '',
-      location: '',
-      mood: '',
-      journalEntry: '',
-      introduce: profileData.introduce,
-      newSkill: '',
-      newHobby: '',
-      albumDescription: ''
-    });
-    setDoingSuggestions([]);
-    setDoingOpen(false);
-    setLocationSuggestions([]);
-    setLocationOpen(false);
-    setMoodSuggestions([]);
-    setMoodOpen(false);
-    setSelectedQuestSubmissions([]);
-    setSelectedAchievementSubmissions([]);
-    setExpandedQuestSubmissions([]);
-    setExpandedAchievementSubmissions([]);
-    // Clear album images and revoke object URLs
-    albumImages.forEach(img => URL.revokeObjectURL(img.preview));
-    setAlbumImages([]);
   };
 
   // Quest submission handlers
@@ -2992,9 +2937,6 @@ const UserPage = ({ onBack }) => {
                   ? `Uploading ${uploadingQuestIndex + 1}/${selectedQuestSubmissions.length + selectedAchievementSubmissions.length}...`
                   : 'Submitting...'
               ) : 'Submit'}
-            </button>
-            <button type="button" onClick={handleReset} className="btn-secondary" disabled={isSubmitting}>
-              ✕ Reset
             </button>
           </div>
         </form>
