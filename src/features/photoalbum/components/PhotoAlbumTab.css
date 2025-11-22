@@ -1,0 +1,349 @@
+/* ========================================
+   Photo Album Tab - Black & White Theme
+   ======================================== */
+
+.photoalbum-content {
+  padding: 20px;
+}
+
+.photoalbum-empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 18px;
+  color: #666666;
+  font-style: italic;
+}
+
+.photoalbum-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.photoalbum-card {
+  border: 3px solid #000000;
+  background-color: #ffffff;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  transform: rotate(-1deg);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.photoalbum-card:nth-child(even) {
+  transform: rotate(1deg);
+}
+
+.photoalbum-card:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 4px 4px 0 #000000;
+}
+
+.photoalbum-card-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid #000000;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.photoalbum-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photoalbum-card-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 4px 12px;
+  border: 2px solid #ffffff;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.photoalbum-card-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #cccccc;
+  background-color: #f9f9f9;
+  font-size: 48px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.photoalbum-card-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.photoalbum-card-desc-wrapper {
+  margin-bottom: 5px;
+  position: relative;
+  padding-top: 10px;
+}
+
+.photoalbum-card-note-badge {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  background-color: #000000;
+  color: #ffffff;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transform: rotate(-1deg);
+  z-index: 1;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+.photoalbum-card-desc-text {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 14px;
+  color: #333333;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  border: 1px dashed #999999;
+  border-radius: 0;
+  padding: 10px;
+  margin-top: 8px;
+  background-color: transparent;
+  min-height: 50px;
+}
+
+.photoalbum-card-desc-text:empty {
+  display: none;
+}
+
+.photoalbum-card-date {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 14px;
+  color: #666666;
+  font-style: italic;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed #eeeeee;
+}
+
+/* Modal */
+.photoalbum-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.photoalbum-modal-content {
+  background-color: #ffffff;
+  border: 4px solid #000000;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  position: relative;
+}
+
+.photoalbum-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background-color: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+  font-size: 24px;
+  font-weight: bold;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  padding: 0;
+  line-height: 1;
+}
+
+.photoalbum-modal-close:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.photoalbum-modal-date {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 16px;
+  color: #666666;
+  margin-bottom: 15px;
+  font-style: italic;
+  text-align: center;
+}
+
+.photoalbum-modal-desc {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 20px;
+  color: #000000;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #000000;
+  line-height: 1.6;
+}
+
+.photoalbum-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.photoalbum-modal-image {
+  border: 2px solid #000000;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+
+.photoalbum-modal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+
+.photoalbum-modal-image:hover img {
+  transform: scale(1.05);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .photoalbum-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+  }
+
+  .photoalbum-card {
+    padding: 10px;
+    border-width: 2px;
+  }
+
+  .photoalbum-card-image {
+    border-width: 2px;
+  }
+
+  .photoalbum-card-desc {
+    font-size: 15px;
+  }
+
+  .photoalbum-card-date {
+    font-size: 13px;
+  }
+
+  .photoalbum-modal {
+    padding: 10px;
+  }
+
+  .photoalbum-modal-content {
+    padding: 20px;
+    border-width: 3px;
+  }
+
+  .photoalbum-modal-close {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .photoalbum-modal-date {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .photoalbum-modal-desc {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  .photoalbum-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .photoalbum-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .photoalbum-card {
+    padding: 8px;
+  }
+
+  .photoalbum-card-desc {
+    font-size: 14px;
+  }
+
+  .photoalbum-card-date {
+    font-size: 12px;
+  }
+
+  .photoalbum-card-count {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+
+  .photoalbum-modal-content {
+    padding: 15px;
+    border-width: 2px;
+  }
+
+  .photoalbum-modal-date {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .photoalbum-modal-desc {
+    font-size: 16px;
+  }
+
+  .photoalbum-modal-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .photoalbum-modal-image {
+    border-width: 2px;
+  }
+}

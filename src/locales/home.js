@@ -23,6 +23,7 @@ export const homeLocales = {
     'daily.journal': 'DAILY JOURNAL',
     'daily.quests': 'DAILY QUESTS',
     'daily.achievements': 'ACHIEVEMENTS',
+    'daily.photoalbum': 'PHOTO ALBUM',
     'daily.history': 'HISTORY',
 
     'quests.completed': 'Completed',
@@ -49,6 +50,9 @@ export const homeLocales = {
 
     'achievements.loading': 'Loading achievements...',
     'achievements.empty': 'No achievements found.',
+
+    'photoalbum.loading': 'Loading photo albums...',
+    'photoalbum.empty': 'No photo albums yet.',
 
     'footer.connect': 'CONNECT WITH ME',
     'footer.version_label': 'Version',
@@ -80,6 +84,7 @@ export const homeLocales = {
     'daily.journal': 'NHẬT KÝ HẰNG NGÀY',
     'daily.quests': 'NHIỆM VỤ HẰNG NGÀY',
     'daily.achievements': 'THÀNH TỰU',
+    'daily.photoalbum': 'ALBUM ẢNH',
     'daily.history': 'LỊCH SỬ',
 
     'quests.completed': 'Hoàn thành',
@@ -106,6 +111,9 @@ export const homeLocales = {
 
     'achievements.loading': 'Đang tải thành tựu...',
     'achievements.empty': 'Không có thành tựu.',
+
+    'photoalbum.loading': 'Đang tải album ảnh...',
+    'photoalbum.empty': 'Chưa có album ảnh nào.',
 
     'footer.connect': 'KẾT NỐI VỚI TÔI',
     'footer.version_label': 'Phiên bản',

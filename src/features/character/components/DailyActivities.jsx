@@ -3,6 +3,7 @@ import { useLanguage } from '../../../contexts';
 import { QuestsTab } from '../../quests/components';
 import { JournalTab, HistoryTab } from '../../journal/components';
 import { AchievementsTab } from '../../achievements/components';
+import { PhotoAlbumTab } from '../../photoalbum/components';
 
 const DailyActivities = () => {
   const { t } = useLanguage();
@@ -21,6 +22,11 @@ const DailyActivities = () => {
       id: 'achievements',
       label: t('daily.achievements'),
       content: <AchievementsTab />
+    },
+    {
+      id: 'photoalbum',
+      label: t('daily.photoalbum'),
+      content: <PhotoAlbumTab />
     },
     {
       id: 'history',

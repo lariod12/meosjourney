@@ -2519,4 +2519,27 @@ export const savePhotoAlbum = async (albumData) => {
   }
 };
 
+/**
+ * Fetch photo albums from NocoDB attachments_album table
+ * @returns {Promise<Array>} Array of photo album records
+ */
+export const fetchPhotoAlbums = async () => {
+  const cacheKey = 'photoAlbums';
+  
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      const response = await nocoRequest(
+        `${TABLE_IDS.ATTACHMENTS_ALBUM}/records?sort=-created_time&limit=50`,
+        { method: 'GET' }
+      );
+
+      const albums = response.list || [];
+      return albums;
+    } catch (error) {
+      console.error('❌ Error fetching photo albums from NocoDB:', error);
+      return [];
+    }
+  });
+};
+
 export { TABLE_IDS };
