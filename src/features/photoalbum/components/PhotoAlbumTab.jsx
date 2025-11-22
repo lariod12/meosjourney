@@ -9,21 +9,30 @@ const PhotoAlbumTab = () => {
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const { t, lang } = useLanguage();
 
-  // Format datetime in a simple and elegant way
+  // Format datetime based on language
   const formatDateTime = (date, isVietnamese = true) => {
     if (!date) return '';
 
     const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-
+    
     if (isVietnamese) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
       return `${day}/${month}/${year} ${hours}:${minutes}`;
     } else {
-      return `${month}/${day}/${year} ${hours}:${minutes}`;
+      // English format with AM/PM
+      const options = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true
+      };
+      return d.toLocaleString('en-US', options);
     }
   };
 
@@ -98,7 +107,9 @@ const PhotoAlbumTab = () => {
               <div className="photoalbum-card-content">
                 {album.desc && (
                   <div className="photoalbum-card-desc-wrapper">
-                    <div className="photoalbum-card-note-badge" title={album.desc}>Ghi chú</div>
+                    <div className="photoalbum-card-note-badge" title={album.desc}>
+                      {lang === 'VI' ? 'Ghi chú' : 'Note'}
+                    </div>
                     <div className="photoalbum-card-desc-text" title={album.desc}>
                       {album.desc.length > 100 ? `${album.desc.substring(0, 100)}...` : album.desc}
                     </div>
@@ -154,7 +165,9 @@ const PhotoAlbumTab = () => {
 
             {selectedAlbum.desc && (
               <div className="photoalbum-modal-desc-wrapper">
-                <div className="photoalbum-modal-note-badge" title={selectedAlbum.desc}>Ghi chú</div>
+                <div className="photoalbum-modal-note-badge" title={selectedAlbum.desc}>
+                  {lang === 'VI' ? 'Ghi chú' : 'Note'}
+                </div>
                 <div className="photoalbum-modal-desc">{selectedAlbum.desc}</div>
               </div>
             )}
