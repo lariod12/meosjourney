@@ -141,10 +141,6 @@ const PhotoAlbumTab = () => {
               );
             })()}
 
-            {selectedAlbum.desc && (
-              <div className="photoalbum-modal-desc">{selectedAlbum.desc}</div>
-            )}
-
             <div className="photoalbum-modal-grid">
               {(selectedAlbum.img || []).map((image, index) => (
                 <div key={index} className="photoalbum-modal-image">
@@ -155,6 +151,13 @@ const PhotoAlbumTab = () => {
                 </div>
               ))}
             </div>
+
+            {selectedAlbum.desc && (
+              <div className="photoalbum-modal-desc-wrapper">
+                <div className="photoalbum-modal-note-badge" title={selectedAlbum.desc}>Ghi chú</div>
+                <div className="photoalbum-modal-desc">{selectedAlbum.desc}</div>
+              </div>
+            )}
           </div>
         </div>
       )}

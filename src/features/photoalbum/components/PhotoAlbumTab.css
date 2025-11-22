@@ -176,12 +176,11 @@
 
 .photoalbum-modal-close {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 1px;
+  right: 1px;
   background-color: #ffffff;
   border: 2px solid #000000;
   color: #000000;
-  font-size: 24px;
   font-weight: bold;
   width: 40px;
   height: 40px;
@@ -210,14 +209,41 @@
   text-align: center;
 }
 
+.photoalbum-modal-desc-wrapper {
+  margin: 20px 0 10px;
+  position: relative;
+  padding-top: 10px;
+}
+
+.photoalbum-modal-note-badge {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  background-color: #000000;
+  color: #ffffff;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transform: rotate(-1deg);
+  z-index: 1;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
 .photoalbum-modal-desc {
   font-family: 'Patrick Hand', cursive;
-  font-size: 20px;
-  color: #000000;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #000000;
+  font-size: 16px;
+  color: #333333;
   line-height: 1.6;
+  border: 1px dashed #999999;
+  border-radius: 0;
+  padding: 15px 15px 15px 15px;
+  background-color: transparent;
+  margin-top: 8px;
 }
 
 .photoalbum-modal-grid {
@@ -277,13 +303,6 @@
     border-width: 3px;
   }
 
-  .photoalbum-modal-close {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-    top: 10px;
-    right: 10px;
-  }
 
   .photoalbum-modal-date {
     font-size: 14px;
