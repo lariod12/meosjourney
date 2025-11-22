@@ -936,20 +936,52 @@ export const saveStatus = async (statusData) => {
       throw new Error('No status record found to update');
     }
 
+    const normalizeArray = (value) => {
+      if (Array.isArray(value)) {
+        return value
+          .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
+          .filter(Boolean);
+      }
+      if (value === undefined || value === null) {
+        return [];
+      }
+      const strValue = typeof value === 'string' ? value.trim() : String(value).trim();
+      return strValue ? [strValue] : [];
+    };
+
+    const prependStatusValue = (newValue, existingList) => {
+      const existing = normalizeArray(existingList);
+      const strValue = typeof newValue === 'string' ? newValue.trim() : String(newValue || '').trim();
+
+      if (!strValue) {
+        return [];
+      }
+
+      const filteredExisting = existing.filter(
+        (item) => item.toLowerCase() !== strValue.toLowerCase()
+      );
+
+      return [strValue, ...filteredExisting];
+    };
+
+    const currentActivities = normalizeArray(currentStatus.doing);
+    const currentLocations = normalizeArray(currentStatus.location);
+    const currentMoods = normalizeArray(currentStatus.mood);
+
     const updates = {};
 
     // Map frontend fields to NocoDB columns
     // Note: NocoDB columns are JSON/Array, so we wrap strings in arrays if needed
     if (statusData.doing !== undefined) {
-      updates.current_activity = statusData.doing ? [statusData.doing] : [];
+      updates.current_activity = prependStatusValue(statusData.doing, currentActivities);
     }
 
     if (statusData.location !== undefined) {
-      updates.location = statusData.location ? [statusData.location] : [];
+      updates.location = prependStatusValue(statusData.location, currentLocations);
     }
 
     if (statusData.mood !== undefined) {
-      updates.mood = statusData.mood ? [statusData.mood] : [];
+      updates.mood = prependStatusValue(statusData.mood, currentMoods);
     }
 
     // If no updates, return success
