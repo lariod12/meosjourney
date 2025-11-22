@@ -745,8 +745,8 @@ const UserPage = ({ onBack }) => {
       setConfirmModal({
         isOpen: true,
         type: 'error',
-        title: 'Ảnh không hợp lệ',
-        message: 'Có ảnh trong danh sách album bị thiếu file. Hãy tải lại ảnh và thử lại.',
+        title: 'invalid image for album',
+        message: 'some images in the album list are missing files. Please reload the images and try again.',
         confirmText: 'OK',
         cancelText: null,
         onConfirm: () => setConfirmModal((prev) => ({ ...prev, isOpen: false }))
