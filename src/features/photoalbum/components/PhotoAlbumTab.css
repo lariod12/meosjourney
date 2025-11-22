@@ -198,9 +198,10 @@
 }
 
 .photoalbum-modal-close:hover {
-  background-color: #000000;
-  color: #ffffff;
-  transform: scale(1.1);
+  background-color: white;
+  color: black;
+  border: solid black;
+  transition: ease-in-out;
 }
 
 .photoalbum-modal-date {
@@ -297,6 +298,11 @@
 
 .photoalbum-modal-grid-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.photoalbum-modal-grid-single {
+  justify-items: center;
+  align-items: center;
 }
 
 .photoalbum-modal-image {

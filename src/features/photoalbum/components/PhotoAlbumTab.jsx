@@ -53,6 +53,14 @@ const PhotoAlbumTab = () => {
   const maxCarouselIndex = Math.max(0, modalImages.length - itemsPerView);
   const visibleImages = modalImages.slice(carouselIndex, carouselIndex + itemsPerView);
   const shouldShowCarouselNav = modalImages.length > itemsPerView;
+  const isSingleImage = modalImages.length === 1;
+  const gridColumnsClass = `photoalbum-modal-grid-${itemsPerView}`;
+  const singleImageGridStyle = isSingleImage && itemsPerView === 3
+    ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
+    : undefined;
+  const singleImageItemStyle = isSingleImage && itemsPerView === 3
+    ? { gridColumn: '2 / 3' }
+    : undefined;
   const canGoPrev = carouselIndex > 0;
   const canGoNext = carouselIndex < maxCarouselIndex;
 
@@ -230,13 +238,17 @@ const PhotoAlbumTab = () => {
                 </button>
               )}
 
-              <div className={`photoalbum-modal-grid photoalbum-modal-grid-${itemsPerView}`}>
+              <div
+                className={`photoalbum-modal-grid ${gridColumnsClass} ${isSingleImage ? 'photoalbum-modal-grid-single' : ''}`}
+                style={singleImageGridStyle}
+              >
                 {visibleImages.map((image, index) => (
                   <button
                     key={`${carouselIndex}-${index}`}
                     className="photoalbum-modal-image"
                     type="button"
                     onClick={() => handleImageClick(image, carouselIndex + index)}
+                    style={singleImageItemStyle}
                   >
                     <img
                       src={image.signedUrl || image.url}
