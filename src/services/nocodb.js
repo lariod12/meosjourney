@@ -30,7 +30,7 @@ const TABLE_IDS = {
   ACHIEVEMENTS: 'm4m6vrb5ylqoqxn',
   ACHIEVEMENTS_CONFIRM: 'mcynwxx2hpgcolt',
   ATTACHMENTS_GALLERY: 'mirssuqhjx529p5',
-  ATTACHMENTS_ALBUM: 'mxqvvqxqxqxqxqx' // placeholder
+  ATTACHMENTS_ALBUM: 'mc6wu0v542g2bnr'
 };
 
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
@@ -2437,6 +2437,84 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
     return { success: true, message: 'Achievement confirmation and linked attachments deleted' };
   } catch (error) {
     console.error('❌ Error deleting achievement confirmation in NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Upload photo album to NocoDB attachments_album table
+ * Uploads multiple images and creates a record with description
+ * @param {Object} albumData - Album data
+ * @param {string} albumData.description - Album description
+ * @param {File[]} albumData.imageFiles - Array of image files to upload
+ * @returns {Promise<Object>} Result object with success status and album ID
+ */
+export const savePhotoAlbum = async (albumData) => {
+  try {
+    const { description, imageFiles } = albumData;
+
+    if (!imageFiles || imageFiles.length === 0) {
+      return { success: false, message: 'At least one image is required' };
+    }
+
+    // Step 1: Upload all images to NocoDB storage
+    const uploadedImages = [];
+    
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageFile = imageFiles[i];
+
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
+
+      const storageResponse = await fetch(storageUploadUrl, {
+        method: 'POST',
+        headers: {
+          'xc-token': NOCODB_TOKEN,
+        },
+        body: formData
+      });
+
+      if (!storageResponse.ok) {
+        const errorText = await storageResponse.text();
+        console.warn(`⚠️ Failed to upload image ${i + 1}: ${errorText}`);
+        continue; // Skip failed uploads
+      }
+
+      const storageResult = await storageResponse.json();
+      // NocoDB storage upload returns an array, we need the first element
+      const imageData = Array.isArray(storageResult) ? storageResult[0] : storageResult;
+      uploadedImages.push(imageData);
+    }
+
+    if (uploadedImages.length === 0) {
+      return { success: false, message: 'Failed to upload any images' };
+    }
+
+    // Step 2: Create the album record with description and images
+    const payload = {
+      desc: description || '',
+      img: uploadedImages
+    };
+
+    const response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_ALBUM}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    const albumId = response.Id || (response.list && response.list[0]?.Id);
+
+    return {
+      success: true,
+      message: `Photo album saved with ${uploadedImages.length} images`,
+      id: albumId,
+      uploadedCount: uploadedImages.length,
+      totalCount: imageFiles.length,
+      data: response
+    };
+  } catch (error) {
+    console.error('❌ Error saving photo album to NocoDB:', error);
     return { success: false, message: error.message };
   }
 };

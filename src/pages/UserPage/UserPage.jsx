@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, CHARACTER_ID } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache, clearRefreshCooldown } from '../../utils/cacheManager';
 import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
@@ -247,12 +247,25 @@ const UserPage = ({ onBack }) => {
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
     setExpandedAchievementSubmissions([]);
+    // Clear album images and revoke object URLs
+    albumImages.forEach(img => URL.revokeObjectURL(img.preview));
     setAlbumImages([]);
   };
 
   // Debug: Log formData changes
   useEffect(() => {
   }, [formData.doing, formData.location, formData.mood, formData.caption]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      albumImages.forEach(img => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
+    };
+  }, [albumImages]);
 
   useEffect(() => {
     // Load all data from NocoDB in optimized sequence
@@ -895,6 +908,28 @@ const UserPage = ({ onBack }) => {
         }
       }
 
+      // Submit Photo Album (if has images)
+      if (albumImages.length > 0) {
+        try {
+          const albumResult = await savePhotoAlbum({
+            description: formData.albumDescription,
+            imageFiles: albumImages.map(img => img.file)
+          });
+
+          if (albumResult.success) {
+            results.push({ 
+              type: 'success', 
+              item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)` 
+            });
+          } else {
+            results.push({ type: 'failed', item: 'Photo Album' });
+          }
+        } catch (error) {
+          console.error('❌ Error saving photo album:', error);
+          results.push({ type: 'failed', item: 'Photo Album' });
+        }
+      }
+
       // Submit Quest Confirmations (if has submissions)
       let didAutoApprove = false;
       if (selectedQuestSubmissions.length > 0) {
@@ -1288,7 +1323,8 @@ const UserPage = ({ onBack }) => {
       journalEntry: '',
       introduce: profileData.introduce,
       newSkill: '',
-      newHobby: ''
+      newHobby: '',
+      albumDescription: ''
     });
     setDoingSuggestions([]);
     setDoingOpen(false);
@@ -1300,6 +1336,9 @@ const UserPage = ({ onBack }) => {
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
     setExpandedAchievementSubmissions([]);
+    // Clear album images and revoke object URLs
+    albumImages.forEach(img => URL.revokeObjectURL(img.preview));
+    setAlbumImages([]);
   };
 
   // Quest submission handlers
