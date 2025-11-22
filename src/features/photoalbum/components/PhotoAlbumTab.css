@@ -8,11 +8,13 @@
 
 .photoalbum-empty {
   text-align: center;
-  padding: 40px 20px;
-  font-family: 'Patrick Hand', cursive;
-  font-size: 18px;
+  padding: 60px 20px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
   color: #666666;
   font-style: italic;
+  background-color: #f9f9f9;
+  border: 2px dashed #cccccc;
 }
 
 .photoalbum-grid {
