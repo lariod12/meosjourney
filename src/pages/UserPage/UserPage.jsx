@@ -34,7 +34,8 @@ const UserPage = ({ onBack }) => {
     journalEntry: '',
     introduce: '',
     newSkill: '',
-    newHobby: ''
+    newHobby: '',
+    albumDescription: ''
   });
 
   // Profile data states
@@ -82,6 +83,9 @@ const UserPage = ({ onBack }) => {
   const [autoApproveTasks, setAutoApproveTasks] = useState(false);
   const [questPickerCollapsed, setQuestPickerCollapsed] = useState(false);
   const [achievementPickerCollapsed, setAchievementPickerCollapsed] = useState(false);
+  
+  // Photo Album states
+  const [albumImages, setAlbumImages] = useState([]);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: 'info',
@@ -101,6 +105,7 @@ const UserPage = ({ onBack }) => {
 
   // Collapse/expand states - Status expanded by default to show current data
   const [profileExpanded, setProfileExpanded] = useState(false);
+  const [photoAlbumExpanded, setPhotoAlbumExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(true); // Expanded by default
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
@@ -229,7 +234,8 @@ const UserPage = ({ onBack }) => {
       mood: '',
       journalEntry: '',
       newSkill: '',
-      newHobby: ''
+      newHobby: '',
+      albumDescription: ''
     }));
     setDoingSuggestions([]);
     setDoingOpen(false);
@@ -241,6 +247,7 @@ const UserPage = ({ onBack }) => {
     setSelectedAchievementSubmissions([]);
     setExpandedQuestSubmissions([]);
     setExpandedAchievementSubmissions([]);
+    setAlbumImages([]);
   };
 
   // Debug: Log formData changes
@@ -2071,6 +2078,92 @@ const UserPage = ({ onBack }) => {
 ◆ Điều đáng nhớ?
 ◆ Bài học rút ra?`}
                   />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Photo Album */}
+          <div className="form-section">
+            <h2
+              className="section-title clickable"
+              onClick={() => {
+                setPhotoAlbumExpanded(!photoAlbumExpanded);
+              }}
+            >
+              {photoAlbumExpanded ? '▼' : '▸'} Photo Album
+            </h2>
+
+            {photoAlbumExpanded && (
+              <div className="section-content">
+                <div className="form-group">
+                  <label htmlFor="albumDescription">Album Description</label>
+                  <textarea
+                    id="albumDescription"
+                    name="albumDescription"
+                    rows="4"
+                    value={formData.albumDescription}
+                    onChange={handleChange}
+                    placeholder="Describe your photo album..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Photos ({albumImages.length})</label>
+                  
+                  {/* Upload Button */}
+                  <div className="photoalbum-upload-section">
+                    <label className="photoalbum-upload-btn">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files);
+                          if (files.length > 0) {
+                            const newImages = files.map(file => ({
+                              id: Date.now() + Math.random(),
+                              file,
+                              preview: URL.createObjectURL(file)
+                            }));
+                            setAlbumImages(prev => [...prev, ...newImages]);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                      📷 Add Photos
+                    </label>
+                    <p className="photoalbum-upload-hint">Click to select multiple photos</p>
+                  </div>
+
+                  {/* Image Grid */}
+                  {albumImages.length > 0 && (
+                    <div className="photoalbum-grid">
+                      {albumImages.map((image) => (
+                        <div key={image.id} className="photoalbum-item">
+                          <img src={image.preview} alt="Album preview" className="photoalbum-preview" />
+                          <button
+                            type="button"
+                            className="photoalbum-remove-btn"
+                            onClick={() => {
+                              URL.revokeObjectURL(image.preview);
+                              setAlbumImages(prev => prev.filter(img => img.id !== image.id));
+                            }}
+                            aria-label="Remove photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {albumImages.length === 0 && (
+                    <div className="photoalbum-empty">
+                      <p>No photos added yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
