@@ -3333,12 +3333,15 @@ export const fetchPhotoAlbums = async () => {
             if (import.meta.env.MODE !== 'production') {
               // Debug: Log development mode URL handling (development only)
               if (import.meta.env.MODE !== 'production') {
-                console.log('🛠️ PhotoAlbum Development mode: using signedPath');
+                console.log('🛠️ PhotoAlbum Development mode: resolving local path');
               }
-              imageUrl = imageObj.signedPath || imageObj.path || null;
-              // Construct full URL for signedPath
-              if (imageUrl) {
-                imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
+              const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
+              if (rawPath) {
+                const normalizedPath = rawPath.replace(/\\/g, '/');
+                const trimmedPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+                imageUrl = `${NOCODB_BASE_URL}/${trimmedPath}`;
+              } else {
+                imageUrl = null;
               }
             } else {
               // Debug: Log production mode URL handling (development only)
@@ -3387,7 +3390,7 @@ export const fetchPhotoAlbums = async () => {
 
 /**
  * Fetch gallery items from NocoDB attachments_gallery table
- * Filters records with title starting with "gallery"
+ * Filters records with title containing "gallery"
  * Each record can contain multiple images (like photo albums)
  * @returns {Promise<Array>} Array of gallery records with processed image URLs
  */
@@ -3408,10 +3411,10 @@ export const fetchHomePageGallery = async () => {
 
       const allRecords = response.list || [];
 
-      // Filter records with title starting with "gallery" (case-insensitive)
+      // Filter records where title contains "gallery" (case-insensitive)
       const galleryRecords = allRecords.filter(record => {
-        const title = record.title || '';
-        return title.toLowerCase().startsWith('gallery');
+        const title = typeof record.title === 'string' ? record.title : '';
+        return title.toLowerCase().includes('gallery');
       });
 
       // Debug: Log filtered gallery data (development only)
@@ -3443,10 +3446,13 @@ export const fetchHomePageGallery = async () => {
 
           // Development mode: use signedPath, Production mode: use signedUrl
           if (import.meta.env.MODE !== 'production') {
-            imageUrl = imageObj.signedPath || imageObj.path || null;
-            // Construct full URL for signedPath
-            if (imageUrl) {
-              imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
+            const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
+            if (rawPath) {
+              const normalizedPath = rawPath.replace(/\\/g, '/');
+              const trimmedPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+              imageUrl = `${NOCODB_BASE_URL}/${trimmedPath}`;
+            } else {
+              imageUrl = null;
             }
           } else {
             imageUrl = imageObj.signedUrl || imageObj.url || null;
@@ -3470,8 +3476,8 @@ export const fetchHomePageGallery = async () => {
 
         return {
           Id: record.Id,
-          title: record.title,
-          desc: record.desc || '',
+          title: typeof record.title === 'string' ? record.title : '',
+          desc: typeof record.desc === 'string' ? record.desc : '',
           img: processedImages,
           created_time: record.created_time || record.CreatedAt
         };
