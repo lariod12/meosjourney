@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchHomePageGallery } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
-import './PhotoAlbumTab.css';
+import './GalleryTab.css';
 
 const getItemsPerView = (width) => {
   if (!width) return 3;
@@ -99,7 +99,7 @@ const GalleryTab = () => {
   const visibleImages = modalImages.slice(carouselIndex, carouselIndex + itemsPerView);
   const shouldShowCarouselNav = modalImages.length > itemsPerView;
   const isSingleImage = modalImages.length === 1;
-  const gridColumnsClass = `photoalbum-modal-grid-${itemsPerView}`;
+  const gridColumnsClass = `gallery-modal-grid-${itemsPerView}`;
   const singleImageGridStyle = isSingleImage && itemsPerView === 3
     ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
     : undefined;
@@ -129,23 +129,23 @@ const GalleryTab = () => {
 
   if (loading) {
     return (
-      <div className="photoalbum-content">
-        <div className="photoalbum-empty">{t('photoalbum.loading')}</div>
+      <div className="gallery-content">
+        <div className="gallery-empty">{t('photoalbum.loading')}</div>
       </div>
     );
   }
 
   if (galleries.length === 0) {
     return (
-      <div className="photoalbum-content">
-        <div className="photoalbum-empty">{t('photoalbum.empty')}</div>
+      <div className="gallery-content">
+        <div className="gallery-empty">{t('photoalbum.empty')}</div>
       </div>
     );
   }
 
   return (
-    <div className="photoalbum-content">
-      <div className="photoalbum-grid">
+    <div className="gallery-content">
+      <div className="gallery-grid">
         {galleries.map((gallery) => {
           const images = gallery.img || [];
           const firstImage = images.length > 0 ? images[0] : null;
@@ -156,27 +156,29 @@ const GalleryTab = () => {
           return (
             <div
               key={gallery.Id}
-              className="photoalbum-card"
+              className="gallery-card"
               onClick={() => setSelectedGallery(gallery)}
             >
-              {firstImage ? (
-                <div className="photoalbum-card-image">
-                  <img
-                    src={firstImage.signedUrl || firstImage.url}
-                    alt={gallery.desc || 'Gallery'}
-                  />
-                  {images.length > 1 && (
-                    <div className="photoalbum-card-count">
-                      +{images.length - 1}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="photoalbum-card-placeholder">
-                  🖼️
-                </div>
-              )}
-              <div className="photoalbum-card-desc">
+              <div className="gallery-card-frame">
+                {firstImage ? (
+                  <div className="gallery-card-image">
+                    <img
+                      src={firstImage.signedUrl || firstImage.url}
+                      alt={gallery.desc || 'Gallery'}
+                    />
+                    {images.length > 1 && (
+                      <div className="gallery-card-count">
+                        +{images.length - 1}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="gallery-card-placeholder">
+                    🖼️
+                  </div>
+                )}
+              </div>
+              <div className="gallery-card-desc">
                 {gallery.desc || gallery.title || 'Gallery'}
               </div>
             </div>
@@ -186,10 +188,10 @@ const GalleryTab = () => {
 
       {/* Modal for viewing full gallery */}
       {selectedGallery && (
-        <div className="photoalbum-modal" onClick={() => setSelectedGallery(null)}>
-          <div className="photoalbum-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="gallery-modal" onClick={() => setSelectedGallery(null)}>
+          <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
             <button
-              className="photoalbum-modal-close"
+              className="gallery-modal-close"
               onClick={() => setSelectedGallery(null)}
             >
               ✕
@@ -201,17 +203,17 @@ const GalleryTab = () => {
                 : null;
 
               return modalDate && (
-                <div className="photoalbum-modal-date">
+                <div className="gallery-modal-date">
                   {formatDateTime(modalDate, lang === 'VI')}
                 </div>
               );
             })()}
 
-            <div className="photoalbum-modal-carousel">
+            <div className="gallery-modal-carousel">
               {shouldShowCarouselNav && (
                 <button
                   type="button"
-                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-prev"
+                  className="gallery-modal-nav-button gallery-modal-nav-button-prev"
                   onClick={handlePrev}
                   disabled={!canGoPrev}
                   aria-label="Previous images"
@@ -221,13 +223,13 @@ const GalleryTab = () => {
               )}
 
               <div
-                className={`photoalbum-modal-grid ${gridColumnsClass} ${isSingleImage ? 'photoalbum-modal-grid-single' : ''}`}
+                className={`gallery-modal-grid ${gridColumnsClass} ${isSingleImage ? 'gallery-modal-grid-single' : ''}`}
                 style={singleImageGridStyle}
               >
                 {visibleImages.map((image, index) => (
                   <button
                     key={`${carouselIndex}-${index}`}
-                    className="photoalbum-modal-image"
+                    className="gallery-modal-image"
                     type="button"
                     onClick={() => handleImageClick(image, carouselIndex + index)}
                     style={singleImageItemStyle}
@@ -243,7 +245,7 @@ const GalleryTab = () => {
               {shouldShowCarouselNav && (
                 <button
                   type="button"
-                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-next"
+                  className="gallery-modal-nav-button gallery-modal-nav-button-next"
                   onClick={handleNext}
                   disabled={!canGoNext}
                   aria-label="Next images"
@@ -254,21 +256,21 @@ const GalleryTab = () => {
             </div>
 
             {selectedGallery.desc && (
-              <div className="photoalbum-modal-desc">
+              <div className="gallery-modal-desc">
                 {selectedGallery.desc}
               </div>
             )}
 
             {zoomedImage && (
-              <div className="photoalbum-zoom-overlay" onClick={closeZoom}>
-                <div className="photoalbum-zoom-content" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="photoalbum-zoom-close" onClick={closeZoom}>
+              <div className="gallery-zoom-overlay" onClick={closeZoom}>
+                <div className="gallery-zoom-content" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="gallery-zoom-close" onClick={closeZoom}>
                     ✕
                   </button>
                   <img
                     src={zoomedImage.image.signedUrl || zoomedImage.image.url}
                     alt={`${selectedGallery.desc || 'Gallery'} ${zoomedImage.index + 1}`}
-                    className="photoalbum-zoom-image"
+                    className="gallery-zoom-image"
                   />
                 </div>
               </div>

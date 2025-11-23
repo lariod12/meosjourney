@@ -1,0 +1,905 @@
+/* ========================================
+   Gallery Tab - Art Exhibition Frame Style
+   Black & White Sketch Theme
+   ======================================== */
+
+.gallery-content {
+  padding: 20px;
+}
+
+.gallery-empty {
+  text-align: center;
+  padding: 60px 20px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: #666666;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border: 2px dashed #cccccc;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Art Frame Card - Gothic Frame Style */
+.gallery-card {
+  border: 6px solid #000000;
+  background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 50%, #f0f0f0 100%);
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s;
+  transform: rotate(-0.5deg);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: 8px 8px 0 #000000, 12px 12px 0 rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+/* Gothic corner ornaments - all 4 corners */
+.gallery-card::before,
+.gallery-card::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #000000;
+  background: 
+    linear-gradient(45deg, transparent 30%, #000000 30%, #000000 32%, transparent 32%),
+    linear-gradient(-45deg, transparent 30%, #000000 30%, #000000 32%, transparent 32%);
+  z-index: 2;
+}
+
+.gallery-card::before {
+  top: -3px;
+  left: -3px;
+  border-right: none;
+  border-bottom: none;
+  background-position: bottom right;
+}
+
+.gallery-card::after {
+  top: -3px;
+  right: -3px;
+  border-left: none;
+  border-bottom: none;
+  background-position: bottom left;
+}
+
+/* Bottom corners using pseudo elements on frame */
+.gallery-card-frame::before,
+.gallery-card-frame::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #000000;
+  background: 
+    linear-gradient(45deg, transparent 30%, #000000 30%, #000000 32%, transparent 32%),
+    linear-gradient(-45deg, transparent 30%, #000000 30%, #000000 32%, transparent 32%);
+  z-index: 2;
+}
+
+.gallery-card-frame::before {
+  bottom: -11px;
+  left: -11px;
+  border-right: none;
+  border-top: none;
+  background-position: top right;
+}
+
+.gallery-card-frame::after {
+  bottom: -11px;
+  right: -11px;
+  border-left: none;
+  border-top: none;
+  background-position: top left;
+}
+
+.gallery-card:nth-child(even) {
+  transform: rotate(0.5deg);
+}
+
+.gallery-card:hover {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: 10px 10px 0 #000000, 15px 15px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Inner Frame - Gothic ornate border */
+.gallery-card-frame {
+  border: 3px solid #000000;
+  margin: 12px;
+  padding: 10px;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #ffffff,
+      #ffffff 2px,
+      #f5f5f5 2px,
+      #f5f5f5 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #ffffff,
+      #ffffff 2px,
+      #f5f5f5 2px,
+      #f5f5f5 4px
+    );
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Gothic decorative lines on frame sides */
+.gallery-card-frame {
+  border-style: double;
+  border-width: 4px;
+}
+
+.gallery-card-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 3px solid #000000;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.gallery-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: contrast(1.1);
+}
+
+/* Gothic seal style for image count */
+.gallery-card-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: 
+    radial-gradient(circle at center, #ffffff 0%, #f5f5f5 100%);
+  color: #000000;
+  padding: 8px 16px;
+  border: 3px double #000000;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: bold;
+  transform: rotate(-2deg);
+  box-shadow: 3px 3px 0 #000000, inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  letter-spacing: 1px;
+}
+
+/* Gothic ornament on count badge */
+.gallery-card-count::before {
+  content: '◆';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+.gallery-card-count::after {
+  content: '◆';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+.gallery-card-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #000000;
+  background: repeating-linear-gradient(
+    45deg,
+    #ffffff,
+    #ffffff 10px,
+    #f9f9f9 10px,
+    #f9f9f9 20px
+  );
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+/* Gothic title plate at bottom */
+.gallery-card-desc {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  color: #000000;
+  text-align: center;
+  padding: 14px 20px;
+  background: 
+    linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+  border-top: 3px double #000000;
+  font-style: italic;
+  letter-spacing: 1px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px;
+  border: 3px double #000000;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+/* Gothic decorative elements on title plate */
+.gallery-card-desc::before {
+  content: '❖';
+  position: absolute;
+  left: 8px;
+  font-size: 12px;
+  opacity: 0.4;
+  font-style: normal;
+}
+
+.gallery-card-desc::after {
+  content: '❖';
+  position: absolute;
+  right: 8px;
+  font-size: 12px;
+  opacity: 0.4;
+  font-style: normal;
+}
+
+/* Modal - Gallery Exhibition View */
+.gallery-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 10000;
+  padding: 40px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gallery-modal-content {
+  background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 100%);
+  border: 8px double #000000;
+  max-width: 900px;
+  width: 100%;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  padding: 40px;
+  position: relative;
+  margin: auto;
+  box-sizing: border-box;
+  box-shadow: 
+    12px 12px 0 #000000,
+    16px 16px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Gothic corner ornaments for modal */
+.gallery-modal-content::before,
+.gallery-modal-content::after {
+  content: '✦';
+  position: absolute;
+  font-size: 24px;
+  color: #000000;
+  opacity: 0.3;
+}
+
+.gallery-modal-content::before {
+  top: 15px;
+  left: 15px;
+}
+
+.gallery-modal-content::after {
+  top: 15px;
+  right: 55px;
+}
+
+.gallery-modal-close {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  background-color: #000000;
+  border: 0px solid #000000;
+  color: #ffffff;
+  font-weight: bold;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  padding: 0;
+  line-height: 1;
+  font-size: 24px;
+}
+
+.gallery-modal-close:hover {
+  background-color: white;
+  color: black;
+  border: solid black;
+  transition: ease-in-out;
+}
+
+.gallery-modal-date {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  color: #000000;
+  margin-bottom: 25px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 12px 20px;
+  border: 3px double #000000;
+  background: linear-gradient(to right, transparent 0%, #f5f5f5 20%, #f5f5f5 80%, transparent 100%);
+  position: relative;
+  font-weight: 600;
+}
+
+/* Gothic ornaments on date */
+.gallery-modal-date::before,
+.gallery-modal-date::after {
+  content: '◈';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.5;
+}
+
+.gallery-modal-date::before {
+  left: 10px;
+}
+
+.gallery-modal-date::after {
+  right: 10px;
+}
+
+.gallery-modal-desc {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: #000000;
+  line-height: 1.8;
+  text-align: center;
+  padding: 25px 30px;
+  background: 
+    linear-gradient(to bottom, #f9f9f9 0%, #f0f0f0 100%);
+  border: 4px double #000000;
+  margin-top: 25px;
+  font-style: italic;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Gothic decorative quote marks */
+.gallery-modal-desc::before {
+  content: '❝';
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 32px;
+  opacity: 0.2;
+  line-height: 1;
+}
+
+.gallery-modal-desc::after {
+  content: '❞';
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 32px;
+  opacity: 0.2;
+  line-height: 1;
+}
+
+.gallery-modal-carousel {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.gallery-modal-nav-button {
+  width: 56px;
+  height: 56px;
+  border: 4px double #000000;
+  background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
+  color: #000000;
+  font-size: 32px;
+  font-family: 'Patrick Hand', cursive;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 56px;
+  box-shadow: 4px 4px 0 #000000, inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Gothic ornament on nav buttons */
+.gallery-modal-nav-button::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.gallery-modal-nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.gallery-modal-nav-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0 #000000, inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(to bottom, #ffffff 0%, #eeeeee 100%);
+}
+
+.gallery-modal-grid {
+  display: grid;
+  gap: 20px;
+  flex: 1;
+}
+
+.gallery-modal-grid-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.gallery-modal-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gallery-modal-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gallery-modal-grid-single {
+  justify-items: center;
+  align-items: center;
+}
+
+/* Gothic Art Frame in Modal */
+.gallery-modal-image {
+  border: 5px double #000000;
+  overflow: hidden;
+  aspect-ratio: 1;
+  padding: 10px;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #ffffff,
+      #ffffff 3px,
+      #f5f5f5 3px,
+      #f5f5f5 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #ffffff,
+      #ffffff 3px,
+      #f5f5f5 3px,
+      #f5f5f5 6px
+    );
+  cursor: zoom-in;
+  position: relative;
+  box-shadow: 
+    5px 5px 0 #000000,
+    inset 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Gothic inner frame border */
+.gallery-modal-image::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border: 3px double #000000;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gothic corner decorations on modal images */
+.gallery-modal-image::after {
+  content: '✦';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 14px;
+  color: #000000;
+  opacity: 0.3;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gallery-modal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+  filter: contrast(1.1);
+}
+
+.gallery-modal-image:hover {
+  box-shadow: 
+    7px 7px 0 #000000,
+    inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.gallery-modal-image:hover img {
+  transform: scale(1.03);
+}
+
+/* Zoom View */
+.gallery-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11000;
+  padding: 20px;
+}
+
+.gallery-zoom-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  border: 10px double #000000;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #ffffff,
+      #ffffff 4px,
+      #f5f5f5 4px,
+      #f5f5f5 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #ffffff,
+      #ffffff 4px,
+      #f5f5f5 4px,
+      #f5f5f5 8px
+    );
+  padding: 25px;
+  box-shadow: 
+    15px 15px 0 #000000,
+    20px 20px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Gothic inner frame for zoom */
+.gallery-zoom-content::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 4px double #000000;
+  pointer-events: none;
+}
+
+/* Gothic corner ornaments for zoom */
+.gallery-zoom-content::after {
+  content: '✦';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 20px;
+  color: #000000;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.gallery-zoom-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  filter: contrast(1.1);
+}
+
+.gallery-zoom-close {
+  position: absolute;
+  top: -50px;
+  right: -20px;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #ffffff;
+  background-color: black;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 3px 3px 0 rgba(255, 255, 255, 0.3);
+}
+
+.gallery-zoom-close:hover {
+  background-color: white;
+  color: black;
+  border-color: black;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+  }
+
+  .gallery-card {
+    border-width: 5px;
+    box-shadow: 6px 6px 0 #000000, 9px 9px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  .gallery-card::before,
+  .gallery-card::after {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+
+  .gallery-card-frame {
+    margin: 8px;
+    padding: 8px;
+    border-width: 3px;
+  }
+
+  .gallery-card-frame::before,
+  .gallery-card-frame::after {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+
+  .gallery-card-image {
+    border-width: 2px;
+  }
+
+  .gallery-card-desc {
+    font-size: 13px;
+    padding: 12px 16px;
+    min-height: 48px;
+    border-width: 2px;
+  }
+
+  .gallery-card-desc::before,
+  .gallery-card-desc::after {
+    font-size: 10px;
+  }
+
+  .gallery-modal {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .gallery-modal-content {
+    padding: 25px;
+    border-width: 6px;
+    max-height: calc(100% - 20px);
+    box-shadow: 
+      10px 10px 0 #000000,
+      13px 13px 0 rgba(0, 0, 0, 0.3),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .gallery-modal-content::before,
+  .gallery-modal-content::after {
+    font-size: 20px;
+  }
+
+  .gallery-modal-date {
+    font-size: 13px;
+    margin-bottom: 18px;
+    padding: 10px 16px;
+    border-width: 2px;
+  }
+
+  .gallery-modal-date::before,
+  .gallery-modal-date::after {
+    font-size: 14px;
+  }
+
+  .gallery-modal-desc {
+    font-size: 15px;
+    padding: 20px 25px;
+    border-width: 3px;
+  }
+
+  .gallery-modal-desc::before,
+  .gallery-modal-desc::after {
+    font-size: 28px;
+  }
+
+  .gallery-modal-grid {
+    gap: 15px;
+  }
+
+  .gallery-modal-carousel {
+    gap: 10px;
+  }
+
+  .gallery-modal-nav-button {
+    width: 50px;
+    height: 50px;
+    font-size: 26px;
+    min-width: 50px;
+    border-width: 3px;
+  }
+
+  .gallery-modal-image {
+    border-width: 4px;
+    padding: 8px;
+  }
+
+  .gallery-modal-image::before {
+    border-width: 2px;
+  }
+
+  .gallery-modal-image::after {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .gallery-card {
+    border-width: 4px;
+    box-shadow: 4px 4px 0 #000000, 6px 6px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  .gallery-card::before,
+  .gallery-card::after {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  .gallery-card-frame {
+    margin: 6px;
+    padding: 6px;
+    border-width: 2px;
+  }
+
+  .gallery-card-frame::before,
+  .gallery-card-frame::after {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  .gallery-card-desc {
+    font-size: 12px;
+    padding: 10px 14px;
+    min-height: 44px;
+    border-width: 2px;
+  }
+
+  .gallery-card-desc::before,
+  .gallery-card-desc::after {
+    font-size: 9px;
+  }
+
+  .gallery-card-count {
+    font-size: 11px;
+    padding: 6px 12px;
+    border-width: 2px;
+  }
+
+  .gallery-card-count::before,
+  .gallery-card-count::after {
+    font-size: 6px;
+  }
+
+  .gallery-modal-content {
+    padding: 20px;
+    border-width: 5px;
+    box-shadow: 
+      8px 8px 0 #000000,
+      10px 10px 0 rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+
+  .gallery-modal-content::before,
+  .gallery-modal-content::after {
+    font-size: 16px;
+  }
+
+  .gallery-modal-date {
+    font-size: 12px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    border-width: 2px;
+  }
+
+  .gallery-modal-date::before,
+  .gallery-modal-date::after {
+    font-size: 12px;
+  }
+
+  .gallery-modal-desc {
+    font-size: 14px;
+    padding: 18px 20px;
+    border-width: 3px;
+  }
+
+  .gallery-modal-desc::before,
+  .gallery-modal-desc::after {
+    font-size: 24px;
+  }
+
+  .gallery-modal-grid {
+    gap: 12px;
+  }
+
+  .gallery-modal-carousel {
+    gap: 8px;
+  }
+
+  .gallery-modal-nav-button {
+    width: 46px;
+    height: 46px;
+    border-width: 3px;
+    font-size: 24px;
+    min-width: 46px;
+  }
+
+  .gallery-modal-image {
+    border-width: 3px;
+    padding: 6px;
+  }
+
+  .gallery-modal-image::before {
+    border-width: 2px;
+  }
+
+  .gallery-modal-image::after {
+    font-size: 10px;
+  }
+
+  .gallery-zoom-content {
+    border-width: 6px;
+    padding: 15px;
+  }
+
+  .gallery-zoom-content::before {
+    border-width: 3px;
+  }
+
+  .gallery-zoom-content::after {
+    font-size: 16px;
+  }
+}
