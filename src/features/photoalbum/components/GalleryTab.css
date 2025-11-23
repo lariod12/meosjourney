@@ -139,23 +139,7 @@
 
 /* Gothic seal style for image count */
 .gallery-card-count {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #000000;
-  padding: 4px 10px;
-  border: 2px solid #000000;
-  font-family: 'Playfair Display', serif;
-  font-size: 12px;
-  font-weight: 600;
-  transform: rotate(-2deg);
-  box-shadow: 
-    2px 2px 0 #000000,
-    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.5px;
-  backdrop-filter: blur(2px);
-  z-index: 2;
+  display: none;
 }
 
 /* Gothic ornament on count badge */
@@ -883,7 +867,7 @@
   }
 
   .gallery-modal-image {
-    border-width: 3px;
+    border-width: 4px;
     padding: 6px;
   }
 
