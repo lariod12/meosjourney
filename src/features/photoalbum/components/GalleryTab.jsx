@@ -241,25 +241,24 @@ const GalleryTab = () => {
                   ›
                 </button>
               )}
-            </div>
 
-            {selectedGallery.desc && (
-              <div className="gallery-modal-desc">
-                {selectedGallery.desc}
-              </div>
-            )}
+              {selectedGallery.desc && (
+                <div className="gallery-modal-desc">
+                  {selectedGallery.desc}
+                  {(() => {
+                    const modalDate = selectedGallery.created_time
+                      ? new Date(selectedGallery.created_time)
+                      : null;
 
-            {(() => {
-              const modalDate = selectedGallery.created_time
-                ? new Date(selectedGallery.created_time)
-                : null;
-
-              return modalDate && (
-                <div className="gallery-modal-date">
-                  {formatDateTime(modalDate, lang === 'VI')}
+                    return modalDate && (
+                      <div className="gallery-modal-date">
+                        {formatDateTime(modalDate, lang === 'VI')}
+                      </div>
+                    );
+                  })()}
                 </div>
-              );
-            })()}
+              )}
+            </div>
 
             {zoomedImage && (
               <div className="gallery-zoom-overlay" onClick={closeZoom}>
