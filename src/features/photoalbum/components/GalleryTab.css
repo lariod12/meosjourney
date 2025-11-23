@@ -140,40 +140,43 @@
 /* Gothic seal style for image count */
 .gallery-card-count {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  background: 
-    radial-gradient(circle at center, #ffffff 0%, #f5f5f5 100%);
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.95);
   color: #000000;
-  padding: 8px 16px;
-  border: 3px double #000000;
+  padding: 4px 10px;
+  border: 2px solid #000000;
   font-family: 'Playfair Display', serif;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 600;
   transform: rotate(-2deg);
-  box-shadow: 3px 3px 0 #000000, inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  box-shadow: 
+    2px 2px 0 #000000,
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(2px);
+  z-index: 2;
 }
 
 /* Gothic ornament on count badge */
 .gallery-card-count::before {
   content: '◆';
   position: absolute;
-  left: 4px;
+  left: 3px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 8px;
-  opacity: 0.5;
+  font-size: 6px;
+  opacity: 0.4;
 }
 
 .gallery-card-count::after {
   content: '◆';
   position: absolute;
-  right: 4px;
+  right: 3px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 8px;
-  opacity: 0.5;
+  font-size: 6px;
+  opacity: 0.4;
 }
 
 .gallery-card-placeholder {
@@ -767,27 +770,32 @@
 
   .gallery-card {
     border-width: 4px;
-    box-shadow: 4px 4px 0 #000000, 6px 6px 0 rgba(0, 0, 0, 0.2);
+    box-shadow: 
+      inset 0 0 0 1px #ffffff,
+      inset 0 0 0 3px #000000,
+      4px 4px 0 #000000, 
+      6px 6px 0 rgba(0, 0, 0, 0.2);
   }
 
-  .gallery-card::before,
+  .gallery-card::before {
+    display: none;
+  }
+
   .gallery-card::after {
-    width: 16px;
-    height: 16px;
-    border-width: 2px;
+    display: none;
   }
 
   .gallery-card-frame {
-    margin: 6px;
-    padding: 6px;
+    margin: 2px;
+    padding: 4px;
     border-width: 2px;
+    box-shadow: 
+      inset 0 0 0 1px #ffffff,
+      inset 0 0 0 2px #000000;
   }
 
-  .gallery-card-frame::before,
-  .gallery-card-frame::after {
-    width: 16px;
-    height: 16px;
-    border-width: 2px;
+  .gallery-card-frame::before {
+    display: none;
   }
 
   .gallery-card-desc {
@@ -803,14 +811,22 @@
   }
 
   .gallery-card-count {
-    font-size: 11px;
-    padding: 6px 12px;
-    border-width: 2px;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-width: 1.5px;
+    bottom: 6px;
+    right: 6px;
+    box-shadow: 1.5px 1.5px 0 #000000;
   }
 
   .gallery-card-count::before,
   .gallery-card-count::after {
-    font-size: 6px;
+    font-size: 5px;
+    left: 2px;
+  }
+  
+  .gallery-card-count::after {
+    right: 2px;
   }
 
   .gallery-modal-content {
