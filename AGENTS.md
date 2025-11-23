@@ -197,6 +197,84 @@ const results = confirmations.list.map(record => {
 - Test on mobile devices and various screen sizes
 - Maintain sketch aesthetic in all interactive states (hover, active, focus)
 
+## Development vs Production Mode Guidelines
+
+### Database Differences
+**IMPORTANT**: Development and Production use separate NocoDB databases with different table IDs.
+
+#### Development Environment
+- Uses `TABLE_IDS_DEVELOPE` with distinct table IDs
+- Image URLs: Use `signedPath` + construct full URL with `${NOCODB_BASE_URL}/${signedPath}`
+- Schema differences: Some fields may not exist (e.g., `profile_id` in attachments)
+- **Foreign Key Fields**: Development mode only has `Id` fields, lacks `<prefix>_id` fields (e.g., no `profile_id`, only `Id`)
+- **ID Mapping**: When using foreign keys for lookups, use the main `Id` field directly, not `<prefix>_id`
+- Debug logs: Enabled with `import.meta.env.MODE !== 'production'` condition
+
+#### Production Environment  
+- Uses `TABLE_IDS_PRODUCTION` with production table IDs
+- Image URLs: Use `signedUrl` directly from NocoDB
+- Complete schema with all relationship fields including `<prefix>_id` fields
+- **Foreign Key Fields**: Production has both `Id` and `<prefix>_id` fields (e.g., `profile_id`, `quests_confirm_id`)
+- **ID Mapping**: Can use either `Id` or `<prefix>_id` for lookups
+- Debug logs: Disabled for clean console output
+
+### Common Patterns (No Changes Needed)
+- API request structure and error handling
+- React component logic and state management
+- UI/UX components and styling
+- Business logic and data processing
+- Cache management and deduplication
+
+### Feature Development Checklist
+When adding new features:
+
+1. **Database Operations**:
+   - ✅ Add table IDs to both `TABLE_IDS_PRODUCTION` and `TABLE_IDS_DEVELOPE`
+   - ✅ Handle schema differences between environments
+   - ✅ Use environment-specific queries when needed
+   - ✅ **Critical**: Use `Id` field for foreign key lookups in development (no `<prefix>_id` fields)
+   - ✅ Use `<prefix>_id` fields in production when available
+
+2. **Image/File Handling**:
+   - ✅ Use `signedPath` for development, `signedUrl` for production
+   - ✅ Construct URLs correctly: `${NOCODB_BASE_URL}/${signedPath}` vs `signedUrl`
+   - ✅ Test image loading in both environments
+
+3. **Debug Logging**:
+   - ✅ Wrap debug logs with `if (import.meta.env.MODE !== 'production')`
+   - ✅ Keep error/warning logs in both environments
+   - ✅ Use descriptive debug messages for troubleshooting
+
+4. **Testing Requirements**:
+   - ✅ Test in development mode first
+   - ✅ Verify data loading and display
+   - ✅ Check image/file URLs work correctly
+   - ✅ Ensure no production debug logs appear
+
+### Example Pattern for Image Processing
+```javascript
+// Development mode: use signedPath, Production mode: use signedUrl
+if (import.meta.env.MODE !== 'production') {
+  imageUrl = imageObj.signedPath || imageObj.path || null;
+  if (imageUrl) {
+    imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
+  }
+} else {
+  imageUrl = imageObj.signedUrl || imageObj.url || null;
+}
+```
+
+### Example Pattern for Foreign Key Lookups
+```javascript
+// Development mode: only use Id field
+// Production mode: can use either Id or <prefix>_id field
+const lookupKey = import.meta.env.MODE === 'production' 
+  ? record.profile_id || record.Id  // Production: prefer <prefix>_id
+  : record.Id;                     // Development: only Id available
+
+const relatedRecord = records.find(r => r.Id === lookupKey);
+```
+
 ## Notes
 - Current System Info Window 11 
 - Do not run dev because server is already running 
