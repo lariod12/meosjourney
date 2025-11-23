@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, CHARACTER_ID } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, fetchPhotoAlbums, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache, clearRefreshCooldown } from '../../utils/cacheManager';
 import { uploadQuestConfirmationImage, uploadAchievementConfirmationImage } from '../../services/nocodb';
@@ -87,6 +87,8 @@ const UserPage = ({ onBack }) => {
   
   // Photo Album states
   const [albumImages, setAlbumImages] = useState([]);
+  const [photoAlbums, setPhotoAlbums] = useState([]);
+  const [photoAlbumExpanded, setPhotoAlbumExpanded] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: 'info',
@@ -106,7 +108,6 @@ const UserPage = ({ onBack }) => {
 
   // Collapse/expand states - Status expanded by default to show current data
   const [profileExpanded, setProfileExpanded] = useState(false);
-  const [photoAlbumExpanded, setPhotoAlbumExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(true); // Expanded by default
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
@@ -447,6 +448,19 @@ const UserPage = ({ onBack }) => {
           }
         } catch (overdueError) {
           console.error('❌ Error checking overdue confirmations:', overdueError);
+        }
+
+        // Phase 4: Load photo albums
+        try {
+          const photoAlbumsData = await fetchPhotoAlbums();
+          setPhotoAlbums(photoAlbumsData || []);
+          // Debug: Log photo albums loaded (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('📸 Photo albums loaded:', photoAlbumsData?.length || 0);
+          }
+        } catch (albumError) {
+          console.warn('⚠️ Failed to load photo albums:', albumError);
+          setPhotoAlbums([]);
         }
 
 
@@ -951,6 +965,17 @@ const UserPage = ({ onBack }) => {
               type: 'success', 
               item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)` 
             });
+            
+            // Clear album form after successful upload
+            setAlbumImages([]);
+            setFormData(prev => ({ ...prev, albumDescription: '' }));
+            
+            // Notify PhotoAlbumTab to refresh
+            try {
+              window.dispatchEvent(new Event('photoalbum:refresh'));
+            } catch (eventError) {
+              console.warn('⚠️ Could not dispatch photo album refresh event:', eventError);
+            }
           } else {
             results.push({ type: 'failed', item: 'Photo Album' });
           }

@@ -2811,6 +2811,11 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
  */
 export const savePhotoAlbum = async (albumData) => {
   try {
+    // Debug: Log photo album save start (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Starting photo album save:', albumData);
+    }
+    
     const { description, imageFiles } = albumData;
 
     const getUTC7Timestamp = () => {
@@ -2842,8 +2847,18 @@ export const savePhotoAlbum = async (albumData) => {
     // Step 1: Upload all images to NocoDB storage
     const uploadedImages = [];
     
+    // Debug: Log image upload start (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📤 Starting upload of ${imageFiles.length} images`);
+    }
+    
     for (let i = 0; i < imageFiles.length; i++) {
       const imageFile = imageFiles[i];
+
+      // Debug: Log individual image upload (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log(`📸 Uploading image ${i + 1}/${imageFiles.length}:`, imageFile.name);
+      }
 
       const formData = new FormData();
       formData.append('file', imageFile);
@@ -2860,13 +2875,23 @@ export const savePhotoAlbum = async (albumData) => {
 
       if (!storageResponse.ok) {
         const errorText = await storageResponse.text();
-        console.warn(`⚠️ Failed to upload image ${i + 1}: ${errorText}`);
+        // Debug: Log storage upload error (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.warn(`⚠️ Failed to upload image ${i + 1}: ${errorText}`);
+          console.warn(`⚠️ Storage response status: ${storageResponse.status}`);
+        }
         continue; // Skip failed uploads
       }
 
       const storageResult = await storageResponse.json();
       // NocoDB storage upload returns an array, we need the first element
       const imageData = Array.isArray(storageResult) ? storageResult[0] : storageResult;
+      
+      // Debug: Log storage upload result (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log(`✅ Image ${i + 1} uploaded successfully:`, imageData);
+      }
+      
       uploadedImages.push(imageData);
     }
 
@@ -2881,10 +2906,21 @@ export const savePhotoAlbum = async (albumData) => {
       created_time: getUTC7Timestamp()
     };
 
+    // Debug: Log album creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Creating album record with payload:', payload);
+      console.log('🔍 Using ATTACHMENTS_ALBUM table ID:', TABLE_IDS.ATTACHMENTS_ALBUM);
+    }
+
     const response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_ALBUM}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
+
+    // Debug: Log album creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Album created successfully:', response);
+    }
 
     const albumId = response.Id || (response.list && response.list[0]?.Id);
 
@@ -2911,13 +2947,79 @@ export const fetchPhotoAlbums = async () => {
   
   return deduplicateRequest(cacheKey, async () => {
     try {
+      // Debug: Log photo albums fetch start (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Fetching photo albums from NocoDB...');
+      }
+      
       const response = await nocoRequest(
         `${TABLE_IDS.ATTACHMENTS_ALBUM}/records?sort=-created_time&limit=50`,
         { method: 'GET' }
       );
 
       const albums = response.list || [];
-      return albums;
+      
+      // Debug: Log raw albums data (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Raw photo albums data:', albums);
+      }
+      
+      // Process image URLs for each album
+      const processedAlbums = albums.map(album => {
+        if (album.img && Array.isArray(album.img)) {
+          const processedImages = album.img.map(imageObj => {
+            // Handle different image URL formats
+            let imageUrl = null;
+            
+            // Development mode: use signedPath, Production mode: use signedUrl
+            if (import.meta.env.MODE !== 'production') {
+              // Debug: Log development mode URL handling (development only)
+              if (import.meta.env.MODE !== 'production') {
+                console.log('🛠️ PhotoAlbum Development mode: using signedPath');
+              }
+              imageUrl = imageObj.signedPath || imageObj.path || null;
+              // Construct full URL for signedPath
+              if (imageUrl) {
+                imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
+              }
+            } else {
+              // Debug: Log production mode URL handling (development only)
+              if (import.meta.env.MODE !== 'production') {
+                console.log('🏭 PhotoAlbum Production mode: using signedUrl');
+              }
+              imageUrl = imageObj.signedUrl || imageObj.url || null;
+            }
+            
+            // Debug: Log image URL processing (development only)
+            if (import.meta.env.MODE !== 'production') {
+              console.log('🖼️ Processing photo album image:', {
+                original: imageObj,
+                finalUrl: imageUrl
+              });
+            }
+            
+            return {
+              ...imageObj,
+              signedUrl: imageUrl,
+              url: imageUrl
+            };
+          });
+          
+          return {
+            ...album,
+            img: processedImages
+          };
+        }
+        
+        return album;
+      });
+      
+      // Debug: Log processed albums (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Processed photo albums:', processedAlbums);
+      }
+      
+      return processedAlbums;
     } catch (error) {
       console.error('❌ Error fetching photo albums from NocoDB:', error);
       return [];
