@@ -222,14 +222,15 @@ const PhotoAlbumTab = () => {
                       {lang === 'VI' ? 'Ghi chú' : 'Note'}
                     </div>
                     <div className="photoalbum-card-desc-text" title={album.desc}>
-                      {album.desc.length > 100 ? `${album.desc.substring(0, 100)}...` : album.desc}
+                      <div className="photoalbum-card-desc-content">
+                        {album.desc.length > 19 ? `${album.desc.substring(0, 19)}...` : album.desc}
+                      </div>
+                      {createdDate && (
+                        <div className="photoalbum-card-date">
+                          {formatDateTime(createdDate, lang === 'VI')}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {createdDate && (
-                  <div className="photoalbum-card-date">
-                    {formatDateTime(createdDate, lang === 'VI')}
                   </div>
                 )}
               </div>
@@ -248,20 +249,6 @@ const PhotoAlbumTab = () => {
             >
               ✕
             </button>
-
-            {(() => {
-              const modalDate = selectedAlbum.created_time
-                ? new Date(selectedAlbum.created_time)
-                : selectedAlbum.CreatedAt
-                  ? new Date(selectedAlbum.CreatedAt)
-                  : null;
-
-              return modalDate && (
-                <div className="photoalbum-modal-date">
-                  {formatDateTime(modalDate, lang === 'VI')}
-                </div>
-              );
-            })()}
 
             <div className="photoalbum-modal-carousel">
               {shouldShowCarouselNav && (
@@ -314,7 +301,22 @@ const PhotoAlbumTab = () => {
                 <div className="photoalbum-modal-note-badge" title={selectedAlbum.desc}>
                   {lang === 'VI' ? 'Ghi chú' : 'Note'}
                 </div>
-                <div className="photoalbum-modal-desc">{selectedAlbum.desc}</div>
+                <div className="photoalbum-modal-desc">
+                  {selectedAlbum.desc}
+                  {(() => {
+                    const modalDate = selectedAlbum.created_time
+                      ? new Date(selectedAlbum.created_time)
+                      : selectedAlbum.CreatedAt
+                        ? new Date(selectedAlbum.CreatedAt)
+                        : null;
+
+                    return modalDate && (
+                      <div className="photoalbum-modal-date">
+                        {formatDateTime(modalDate, lang === 'VI')}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 

@@ -19,20 +19,21 @@
 
 .photoalbum-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
 .photoalbum-card {
   border: 3px solid #000000;
   background-color: #ffffff;
-  padding: 12px;
+  padding: 15px;
   cursor: pointer;
   transition: all 0.3s;
   transform: rotate(-1deg);
   display: flex;
   flex-direction: column;
   height: 100%;
+  box-sizing: border-box;
 }
 
 .photoalbum-card:nth-child(even) {
@@ -47,7 +48,7 @@
 .photoalbum-card-image {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  height: 250px;
   overflow: hidden;
   border: 2px solid #000000;
   margin-bottom: 20px;
@@ -76,14 +77,14 @@
 
 .photoalbum-card-placeholder {
   width: 100%;
-  aspect-ratio: 1;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px dashed #cccccc;
   background-color: #f9f9f9;
   font-size: 48px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   flex-shrink: 0;
 }
 
@@ -94,9 +95,9 @@
 }
 
 .photoalbum-card-desc-wrapper {
-  margin-bottom: 5px;
+  margin-bottom: 0;
   position: relative;
-  padding-top: 10px;
+  padding-top: 12px;
 }
 
 .photoalbum-card-note-badge {
@@ -123,31 +124,42 @@
   font-size: 14px;
   color: #333333;
   line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
   border: 1px dashed #999999;
   border-radius: 0;
-  padding: 10px;
-  margin-top: 8px;
+  padding: 12px;
+  margin-top: 10px;
   background-color: transparent;
-  min-height: 50px;
+  height: 70px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .photoalbum-card-desc-text:empty {
   display: none;
 }
 
+.photoalbum-card-desc-content {
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 .photoalbum-card-date {
   font-family: 'Patrick Hand', cursive;
-  font-size: 14px;
+  font-size: 11px;
   color: #666666;
   font-style: italic;
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px dashed #eeeeee;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+  display: block;
+  margin-top: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Modal */
@@ -208,11 +220,14 @@
 
 .photoalbum-modal-date {
   font-family: 'Patrick Hand', cursive;
-  font-size: 16px;
+  font-size: 14px;
   color: #666666;
-  margin-bottom: 15px;
   font-style: italic;
-  text-align: center;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+  display: block;
+  margin-top: 12px;
 }
 
 .photoalbum-modal-desc-wrapper {
@@ -250,6 +265,7 @@
   padding: 15px 15px 15px 15px;
   background-color: transparent;
   margin-top: 8px;
+  position: relative;
 }
 
 .photoalbum-modal-carousel {
@@ -400,15 +416,29 @@
   }
 
   .photoalbum-card-image {
+    height: 180px;
     border-width: 2px;
+    margin-bottom: 15px;
+  }
+
+  .photoalbum-card-placeholder {
+    height: 180px;
+    margin-bottom: 15px;
+    font-size: 36px;
+  }
+
+  .photoalbum-card-desc-text {
+    height: 65px;
+    padding: 10px;
+    margin-top: 8px;
+  }
+
+  .photoalbum-card-desc-wrapper {
+    padding-top: 10px;
   }
 
   .photoalbum-card-desc {
     font-size: 15px;
-  }
-
-  .photoalbum-card-date {
-    font-size: 13px;
   }
 
   .photoalbum-modal {
@@ -423,13 +453,11 @@
   }
 
   .photoalbum-modal-date {
-    font-size: 14px;
-    margin-bottom: 12px;
+    font-size: 13px;
   }
 
   .photoalbum-modal-desc {
     font-size: 18px;
-    margin-bottom: 15px;
   }
 
   .photoalbum-modal-grid {
@@ -458,12 +486,34 @@
     padding: 8px;
   }
 
+  .photoalbum-card-image {
+    height: 140px;
+    margin-bottom: 12px;
+  }
+
+  .photoalbum-card-placeholder {
+    height: 140px;
+    margin-bottom: 12px;
+    font-size: 32px;
+  }
+
+  .photoalbum-card-desc-text {
+    height: 60px;
+    padding: 8px;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+
+  .photoalbum-card-desc-wrapper {
+    padding-top: 8px;
+  }
+
   .photoalbum-card-desc {
     font-size: 14px;
   }
 
   .photoalbum-card-date {
-    font-size: 12px;
+    font-size: 8px;
   }
 
   .photoalbum-card-count {
@@ -477,8 +527,7 @@
   }
 
   .photoalbum-modal-date {
-    font-size: 13px;
-    margin-bottom: 10px;
+    font-size: 12px;
   }
 
   .photoalbum-modal-desc {
