@@ -1,11 +1,11 @@
 /**
  * NocoDB Service
  * Handles all NocoDB API interactions for the application
- * 
+ *
  * Configuration:
  * - VITE_NOCODB_USE_STATIC=true: Use static JSON file (for offline development)
  * - VITE_NOCODB_USE_STATIC=false: Use real NocoDB API (requires valid token)
- * 
+ *
  * API Token: Set in .env.development as VITE_NOCODB_TOKEN
  */
 
@@ -318,9 +318,9 @@ export const fetchProfile = async () => {
           console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
           console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
         }
-        
+
         let attachmentsData;
-        
+
         // Development mode: different schema (no profile_id field, use signedPath)
         if (import.meta.env.MODE !== 'production') {
           // Debug: Log development mode query (development only)
@@ -361,7 +361,7 @@ export const fetchProfile = async () => {
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
-              
+
               // Development mode: use signedPath, Production mode: use signedUrl
               if (import.meta.env.MODE !== 'production') {
                 // Debug: Log development mode URL handling (development only)
@@ -380,7 +380,7 @@ export const fetchProfile = async () => {
                 }
                 avatarUrl = imgBw.signedUrl || imgBw.url || null;
               }
-              
+
               // Debug: Log URL extraction result (development only)
               if (import.meta.env.MODE !== 'production') {
                 console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
@@ -514,7 +514,7 @@ export const fetchConfig = async () => {
 /**
  * Fetch journals data from NocoDB
  * Returns journal entries sorted by created_time descending
- * 
+ *
  * @param {number} limit - Maximum number of journals to fetch (default: 7 for initial load)
  * @param {number} offset - Number of records to skip (for pagination)
  * @returns {Promise<Array>} Array of journal entries
@@ -744,7 +744,7 @@ export const fetchQuestConfirmations = async () => {
 
       // Step 2: Fetch all attachments_gallery records that link to these confirmations
       let attachmentsData;
-      
+
       // Development mode: different schema (no quests_confirm_id field)
       if (import.meta.env.MODE !== 'production') {
         // Debug: Log development mode quest confirmations (development only)
@@ -799,7 +799,7 @@ export const fetchQuestConfirmations = async () => {
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
-              
+
               // Development mode: use signedPath, Production mode: use signedUrl
               if (import.meta.env.MODE !== 'production') {
                 imgUrl = imgBw.signedPath || imgBw.path || null;
@@ -2597,6 +2597,351 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
  * @param {boolean} confirmData.autoApprove - Auto-approve flag from config
  * @returns {Promise<Object>} Result object with success status and confirmation ID
  */
+
+/**
+ * Generate gallery title for profile images
+ * Format: journal_<year>-<month>-<day>_<hh>-<mm>-<random3digits>
+ */
+const generateProfileGalleryTitle = () => {
+  const now = new Date();
+  const ictDateStr = now.toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  const [datePart, timePart] = ictDateStr.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const [hours, minutes] = timePart.split(':');
+
+  const random = Math.floor(100 + Math.random() * 900); // 100-999
+  return `journal_${year}-${month}-${day}_${hours}-${minutes}-${random}`;
+};
+
+/**
+ * Upload a single profile gallery image to attachments_gallery and link to profile
+ * Uses img_bw column and profile_id foreign key (production)
+ * In development, only attachment record and file are created (no FK field)
+ */
+export const uploadProfileGalleryImage = async (imageFile, profileId) => {
+  try {
+    if (!imageFile) {
+      return { success: false, message: 'Image file is required' };
+    }
+
+    const title = generateProfileGalleryTitle();
+
+    // Step 1: Create the attachment gallery record with only title
+    const recordPayload = { title };
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Creating profile gallery attachment record:', recordPayload);
+    }
+
+    const recordResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'POST',
+      body: JSON.stringify(recordPayload)
+    });
+
+    const attachmentId = recordResponse.Id || (recordResponse.list && recordResponse.list[0]?.Id);
+
+    if (!attachmentId) {
+      throw new Error('Failed to create profile gallery attachment record');
+    }
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Profile gallery attachment record created:', attachmentId);
+    }
+
+    // Step 2: Upload the image file to NocoDB storage
+    const formData = new FormData();
+    formData.append('file', imageFile);
+
+    const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
+
+    const storageResponse = await fetch(storageUploadUrl, {
+      method: 'POST',
+      headers: {
+        'xc-token': NOCODB_TOKEN,
+      },
+      body: formData
+    });
+
+    if (!storageResponse.ok) {
+      const errorText = await storageResponse.text();
+      throw new Error(`Storage upload failed: ${storageResponse.status} - ${errorText}`);
+    }
+
+    const storageResult = await storageResponse.json();
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Profile gallery image uploaded to NocoDB storage:', storageResult);
+    }
+
+    // Step 3: Update the attachment record with img_bw
+    const updatePayload = [{
+      Id: attachmentId,
+      img_bw: storageResult
+    }];
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Updating profile gallery attachment with image data:', updatePayload);
+    }
+
+    await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    // Step 4: Link to profile via foreign key in production (profile_id)
+    if (profileId && import.meta.env.MODE === 'production') {
+      const linkPayload = [{
+        Id: attachmentId,
+        profile_id: profileId
+      }];
+
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Linking profile gallery attachment to profile_id:', linkPayload);
+      }
+
+      await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+        method: 'PATCH',
+        body: JSON.stringify(linkPayload)
+      });
+    }
+
+    return {
+      success: true,
+      attachmentId,
+      data: storageResult
+    };
+  } catch (error) {
+    console.error('❌ Error uploading profile gallery image:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Upload profile gallery images to attachments_gallery table
+ * Updated: Now uploads all images to a single record (like Photo Album)
+ * @param {string} profileId - Profile ID to link images to (production)
+ * @param {File[]} imageFiles - Array of image files
+ */
+export const uploadProfileGalleryImages = async (profileId, imageFiles) => {
+  if (!imageFiles || imageFiles.length === 0) {
+    return { success: false, message: 'No images to upload', uploadedCount: 0, totalCount: 0 };
+  }
+
+  try {
+    // Debug: Log profile gallery upload start (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Starting profile gallery upload:', { profileId, imageCount: imageFiles.length });
+    }
+
+    const getUTC7Timestamp = () => {
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
+      const parts = formatter.formatToParts(new Date()).reduce((acc, part) => {
+        if (part.type !== 'literal') {
+          acc[part.type] = part.value;
+        }
+        return acc;
+      }, {});
+
+      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+07:00`;
+    };
+
+    // Step 1: Upload all images to NocoDB storage
+    const uploadedImages = [];
+
+    // Debug: Log image upload start (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📤 Starting upload of ${imageFiles.length} gallery images`);
+    }
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageFile = imageFiles[i];
+
+      // Debug: Log individual image upload (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log(`📸 Uploading gallery image ${i + 1}/${imageFiles.length}:`, imageFile.name);
+      }
+
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const storageUploadUrl = `${NOCODB_BASE_URL}/api/v2/storage/upload`;
+
+      const storageResponse = await fetch(storageUploadUrl, {
+        method: 'POST',
+        headers: {
+          'xc-token': NOCODB_TOKEN,
+        },
+        body: formData
+      });
+
+      if (!storageResponse.ok) {
+        const errorText = await storageResponse.text();
+        // Debug: Log storage upload error (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.warn(`⚠️ Failed to upload gallery image ${i + 1}: ${errorText}`);
+          console.warn(`⚠️ Storage response status: ${storageResponse.status}`);
+        }
+        continue; // Skip failed uploads
+      }
+
+      const storageResult = await storageResponse.json();
+      // NocoDB storage upload returns an array, we need the first element
+      const imageData = Array.isArray(storageResult) ? storageResult[0] : storageResult;
+
+      // Debug: Log storage upload result (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log(`✅ Gallery image ${i + 1} uploaded successfully:`, imageData);
+      }
+
+      uploadedImages.push(imageData);
+    }
+
+    if (uploadedImages.length === 0) {
+      return { success: false, message: 'Failed to upload any gallery images', uploadedCount: 0, totalCount: imageFiles.length };
+    }
+
+    // Step 2: Create single gallery record with all images
+    const payload = {
+      title: `Gallery ${new Date().toISOString()}`,
+      img_bw: uploadedImages,
+      created_time: getUTC7Timestamp()
+    };
+
+    // Add profile_id for production environment
+    if (import.meta.env.MODE === 'production' && profileId) {
+      payload.profile_id = profileId;
+    }
+
+    // Debug: Log gallery creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Creating gallery record with payload:', payload);
+      console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
+    }
+
+    const response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    // Debug: Log gallery creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Gallery created successfully:', response);
+    }
+
+    const galleryId = response.Id || (response.list && response.list[0]?.Id);
+
+    return {
+      success: true,
+      galleryId,
+      uploadedCount: uploadedImages.length,
+      totalCount: imageFiles.length,
+      message: `Successfully uploaded ${uploadedImages.length} gallery images`
+    };
+
+  } catch (error) {
+    console.error('❌ Error uploading profile gallery images:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to upload gallery images',
+      uploadedCount: 0,
+      totalCount: imageFiles.length
+    };
+  }
+};
+
+/**
+ * Fetch profile gallery images from attachments_gallery
+ * In development: fetch limited recent records
+ */
+export const fetchProfileGallery = async (profileId) => {
+  const cacheKey = `profileGallery_${profileId || 'dev'}`;
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      let response;
+
+      if (import.meta.env.MODE !== 'production') {
+        // Development: schema may not have profile_id, so just fetch recent records
+        response = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=20&sort=-CreatedAt`,
+          { method: 'GET' }
+        );
+      } else {
+        if (!profileId) {
+          return [];
+        }
+        response = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileId})&sort=-CreatedAt`,
+          { method: 'GET' }
+        );
+      }
+
+      const list = response.list || [];
+
+      const galleryItems = list.map(item => {
+        let imgUrl = null;
+
+        if (item.img_bw) {
+          let imgBwArray = item.img_bw;
+          if (typeof imgBwArray === 'string') {
+            try {
+              imgBwArray = JSON.parse(imgBwArray);
+            } catch (parseError) {
+              if (import.meta.env.MODE !== 'production') {
+                console.warn('⚠️ Failed to parse img_bw JSON for profile gallery:', parseError);
+              }
+            }
+          }
+
+          if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
+            const imgObj = imgBwArray[0];
+
+            if (import.meta.env.MODE !== 'production') {
+              imgUrl = imgObj.signedPath || imgObj.path || null;
+              if (imgUrl) {
+                imgUrl = `${NOCODB_BASE_URL}/${imgUrl}`;
+              }
+            } else {
+              imgUrl = imgObj.signedUrl || imgObj.url || null;
+            }
+          }
+        }
+
+        return {
+          id: item.Id,
+          title: item.title,
+          imgUrl,
+          raw: item
+        };
+      });
+
+      return galleryItems;
+    } catch (error) {
+      console.error('❌ Error fetching profile gallery from NocoDB:', error);
+      return [];
+    }
+  });
+};
+
 export const saveAchievementConfirmation = async (confirmData) => {
   try {
     const { achievementId, achievementName, desc, imageFile, achievementDueDate, autoApprove } = confirmData;
@@ -2815,7 +3160,7 @@ export const savePhotoAlbum = async (albumData) => {
     if (import.meta.env.MODE !== 'production') {
       console.log('🔍 Starting photo album save:', albumData);
     }
-    
+
     const { description, imageFiles } = albumData;
 
     const getUTC7Timestamp = () => {
@@ -2846,12 +3191,12 @@ export const savePhotoAlbum = async (albumData) => {
 
     // Step 1: Upload all images to NocoDB storage
     const uploadedImages = [];
-    
+
     // Debug: Log image upload start (development only)
     if (import.meta.env.MODE !== 'production') {
       console.log(`📤 Starting upload of ${imageFiles.length} images`);
     }
-    
+
     for (let i = 0; i < imageFiles.length; i++) {
       const imageFile = imageFiles[i];
 
@@ -2886,12 +3231,12 @@ export const savePhotoAlbum = async (albumData) => {
       const storageResult = await storageResponse.json();
       // NocoDB storage upload returns an array, we need the first element
       const imageData = Array.isArray(storageResult) ? storageResult[0] : storageResult;
-      
+
       // Debug: Log storage upload result (development only)
       if (import.meta.env.MODE !== 'production') {
         console.log(`✅ Image ${i + 1} uploaded successfully:`, imageData);
       }
-      
+
       uploadedImages.push(imageData);
     }
 
@@ -2944,33 +3289,33 @@ export const savePhotoAlbum = async (albumData) => {
  */
 export const fetchPhotoAlbums = async () => {
   const cacheKey = 'photoAlbums';
-  
+
   return deduplicateRequest(cacheKey, async () => {
     try {
       // Debug: Log photo albums fetch start (development only)
       if (import.meta.env.MODE !== 'production') {
         console.log('🔍 Fetching photo albums from NocoDB...');
       }
-      
+
       const response = await nocoRequest(
         `${TABLE_IDS.ATTACHMENTS_ALBUM}/records?sort=-created_time&limit=50`,
         { method: 'GET' }
       );
 
       const albums = response.list || [];
-      
+
       // Debug: Log raw albums data (development only)
       if (import.meta.env.MODE !== 'production') {
         console.log('🔍 Raw photo albums data:', albums);
       }
-      
+
       // Process image URLs for each album
       const processedAlbums = albums.map(album => {
         if (album.img && Array.isArray(album.img)) {
           const processedImages = album.img.map(imageObj => {
             // Handle different image URL formats
             let imageUrl = null;
-            
+
             // Development mode: use signedPath, Production mode: use signedUrl
             if (import.meta.env.MODE !== 'production') {
               // Debug: Log development mode URL handling (development only)
@@ -2989,7 +3334,7 @@ export const fetchPhotoAlbums = async () => {
               }
               imageUrl = imageObj.signedUrl || imageObj.url || null;
             }
-            
+
             // Debug: Log image URL processing (development only)
             if (import.meta.env.MODE !== 'production') {
               console.log('🖼️ Processing photo album image:', {
@@ -2997,31 +3342,136 @@ export const fetchPhotoAlbums = async () => {
                 finalUrl: imageUrl
               });
             }
-            
+
             return {
               ...imageObj,
               signedUrl: imageUrl,
               url: imageUrl
             };
           });
-          
+
           return {
             ...album,
             img: processedImages
           };
         }
-        
+
         return album;
       });
-      
+
       // Debug: Log processed albums (development only)
       if (import.meta.env.MODE !== 'production') {
         console.log('✅ Processed photo albums:', processedAlbums);
       }
-      
+
       return processedAlbums;
     } catch (error) {
       console.error('❌ Error fetching photo albums from NocoDB:', error);
+      return [];
+    }
+  });
+};
+
+/**
+ * Fetch gallery items from NocoDB attachments_gallery table
+ * Filters records with title starting with "gallery"
+ * Each record can contain multiple images (like photo albums)
+ * @returns {Promise<Array>} Array of gallery records with processed image URLs
+ */
+export const fetchHomePageGallery = async () => {
+  const cacheKey = 'homePageGallery';
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      // Debug: Log gallery fetch start (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Fetching home page gallery from NocoDB...');
+      }
+
+      const response = await nocoRequest(
+        `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?sort=-CreatedAt&limit=100`,
+        { method: 'GET' }
+      );
+
+      const allRecords = response.list || [];
+
+      // Filter records with title starting with "gallery" (case-insensitive)
+      const galleryRecords = allRecords.filter(record => {
+        const title = record.title || '';
+        return title.toLowerCase().startsWith('gallery');
+      });
+
+      // Debug: Log filtered gallery data (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Raw gallery records:', galleryRecords);
+        console.log('🔍 Gallery count:', galleryRecords.length);
+      }
+
+      // Process image URLs for each gallery record (like photo albums)
+      const processedGallery = galleryRecords.map(record => {
+        // Parse img_bw field (it's usually a JSON string)
+        let imgBwArray = [];
+        if (record.img_bw) {
+          try {
+            imgBwArray = typeof record.img_bw === 'string'
+              ? JSON.parse(record.img_bw)
+              : Array.isArray(record.img_bw)
+                ? record.img_bw
+                : [];
+          } catch (e) {
+            console.warn('⚠️ Failed to parse img_bw for gallery record:', record.Id, e);
+            imgBwArray = [];
+          }
+        }
+
+        // Process all images in the array
+        const processedImages = imgBwArray.map(imageObj => {
+          let imageUrl = null;
+
+          // Development mode: use signedPath, Production mode: use signedUrl
+          if (import.meta.env.MODE !== 'production') {
+            imageUrl = imageObj.signedPath || imageObj.path || null;
+            // Construct full URL for signedPath
+            if (imageUrl) {
+              imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
+            }
+          } else {
+            imageUrl = imageObj.signedUrl || imageObj.url || null;
+          }
+
+          return {
+            ...imageObj,
+            signedUrl: imageUrl,
+            url: imageUrl
+          };
+        });
+
+        // Debug: Log image URL processing (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('🖼️ Processing gallery record:', {
+            title: record.title,
+            desc: record.desc,
+            imageCount: processedImages.length
+          });
+        }
+
+        return {
+          Id: record.Id,
+          title: record.title,
+          desc: record.desc || '',
+          img: processedImages,
+          created_time: record.created_time || record.CreatedAt
+        };
+      });
+
+      // Debug: Log processed gallery (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Processed gallery records:', processedGallery);
+      }
+
+      return processedGallery;
+    } catch (error) {
+      console.error('❌ Error fetching home page gallery from NocoDB:', error);
       return [];
     }
   });

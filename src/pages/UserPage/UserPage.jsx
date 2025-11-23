@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
-import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, fetchPhotoAlbums, CHARACTER_ID } from '../../services/nocodb';
+import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, fetchPhotoAlbums, uploadProfileGalleryImages, fetchProfileGallery, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache, clearRefreshCooldown } from '../../utils/cacheManager';
 import { uploadQuestConfirmationImage, uploadAchievementConfirmationImage } from '../../services/nocodb';
@@ -36,27 +36,16 @@ const UserPage = ({ onBack }) => {
     introduce: '',
     newSkill: '',
     newHobby: '',
-    albumDescription: ''
+    albumDescription: '',
+    galleryDescription: ''
   });
 
   // Profile data states
   // Note: 'Hobbys' in UI maps to 'hobbies' field in NocoDB profile table
-  const [profileData, setProfileData] = useState({
-    introduce: '',
-    skills: [],
-    hobbies: [] // Maps to 'hobbies' in NocoDB
-  });
-  const [originalProfileData, setOriginalProfileData] = useState({
-    introduce: '',
-    skills: [],
-    hobbies: []
-  });
-  const [originalStatusData, setOriginalStatusData] = useState({
-    doing: '',
-    location: '',
-    mood: '',
-    caption: ''
-  });
+  const [profileData, setProfileData] = useState({ introduce: '', skills: [], hobbies: [] });
+  const [originalProfileData, setOriginalProfileData] = useState({ introduce: '', skills: [], hobbies: [] });
+  const [statusData, setStatusData] = useState(null);
+  const [originalStatusData, setOriginalStatusData] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [dataLoading, setDataLoading] = useState(true); // Loading state for all data
 
@@ -89,6 +78,11 @@ const UserPage = ({ onBack }) => {
   const [albumImages, setAlbumImages] = useState([]);
   const [photoAlbums, setPhotoAlbums] = useState([]);
   const [photoAlbumExpanded, setPhotoAlbumExpanded] = useState(false);
+
+  // Profile Gallery states
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [galleryExpanded, setGalleryExpanded] = useState(false);
+
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: 'info',
@@ -275,6 +269,7 @@ const UserPage = ({ onBack }) => {
           const loadedHobbies = Array.isArray(profile.hobbies) ? profile.hobbies : [];
 
           const loadedProfile = {
+            id: profile.id || profile.Id || null,
             introduce: profile.introduce || '',
             caption: profile.caption || '',
             skills: [...loadedSkills],
@@ -467,7 +462,7 @@ const UserPage = ({ onBack }) => {
       } catch (error) {
         console.error('❌ Error loading data from NocoDB:', error);
         setCorrectPassword(null);
-        setProfileData({ introduce: '', skills: [], hobbies: [] });
+        setProfileData({ introduce: '', caption: '', skills: [], hobbies: [], id: null });
         setProfileLoaded(true);
         setAllQuests([]);
         setAvailableQuests([]);
@@ -719,6 +714,7 @@ const UserPage = ({ onBack }) => {
   };
 
   const hasValidAlbumImages = () => albumImages.every((img) => !!img?.file);
+  const hasValidGalleryImages = () => galleryImages.every((img) => !!img?.file);
 
   const validateAlbumSection = () => {
     const hasAlbumDescription = formData.albumDescription.trim().length > 0;
@@ -754,12 +750,46 @@ const UserPage = ({ onBack }) => {
     return true;
   };
 
+  const validateGallerySection = () => {
+    const hasGalleryDescription = formData.galleryDescription?.trim().length > 0;
+    const hasImages = galleryImages.length > 0;
+    const imagesAreValid = hasValidGalleryImages();
+
+    if (hasGalleryDescription && !hasImages) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'missing image for gallery',
+        message: 'please add at least one image before submitting the Gallery section.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+      });
+      return false;
+    }
+
+    if (hasImages && !imagesAreValid) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'error',
+        title: 'invalid image for gallery',
+        message: 'some images in the gallery list are missing files. Please reload the images and try again.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isSubmitting) return;
 
-    if (!validateAlbumSection()) {
+    if (!validateAlbumSection() || !validateGallerySection()) {
       return;
     }
 
@@ -954,35 +984,57 @@ const UserPage = ({ onBack }) => {
         if (!hasValidAlbumImages()) {
           results.push({ type: 'failed', item: 'Photo Album (missing files)' });
         } else {
-        try {
-          const albumResult = await savePhotoAlbum({
-            description: formData.albumDescription,
-            imageFiles: albumImages.map(img => img.file)
-          });
-
-          if (albumResult.success) {
-            results.push({ 
-              type: 'success', 
-              item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)` 
+          try {
+            const albumResult = await savePhotoAlbum({
+              description: formData.albumDescription,
+              imageFiles: albumImages.map(img => img.file)
             });
-            
-            // Clear album form after successful upload
-            setAlbumImages([]);
-            setFormData(prev => ({ ...prev, albumDescription: '' }));
-            
-            // Notify PhotoAlbumTab to refresh
-            try {
-              window.dispatchEvent(new Event('photoalbum:refresh'));
-            } catch (eventError) {
-              console.warn('⚠️ Could not dispatch photo album refresh event:', eventError);
+
+            if (albumResult.success) {
+              results.push({
+                type: 'success',
+                item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)`
+              });
+
+              // Clear album form after successful upload
+              setAlbumImages([]);
+              setFormData(prev => ({ ...prev, albumDescription: '' }));
+
+              // Notify PhotoAlbumTab to refresh
+              try {
+                window.dispatchEvent(new Event('photoalbum:refresh'));
+              } catch (eventError) {
+                console.warn('⚠️ Could not dispatch photo album refresh event:', eventError);
+              }
+            } else {
+              results.push({ type: 'failed', item: 'Photo Album' });
             }
-          } else {
+          } catch (error) {
+            console.error('❌ Error saving photo album:', error);
             results.push({ type: 'failed', item: 'Photo Album' });
           }
-        } catch (error) {
-          console.error('❌ Error saving photo album:', error);
-          results.push({ type: 'failed', item: 'Photo Album' });
         }
+      }
+
+      // Submit Profile Gallery (if has images)
+      if (galleryImages.length > 0 && profileData.id) {
+        try {
+          const galleryResult = await uploadProfileGalleryImages(profileData.id, galleryImages.map(img => img.file));
+
+          if (galleryResult.success) {
+            results.push({
+              type: 'success',
+              item: `Profile Gallery (${galleryResult.uploadedCount}/${galleryResult.totalCount} images)`
+            });
+
+            setGalleryImages([]);
+            setFormData(prev => ({ ...prev, galleryDescription: '' }));
+          } else {
+            results.push({ type: 'failed', item: 'Profile Gallery' });
+          }
+        } catch (error) {
+          console.error('❌ Error uploading profile gallery images:', error);
+          results.push({ type: 'failed', item: 'Profile Gallery' });
         }
       }
 
@@ -2176,7 +2228,7 @@ const UserPage = ({ onBack }) => {
 
                 <div className="form-group">
                   <label>Photos ({albumImages.length})</label>
-                  
+
                   {/* Upload Button */}
                   <div className="photoalbum-upload-section">
                     <label className="photoalbum-upload-btn">
@@ -2232,6 +2284,93 @@ const UserPage = ({ onBack }) => {
                   )}
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Profile Gallery */}
+          <div className="form-section">
+            <h2
+              className="section-title clickable"
+              onClick={() => {
+                setGalleryExpanded(!galleryExpanded);
+              }}
+            >
+              {galleryExpanded ? '▼' : '▸'} Gallery
+            </h2>
+
+            {galleryExpanded && (
+              <div className="section-content">
+                <div className="form-group">
+                  <label htmlFor="galleryDescription">Gallery Description</label>
+                  <textarea
+                    id="galleryDescription"
+                    name="galleryDescription"
+                    rows="3"
+                    value={formData.galleryDescription || ''}
+                    onChange={handleChange}
+                    placeholder="Describe your gallery..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>New Photos ({galleryImages.length})</label>
+
+                  {/* Upload Button */}
+                  <div className="userpage-gallery-upload-section">
+                    <label className="userpage-gallery-upload-btn">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            const newImages = files.map(file => ({
+                              id: Date.now() + Math.random(),
+                              file,
+                              preview: URL.createObjectURL(file)
+                            }));
+                            setGalleryImages(prev => [...prev, ...newImages]);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                      📷 Add Gallery Photos
+                    </label>
+                    <p className="userpage-gallery-upload-hint">Click to select multiple photos</p>
+                  </div>
+
+                  {/* Image Grid for new uploads */}
+                  {galleryImages.length > 0 && (
+                    <div className="userpage-gallery-grid">
+                      {galleryImages.map((image) => (
+                        <div key={image.id} className="userpage-gallery-item">
+                          <img src={image.preview} alt="Gallery preview" className="userpage-gallery-preview" />
+                          <button
+                            type="button"
+                            className="userpage-gallery-remove-btn"
+                            onClick={() => {
+                              URL.revokeObjectURL(image.preview);
+                              setGalleryImages(prev => prev.filter(img => img.id !== image.id));
+                            }}
+                            aria-label="Remove gallery photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {galleryImages.length === 0 && (
+                    <div className="userpage-gallery-empty">
+                      <p>No new gallery photos added yet</p>
+                    </div>
+                  )}
+                </div>
+
+                </div>
             )}
           </div>
 
