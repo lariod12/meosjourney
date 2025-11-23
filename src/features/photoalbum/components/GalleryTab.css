@@ -274,17 +274,7 @@
   z-index: 0;
 }
 
-.gallery-modal-content::after {
-  content: '◆';
-  position: absolute;
-  top: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: #000000;
-  opacity: 0.3;
-  z-index: 1;
-}
+
 
 .gallery-modal-close {
   position: absolute;
@@ -317,7 +307,7 @@
   font-family: 'Playfair Display', serif;
   font-size: 15px;
   color: #000000;
-  margin-bottom: 25px;
+  margin-top: 5px;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -688,8 +678,7 @@
       inset 0 0 0 2px rgba(0, 0, 0, 0.1);
   }
 
-  .gallery-modal-content::before,
-  .gallery-modal-content::after {
+  .gallery-modal-content::before {
     font-size: 20px;
   }
 
@@ -822,8 +811,7 @@
       inset 0 0 0 1px rgba(0, 0, 0, 0.1);
   }
 
-  .gallery-modal-content::before,
-  .gallery-modal-content::after {
+  .gallery-modal-content::before {
     font-size: 16px;
   }
 

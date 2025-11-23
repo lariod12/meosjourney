@@ -197,18 +197,6 @@ const GalleryTab = () => {
               ✕
             </button>
 
-            {(() => {
-              const modalDate = selectedGallery.created_time
-                ? new Date(selectedGallery.created_time)
-                : null;
-
-              return modalDate && (
-                <div className="gallery-modal-date">
-                  {formatDateTime(modalDate, lang === 'VI')}
-                </div>
-              );
-            })()}
-
             <div className="gallery-modal-carousel">
               {shouldShowCarouselNav && (
                 <button
@@ -260,6 +248,18 @@ const GalleryTab = () => {
                 {selectedGallery.desc}
               </div>
             )}
+
+            {(() => {
+              const modalDate = selectedGallery.created_time
+                ? new Date(selectedGallery.created_time)
+                : null;
+
+              return modalDate && (
+                <div className="gallery-modal-date">
+                  {formatDateTime(modalDate, lang === 'VI')}
+                </div>
+              );
+            })()}
 
             {zoomedImage && (
               <div className="gallery-zoom-overlay" onClick={closeZoom}>
