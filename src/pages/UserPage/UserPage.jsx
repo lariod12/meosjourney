@@ -4,7 +4,8 @@ import './UserPage.css';
 import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, CHARACTER_ID } from '../../services/nocodb';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../utils/questJournalUtils';
 import { clearCache, clearRefreshCooldown } from '../../utils/cacheManager';
-import { uploadQuestConfirmImage, uploadAchievementConfirmImage, deleteImageByUrl } from '../../services/storage';
+import { uploadQuestConfirmationImage, uploadAchievementConfirmationImage } from '../../services/nocodb';
+// import { deleteImageByUrl } from '../../services/storage'; // Deprecated - using NocoDB
 import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import PasswordModal from '../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
@@ -290,7 +291,10 @@ const UserPage = ({ onBack }) => {
 
         // Load status data
         if (statusData) {
-          console.log('📊 Raw status data from NocoDB:', statusData);
+          // Debug: Log raw status data (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('📊 Raw status data from NocoDB:', statusData);
+          }
           
           // Prepare existing doings
           const doingsArr = Array.isArray(statusData.doing) ? statusData.doing : [];
@@ -302,7 +306,10 @@ const UserPage = ({ onBack }) => {
             if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
           });
           setExistingDoings(normalized);
-          console.log('✅ Existing doings:', normalized);
+          // Debug: Log existing doings (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('✅ Existing doings:', normalized);
+          }
 
           // Prepare existing locations
           const locArr = Array.isArray(statusData.location) ? statusData.location : [];
@@ -336,12 +343,14 @@ const UserPage = ({ onBack }) => {
           setOriginalStatusData(originalStatus);
 
           // Apply to form
-          console.log('📝 Loading status data into form:', {
-            doing: originalStatus.doing,
-            location: originalStatus.location,
-            mood: originalStatus.mood,
-            caption: originalStatus.caption
-          });
+          if (import.meta.env.MODE !== 'production') {
+            console.log('📝 Loading status data into form:', {
+              doing: originalStatus.doing,
+              location: originalStatus.location,
+              mood: originalStatus.mood,
+              caption: originalStatus.caption
+            });
+          }
           
           setFormData(prev => ({
             ...prev,
@@ -778,10 +787,14 @@ const UserPage = ({ onBack }) => {
     try {
       const results = [];
 
-      // Submit Profile Update (if has data)
-      const hasProfileData = formData.introduce.trim() || formData.caption.trim() || profileData.skills.length > 0 || profileData.hobbies.length > 0;
+      // Submit Profile Update (if has changes)
+      const hasProfileChanges = 
+        formData.introduce.trim() !== originalProfileData.introduce ||
+        formData.caption.trim() !== originalProfileData.caption ||
+        JSON.stringify(profileData.skills) !== JSON.stringify(originalProfileData.skills) ||
+        JSON.stringify(profileData.hobbies) !== JSON.stringify(originalProfileData.hobbies);
 
-      if (hasProfileData) {
+      if (hasProfileChanges) {
         try {
           // Use NocoDB to update profile
           const profileResult = await updateProfile({

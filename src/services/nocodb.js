@@ -19,7 +19,7 @@ const USE_STATIC_DATA = import.meta.env.VITE_NOCODB_USE_STATIC === 'true';
 export { CHARACTER_ID };
 
 // Table IDs from NocoDB export
-const TABLE_IDS = {
+const TABLE_IDS_PRODUCTION = {
   STATUS: 'm0ik9l51n1dpn5a',
   PROFILE: 'mzm3hqgjmjh1mwz',
   CONFIG: 'm6ylndnmg21ecr2',
@@ -32,6 +32,28 @@ const TABLE_IDS = {
   ATTACHMENTS_GALLERY: 'mirssuqhjx529p5',
   ATTACHMENTS_ALBUM: 'mc6wu0v542g2bnr'
 };
+
+const TABLE_IDS_DEVELOPE = {
+  STATUS: 'myzr03ds9q74zkp',
+  PROFILE: 'm05nuwsedf20qp3',
+  CONFIG: 'mes7u9lklksi0eh',
+  HISTORY: 'm4k0ibuhxemhz7l',
+  JOURNALS: 'medcjhz2xd8ynxw',
+  QUESTS: 'mc8ntiumxfjxso1',
+  QUESTS_CONFIRM: 'mt2865bgwsejxhz',
+  ACHIEVEMENTS: 'mbvnmjgyovlitbc',
+  ACHIEVEMENTS_CONFIRM: 'mv0l9jz8fhf1gjl',
+  ATTACHMENTS_GALLERY: 'mpp72hgqxpn2p3k',
+  ATTACHMENTS_ALBUM: 'mkwz7hrtyzkvji6'
+};
+
+// Use development table IDs when not in production
+const TABLE_IDS = import.meta.env.MODE === 'production' ? TABLE_IDS_PRODUCTION : TABLE_IDS_DEVELOPE;
+
+// Debug: Log current mode and table IDs (development only)
+if (import.meta.env.MODE !== 'production') {
+  console.log(`🔧 NocoDB Mode: ${import.meta.env.MODE}, Using ${import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'DEVELOPMENT'} table IDs`);
+}
 
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
 const requestCache = new Map();
@@ -58,7 +80,10 @@ const deduplicateRequest = async (key, requestFn) => {
 
   // Check if request is already in-flight
   if (pendingRequests.has(key)) {
-    console.log(`⏳ Waiting for in-flight request: ${key}`);
+    // Debug: Log waiting request (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`⏳ Waiting for in-flight request: ${key}`);
+    }
     return pendingRequests.get(key);
   }
 
@@ -131,7 +156,10 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
 export const clearNocoDBCache = () => {
   requestCache.clear();
   pendingRequests.clear();
-  console.log('🗑️ NocoDB cache cleared');
+  // Debug: Log cache cleared (development only)
+  if (import.meta.env.MODE !== 'production') {
+    console.log('🗑️ NocoDB cache cleared');
+  }
 };
 
 /**
@@ -285,13 +313,43 @@ export const fetchProfile = async () => {
       // Step 2: Fetch avatar image from attachments_gallery (if linked)
       let avatarUrl = null;
       try {
-        const attachmentsData = await nocoRequest(
-          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
-          { method: 'GET' }
-        );
+        // Debug: Log avatar fetching (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
+          console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
+        }
+        
+        let attachmentsData;
+        
+        // Development mode: different schema (no profile_id field, use signedPath)
+        if (import.meta.env.MODE !== 'production') {
+          // Debug: Log development mode query (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('🛠️ Development mode: using simplified query');
+          }
+          attachmentsData = await nocoRequest(
+            `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
+            { method: 'GET' }
+          );
+        } else {
+          // Production mode: original query with profile_id filtering
+          attachmentsData = await nocoRequest(
+            `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
+            { method: 'GET' }
+          );
+        }
+
+        // Debug: Log attachments found (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('📎 Avatar attachments found:', attachmentsData.list?.length || 0);
+        }
 
         if (attachmentsData.list && attachmentsData.list.length > 0) {
           const attachment = attachmentsData.list[0];
+          // Debug: Log attachment processing (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('🖼️ Processing attachment:', attachment.Id);
+          }
 
           if (attachment.img_bw) {
             // Parse img_bw if it's a string (NocoDB returns it as JSON string)
@@ -303,9 +361,49 @@ export const fetchProfile = async () => {
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
-              // Prefer signedUrl for S3 access, fallback to url
-              avatarUrl = imgBw.signedUrl || imgBw.url || null;
+              
+              // Development mode: use signedPath, Production mode: use signedUrl
+              if (import.meta.env.MODE !== 'production') {
+                // Debug: Log development mode URL handling (development only)
+                if (import.meta.env.MODE !== 'production') {
+                  console.log('🛠️ Development mode: using signedPath');
+                }
+                avatarUrl = imgBw.signedPath || imgBw.path || null;
+                // Construct full URL for signedPath
+                if (avatarUrl) {
+                  avatarUrl = `${NOCODB_BASE_URL}/${avatarUrl}`;
+                }
+              } else {
+                // Debug: Log production mode URL handling (development only)
+                if (import.meta.env.MODE !== 'production') {
+                  console.log('🏭 Production mode: using signedUrl');
+                }
+                avatarUrl = imgBw.signedUrl || imgBw.url || null;
+              }
+              
+              // Debug: Log URL extraction result (development only)
+              if (import.meta.env.MODE !== 'production') {
+                console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
+                if (avatarUrl) {
+                  console.log('🔗 Final avatar URL:', avatarUrl);
+                }
+              }
+            } else {
+              // Debug: Log empty array (development only)
+              if (import.meta.env.MODE !== 'production') {
+                console.log('❌ No images in img_bw array');
+              }
             }
+          } else {
+            // Debug: Log missing field (development only)
+            if (import.meta.env.MODE !== 'production') {
+              console.log('❌ No img_bw field in attachment');
+            }
+          }
+        } else {
+          // Debug: Log no attachments (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('❌ No attachments found for profile');
           }
         }
       } catch (avatarError) {
@@ -645,16 +743,39 @@ export const fetchQuestConfirmations = async () => {
       // Fetched quest confirmations
 
       // Step 2: Fetch all attachments_gallery records that link to these confirmations
-      const attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,quests_confirm_id`, {
-        method: 'GET',
-      });
+      let attachmentsData;
+      
+      // Development mode: different schema (no quests_confirm_id field)
+      if (import.meta.env.MODE !== 'production') {
+        // Debug: Log development mode quest confirmations (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('🛠️ Development mode: fetching all attachments for quest confirmations');
+        }
+        attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=10`, {
+          method: 'GET',
+        });
+      } else {
+        // Production mode: original query with quests_confirm_id filtering
+        attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,quests_confirm_id`, {
+          method: 'GET',
+        });
+      }
 
       // Create a map of confirmationId -> attachment for quick lookup
       const attachmentMap = new Map();
       if (attachmentsData.list) {
         attachmentsData.list.forEach(attachment => {
-          if (attachment.quests_confirm_id) {
-            attachmentMap.set(attachment.quests_confirm_id, attachment);
+          // Development mode: no quests_confirm_id field, use first attachment for first confirmation
+          if (import.meta.env.MODE !== 'production') {
+            // In development, just use the first attachment for the first confirmation
+            if (data.list.length > 0) {
+              attachmentMap.set(data.list[0].Id, attachment);
+            }
+          } else {
+            // Production mode: use quests_confirm_id field
+            if (attachment.quests_confirm_id) {
+              attachmentMap.set(attachment.quests_confirm_id, attachment);
+            }
           }
         });
       }
@@ -678,8 +799,17 @@ export const fetchQuestConfirmations = async () => {
             // Get first image from array
             if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
               const imgBw = imgBwArray[0];
-              // Prefer signedUrl for S3 access, fallback to url
-              imgUrl = imgBw.signedUrl || imgBw.url || null;
+              
+              // Development mode: use signedPath, Production mode: use signedUrl
+              if (import.meta.env.MODE !== 'production') {
+                imgUrl = imgBw.signedPath || imgBw.path || null;
+                // Construct full URL for signedPath
+                if (imgUrl) {
+                  imgUrl = `${NOCODB_BASE_URL}/${imgUrl}`;
+                }
+              } else {
+                imgUrl = imgBw.signedUrl || imgBw.url || null;
+              }
             }
           } catch (parseError) {
             console.warn('⚠️ Failed to parse img_bw for confirmation:', record.Id, parseError);
@@ -730,14 +860,20 @@ export const updateAutoApproveTasks = async (enabled) => {
       auto_approve_tasks: !!enabled
     }];
 
-    console.log('🔍 Sending Config auto_approve_tasks PATCH to NocoDB:', updatePayload);
+    // Debug: Log config update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Config auto_approve_tasks PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.CONFIG}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Config auto_approve_tasks updated successfully in NocoDB:', response);
+    // Debug: Log config update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Config auto_approve_tasks updated successfully in NocoDB:', response);
+    }
     return { success: true, value: !!enabled };
   } catch (error) {
     console.error('❌ Error updating auto_approve_tasks in NocoDB:', error);
@@ -758,14 +894,20 @@ export const updateProfile = async (profileData, oldProfileData) => {
     if (profileData.introduce !== undefined && profileData.introduce !== oldProfileData.introduce) {
       updates.introduce = profileData.introduce;
       hasChanges = true;
-      console.log('📝 Profile introduce changed:', { old: oldProfileData.introduce, new: profileData.introduce });
+      // Debug: Log profile changes (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('📝 Profile introduce changed:', { old: oldProfileData.introduce, new: profileData.introduce });
+      }
     }
 
     // Check caption field
     if (profileData.caption !== undefined && profileData.caption !== oldProfileData.caption) {
       updates.caption = profileData.caption;
       hasChanges = true;
-      console.log('📝 Profile caption changed:', { old: oldProfileData.caption, new: profileData.caption });
+      // Debug: Log caption changes (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('📝 Profile caption changed:', { old: oldProfileData.caption, new: profileData.caption });
+      }
     }
 
     // Check skills array
@@ -775,7 +917,10 @@ export const updateProfile = async (profileData, oldProfileData) => {
       if (oldSkills !== newSkills) {
         updates.skills = profileData.skills;
         hasChanges = true;
-        console.log('📝 Profile skills changed:', { old: oldProfileData.skills, new: profileData.skills });
+        // Debug: Log skills changes (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('📝 Profile skills changed:', { old: oldProfileData.skills, new: profileData.skills });
+        }
       }
     }
 
@@ -786,7 +931,10 @@ export const updateProfile = async (profileData, oldProfileData) => {
       if (oldHobbies !== newHobbies) {
         updates.hobbies = profileData.hobbies;
         hasChanges = true;
-        console.log('📝 Profile hobbies changed:', { old: oldProfileData.hobbies, new: profileData.hobbies });
+        // Debug: Log hobbies changes (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('📝 Profile hobbies changed:', { old: oldProfileData.hobbies, new: profileData.hobbies });
+        }
       }
     }
 
@@ -994,14 +1142,20 @@ export const saveStatus = async (statusData) => {
       ...updates
     }];
 
-    console.log('🔍 Sending Status PATCH to NocoDB:', updatePayload);
+    // Debug: Log status update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Status PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Status updated successfully in NocoDB:', response);
+    // Debug: Log status update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Status updated successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Status updated' };
   } catch (error) {
     console.error('❌ Error saving status to NocoDB:', error);
@@ -1062,10 +1216,16 @@ export const saveJournal = async (journalData) => {
 
       if (historyQuery.list && historyQuery.list.length > 0) {
         historyId = historyQuery.list[0].Id;
-        console.log('✅ Found existing history record:', historyTitle);
+        // Debug: Log history record (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('✅ Found existing history record:', historyTitle);
+        }
       } else {
         // Create new history record
-        console.log('Pm Creating new history record:', historyTitle);
+        // Debug: Log creating history (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('Pm Creating new history record:', historyTitle);
+        }
         const newHistoryPayload = {
           title: historyTitle,
           created_time: historyDateStr
@@ -1078,7 +1238,10 @@ export const saveJournal = async (journalData) => {
 
         // Handle response which could be the record or an object containing it
         historyId = createHistoryResponse.Id || (createHistoryResponse.list && createHistoryResponse.list[0]?.Id);
-        console.log('✅ Created new history record:', historyTitle);
+        // Debug: Log history creation success (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('✅ Created new history record:', historyTitle);
+        }
       }
     } catch (historyError) {
       console.error('⚠️ Failed to handle history record:', historyError);
@@ -1092,14 +1255,20 @@ export const saveJournal = async (journalData) => {
       ...(historyId && { history: historyId }) // Link to history record
     };
 
-    console.log('🔍 Sending Journal POST to NocoDB:', payload);
+    // Debug: Log journal submission (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Journal POST to NocoDB:', payload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.JOURNALS}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log('✅ Journal saved successfully in NocoDB:', response);
+    // Debug: Log journal save success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Journal saved successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Journal saved' };
   } catch (error) {
     console.error('❌ Error saving journal to NocoDB:', error);
@@ -1374,14 +1543,20 @@ export const createQuest = async (questData) => {
       created_time: createdTime
     };
 
-    console.log('🔍 Sending Quest POST to NocoDB:', payload);
+    // Debug: Log quest creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Quest POST to NocoDB:', payload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log('✅ Quest created successfully in NocoDB:', response);
+    // Debug: Log quest creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest created successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Quest created', data: response };
   } catch (error) {
     console.error('❌ Error creating quest in NocoDB:', error);
@@ -1453,12 +1628,6 @@ export const createAchievement = async (achievementData) => {
       { "vi": specialRewardVi || '' }
     ] : null;
 
-    console.log('🔍 Special Reward Data:', {
-      specialRewardEn,
-      specialRewardVi,
-      specialReward
-    });
-
     const payload = {
       title: title,
       achievement_name: achievementName,
@@ -1471,23 +1640,35 @@ export const createAchievement = async (achievementData) => {
     // Add optional fields if provided
     if (specialReward) {
       payload.special_reward = specialReward;
-      console.log('✅ Added special_reward to payload:', payload.special_reward);
+      // Debug: Log special reward added (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Added special_reward to payload:', payload.special_reward);
+      }
     } else {
-      console.log('⚠️ No special_reward provided');
+      // Debug: Log no special reward (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('⚠️ No special_reward provided');
+      }
     }
 
     if (dueDate) {
       payload.due_date = dueDate;
     }
 
-    console.log('🔍 Sending Achievement POST to NocoDB:', JSON.stringify(payload, null, 2));
+    // Debug: Log achievement creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Achievement POST to NocoDB:', JSON.stringify(payload, null, 2));
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log('✅ Achievement created successfully in NocoDB:', response);
+    // Debug: Log achievement creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement created successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Achievement created', data: response };
   } catch (error) {
     console.error('❌ Error creating achievement in NocoDB:', error);
@@ -1511,7 +1692,10 @@ export const deleteQuest = async (questId) => {
       body: JSON.stringify([{ Id: questId }])
     });
 
-    console.log('✅ Quest deleted successfully from NocoDB');
+    // Debug: Log quest deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest deleted successfully from NocoDB');
+    }
     return { success: true, message: 'Quest deleted' };
   } catch (error) {
     console.error('❌ Error deleting quest from NocoDB:', error);
@@ -1535,7 +1719,10 @@ export const deleteAchievement = async (achievementId) => {
       body: JSON.stringify([{ Id: achievementId }])
     });
 
-    console.log('✅ Achievement deleted successfully from NocoDB');
+    // Debug: Log achievement deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement deleted successfully from NocoDB');
+    }
     return { success: true, message: 'Achievement deleted' };
   } catch (error) {
     console.error('❌ Error deleting achievement from NocoDB:', error);
@@ -1564,14 +1751,20 @@ export const updateQuestConfirmationStatus = async (confirmationId, status) => {
       status: status
     }];
 
-    console.log('🔍 Sending Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+    // Debug: Log quest confirmation status update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Quest confirmation status updated successfully in NocoDB:', response);
+    // Debug: Log quest confirmation status update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest confirmation status updated successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Quest confirmation status updated' };
   } catch (error) {
     console.error('❌ Error updating quest confirmation status in NocoDB:', error);
@@ -1600,14 +1793,20 @@ export const updateAchievementConfirmationStatus = async (confirmationId, status
       status: status
     }];
 
-    console.log('🔍 Sending Achievement Confirmation Status PATCH to NocoDB:', updatePayload);
+    // Debug: Log achievement confirmation status update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Achievement Confirmation Status PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Achievement confirmation status updated successfully in NocoDB:', response);
+    // Debug: Log achievement confirmation status update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement confirmation status updated successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Achievement confirmation status updated' };
   } catch (error) {
     console.error('❌ Error updating achievement confirmation status in NocoDB:', error);
@@ -1638,14 +1837,20 @@ export const batchUpdateQuestConfirmationStatus = async (updates) => {
       status: u.status
     }));
 
-    console.log('🔍 Sending Batch Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+    // Debug: Log batch quest confirmation status update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Batch Quest Confirmation Status PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log(`✅ ${updates.length} quest confirmation statuses updated successfully in NocoDB`);
+    // Debug: Log batch update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`✅ ${updates.length} quest confirmation statuses updated successfully in NocoDB`);
+    }
     return { success: true, message: `${updates.length} quest confirmations updated` };
   } catch (error) {
     console.error('❌ Error batch updating quest confirmation statuses in NocoDB:', error);
@@ -1675,14 +1880,20 @@ export const unlinkQuestConfirmation = async (questId, confirmationId) => {
       quest_confirm: null
     }];
 
-    console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest side):', questUpdatePayload);
+    // Debug: Log quest unlink (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest side):', questUpdatePayload);
+    }
 
     const questResponse = await nocoRequest(`${TABLE_IDS.QUESTS}/records`, {
       method: 'PATCH',
       body: JSON.stringify(questUpdatePayload)
     });
 
-    console.log('✅ Quest side unlinked:', questResponse);
+    // Debug: Log quest unlink success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest side unlinked:', questResponse);
+    }
 
     // 2. Unlink from quest_confirm side (quest_confirm.quest = null)
     if (confirmationId) {
@@ -1691,14 +1902,20 @@ export const unlinkQuestConfirmation = async (questId, confirmationId) => {
         quest: null
       }];
 
-      console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest_confirm side):', confirmUpdatePayload);
+      // Debug: Log quest confirmation unlink (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Sending Quest Unlink PATCH to NocoDB (quest_confirm side):', confirmUpdatePayload);
+      }
 
       const confirmResponse = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
         method: 'PATCH',
         body: JSON.stringify(confirmUpdatePayload)
       });
 
-      console.log('✅ Quest_confirm side unlinked:', confirmResponse);
+      // Debug: Log quest confirmation unlink success (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Quest_confirm side unlinked:', confirmResponse);
+      }
     }
 
     return { success: true, message: 'Quest confirmation unlinked from both sides' };
@@ -1820,14 +2037,20 @@ export const updateAchievement = async (achievementId, updates) => {
       ...payload
     }];
 
-    console.log('🔍 Sending Achievement PATCH to NocoDB:', updatePayload);
+    // Debug: Log achievement update (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Achievement PATCH to NocoDB:', updatePayload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Achievement updated successfully in NocoDB:', response);
+    // Debug: Log achievement update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement updated successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Achievement updated' };
   } catch (error) {
     console.error('❌ Error updating achievement in NocoDB:', error);
@@ -1853,7 +2076,10 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
       title: title
     };
 
-    console.log('🔍 Creating attachment gallery record:', recordPayload);
+    // Debug: Log attachment creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Creating attachment gallery record:', recordPayload);
+    }
 
     const recordResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
       method: 'POST',
@@ -1890,7 +2116,10 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
     }
 
     const storageResult = await storageResponse.json();
-    console.log('✅ Image uploaded to NocoDB storage:', storageResult);
+    // Debug: Log image upload success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Image uploaded to NocoDB storage:', storageResult);
+    }
 
     // Step 3: Update the record with the uploaded file info
     const updatePayload = [{
@@ -1898,14 +2127,20 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
       img_bw: storageResult // NocoDB returns array of file objects
     }];
 
-    console.log('🔍 Updating record with image:', updatePayload);
+    // Debug: Log record update with image (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Updating record with image:', updatePayload);
+    }
 
     await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Record updated with image');
+    // Debug: Log record update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Record updated with image');
+    }
 
     // Step 4: Link the attachment to quest_confirm if ID provided
     if (questConfirmId) {
@@ -1915,20 +2150,29 @@ export const uploadQuestConfirmationImage = async (imageFile, title, questConfir
         quests_confirm_id: questConfirmId // Use foreign key field name
       }];
 
-      console.log('🔍 Linking attachment to quest_confirm (using FK):', linkPayload);
+      // Debug: Log attachment linking (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Linking attachment to quest_confirm (using FK):', linkPayload);
+      }
 
       const linkResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
         method: 'PATCH',
         body: JSON.stringify(linkPayload)
       });
 
-      console.log('✅ Attachment linked to quest_confirm. Response:', linkResponse);
+      // Debug: Log attachment linking success (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Attachment linked to quest_confirm. Response:', linkResponse);
+      }
 
       // Verify the link was created
       const verifyResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records/${attachmentId}`, {
         method: 'GET'
       });
-      console.log('🔍 Verify attachment record after FK link:', verifyResponse);
+      // Debug: Log attachment verification (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Verify attachment record after FK link:', verifyResponse);
+      }
     }
 
     return {
@@ -2071,7 +2315,10 @@ export const saveQuestConfirmation = async (confirmData) => {
       if (isOverdue) {
         // Quest is overdue - mark as failed, auto-approve is disabled
         initialStatus = 'failed';
-        console.log('⚠️ Quest is overdue, marking as failed (auto-approve disabled)');
+        // Debug: Log overdue quest warning (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('⚠️ Quest is overdue, marking as failed (auto-approve disabled)');
+        }
       } else {
         // Quest is within deadline - auto-approve as completed
         initialStatus = 'completed';
@@ -2089,14 +2336,20 @@ export const saveQuestConfirmation = async (confirmData) => {
       status: initialStatus
     };
 
-    console.log('🔍 Sending Quest Confirmation POST to NocoDB:', payload);
+    // Debug: Log quest confirmation creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Quest Confirmation POST to NocoDB:', payload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log('✅ Quest confirmation created successfully in NocoDB:', response);
+    // Debug: Log quest confirmation creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest confirmation created successfully in NocoDB:', response);
+    }
 
     // Extract the confirmation ID from response
     const confirmationId = response.Id || (response.list && response.list[0]?.Id);
@@ -2108,12 +2361,18 @@ export const saveQuestConfirmation = async (confirmData) => {
         const uploadResult = await uploadQuestConfirmationImage(imageFile, title, confirmationId);
         if (uploadResult.success) {
           attachmentId = uploadResult.attachmentId;
-          console.log('✅ Image uploaded and linked to quest confirmation');
+          // Debug: Log image upload success (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('✅ Image uploaded and linked to quest confirmation');
+          }
 
           // Note: In NocoDB one-to-one relationship with belongs-to side,
           // we only need to update the belongs-to side (attachments_gallery.quest_confirm)
           // The other side (quests_confirm.quest_img) will be automatically linked
-          console.log('ℹ️ One-to-one link established from belongs-to side (attachments_gallery)');
+          // Debug: Log one-to-one link (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('ℹ️ One-to-one link established from belongs-to side (attachments_gallery)');
+          }
         } else {
           console.warn('⚠️ Image upload failed:', uploadResult.message);
         }
@@ -2150,7 +2409,10 @@ export const deleteQuestConfirmation = async (confirmationId) => {
       return { success: false, message: 'Quest confirmation ID is required' };
     }
 
-    console.log('🔍 Deleting Quest Confirmation:', confirmationId);
+    // Debug: Log quest confirmation deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Deleting Quest Confirmation:', confirmationId);
+    }
 
     // Step 1: Find and delete linked attachment from attachments_gallery
     try {
@@ -2162,16 +2424,25 @@ export const deleteQuestConfirmation = async (confirmationId) => {
       if (attachmentsData.list && attachmentsData.list.length > 0) {
         const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
 
-        console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        // Debug: Log linked quest attachments deletion (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        }
 
         await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
           method: 'DELETE',
           body: JSON.stringify(attachmentIds)
         });
 
-        console.log('✅ Linked attachments deleted successfully');
+        // Debug: Log attachments deletion success (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('✅ Linked attachments deleted successfully');
+        }
       } else {
-        console.log('ℹ️ No linked attachments found for this confirmation');
+        // Debug: Log no linked attachments (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('ℹ️ No linked attachments found for this confirmation');
+        }
       }
     } catch (attachmentError) {
       console.warn('⚠️ Failed to delete linked attachments:', attachmentError.message);
@@ -2179,14 +2450,20 @@ export const deleteQuestConfirmation = async (confirmationId) => {
     }
 
     // Step 2: Delete the quest confirmation record
-    console.log('🗑️ Deleting quest confirmation record');
+    // Debug: Log quest confirmation record deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🗑️ Deleting quest confirmation record');
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.QUESTS_CONFIRM}/records`, {
       method: 'DELETE',
       body: JSON.stringify([{ Id: confirmationId }])
     });
 
-    console.log('✅ Quest confirmation deleted successfully in NocoDB:', response);
+    // Debug: Log quest confirmation deletion success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest confirmation deleted successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Quest confirmation and linked attachments deleted' };
   } catch (error) {
     console.error('❌ Error deleting quest confirmation in NocoDB:', error);
@@ -2247,7 +2524,10 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
     }
 
     const storageResult = await storageResponse.json();
-    console.log('✅ Image uploaded to NocoDB storage for achievement');
+    // Debug: Log image upload success for achievement (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Image uploaded to NocoDB storage for achievement');
+    }
 
     // Step 3: Update the record with the uploaded file info
     const updatePayload = [{
@@ -2255,14 +2535,20 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
       img_bw: storageResult
     }];
 
-    console.log('🔍 Updating record with image');
+    // Debug: Log record update with image (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Updating record with image');
+    }
 
     await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
       method: 'PATCH',
       body: JSON.stringify(updatePayload)
     });
 
-    console.log('✅ Record updated with image');
+    // Debug: Log record update success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Record updated with image');
+    }
 
     // Step 4: Link the attachment to achievement_confirm if ID provided
     if (achievementConfirmId) {
@@ -2271,14 +2557,20 @@ export const uploadAchievementConfirmationImage = async (imageFile, title, achie
         achievements_confirm_id: achievementConfirmId // Use foreign key field name
       }];
 
-      console.log('🔍 Linking attachment to achievement_confirm (using FK):', linkPayload);
+      // Debug: Log attachment linking to achievement (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔍 Linking attachment to achievement_confirm (using FK):', linkPayload);
+      }
 
       const linkResponse = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
         method: 'PATCH',
         body: JSON.stringify(linkPayload)
       });
 
-      console.log('✅ Attachment linked to achievement_confirm. Response:', linkResponse);
+      // Debug: Log attachment linking success to achievement (development only)
+      if (import.meta.env.MODE !== 'production') {
+        console.log('✅ Attachment linked to achievement_confirm. Response:', linkResponse);
+      }
     }
 
     return {
@@ -2349,18 +2641,27 @@ export const saveAchievementConfirmation = async (confirmData) => {
         if (isOverdue) {
           // Achievement is overdue - mark as failed, auto-approve is disabled
           initialStatus = 'failed';
-          console.log('⚠️ Achievement is overdue, marking as failed (auto-approve disabled)');
+          // Debug: Log achievement overdue warning (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('⚠️ Achievement is overdue, marking as failed (auto-approve disabled)');
+          }
         } else {
           // Achievement is within deadline - auto-approve as completed
           initialStatus = 'completed';
           shouldAutoComplete = true;
-          console.log('✅ Achievement is within deadline, auto-approving as completed');
+          // Debug: Log achievement auto-approve (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('✅ Achievement is within deadline, auto-approving as completed');
+          }
         }
       } else {
         // No due date - auto-approve as completed
         initialStatus = 'completed';
         shouldAutoComplete = true;
-        console.log('✅ Achievement has no due date, auto-approving as completed');
+        // Debug: Log achievement no due date (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('✅ Achievement has no due date, auto-approving as completed');
+        }
       }
     }
 
@@ -2373,14 +2674,20 @@ export const saveAchievementConfirmation = async (confirmData) => {
       status: initialStatus
     };
 
-    console.log('🔍 Sending Achievement Confirmation POST to NocoDB:', payload);
+    // Debug: Log achievement confirmation creation (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Sending Achievement Confirmation POST to NocoDB:', payload);
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    console.log('✅ Achievement confirmation created successfully in NocoDB:', response);
+    // Debug: Log achievement confirmation creation success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement confirmation created successfully in NocoDB:', response);
+    }
 
     // Extract the confirmation ID from response
     const confirmationId = response.Id || (response.list && response.list[0]?.Id);
@@ -2392,7 +2699,10 @@ export const saveAchievementConfirmation = async (confirmData) => {
         const uploadResult = await uploadAchievementConfirmationImage(imageFile, title, confirmationId);
         if (uploadResult.success) {
           attachmentId = uploadResult.attachmentId;
-          console.log('✅ Image uploaded and linked to achievement confirmation');
+          // Debug: Log achievement image upload success (development only)
+          if (import.meta.env.MODE !== 'production') {
+            console.log('✅ Image uploaded and linked to achievement confirmation');
+          }
         } else {
           console.warn('⚠️ Image upload failed:', uploadResult.message);
         }
@@ -2429,7 +2739,10 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
       return { success: false, message: 'Achievement confirmation ID is required' };
     }
 
-    console.log('🔍 Deleting Achievement Confirmation:', confirmationId);
+    // Debug: Log achievement confirmation deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔍 Deleting Achievement Confirmation:', confirmationId);
+    }
 
     // Step 1: Find and delete linked attachment from attachments_gallery
     try {
@@ -2441,16 +2754,25 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
       if (attachmentsData.list && attachmentsData.list.length > 0) {
         const attachmentIds = attachmentsData.list.map(att => ({ Id: att.Id }));
 
-        console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        // Debug: Log linked achievement attachments deletion (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log(`🗑️ Deleting ${attachmentIds.length} linked attachment(s) from attachments_gallery`);
+        }
 
         await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
           method: 'DELETE',
           body: JSON.stringify(attachmentIds)
         });
 
-        console.log('✅ Linked attachments deleted successfully');
+        // Debug: Log attachments deletion success (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('✅ Linked attachments deleted successfully');
+        }
       } else {
-        console.log('ℹ️ No linked attachments found for this achievement confirmation');
+        // Debug: Log no achievement attachments (development only)
+        if (import.meta.env.MODE !== 'production') {
+          console.log('ℹ️ No linked attachments found for this achievement confirmation');
+        }
       }
     } catch (attachmentError) {
       console.warn('⚠️ Failed to delete linked attachments:', attachmentError.message);
@@ -2458,14 +2780,20 @@ export const deleteAchievementConfirmation = async (confirmationId) => {
     }
 
     // Step 2: Delete the achievement confirmation record
-    console.log('🗑️ Deleting achievement confirmation record');
+    // Debug: Log achievement confirmation record deletion (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🗑️ Deleting achievement confirmation record');
+    }
 
     const response = await nocoRequest(`${TABLE_IDS.ACHIEVEMENTS_CONFIRM}/records`, {
       method: 'DELETE',
       body: JSON.stringify([{ Id: confirmationId }])
     });
 
-    console.log('✅ Achievement confirmation deleted successfully in NocoDB:', response);
+    // Debug: Log achievement confirmation deletion success (development only)
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement confirmation deleted successfully in NocoDB:', response);
+    }
     return { success: true, message: 'Achievement confirmation and linked attachments deleted' };
   } catch (error) {
     console.error('❌ Error deleting achievement confirmation in NocoDB:', error);

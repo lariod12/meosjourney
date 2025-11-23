@@ -10,7 +10,7 @@ import { LoadingDialog } from '../../components/common';
 import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, createAchievement, createQuest, updateQuest, updateAchievement, deleteQuest, deleteAchievement, updateQuestConfirmationStatus, updateAchievementConfirmationStatus, unlinkQuestConfirmation, deleteQuestConfirmation, deleteAchievementConfirmation, updateAutoApproveTasks, clearNocoDBCache, updateProfileXP, saveJournal, CHARACTER_ID } from '../../services/nocodb';
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
-import { deleteImageByUrl } from '../../services/storage';
+// import { deleteImageByUrl } from '../../services/storage'; // Deprecated - NocoDB handles image deletion automatically
 import { clearCache } from '../../utils/cacheManager';
 
 const SESSION_KEY = 'admin_meos05_access';
@@ -836,7 +836,8 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imageUrl);
+            // await deleteImageByUrl(conf.imageUrl); // Deprecated - NocoDB handles image deletion automatically
+            console.log('ℹ️ Quest image deletion handled by NocoDB when record is deleted');
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }
@@ -870,7 +871,8 @@ const AdminPage = ({ onBack }) => {
 
         if (conf?.imgUrl) {
           try {
-            await deleteImageByUrl(conf.imageUrl);
+            // await deleteImageByUrl(conf.imageUrl); // Deprecated - NocoDB handles image deletion automatically
+            console.log('ℹ️ Achievement image deletion handled by NocoDB when record is deleted');
           } catch (imgError) {
             console.warn('⚠️ Could not delete image:', imgError.message);
           }

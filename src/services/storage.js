@@ -1,5 +1,6 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from './firebase';
+// Firebase Storage is deprecated - using NocoDB storage instead
+// import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+// import { storage } from './firebase';
 import imageCompression from 'browser-image-compression';
 
 /**
