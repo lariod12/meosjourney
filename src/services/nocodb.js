@@ -2726,12 +2726,12 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
 };
 
 /**
- * Upload profile gallery images to attachments_gallery table
- * Updated: Now uploads all images to a single record (like Photo Album)
+ * Upload profile gallery images to NocoDB
  * @param {string} profileId - Profile ID to link images to (production)
  * @param {File[]} imageFiles - Array of image files
+ * @param {string} description - Gallery description
  */
-export const uploadProfileGalleryImages = async (profileId, imageFiles) => {
+export const uploadProfileGalleryImages = async (profileId, imageFiles, description = '') => {
   if (!imageFiles || imageFiles.length === 0) {
     return { success: false, message: 'No images to upload', uploadedCount: 0, totalCount: 0 };
   }
@@ -2820,11 +2820,24 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles) => {
     }
 
     // Step 2: Create single gallery record with all images
+    // Generate title: gallery-YYYY-MM-DD-XXX (XXX = 3-digit random)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    const galleryTitle = `gallery-${year}-${month}-${day}-${randomDigits}`;
+
     const payload = {
-      title: `Gallery ${new Date().toISOString()}`,
+      title: galleryTitle,
       img_bw: uploadedImages,
       created_time: getUTC7Timestamp()
     };
+
+    // Add description if provided
+    if (description && description.trim()) {
+      payload.desc = description.trim();
+    }
 
     // Add profile_id for production environment
     if (import.meta.env.MODE === 'production' && profileId) {

@@ -1019,7 +1019,11 @@ const UserPage = ({ onBack }) => {
       // Submit Profile Gallery (if has images)
       if (galleryImages.length > 0 && profileData.id) {
         try {
-          const galleryResult = await uploadProfileGalleryImages(profileData.id, galleryImages.map(img => img.file));
+          const galleryResult = await uploadProfileGalleryImages(
+            profileData.id, 
+            galleryImages.map(img => img.file),
+            formData.galleryDescription || ''
+          );
 
           if (galleryResult.success) {
             results.push({

@@ -179,7 +179,10 @@ const GalleryTab = () => {
                 )}
               </div>
               <div className="gallery-card-desc">
-                {gallery.desc || gallery.title || 'Gallery'}
+                {(() => {
+                  const text = gallery.desc || gallery.title || 'Gallery';
+                  return text.length > 19 ? `${text.substring(0, 19)}...` : text;
+                })()}
               </div>
             </div>
           );
