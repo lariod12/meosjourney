@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchPhotoAlbums } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
 import './PhotoAlbumTab.css';
@@ -17,6 +17,7 @@ const PhotoAlbumTab = () => {
   );
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
+  const modalContentRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -31,6 +32,24 @@ const PhotoAlbumTab = () => {
     if (selectedAlbum) {
       setCarouselIndex(0);
       setZoomedImage(null);
+      
+      // Scroll modal content to bottom (100%) if scrollable (only on screens > 426px)
+      setTimeout(() => {
+        if (modalContentRef.current && window.innerWidth > 426) {
+          const element = modalContentRef.current;
+          const scrollHeight = element.scrollHeight;
+          const clientHeight = element.clientHeight;
+          
+          // Only scroll if content is scrollable
+          if (scrollHeight > clientHeight) {
+            const scrollTo = scrollHeight - clientHeight; // Scroll to bottom (100%)
+            element.scrollTo({
+              top: scrollTo,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 100); // Small delay to ensure modal is rendered
     }
   }, [selectedAlbum]);
 
@@ -233,7 +252,7 @@ const PhotoAlbumTab = () => {
       {/* Modal for viewing full album*/}
       {selectedAlbum && (
         <div className="photoalbum-modal" onClick={() => setSelectedAlbum(null)}>
-          <div className="photoalbum-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="photoalbum-modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
             <button
               className="photoalbum-modal-close"
               onClick={() => setSelectedAlbum(null)}

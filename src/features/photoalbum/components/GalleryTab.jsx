@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchHomePageGallery } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
 import './GalleryTab.css';
@@ -17,6 +17,7 @@ const GalleryTab = () => {
   );
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
+  const modalContentRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -31,6 +32,24 @@ const GalleryTab = () => {
     if (selectedGallery) {
       setCarouselIndex(0);
       setZoomedImage(null);
+      
+      // Scroll modal content to bottom (100%) if scrollable (only on screens > 426px)
+      setTimeout(() => {
+        if (modalContentRef.current && window.innerWidth > 425) {
+          const element = modalContentRef.current;
+          const scrollHeight = element.scrollHeight;
+          const clientHeight = element.clientHeight;
+          
+          // Only scroll if content is scrollable
+          if (scrollHeight > clientHeight) {
+            const scrollTo = scrollHeight - clientHeight; // Scroll to bottom (100%)
+            element.scrollTo({
+              top: scrollTo,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 100); // Small delay to ensure modal is rendered
     }
   }, [selectedGallery]);
 
@@ -190,7 +209,7 @@ const GalleryTab = () => {
       {/* Modal for viewing full gallery */}
       {selectedGallery && (
         <div className="gallery-modal" onClick={() => setSelectedGallery(null)}>
-          <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="gallery-modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
             <button
               className="gallery-modal-close"
               onClick={() => setSelectedGallery(null)}

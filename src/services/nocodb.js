@@ -69,6 +69,32 @@ const TABLE_IDS = import.meta.env.MODE === 'production' ? TABLE_IDS_PRODUCTION :
 // Helper function to check if current mode should use production behavior
 const isProductionMode = () => import.meta.env.MODE === 'production' || import.meta.env.MODE === 'staging';
 
+// Helper function to generate UTC+7 timestamp with milliseconds for uniqueness
+const getUTC7Timestamp = () => {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  const parts = formatter.formatToParts(now).reduce((acc, part) => {
+    if (part.type !== 'literal') {
+      acc[part.type] = part.value;
+    }
+    return acc;
+  }, {});
+
+  // Add milliseconds for uniqueness (prevent duplicate key constraint)
+  const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}.${milliseconds}+07:00`;
+};
+
 // Debug: Log current mode and table IDs (development and staging only)
 if (!isProductionMode()) {
   const envName = import.meta.env.MODE === 'staging' ? 'STAGING' : 
@@ -169,7 +195,21 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
       }
 
       if (!response.ok) {
-        throw new Error(`NocoDB API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorDetail;
+        try {
+          errorDetail = JSON.parse(errorText);
+        } catch {
+          errorDetail = errorText;
+        }
+        console.error('❌ NocoDB API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          method: options.method || 'GET',
+          errorDetail
+        });
+        throw new Error(`NocoDB API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetail)}`);
       }
 
       return response.json();
@@ -2781,28 +2821,6 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles, descript
       console.log('🔍 Starting profile gallery upload:', { profileId, imageCount: imageFiles.length });
     }
 
-    const getUTC7Timestamp = () => {
-      const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-
-      const parts = formatter.formatToParts(new Date()).reduce((acc, part) => {
-        if (part.type !== 'literal') {
-          acc[part.type] = part.value;
-        }
-        return acc;
-      }, {});
-
-      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+07:00`;
-    };
-
     // Step 1: Upload all images to NocoDB storage
     const uploadedImages = [];
 
@@ -2859,13 +2877,16 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles, descript
     }
 
     // Step 2: Create single gallery record with all images
-    // Generate title: gallery-YYYY-MM-DD-XXX (XXX = 3-digit random)
+    // Generate title: gallery-YYYY-MM-DD-HHMMSS-XXX (XXX = 3-digit random + timestamp for uniqueness)
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
     const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-    const galleryTitle = `gallery-${year}-${month}-${day}-${randomDigits}`;
+    const galleryTitle = `gallery-${year}-${month}-${day}-${hours}${minutes}${seconds}-${randomDigits}`;
 
     const payload = {
       title: galleryTitle,
@@ -2878,25 +2899,34 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles, descript
       payload.desc = description.trim();
     }
 
-    // Add profile_id for production environment
-    if (import.meta.env.MODE === 'production' && profileId) {
-      payload.profile_id = profileId;
-    }
+    // NOTE: Gallery records are standalone and NOT linked to profiles
+    // Each submission creates a new gallery record with unique timestamp-based title
 
-    // Debug: Log gallery creation (development only)
-    if (import.meta.env.MODE !== 'production') {
-      console.log('🔍 Creating gallery record with payload:', payload);
-      console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
-    }
-
-    const response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
+    // Create new gallery record
+    console.log('🔍 Creating new gallery record with payload:', {
+      ...payload,
+      img_bw: `[${uploadedImages.length} images]`,
+      mode: import.meta.env.MODE,
+      tableId: TABLE_IDS.ATTACHMENTS_GALLERY
     });
 
-    // Debug: Log gallery creation success (development only)
-    if (import.meta.env.MODE !== 'production') {
+    let response;
+    try {
+      response = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
       console.log('✅ Gallery created successfully:', response);
+    } catch (error) {
+      console.error('❌ Failed to create gallery record:', {
+        error: error.message,
+        payload: {
+          ...payload,
+          img_bw: uploadedImages.length > 0 ? uploadedImages[0] : null
+        },
+        tableId: TABLE_IDS.ATTACHMENTS_GALLERY
+      });
+      throw error;
     }
 
     const galleryId = response.Id || (response.list && response.list[0]?.Id);
@@ -3214,28 +3244,6 @@ export const savePhotoAlbum = async (albumData) => {
     }
 
     const { description, imageFiles } = albumData;
-
-    const getUTC7Timestamp = () => {
-      const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-
-      const parts = formatter.formatToParts(new Date()).reduce((acc, part) => {
-        if (part.type !== 'literal') {
-          acc[part.type] = part.value;
-        }
-        return acc;
-      }, {});
-
-      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+07:00`;
-    };
 
     if (!imageFiles || imageFiles.length === 0) {
       return { success: false, message: 'At least one image is required' };
