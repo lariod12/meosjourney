@@ -414,6 +414,12 @@
 }
 
 /* Mobile responsive */
+@media (min-width: 769px) {
+  .photoalbum-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .photoalbum-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
