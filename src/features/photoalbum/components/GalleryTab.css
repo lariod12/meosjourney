@@ -326,8 +326,6 @@
   box-shadow: 
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000;
-  width: 100%;
-  flex-basis: 100%;
 }
 
 /* Gothic decorative quote marks */
@@ -353,8 +351,9 @@
 
 .gallery-modal-carousel {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: center;
   gap: 15px;
   margin-bottom: 20px;
   position: relative;
@@ -416,24 +415,15 @@
 .gallery-modal-grid {
   display: grid;
   gap: 20px;
-  flex: 1;
+  width: 100%;
+  max-width: calc(100% - 142px);
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-items: center;
 }
 
 .gallery-modal-grid-1 {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.gallery-modal-grid-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.gallery-modal-grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.gallery-modal-grid-single {
-  justify-items: center;
-  align-items: center;
+  grid-template-columns: 1fr;
 }
 
 /* Gothic Art Frame in Modal */
@@ -449,6 +439,8 @@
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000,
     5px 5px 0 #000000;
+  width: 100%;
+  max-width: 500px;
 }
 
 /* Gothic inner frame border */
@@ -679,6 +671,7 @@
 
   .gallery-modal-grid {
     gap: 15px;
+    max-width: calc(100% - 120px);
   }
 
   .gallery-modal-carousel {
@@ -811,6 +804,7 @@
 
   .gallery-modal-grid {
     gap: 12px;
+    max-width: calc(100% - 108px);
   }
 
   .gallery-modal-carousel {

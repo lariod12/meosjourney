@@ -4,10 +4,7 @@ import { useLanguage } from '../../../contexts';
 import './GalleryTab.css';
 
 const getItemsPerView = (width) => {
-  if (!width) return 3;
-  if (width <= 480) return 1;
-  if (width <= 768) return 2;
-  return 3;
+  return 1;
 };
 
 const GalleryTab = () => {
@@ -97,15 +94,9 @@ const GalleryTab = () => {
   const modalImages = selectedGallery?.img || [];
   const maxCarouselIndex = Math.max(0, modalImages.length - itemsPerView);
   const visibleImages = modalImages.slice(carouselIndex, carouselIndex + itemsPerView);
-  const shouldShowCarouselNav = modalImages.length > itemsPerView;
+  const shouldShowCarouselNav = true;
   const isSingleImage = modalImages.length === 1;
   const gridColumnsClass = `gallery-modal-grid-${itemsPerView}`;
-  const singleImageGridStyle = isSingleImage && itemsPerView === 3
-    ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
-    : undefined;
-  const singleImageItemStyle = isSingleImage && itemsPerView === 3
-    ? { gridColumn: '2 / 3' }
-    : undefined;
   const canGoPrev = carouselIndex > 0;
   const canGoNext = carouselIndex < maxCarouselIndex;
 
@@ -201,29 +192,23 @@ const GalleryTab = () => {
             </button>
 
             <div className="gallery-modal-carousel">
-              {shouldShowCarouselNav && (
-                <button
-                  type="button"
-                  className="gallery-modal-nav-button gallery-modal-nav-button-prev"
-                  onClick={handlePrev}
-                  disabled={!canGoPrev}
-                  aria-label="Previous images"
-                >
-                  ‹
-                </button>
-              )}
-
-              <div
-                className={`gallery-modal-grid ${gridColumnsClass} ${isSingleImage ? 'gallery-modal-grid-single' : ''}`}
-                style={singleImageGridStyle}
+              <button
+                type="button"
+                className="gallery-modal-nav-button gallery-modal-nav-button-prev"
+                onClick={handlePrev}
+                disabled={!canGoPrev}
+                aria-label="Previous images"
               >
+                ‹
+              </button>
+
+              <div className={`gallery-modal-grid ${gridColumnsClass}`}>
                 {visibleImages.map((image, index) => (
                   <button
                     key={`${carouselIndex}-${index}`}
                     className="gallery-modal-image"
                     type="button"
                     onClick={() => handleImageClick(image, carouselIndex + index)}
-                    style={singleImageItemStyle}
                   >
                     <img
                       src={image.signedUrl || image.url}
@@ -233,35 +218,33 @@ const GalleryTab = () => {
                 ))}
               </div>
 
-              {shouldShowCarouselNav && (
-                <button
-                  type="button"
-                  className="gallery-modal-nav-button gallery-modal-nav-button-next"
-                  onClick={handleNext}
-                  disabled={!canGoNext}
-                  aria-label="Next images"
-                >
-                  ›
-                </button>
-              )}
-
-              {selectedGallery.desc && (
-                <div className="gallery-modal-desc">
-                  {selectedGallery.desc}
-                  {(() => {
-                    const modalDate = selectedGallery.created_time
-                      ? new Date(selectedGallery.created_time)
-                      : null;
-
-                    return modalDate && (
-                      <div className="gallery-modal-date">
-                        {formatDateTime(modalDate, lang === 'VI')}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+              <button
+                type="button"
+                className="gallery-modal-nav-button gallery-modal-nav-button-next"
+                onClick={handleNext}
+                disabled={!canGoNext}
+                aria-label="Next images"
+              >
+                ›
+              </button>
             </div>
+
+            {selectedGallery.desc && (
+              <div className="gallery-modal-desc">
+                {selectedGallery.desc}
+                {(() => {
+                  const modalDate = selectedGallery.created_time
+                    ? new Date(selectedGallery.created_time)
+                    : null;
+
+                  return modalDate && (
+                    <div className="gallery-modal-date">
+                      {formatDateTime(modalDate, lang === 'VI')}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {zoomedImage && (
               <div className="gallery-zoom-overlay" onClick={closeZoom}>
