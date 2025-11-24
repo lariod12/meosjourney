@@ -424,42 +424,10 @@
       #f2f2f2 12px);
   cursor: zoom-in;
   position: relative;
-    box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 10px #000000, 6px 6px 0 #000000, 10px 10px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 0 0 0px #ffffff, inset 0 0 0 3px #000000, 6px 6px 0 #000000, 10px 10px 0 rgba(0, 0, 0, 0.35);
   width: 100%;
   max-width: 520px;
   transform: rotate(-0.5deg);
-}
-
-/* Gothic inner frame border */
-.gallery-modal-image::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 3px solid #000000;
-  box-shadow:
-    inset 0 0 0 1px #ffffff,
-    inset 0 0 0 3px #000000;
-  background:
-    radial-gradient(circle at 0% 0%, #000000 3px, transparent 3px),
-    radial-gradient(circle at 100% 0%, #000000 3px, transparent 3px),
-    radial-gradient(circle at 0% 100%, #000000 3px, transparent 3px),
-    radial-gradient(circle at 100% 100%, #000000 3px, transparent 3px);
-  background-size: 16px 16px;
-  background-position: 0 0, 100% 0, 0 100%, 100% 100%;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  opacity: 0.7;
-  z-index: 2;
-}
-
-/* Gothic corner decorations on modal images */
-.gallery-modal-image::after {
-  content: '';
-  position: absolute;
-  border: 2px dashed #000000;
-  pointer-events: none;
-  opacity: 0.4;
-  z-index: 3;
 }
 
 .gallery-modal-image img {
@@ -493,7 +461,7 @@
   border: 12px solid #000000;
   background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 100%);
   padding: 25px;
-  box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 10px #000000, 20px 20px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px #ffffff, inset 0 0 0 10px #000000, 20px 20px 0 rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -648,19 +616,6 @@
     min-width: 50px;
     border-width: 3px;
   }
-
-  .gallery-modal-image {
-    border-width: 4px;
-    padding: 8px;
-  }
-
-  .gallery-modal-image::before {
-    border-width: 2px;
-  }
-
-  .gallery-modal-image::after {
-    font-size: 12px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -759,19 +714,6 @@
     border-width: 3px;
     font-size: 24px;
     min-width: 46px;
-  }
-
-  .gallery-modal-image {
-    border-width: 4px;
-    padding: 6px;
-  }
-
-  .gallery-modal-image::before {
-    border-width: 2px;
-  }
-
-  .gallery-modal-image::after {
-    font-size: 10px;
   }
 
   .gallery-zoom-content {
