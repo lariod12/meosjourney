@@ -170,10 +170,17 @@ const GalleryTab = () => {
                 )}
               </div>
               <div className="gallery-card-desc">
-                {(() => {
-                  const text = gallery.desc || gallery.title || 'Gallery';
-                  return text.length > 30 ? `${text.substring(0, 30)}...` : text;
-                })()}
+                <div className="gallery-card-desc-content">
+                  {(() => {
+                    const text = gallery.desc || gallery.title || 'Gallery';
+                    return text.length > 30 ? `${text.substring(0, 30)}...` : text;
+                  })()}
+                </div>
+                {createdDate && (
+                  <div className="gallery-card-date">
+                    {formatDateTime(createdDate, lang === 'VI')}
+                  </div>
+                )}
               </div>
             </div>
           );

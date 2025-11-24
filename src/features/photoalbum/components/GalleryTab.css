@@ -32,10 +32,10 @@
   height: 100%;
   position: relative;
   border: 8px solid #000000;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000,
-    8px 8px 0 #000000, 
+    8px 8px 0 #000000,
     12px 12px 0 rgba(0, 0, 0, 0.2);
 }
 
@@ -47,7 +47,7 @@
   left: -3px;
   right: -3px;
   bottom: -3px;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 4px, transparent 4px),
     radial-gradient(circle at 100% 0%, #000000 4px, transparent 4px),
     radial-gradient(circle at 0% 100%, #000000 4px, transparent 4px),
@@ -77,10 +77,10 @@
 
 .gallery-card:hover {
   transform: rotate(0deg) translateY(-4px);
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000,
-    10px 10px 0 #000000, 
+    10px 10px 0 #000000,
     15px 15px 0 rgba(0, 0, 0, 0.3);
 }
 
@@ -91,7 +91,7 @@
   padding: 8px;
   background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 100%);
   position: relative;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 1px #ffffff,
     inset 0 0 0 2px #000000;
 }
@@ -104,7 +104,7 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 3px, transparent 3px),
     radial-gradient(circle at 100% 0%, #000000 3px, transparent 3px),
     radial-gradient(circle at 0% 100%, #000000 3px, transparent 3px),
@@ -166,13 +166,11 @@
   align-items: center;
   justify-content: center;
   border: 3px solid #000000;
-  background: repeating-linear-gradient(
-    45deg,
-    #ffffff,
-    #ffffff 10px,
-    #f9f9f9 10px,
-    #f9f9f9 20px
-  );
+  background: repeating-linear-gradient(45deg,
+      #ffffff,
+      #ffffff 10px,
+      #f9f9f9 10px,
+      #f9f9f9 20px);
   font-size: 48px;
   flex-shrink: 0;
 }
@@ -184,21 +182,45 @@
   color: #000000;
   text-align: center;
   padding: 14px 20px;
-  background: 
+  background:
     linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
   font-style: italic;
   letter-spacing: 1px;
   min-height: 52px;
+  height: auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 6px;
   border: 4px solid #000000;
   position: relative;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 3px #000000;
   font-weight: 600;
+}
+
+.gallery-card-desc-content {
+  width: 100%;
+}
+
+.gallery-card-date {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 1em;
+  color: #666666;
+  font-style: italic;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+  display: block;
+  margin-top: 8px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: normal;
+  letter-spacing: 0;
 }
 
 /* Gothic decorative elements on title plate */
@@ -253,7 +275,7 @@
 /* Gothic corner ornaments for modal */
 .gallery-modal-content::before {
   content: '';
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 5px, transparent 5px),
     radial-gradient(circle at 100% 0%, #000000 5px, transparent 5px),
     radial-gradient(circle at 0% 100%, #000000 5px, transparent 5px),
@@ -296,11 +318,11 @@
 }
 
 .gallery-modal-date {
-    font-size: 13px;
-    color: #666666;
-    text-align: right;
-    letter-spacing: 1.5px;
-    border: none;
+  font-size: 13px;
+  color: #666666;
+  text-align: right;
+  letter-spacing: 1.5px;
+  border: none;
 }
 
 /* Gothic ornaments on date */
@@ -317,13 +339,13 @@
   line-height: 1.8;
   text-align: center;
   padding: 25px 30px;
-  background: 
+  background:
     linear-gradient(to bottom, #f9f9f9 0%, #f0f0f0 100%);
   border: 5px solid #000000;
   margin-top: 20px;
   font-style: italic;
   position: relative;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000;
 }
@@ -373,7 +395,7 @@
   justify-content: center;
   transition: all 0.2s;
   min-width: 56px;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 3px #000000,
     4px 4px 0 #000000;
@@ -388,7 +410,7 @@
   left: -3px;
   right: -3px;
   bottom: -3px;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 2px, transparent 2px),
     radial-gradient(circle at 100% 0%, #000000 2px, transparent 2px),
     radial-gradient(circle at 0% 100%, #000000 2px, transparent 2px),
@@ -435,7 +457,7 @@
   background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 100%);
   cursor: zoom-in;
   position: relative;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000,
     5px 5px 0 #000000;
@@ -451,7 +473,7 @@
   left: -3px;
   right: -3px;
   bottom: -3px;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 3px, transparent 3px),
     radial-gradient(circle at 100% 0%, #000000 3px, transparent 3px),
     radial-gradient(circle at 0% 100%, #000000 3px, transparent 3px),
@@ -507,7 +529,7 @@
   border: 12px solid #000000;
   background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 100%);
   padding: 25px;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 4px #ffffff,
     inset 0 0 0 8px #000000,
     15px 15px 0 #000000,
@@ -525,7 +547,7 @@
   left: -6px;
   right: -6px;
   bottom: -6px;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, #000000 6px, transparent 6px),
     radial-gradient(circle at 100% 0%, #000000 6px, transparent 6px),
     radial-gradient(circle at 0% 100%, #000000 6px, transparent 6px),
@@ -636,7 +658,7 @@
     padding: 60px 5px 5px;
     border-width: 6px;
     max-height: calc(100% - 20px);
-    box-shadow: 
+    box-shadow:
       10px 10px 0 #000000,
       13px 13px 0 rgba(0, 0, 0, 0.3),
       inset 0 0 0 2px rgba(0, 0, 0, 0.1);
@@ -708,10 +730,10 @@
 
   .gallery-card {
     border-width: 4px;
-    box-shadow: 
+    box-shadow:
       inset 0 0 0 1px #ffffff,
       inset 0 0 0 3px #000000,
-      4px 4px 0 #000000, 
+      4px 4px 0 #000000,
       6px 6px 0 rgba(0, 0, 0, 0.2);
   }
 
@@ -727,7 +749,7 @@
     margin: 2px;
     padding: 4px;
     border-width: 2px;
-    box-shadow: 
+    box-shadow:
       inset 0 0 0 1px #ffffff,
       inset 0 0 0 2px #000000;
   }
@@ -762,14 +784,14 @@
     font-size: 5px;
     left: 2px;
   }
-  
+
   .gallery-card-count::after {
     right: 2px;
   }
 
   .gallery-modal-content {
     border-width: 5px;
-    box-shadow: 
+    box-shadow:
       8px 8px 0 #000000,
       10px 10px 0 rgba(0, 0, 0, 0.3),
       inset 0 0 0 1px rgba(0, 0, 0, 0.1);
@@ -854,10 +876,10 @@
 
   .gallery-card {
     border-width: 3px;
-    box-shadow: 
+    box-shadow:
       inset 0 0 0 1px #ffffff,
       inset 0 0 0 2px #000000,
-      3px 3px 0 #000000, 
+      3px 3px 0 #000000,
       4px 4px 0 rgba(0, 0, 0, 0.2);
   }
 
