@@ -38,38 +38,7 @@
     8px 8px 0 #000000,
     12px 12px 0 rgba(0, 0, 0, 0.2);
 }
-
-/* Gothic corner ornaments */
-.gallery-card::before {
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: -3px;
-  right: -3px;
-  bottom: -3px;
-  background:
-    radial-gradient(circle at 0% 0%, #000000 4px, transparent 4px),
-    radial-gradient(circle at 100% 0%, #000000 4px, transparent 4px),
-    radial-gradient(circle at 0% 100%, #000000 4px, transparent 4px),
-    radial-gradient(circle at 100% 100%, #000000 4px, transparent 4px);
-  background-size: 20px 20px;
-  background-position: 0 0, 100% 0, 0 100%, 100% 100%;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  z-index: 1;
-}
-
 /* Gothic side ornaments */
-.gallery-card::after {
-  content: '◆';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  color: #000000;
-  z-index: 2;
-}
 
 .gallery-card:nth-child(even) {
   transform: rotate(0.5deg);
@@ -611,24 +580,10 @@
     box-shadow: 6px 6px 0 #000000, 9px 9px 0 rgba(0, 0, 0, 0.2);
   }
 
-  .gallery-card::before,
-  .gallery-card::after {
-    width: 20px;
-    height: 20px;
-    border-width: 2px;
-  }
-
   .gallery-card-frame {
     margin: 8px;
     padding: 8px;
     border-width: 3px;
-  }
-
-  .gallery-card-frame::before,
-  .gallery-card-frame::after {
-    width: 20px;
-    height: 20px;
-    border-width: 2px;
   }
 
   .gallery-card-image {
@@ -735,14 +690,6 @@
       6px 6px 0 rgba(0, 0, 0, 0.2);
   }
 
-  .gallery-card::before {
-    display: none;
-  }
-
-  .gallery-card::after {
-    display: none;
-  }
-
   .gallery-card-frame {
     margin: 2px;
     padding: 4px;
@@ -750,10 +697,6 @@
     box-shadow:
       inset 0 0 0 1px #ffffff,
       inset 0 0 0 2px #000000;
-  }
-
-  .gallery-card-frame::before {
-    display: none;
   }
 
   .gallery-card-desc {
