@@ -169,6 +169,11 @@ const GalleryTab = () => {
               className="gallery-card"
               onClick={() => setSelectedGallery(gallery)}
             >
+              <div className="gallery-card-hanger">
+                <div className="gallery-card-nail" />
+                <div className="gallery-card-rope gallery-card-rope-left" />
+                <div className="gallery-card-rope gallery-card-rope-right" />
+              </div>
               <div className="gallery-card-frame">
                 {firstImage ? (
                   <div className="gallery-card-image">
