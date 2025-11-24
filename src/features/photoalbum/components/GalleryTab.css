@@ -33,7 +33,6 @@
   position: relative;
   border: 8px solid #000000;
   box-shadow:
-    inset 0 0 0 2px #ffffff,
     inset 0 0 0 4px #000000,
     8px 8px 0 #000000,
     12px 12px 0 rgba(0, 0, 0, 0.2);
@@ -573,11 +572,6 @@
     gap: 15px;
   }
 
-  .gallery-card {
-    border-width: 5px;
-    box-shadow: 6px 6px 0 #000000, 9px 9px 0 rgba(0, 0, 0, 0.2);
-  }
-
   .gallery-card-frame {
     margin: 8px;
     padding: 8px;
@@ -677,15 +671,6 @@
   .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-  }
-
-  .gallery-card {
-    border-width: 4px;
-    box-shadow:
-      inset 0 0 0 1px #ffffff,
-      inset 0 0 0 3px #000000,
-      4px 4px 0 #000000,
-      6px 6px 0 rgba(0, 0, 0, 0.2);
   }
 
   .gallery-card-frame {
@@ -807,36 +792,12 @@
   }
 }
 
-/* Extra small screens - optimize for 320px width */
-@media (max-width: 375px) {
+/* Mobile - 1 column layout for small screens */
+@media (max-width: 500px) {
   .gallery-grid {
-    gap: 7px;
-  }
-
-  .gallery-card {
-    border-width: 3px;
-    box-shadow:
-      inset 0 0 0 1px #ffffff,
-      inset 0 0 0 2px #000000,
-      3px 3px 0 #000000,
-      4px 4px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  .gallery-card-frame {
-    margin: 1px;
-    padding: 3px;
-    border-width: 2px;
-  }
-
-  .gallery-card-desc {
-    font-size: 8px;
-    padding: 8px 10px;
-    min-height: 40px;
-    border-width: 2px;
-  }
-
-  .gallery-card-desc::before,
-  .gallery-card-desc::after {
-    font-size: 8px;
+    grid-template-columns: repeat(1, minmax(140px, 200px));
+    gap: 20px;
+    justify-content: center;
   }
 }
+
