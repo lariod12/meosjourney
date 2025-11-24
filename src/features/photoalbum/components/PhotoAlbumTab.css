@@ -3,7 +3,7 @@
    ======================================== */
 
 .photoalbum-content {
-  padding: 20px;
+  padding: 1%;
 }
 
 .photoalbum-empty {
@@ -270,8 +270,10 @@
 
 .photoalbum-modal-carousel {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
@@ -302,25 +304,16 @@
 
 .photoalbum-modal-grid {
   display: grid;
-  gap: 15px;
-  flex: 1;
+  gap: 20px;
+  width: 100%;
+  max-width: calc(100% - 126px);
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-items: center;
 }
 
 .photoalbum-modal-grid-1 {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.photoalbum-modal-grid-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.photoalbum-modal-grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.photoalbum-modal-grid-single {
-  justify-items: center;
-  align-items: center;
+  grid-template-columns: 1fr;
 }
 
 .photoalbum-modal-image {
@@ -330,6 +323,8 @@
   padding: 0;
   background: #ffffff;
   cursor: zoom-in;
+  width: 100%;
+  max-width: 500px;
 }
 
 .photoalbum-modal-image img {
@@ -428,7 +423,6 @@
   }
 
   .photoalbum-card-desc-text {
-    height: 65px;
     padding: 10px;
     margin-top: 8px;
   }
@@ -462,6 +456,7 @@
 
   .photoalbum-modal-grid {
     gap: 12px;
+    max-width: calc(100% - 104px);
   }
 
   .photoalbum-modal-carousel {
@@ -498,7 +493,6 @@
   }
 
   .photoalbum-card-desc-text {
-    height: 60px;
     padding: 8px;
     margin-top: 6px;
     font-size: 13px;
@@ -536,6 +530,7 @@
 
   .photoalbum-modal-grid {
     gap: 10px;
+    max-width: calc(100% - 92px);
   }
 
   .photoalbum-modal-carousel {

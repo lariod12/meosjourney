@@ -4,10 +4,7 @@ import { useLanguage } from '../../../contexts';
 import './PhotoAlbumTab.css';
 
 const getItemsPerView = (width) => {
-  if (!width) return 3;
-  if (width <= 480) return 1;
-  if (width <= 768) return 2;
-  return 3;
+  return 1;
 };
 
 const PhotoAlbumTab = () => {
@@ -52,15 +49,9 @@ const PhotoAlbumTab = () => {
   const modalImages = selectedAlbum?.img || [];
   const maxCarouselIndex = Math.max(0, modalImages.length - itemsPerView);
   const visibleImages = modalImages.slice(carouselIndex, carouselIndex + itemsPerView);
-  const shouldShowCarouselNav = modalImages.length > itemsPerView;
+  const shouldShowCarouselNav = true;
   const isSingleImage = modalImages.length === 1;
   const gridColumnsClass = `photoalbum-modal-grid-${itemsPerView}`;
-  const singleImageGridStyle = isSingleImage && itemsPerView === 3
-    ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }
-    : undefined;
-  const singleImageItemStyle = isSingleImage && itemsPerView === 3
-    ? { gridColumn: '2 / 3' }
-    : undefined;
   const canGoPrev = carouselIndex > 0;
   const canGoNext = carouselIndex < maxCarouselIndex;
 
@@ -223,7 +214,7 @@ const PhotoAlbumTab = () => {
                     </div>
                     <div className="photoalbum-card-desc-text" title={album.desc}>
                       <div className="photoalbum-card-desc-content">
-                        {album.desc.length > 19 ? `${album.desc.substring(0, 19)}...` : album.desc}
+                        {album.desc.length > 35 ? `${album.desc.substring(0, 35)}...` : album.desc}
                       </div>
                       {createdDate && (
                         <div className="photoalbum-card-date">
@@ -251,29 +242,23 @@ const PhotoAlbumTab = () => {
             </button>
 
             <div className="photoalbum-modal-carousel">
-              {shouldShowCarouselNav && (
-                <button
-                  type="button"
-                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-prev"
-                  onClick={handlePrev}
-                  disabled={!canGoPrev}
-                  aria-label="Previous images"
-                >
-                  ‹
-                </button>
-              )}
-
-              <div
-                className={`photoalbum-modal-grid ${gridColumnsClass} ${isSingleImage ? 'photoalbum-modal-grid-single' : ''}`}
-                style={singleImageGridStyle}
+              <button
+                type="button"
+                className="photoalbum-modal-nav-button photoalbum-modal-nav-button-prev"
+                onClick={handlePrev}
+                disabled={!canGoPrev}
+                aria-label="Previous images"
               >
+                ‹
+              </button>
+
+              <div className={`photoalbum-modal-grid ${gridColumnsClass}`}>
                 {visibleImages.map((image, index) => (
                   <button
                     key={`${carouselIndex}-${index}`}
                     className="photoalbum-modal-image"
                     type="button"
                     onClick={() => handleImageClick(image, carouselIndex + index)}
-                    style={singleImageItemStyle}
                   >
                     <img
                       src={image.signedUrl || image.url}
@@ -283,17 +268,15 @@ const PhotoAlbumTab = () => {
                 ))}
               </div>
 
-              {shouldShowCarouselNav && (
-                <button
-                  type="button"
-                  className="photoalbum-modal-nav-button photoalbum-modal-nav-button-next"
-                  onClick={handleNext}
-                  disabled={!canGoNext}
-                  aria-label="Next images"
-                >
-                  ›
-                </button>
-              )}
+              <button
+                type="button"
+                className="photoalbum-modal-nav-button photoalbum-modal-nav-button-next"
+                onClick={handleNext}
+                disabled={!canGoNext}
+                aria-label="Next images"
+              >
+                ›
+              </button>
             </div>
 
             {selectedAlbum.desc && (
