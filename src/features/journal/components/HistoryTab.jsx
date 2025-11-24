@@ -58,7 +58,7 @@ const HistoryTab = () => {
 
   // Auto-load more if no scrollbar (content too short)
   useEffect(() => {
-    const checkAndLoadMore = () => {
+    const checkAndLoadMore = async () => {
       const listElement = listRef.current;
       if (!listElement || isLoadingMore || !hasMore) return;
 
@@ -66,12 +66,14 @@ const HistoryTab = () => {
       const hasScrollbar = listElement.scrollHeight > listElement.clientHeight;
       
       if (!hasScrollbar && loadedJournals.length > 0) {
+        // Add delay before auto-loading to prevent rapid consecutive requests
+        await new Promise(resolve => setTimeout(resolve, 800));
         loadMoreJournals();
       }
     };
 
-    // Check after render
-    const timer = setTimeout(checkAndLoadMore, 100);
+    // Check after render with longer initial delay
+    const timer = setTimeout(checkAndLoadMore, 500);
     return () => clearTimeout(timer);
   }, [loadedJournals, hasMore, isLoadingMore]);
 

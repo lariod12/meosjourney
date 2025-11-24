@@ -47,18 +47,43 @@ const TABLE_IDS_DEVELOPE = {
   ATTACHMENTS_ALBUM: 'mkwz7hrtyzkvji6'
 };
 
-// Use development table IDs when not in production
-const TABLE_IDS = import.meta.env.MODE === 'production' ? TABLE_IDS_PRODUCTION : TABLE_IDS_DEVELOPE;
+const TABLE_IDS_STAGING = {
+  STATUS: 'ms8en1op7vwznus',
+  PROFILE: 'mntx3zoatts0mqs',
+  CONFIG: 'mfknw80a7z9yq4k',
+  HISTORY: 'm6gg7iz2652psmg',
+  JOURNALS: 'm2vhvjmajhe57m1',
+  QUESTS: 'm5zdtosf0at9r5e',
+  QUESTS_CONFIRM: 'm9mcryxflb74irn',
+  ACHIEVEMENTS: 'mn5q6w7t05bamhd',
+  ACHIEVEMENTS_CONFIRM: 'mlayyfujdqnghzb',
+  ATTACHMENTS_GALLERY: 'mc8mv7di4aadfz1',
+  ATTACHMENTS_ALBUM: 'mi5yptema60aqcq'
+};
 
-// Debug: Log current mode and table IDs (development only)
-if (import.meta.env.MODE !== 'production') {
-  console.log(`🔧 NocoDB Mode: ${import.meta.env.MODE}, Using ${import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'DEVELOPMENT'} table IDs`);
+// Use appropriate table IDs based on environment
+const TABLE_IDS = import.meta.env.MODE === 'production' ? TABLE_IDS_PRODUCTION : 
+                  import.meta.env.MODE === 'staging' ? TABLE_IDS_STAGING : 
+                  TABLE_IDS_DEVELOPE;
+
+// Helper function to check if current mode should use production behavior
+const isProductionMode = () => import.meta.env.MODE === 'production' || import.meta.env.MODE === 'staging';
+
+// Debug: Log current mode and table IDs (development and staging only)
+if (!isProductionMode()) {
+  const envName = import.meta.env.MODE === 'staging' ? 'STAGING' : 
+                  import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'DEVELOPMENT';
+  console.log(`🔧 NocoDB Mode: ${import.meta.env.MODE}, Using ${envName} table IDs`);
 }
 
 // Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
 const requestCache = new Map();
 const pendingRequests = new Map(); // Track in-flight requests
 const CACHE_DURATION = 60000; // 60 seconds (1 minute) - increased to reduce API calls
+
+// Request throttling to prevent rate limiting
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 500 : 200; // 500ms for staging, 200ms for others
 
 const getCachedRequest = (key) => {
   const cached = requestCache.get(key);
@@ -81,7 +106,7 @@ const deduplicateRequest = async (key, requestFn) => {
   // Check if request is already in-flight
   if (pendingRequests.has(key)) {
     // Debug: Log waiting request (development only)
-    if (import.meta.env.MODE !== 'production') {
+    if (!isProductionMode()) {
       console.log(`⏳ Waiting for in-flight request: ${key}`);
     }
     return pendingRequests.get(key);
@@ -110,6 +135,15 @@ const deduplicateRequest = async (key, requestFn) => {
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
   const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
 
+  // Throttle requests to prevent rate limiting
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  lastRequestTime = Date.now();
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetch(url, {
@@ -124,7 +158,9 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
       // Handle rate limiting with exponential backoff
       if (response.status === 429) {
         if (attempt < retries) {
-          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          // Staging: 2s, 5s, 10s | Others: 1s, 2s, 4s
+          const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
+          const delay = baseDelay * Math.pow(2, attempt);
           console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
@@ -141,8 +177,9 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
       if (attempt === retries) {
         throw error;
       }
-      // For network errors, also retry
-      const delay = Math.pow(2, attempt) * 1000;
+      // For network errors, also retry with exponential backoff
+      const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
+      const delay = baseDelay * Math.pow(2, attempt);
       console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -157,7 +194,7 @@ export const clearNocoDBCache = () => {
   requestCache.clear();
   pendingRequests.clear();
   // Debug: Log cache cleared (development only)
-  if (import.meta.env.MODE !== 'production') {
+  if (!isProductionMode()) {
     console.log('🗑️ NocoDB cache cleared');
   }
 };
@@ -314,7 +351,7 @@ export const fetchProfile = async () => {
       let avatarUrl = null;
       try {
         // Debug: Log avatar fetching (development only)
-        if (import.meta.env.MODE !== 'production') {
+        if (!isProductionMode()) {
           console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
           console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
         }
@@ -322,9 +359,9 @@ export const fetchProfile = async () => {
         let attachmentsData;
 
         // Development mode: different schema (no profile_id field, use signedPath)
-        if (import.meta.env.MODE !== 'production') {
+        if (!isProductionMode()) {
           // Debug: Log development mode query (development only)
-          if (import.meta.env.MODE !== 'production') {
+          if (!isProductionMode()) {
             console.log('🛠️ Development mode: using simplified query');
           }
           attachmentsData = await nocoRequest(
@@ -340,14 +377,14 @@ export const fetchProfile = async () => {
         }
 
         // Debug: Log attachments found (development only)
-        if (import.meta.env.MODE !== 'production') {
+        if (!isProductionMode()) {
           console.log('📎 Avatar attachments found:', attachmentsData.list?.length || 0);
         }
 
         if (attachmentsData.list && attachmentsData.list.length > 0) {
           const attachment = attachmentsData.list[0];
           // Debug: Log attachment processing (development only)
-          if (import.meta.env.MODE !== 'production') {
+          if (!isProductionMode()) {
             console.log('🖼️ Processing attachment:', attachment.Id);
           }
 
@@ -363,9 +400,9 @@ export const fetchProfile = async () => {
               const imgBw = imgBwArray[0];
 
               // Development mode: use signedPath, Production mode: use signedUrl
-              if (import.meta.env.MODE !== 'production') {
+              if (!isProductionMode()) {
                 // Debug: Log development mode URL handling (development only)
-                if (import.meta.env.MODE !== 'production') {
+                if (!isProductionMode()) {
                   console.log('🛠️ Development mode: using signedPath');
                 }
                 avatarUrl = imgBw.signedPath || imgBw.path || null;
@@ -375,14 +412,14 @@ export const fetchProfile = async () => {
                 }
               } else {
                 // Debug: Log production mode URL handling (development only)
-                if (import.meta.env.MODE !== 'production') {
+                if (!isProductionMode()) {
                   console.log('🏭 Production mode: using signedUrl');
                 }
                 avatarUrl = imgBw.signedUrl || imgBw.url || null;
               }
 
               // Debug: Log URL extraction result (development only)
-              if (import.meta.env.MODE !== 'production') {
+              if (!isProductionMode()) {
                 console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
                 if (avatarUrl) {
                   console.log('🔗 Final avatar URL:', avatarUrl);
@@ -390,19 +427,19 @@ export const fetchProfile = async () => {
               }
             } else {
               // Debug: Log empty array (development only)
-              if (import.meta.env.MODE !== 'production') {
+              if (!isProductionMode()) {
                 console.log('❌ No images in img_bw array');
               }
             }
           } else {
             // Debug: Log missing field (development only)
-            if (import.meta.env.MODE !== 'production') {
+            if (!isProductionMode()) {
               console.log('❌ No img_bw field in attachment');
             }
           }
         } else {
           // Debug: Log no attachments (development only)
-          if (import.meta.env.MODE !== 'production') {
+          if (!isProductionMode()) {
             console.log('❌ No attachments found for profile');
           }
         }
@@ -746,9 +783,9 @@ export const fetchQuestConfirmations = async () => {
       let attachmentsData;
 
       // Development mode: different schema (no quests_confirm_id field)
-      if (import.meta.env.MODE !== 'production') {
+      if (!isProductionMode()) {
         // Debug: Log development mode quest confirmations (development only)
-        if (import.meta.env.MODE !== 'production') {
+        if (!isProductionMode()) {
           console.log('🛠️ Development mode: fetching all attachments for quest confirmations');
         }
         attachmentsData = await nocoRequest(`${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=10`, {
@@ -766,7 +803,7 @@ export const fetchQuestConfirmations = async () => {
       if (attachmentsData.list) {
         attachmentsData.list.forEach(attachment => {
           // Development mode: no quests_confirm_id field, use first attachment for first confirmation
-          if (import.meta.env.MODE !== 'production') {
+          if (!isProductionMode()) {
             // In development, just use the first attachment for the first confirmation
             if (data.list.length > 0) {
               attachmentMap.set(data.list[0].Id, attachment);
@@ -801,7 +838,7 @@ export const fetchQuestConfirmations = async () => {
               const imgBw = imgBwArray[0];
 
               // Development mode: use signedPath, Production mode: use signedUrl
-              if (import.meta.env.MODE !== 'production') {
+              if (!isProductionMode()) {
                 imgUrl = imgBw.signedPath || imgBw.path || null;
                 // Construct full URL for signedPath
                 if (imgUrl) {
@@ -861,7 +898,7 @@ export const updateAutoApproveTasks = async (enabled) => {
     }];
 
     // Debug: Log config update (development only)
-    if (import.meta.env.MODE !== 'production') {
+    if (!isProductionMode()) {
       console.log('🔍 Sending Config auto_approve_tasks PATCH to NocoDB:', updatePayload);
     }
 
@@ -871,7 +908,7 @@ export const updateAutoApproveTasks = async (enabled) => {
     });
 
     // Debug: Log config update success (development only)
-    if (import.meta.env.MODE !== 'production') {
+    if (!isProductionMode()) {
       console.log('✅ Config auto_approve_tasks updated successfully in NocoDB:', response);
     }
     return { success: true, value: !!enabled };
@@ -2633,12 +2670,14 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
       return { success: false, message: 'Image file is required' };
     }
 
+    const debugEnabled = import.meta.env.MODE !== 'production' || import.meta.env.MODE === 'staging';
+
     const title = generateProfileGalleryTitle();
 
     // Step 1: Create the attachment gallery record with only title
     const recordPayload = { title };
 
-    if (import.meta.env.MODE !== 'production') {
+    if (debugEnabled) {
       console.log('🔍 Creating profile gallery attachment record:', recordPayload);
     }
 
@@ -2653,7 +2692,7 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
       throw new Error('Failed to create profile gallery attachment record');
     }
 
-    if (import.meta.env.MODE !== 'production') {
+    if (debugEnabled) {
       console.log('✅ Profile gallery attachment record created:', attachmentId);
     }
 
@@ -2678,7 +2717,7 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
 
     const storageResult = await storageResponse.json();
 
-    if (import.meta.env.MODE !== 'production') {
+    if (debugEnabled) {
       console.log('✅ Profile gallery image uploaded to NocoDB storage:', storageResult);
     }
 
@@ -2688,7 +2727,7 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
       img_bw: storageResult
     }];
 
-    if (import.meta.env.MODE !== 'production') {
+    if (debugEnabled) {
       console.log('🔍 Updating profile gallery attachment with image data:', updatePayload);
     }
 
@@ -2698,13 +2737,13 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
     });
 
     // Step 4: Link to profile via foreign key in production (profile_id)
-    if (profileId && import.meta.env.MODE === 'production') {
+    if (profileId && isProductionMode()) {
       const linkPayload = [{
         Id: attachmentId,
         profile_id: profileId
       }];
 
-      if (import.meta.env.MODE !== 'production') {
+      if (debugEnabled) {
         console.log('🔍 Linking profile gallery attachment to profile_id:', linkPayload);
       }
 
@@ -3329,10 +3368,11 @@ export const fetchPhotoAlbums = async () => {
             // Handle different image URL formats
             let imageUrl = null;
 
-            // Development mode: use signedPath, Production mode: use signedUrl
-            if (import.meta.env.MODE !== 'production') {
+            // Development mode: construct URL from path
+            // Production/Staging mode: use signedUrl directly
+            if (import.meta.env.MODE === 'development') {
               // Debug: Log development mode URL handling (development only)
-              if (import.meta.env.MODE !== 'production') {
+              if (!isProductionMode()) {
                 console.log('🛠️ PhotoAlbum Development mode: resolving local path');
               }
               const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
@@ -3344,15 +3384,15 @@ export const fetchPhotoAlbums = async () => {
                 imageUrl = null;
               }
             } else {
-              // Debug: Log production mode URL handling (development only)
-              if (import.meta.env.MODE !== 'production') {
-                console.log('🏭 PhotoAlbum Production mode: using signedUrl');
+              // Production/Staging mode: use signedUrl directly
+              if (!isProductionMode()) {
+                console.log('🏭 PhotoAlbum Production/Staging mode: using signedUrl');
               }
               imageUrl = imageObj.signedUrl || imageObj.url || null;
             }
 
             // Debug: Log image URL processing (development only)
-            if (import.meta.env.MODE !== 'production') {
+            if (!isProductionMode()) {
               console.log('🖼️ Processing photo album image:', {
                 original: imageObj,
                 finalUrl: imageUrl
@@ -3444,8 +3484,9 @@ export const fetchHomePageGallery = async () => {
         const processedImages = imgBwArray.map(imageObj => {
           let imageUrl = null;
 
-          // Development mode: use signedPath, Production mode: use signedUrl
-          if (import.meta.env.MODE !== 'production') {
+          // Development mode: construct URL from path
+          // Production/Staging mode: use signedUrl directly
+          if (import.meta.env.MODE === 'development') {
             const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
             if (rawPath) {
               const normalizedPath = rawPath.replace(/\\/g, '/');
@@ -3455,6 +3496,7 @@ export const fetchHomePageGallery = async () => {
               imageUrl = null;
             }
           } else {
+            // Production/Staging mode: use signedUrl directly
             imageUrl = imageObj.signedUrl || imageObj.url || null;
           }
 

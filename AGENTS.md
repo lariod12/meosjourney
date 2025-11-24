@@ -210,6 +210,15 @@ const results = confirmations.list.map(record => {
 - **ID Mapping**: When using foreign keys for lookups, use the main `Id` field directly, not `<prefix>_id`
 - Debug logs: Enabled with `import.meta.env.MODE !== 'production'` condition
 
+#### Staging Environment
+- Uses `TABLE_IDS_STAGING` with staging table IDs
+- **Image URLs**: Use `signedUrl` directly from NocoDB (same as production)
+- **Important**: Staging follows production behavior for image loading, NOT development
+- Complete schema with all relationship fields including `<prefix>_id` fields
+- **Foreign Key Fields**: Staging has both `Id` and `<prefix>_id` fields (same as production)
+- **ID Mapping**: Can use either `Id` or `<prefix>_id` for lookups
+- Debug logs: Enabled with `!isProductionMode()` condition (staging shows logs)
+
 #### Production Environment  
 - Uses `TABLE_IDS_PRODUCTION` with production table IDs
 - Image URLs: Use `signedUrl` directly from NocoDB
@@ -229,16 +238,17 @@ const results = confirmations.list.map(record => {
 When adding new features:
 
 1. **Database Operations**:
-   - ✅ Add table IDs to both `TABLE_IDS_PRODUCTION` and `TABLE_IDS_DEVELOPE`
+   - ✅ Add table IDs to all three: `TABLE_IDS_PRODUCTION`, `TABLE_IDS_STAGING`, and `TABLE_IDS_DEVELOPE`
    - ✅ Handle schema differences between environments
    - ✅ Use environment-specific queries when needed
    - ✅ **Critical**: Use `Id` field for foreign key lookups in development (no `<prefix>_id` fields)
-   - ✅ Use `<prefix>_id` fields in production when available
+   - ✅ Use `<prefix>_id` fields in production AND staging when available
 
 2. **Image/File Handling**:
-   - ✅ Use `signedPath` for development, `signedUrl` for production
-   - ✅ Construct URLs correctly: `${NOCODB_BASE_URL}/${signedPath}` vs `signedUrl`
-   - ✅ Test image loading in both environments
+   - ✅ Use `signedPath` for development, `signedUrl` for production AND staging
+   - ✅ Construct URLs correctly: `${NOCODB_BASE_URL}/${signedPath}` (development) vs `signedUrl` (staging/production)
+   - ✅ Test image loading in all three environments (development, staging, production)
+   - ✅ **Critical**: Staging uses production logic for images, not development logic
 
 3. **Debug Logging**:
    - ✅ Wrap debug logs with `if (import.meta.env.MODE !== 'production')`
@@ -253,16 +263,23 @@ When adding new features:
 
 ### Example Pattern for Image Processing
 ```javascript
-// Development mode: use signedPath, Production mode: use signedUrl
-if (import.meta.env.MODE !== 'production') {
+// Development mode: construct URL from path
+// Production/Staging mode: use signedUrl directly
+if (import.meta.env.MODE === 'development') {
   imageUrl = imageObj.signedPath || imageObj.path || null;
   if (imageUrl) {
     imageUrl = `${NOCODB_BASE_URL}/${imageUrl}`;
   }
 } else {
+  // Production AND Staging: use signedUrl directly
   imageUrl = imageObj.signedUrl || imageObj.url || null;
 }
 ```
+
+**Key Points**:
+- **Development**: Constructs full URL from local path (`signedPath` or `path`)
+- **Staging & Production**: Uses `signedUrl` directly from NocoDB (no URL construction)
+- **Why**: NocoDB staging/production provides signed URLs for S3 access, development uses local file paths
 
 ### Example Pattern for Foreign Key Lookups
 ```javascript
