@@ -230,7 +230,7 @@ const PhotoAlbumTab = () => {
         })}
       </div>
 
-      {/* Modal for viewing full album */}
+      {/* Modal for viewing full album*/}
       {selectedAlbum && (
         <div className="photoalbum-modal" onClick={() => setSelectedAlbum(null)}>
           <div className="photoalbum-modal-content" onClick={(e) => e.stopPropagation()}>
