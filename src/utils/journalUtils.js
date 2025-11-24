@@ -56,6 +56,21 @@ export const translateJournalEntry = (entryText, lang, t) => {
   translated = translated.replace(/\bskill\b/g, t('journal.profile_skill'));
   translated = translated.replace(/\binterest\b/g, t('journal.profile_interest'));
 
+  // Translate [Album Update] format
+  translated = translated.replace(
+    /\[Album Update\]/gi,
+    `[${t('journal.album_update')}]`
+  );
+
+  // Translate [Gallery Update] format
+  translated = translated.replace(
+    /\[Gallery Update\]/gi,
+    `[${t('journal.gallery_update')}]`
+  );
+
+  // Translate "Note:" to "Ghi chú:" in album/gallery updates
+  translated = translated.replace(/\bNote:/g, 'Ghi chú:');
+
   return translated;
 };
 

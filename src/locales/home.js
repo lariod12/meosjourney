@@ -45,6 +45,8 @@ export const homeLocales = {
     'journal.profile_removed': 'Removed',
     'journal.profile_skill': 'skill',
     'journal.profile_interest': 'interest',
+    'journal.album_update': 'Album Update',
+    'journal.gallery_update': 'Gallery Update',
 
     'history.loading': 'Loading journal history...',
     'history.empty': 'No journal entries found.',
@@ -107,6 +109,8 @@ export const homeLocales = {
     'journal.profile_removed': 'Đã xóa',
     'journal.profile_skill': 'kỹ năng',
     'journal.profile_interest': 'sở thích',
+    'journal.album_update': 'Cập nhật Album',
+    'journal.gallery_update': 'Cập nhật triển lãm',
 
     'history.loading': 'Đang tải lịch sử nhật ký...',
     'history.empty': 'Không tìm thấy nhật ký.',

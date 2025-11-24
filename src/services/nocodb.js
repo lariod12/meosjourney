@@ -1354,6 +1354,91 @@ export const saveJournal = async (journalData) => {
 };
 
 /**
+ * Create journal entry for album/gallery upload
+ * @param {string} eventType - 'album' or 'gallery'
+ * @param {string} description - Description of the upload
+ * @returns {Promise<Object>} Result object with success status
+ */
+const createMediaUploadJournal = async (eventType, description = '') => {
+  try {
+    // Generate title and timestamp
+    const now = new Date();
+    const ictDateStr = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    const [datePart, timePart] = ictDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hours, minutes, seconds] = timePart.split(':');
+    const randomDigits = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+
+    const title = `journal_${year}-${month}-${day}_${hours}-${minutes}-${seconds}-${randomDigits}`;
+    const createdTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+
+    // Handle History Record
+    const historyTitle = `history_${year}-${month}-${day}`;
+    const historyDateStr = `${year}-${month}-${day}`;
+    let historyId = null;
+
+    try {
+      const historyQuery = await nocoRequest(`${TABLE_IDS.HISTORY}/records?where=(title,eq,${historyTitle})`, {
+        method: 'GET'
+      });
+
+      if (historyQuery.list && historyQuery.list.length > 0) {
+        historyId = historyQuery.list[0].Id;
+      } else {
+        const newHistoryPayload = {
+          title: historyTitle,
+          created_time: historyDateStr
+        };
+
+        const createHistoryResponse = await nocoRequest(`${TABLE_IDS.HISTORY}/records`, {
+          method: 'POST',
+          body: JSON.stringify(newHistoryPayload)
+        });
+
+        historyId = createHistoryResponse.Id || (createHistoryResponse.list && createHistoryResponse.list[0]?.Id);
+      }
+    } catch (historyError) {
+      console.error('⚠️ Failed to handle history record:', historyError);
+    }
+
+    // Create caption based on event type
+    const eventLabel = eventType === 'album' ? '[Album Update]' : '[Gallery Update]';
+    const caption = description ? `${eventLabel}\nNote: ${description}` : eventLabel;
+
+    const payload = {
+      title: title,
+      caption: caption,
+      created_time: createdTime,
+      ...(historyId && { history: historyId })
+    };
+
+    await nocoRequest(`${TABLE_IDS.JOURNALS}/records`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`✅ Journal entry created for ${eventType} upload`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(`❌ Error creating journal entry for ${eventType}:`, error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
  * Fetch achievements data from NocoDB
  * Returns all achievement records
  */
@@ -2931,6 +3016,13 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles, descript
 
     const galleryId = response.Id || (response.list && response.list[0]?.Id);
 
+    // Create journal entry for gallery upload
+    try {
+      await createMediaUploadJournal('gallery', description);
+    } catch (journalError) {
+      console.warn('⚠️ Failed to create journal entry for gallery upload:', journalError);
+    }
+
     return {
       success: true,
       galleryId,
@@ -3328,6 +3420,13 @@ export const savePhotoAlbum = async (albumData) => {
     }
 
     const albumId = response.Id || (response.list && response.list[0]?.Id);
+
+    // Create journal entry for album upload
+    try {
+      await createMediaUploadJournal('album', description);
+    } catch (journalError) {
+      console.warn('⚠️ Failed to create journal entry for album upload:', journalError);
+    }
 
     return {
       success: true,
