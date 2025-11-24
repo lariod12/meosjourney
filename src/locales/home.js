@@ -86,7 +86,7 @@ export const homeLocales = {
     'daily.quests': 'NHIỆM VỤ HẰNG NGÀY',
     'daily.achievements': 'THÀNH TỰU',
     'daily.photoalbum': 'ALBUM ẢNH',
-    'daily.gallery': 'Triển lãm',
+    'daily.gallery': 'TRIỂN LÃM',
     'daily.history': 'LỊCH SỬ',
 
     'quests.completed': 'Hoàn thành',
