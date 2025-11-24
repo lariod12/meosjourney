@@ -206,7 +206,6 @@
 }
 
 .gallery-card-date {
-  font-family: 'Patrick Hand', cursive;
   font-size: 1em;
   color: #666666;
   font-style: italic;
@@ -388,7 +387,6 @@
   background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
   color: #000000;
   font-size: 32px;
-  font-family: 'Patrick Hand', cursive;
   cursor: pointer;
   display: flex;
   align-items: center;
