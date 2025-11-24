@@ -278,6 +278,7 @@
   background-color: transparent;
   margin-top: 8px;
   position: relative;
+  white-space: pre-wrap;
 }
 
 .photoalbum-modal-carousel {
