@@ -30,7 +30,9 @@ const ConfirmModal = ({
   };
 
   const handleCancel = () => {
-    console.log('❌ User cancelled action');
+    if (import.meta.env.MODE !== 'production') {
+      console.log('❌ User cancelled action');
+    }
     if (onCancel) {
       onCancel();
     }
@@ -47,7 +49,9 @@ const ConfirmModal = ({
   useEffect(() => {
     const handleEscKey = (e) => {
       if (e.key === 'Escape' && canClose && onCancel) {
-        console.log('❌ User pressed ESC');
+        if (import.meta.env.MODE !== 'production') {
+          console.log('❌ User pressed ESC');
+        }
         onCancel();
       }
     };

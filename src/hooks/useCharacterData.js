@@ -21,14 +21,12 @@ export const useCharacterData = (defaultData) => {
   const fetchData = useCallback(async (forceRefresh = false) => {
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) {
-      console.log('⏳ Fetch already in progress, skipping...');
       return;
     }
 
     // Check refresh cooldown (only after initial load)
     if (dataLoadedRef.current && !forceRefresh && !canRefresh()) {
       const remainingSeconds = getRemainingCooldown();
-      console.log(`⏱️ Refresh cooldown active. Please wait ${remainingSeconds}s`);
       return;
     }
 
@@ -47,7 +45,6 @@ export const useCharacterData = (defaultData) => {
     try {
       fetchingRef.current = true;
       setLoading(true);
-      console.log('🔄 Fetching fresh data from NocoDB...');
 
       // Fetch data in staggered batches to avoid rate limiting
       // Batch 1: Critical data (profile, status, config) - load immediately
@@ -119,7 +116,6 @@ export const useCharacterData = (defaultData) => {
         // Set refresh cooldown after successful fetch
         setRefreshCooldown();
         
-        console.log('✅ Data loaded and cached successfully');
       }
     } catch (err) {
       console.error('❌ Error fetching character data:', err);

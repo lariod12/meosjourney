@@ -119,7 +119,9 @@ export const setCachedData = (data) => {
 export const clearCache = () => {
   try {
     localStorage.removeItem(CACHE_KEY);
-    console.log('🗑️ Cache cleared successfully');
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🗑️ Cache cleared successfully');
+    }
   } catch (error) {
     console.error('❌ Error clearing cache:', error);
   }

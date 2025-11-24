@@ -19,14 +19,18 @@ const HomePage = () => {
   // Listen for refresh events from UserPage
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('🔄 Refresh event received from UserPage');
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🔄 Refresh event received from UserPage');
+      }
       
       // Check if refresh is allowed
       if (canRefresh()) {
         refetch(true); // Force refresh
       } else {
         const remaining = getRemainingCooldown();
-        console.log(`⏱️ Refresh cooldown active: ${remaining}s remaining`);
+        if (import.meta.env.MODE !== 'production') {
+          console.log(`⏱️ Refresh cooldown active: ${remaining}s remaining`);
+        }
         setCooldownSeconds(remaining);
         setShowCooldownNotice(true);
         
