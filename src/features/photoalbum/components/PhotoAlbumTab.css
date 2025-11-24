@@ -302,11 +302,13 @@
   justify-content: center;
   transition: transform 0.2s;
   min-width: 48px;
+  box-shadow: 3px 3px 0 #000000;
 }
 
 .photoalbum-modal-nav-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .photoalbum-modal-nav-button:not(:disabled):hover {
