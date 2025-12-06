@@ -1393,16 +1393,24 @@ const UserPage = ({ onBack }) => {
           reloadDataAfterSubmit();
         }
 
+        // If there is any success, allow user to jump to Home
+        const hasSuccess = successItems.length > 0;
         setConfirmModal({
           isOpen: true,
           type: modalType,
           title: modalTitle,
           message: modalMessage,
-          confirmText: 'OK',
-          cancelText: null,
+          confirmText: hasSuccess ? 'Go to Home' : 'OK',
+          cancelText: hasSuccess ? 'Stay here' : null,
           onConfirm: () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
-          }
+            if (hasSuccess) {
+              window.location.href = '/';
+            }
+          },
+          onCancel: hasSuccess
+            ? () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+            : null
         });
       } else {
         setConfirmModal({
@@ -1870,6 +1878,11 @@ const UserPage = ({ onBack }) => {
     return <LoadingDialog />;
   }
 
+  const goHome = () => {
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    window.location.href = base || '/';
+  };
+
   const formattedDate = new Date(formData.noteDate).toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -1879,7 +1892,13 @@ const UserPage = ({ onBack }) => {
   return (
     <div className="notes-container">
       <header className="notes-header">
-        <button onClick={onBack} className="back-link">◄ Back</button>
+        <button
+          onClick={goHome}
+          className="userpage-home-button"
+          aria-label="Go to home"
+        >
+          <IconRenderer iconName="FaHome" size={24} />
+        </button>
         <h1>✎ Daily Update</h1>
         <button
           onClick={handleRefresh}

@@ -35,18 +35,23 @@ body {
     position: relative;
 }
 
-.back-link {
+.userpage-home-button {
     position: absolute;
     left: 20px;
     top: 20px;
     color: #000000;
     text-decoration: none;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
-    padding: 8px 15px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
     border: 2px solid #000000;
     background-color: #ffffff;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .refresh-button {
@@ -54,14 +59,19 @@ body {
     right: 20px;
     top: 20px;
     color: #000000;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
-    padding: 8px 15px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
     border: 2px solid #000000;
     background-color: #ffffff;
     cursor: pointer;
     transition: all 0.3s;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .refresh-button:hover:not(:disabled) {
@@ -78,7 +88,7 @@ body {
     transform: rotate(180deg);
 }
 
-.back-link:hover {
+.userpage-home-button:hover {
     background-color: #000000;
     color: #ffffff;
 }
@@ -427,7 +437,7 @@ body {
         padding: 60px 15px 20px;
     }
 
-    .back-link {
+    .userpage-home-button {
         left: 10px;
         top: 10px;
         font-size: 16px;
@@ -963,7 +973,7 @@ body {
     padding: 24px 16px;
   }
 
-  .back-link {
+  .userpage-home-button {
     left: 12px;
     top: 12px;
     font-size: 16px;
@@ -1070,7 +1080,7 @@ body {
     padding: 20px 12px;
   }
 
-  .back-link {
+  .userpage-home-button {
     left: 8px;
     top: 8px;
     font-size: 14px;
