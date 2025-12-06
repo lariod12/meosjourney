@@ -54,7 +54,10 @@ const AdminPage = ({ onBack }) => {
     xp: '',
     specialReward: '',
     specialRewardVi: '',
-    dueDate: ''
+    dueDate: '',
+    // Schedule fields for daily quest
+    scheduleEnabled: false,
+    scheduleTime: '08:00'
   });
 
   useEffect(() => {
@@ -300,8 +303,11 @@ const AdminPage = ({ onBack }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -536,7 +542,10 @@ const AdminPage = ({ onBack }) => {
         nameVi: formData.nameVi.trim(),
         descEn: formData.desc.trim(),
         descVi: formData.descVi.trim(),
-        xp: Number(formData.xp) || 0
+        xp: Number(formData.xp) || 0,
+        // Schedule fields
+        scheduleEnabled: formData.scheduleEnabled,
+        scheduleTime: formData.scheduleTime
       };
 
       console.log('🔍 Creating quest with data:', questData);
@@ -549,16 +558,23 @@ const AdminPage = ({ onBack }) => {
           name: { en: questData.nameEn, vi: questData.nameVi },
           desc: { en: questData.descEn, vi: questData.descVi },
           xp: questData.xp,
-          id: result.data?.Id || result.data?.id
+          id: result.data?.Id || result.data?.id,
+          scheduleEnabled: questData.scheduleEnabled,
+          scheduleTime: questData.scheduleTime
         };
 
         await sendAdminQuestCreatedNotification(notificationData);
+
+        // Build success message based on schedule status
+        const successMessage = questData.scheduleEnabled 
+          ? `Quest created and scheduled daily at ${questData.scheduleTime} (ICT)!`
+          : 'Quest created successfully!';
 
         setConfirmModal({
           isOpen: true,
           type: 'success',
           title: 'Success',
-          message: 'Quest created successfully!',
+          message: successMessage,
           confirmText: 'OK',
           cancelText: null,
           onConfirm: () => {
@@ -600,7 +616,10 @@ const AdminPage = ({ onBack }) => {
       xp: '',
       specialReward: '',
       specialRewardVi: '',
-      dueDate: ''
+      dueDate: '',
+      // Reset schedule fields
+      scheduleEnabled: false,
+      scheduleTime: '08:00'
     });
   };
 
@@ -1743,11 +1762,49 @@ const AdminPage = ({ onBack }) => {
                 required
               />
             </div>
+
+            {/* Schedule Section */}
+            <div className="admin-schedule-section">
+              <div className="admin-schedule-header">
+                <label className="admin-schedule-toggle">
+                  <span className="admin-schedule-label">Daily Schedule</span>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      name="scheduleEnabled"
+                      checked={formData.scheduleEnabled}
+                      onChange={handleChange}
+                    />
+                    <span className="slider"></span>
+                  </label>
+                </label>
+              </div>
+              
+              {formData.scheduleEnabled && (
+                <div className="admin-schedule-options">
+                  <div className="admin-schedule-time-group">
+                    <label htmlFor="scheduleTime">Send quest daily at:</label>
+                    <input
+                      type="time"
+                      id="scheduleTime"
+                      name="scheduleTime"
+                      value={formData.scheduleTime}
+                      onChange={handleChange}
+                      className="admin-schedule-time-input"
+                    />
+                    <span className="admin-schedule-timezone">(ICT - UTC+7)</span>
+                  </div>
+                  <p className="admin-schedule-note">
+                    This quest will be automatically sent every day at the specified time.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Quest'}
+              {isSubmitting ? 'Creating...' : (formData.scheduleEnabled ? 'Create & Schedule Quest' : 'Create Quest')}
             </button>
             <button type="button" onClick={handleReset} className="btn-secondary" disabled={isSubmitting}>
               ✕ Reset

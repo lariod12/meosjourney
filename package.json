@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite --mode development",
-    "dev:staging": "vite --mode staging",
-    "dev:prod": "vite --mode production",
+    "staging": "vite --mode staging",
+    "prod": "vite --mode production",
     "build": "vite build --mode production",
     "build:staging": "vite build --mode staging",
     "preview": "vite preview",

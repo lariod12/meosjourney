@@ -498,22 +498,29 @@ const UserPage = ({ onBack }) => {
   };
 
   useEffect(() => {
-    // Wait until password is loaded from config
     if (correctPassword === null) return;
 
-    // Check if already authenticated
-    if (sessionStorage.getItem(SESSION_KEY) === 'granted') {
+    const sessionGranted = sessionStorage.getItem(SESSION_KEY) === 'granted';
+    const rememberedGranted = localStorage.getItem(SESSION_KEY) === 'granted';
+
+    if (sessionGranted || rememberedGranted) {
       setIsAuthenticated(true);
       return;
     }
 
-    // Show password modal
     setShowPasswordModal(true);
   }, [correctPassword]);
 
-  const handlePasswordSubmit = (password) => {
+  const handlePasswordSubmit = (password, rememberMe) => {
     if (password === correctPassword) {
       sessionStorage.setItem(SESSION_KEY, 'granted');
+
+      if (rememberMe) {
+        localStorage.setItem(SESSION_KEY, 'granted');
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+      }
+
       setIsAuthenticated(true);
       setShowPasswordModal(false);
     } else {
@@ -1849,6 +1856,7 @@ const UserPage = ({ onBack }) => {
       <PasswordModal
         onSubmit={handlePasswordSubmit}
         onCancel={handlePasswordCancel}
+        enableRemember
       />
     );
   }

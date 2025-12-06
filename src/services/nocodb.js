@@ -1651,11 +1651,13 @@ export const fetchAchievementConfirmations = async () => {
  * @param {string} questData.descEn - English description
  * @param {string} questData.descVi - Vietnamese description
  * @param {number} questData.xp - XP value
+ * @param {boolean} questData.scheduleEnabled - Whether schedule is enabled
+ * @param {string} questData.scheduleTime - Schedule time in HH:mm format
  * @returns {Promise<Object>} Result object with success status
  */
 export const createQuest = async (questData) => {
   try {
-    const { nameEn, nameVi, descEn, descVi, xp } = questData;
+    const { nameEn, nameVi, descEn, descVi, xp, scheduleEnabled, scheduleTime } = questData;
 
     // Validate required fields
     if (!nameEn || !nameVi) {
@@ -1702,7 +1704,10 @@ export const createQuest = async (questData) => {
       quest_name: questName,
       desc: desc,
       xp: xp || 0,
-      created_time: createdTime
+      created_time: createdTime,
+      // Schedule fields
+      schedule_enabled: scheduleEnabled || false,
+      schedule_time: scheduleEnabled ? scheduleTime : null
     };
 
     // Debug: Log quest creation (development only)
