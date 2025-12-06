@@ -234,6 +234,10 @@ body {
     z-index: 9999;
     box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
+.suggest-dropdown-list {
+    max-height: 230px;
+    overflow-y: auto;
+}
 .suggest-item { padding: 12px 16px; cursor: pointer; }
 .suggest-item:hover { background: #000000; color: #ffffff; }
 
@@ -254,6 +258,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.suggest-close-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: none;
+    border-bottom: 2px dashed #000000;
+    color: #000000;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.suggest-close-btn:hover {
+    background: #000000;
+    color: #ffffff;
+}
+
+.suggest-close-btn:focus {
+    outline: 3px solid #000000;
+    outline-offset: -2px;
 }
 
 .suggest-clear-btn:hover {

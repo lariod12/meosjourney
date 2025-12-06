@@ -2070,19 +2070,32 @@ const UserPage = ({ onBack }) => {
                     )}
                     {doingOpen && doingSuggestions.length > 0 && (
                       <div className="suggest-dropdown" role="listbox">
-                        {doingSuggestions.map((item) => (
-                          <div
-                            key={item}
-                            role="option"
-                            className="suggest-item"
-                            onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, doing: item }));
-                              setDoingOpen(false);
-                            }}
-                          >
-                            {item}
-                          </div>
-                        ))}
+                        <button
+                          type="button"
+                          className="suggest-close-btn"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setDoingOpen(false);
+                          }}
+                          aria-label="Close activity suggestions"
+                        >
+                          Close
+                        </button>
+                        <div className="suggest-dropdown-list">
+                          {doingSuggestions.map((item) => (
+                            <div
+                              key={item}
+                              role="option"
+                              className="suggest-item"
+                              onMouseDown={() => {
+                                setFormData(prev => ({ ...prev, doing: item }));
+                                setDoingOpen(false);
+                              }}
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2114,19 +2127,32 @@ const UserPage = ({ onBack }) => {
                     )}
                     {locationOpen && locationSuggestions.length > 0 && (
                       <div className="suggest-dropdown" role="listbox">
-                        {locationSuggestions.map((item) => (
-                          <div
-                            key={item}
-                            role="option"
-                            className="suggest-item"
-                            onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, location: item }));
-                              setLocationOpen(false);
-                            }}
-                          >
-                            {item}
-                          </div>
-                        ))}
+                        <button
+                          type="button"
+                          className="suggest-close-btn"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setLocationOpen(false);
+                          }}
+                          aria-label="Close location suggestions"
+                        >
+                          Close
+                        </button>
+                        <div className="suggest-dropdown-list">
+                          {locationSuggestions.map((item) => (
+                            <div
+                              key={item}
+                              role="option"
+                              className="suggest-item"
+                              onMouseDown={() => {
+                                setFormData(prev => ({ ...prev, location: item }));
+                                setLocationOpen(false);
+                              }}
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2158,19 +2184,32 @@ const UserPage = ({ onBack }) => {
                     )}
                     {moodOpen && moodSuggestions.length > 0 && (
                       <div className="suggest-dropdown" role="listbox">
-                        {moodSuggestions.map((item) => (
-                          <div
-                            key={item}
-                            role="option"
-                            className="suggest-item"
-                            onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, mood: item }));
-                              setMoodOpen(false);
-                            }}
-                          >
-                            {item}
-                          </div>
-                        ))}
+                        <button
+                          type="button"
+                          className="suggest-close-btn"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setMoodOpen(false);
+                          }}
+                          aria-label="Close mood suggestions"
+                        >
+                          Close
+                        </button>
+                        <div className="suggest-dropdown-list">
+                          {moodSuggestions.map((item) => (
+                            <div
+                              key={item}
+                              role="option"
+                              className="suggest-item"
+                              onMouseDown={() => {
+                                setFormData(prev => ({ ...prev, mood: item }));
+                                setMoodOpen(false);
+                              }}
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
