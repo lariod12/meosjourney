@@ -46,23 +46,12 @@ export const useCharacterData = (defaultData) => {
       fetchingRef.current = true;
       setLoading(true);
 
-      // Fetch data in staggered batches to avoid rate limiting
-      // Batch 1: Critical data (profile, status, config) - load immediately
-      const [status, profile, config] = await Promise.all([
+      // Critical batch: status, profile, config, and today's journal
+      const [status, profile, config, journals] = await Promise.all([
         fetchStatus(),
         fetchProfile(),
-        fetchConfig()
-      ]);
-
-      // Longer delay before batch 2 to avoid rate limiting (especially with pagination)
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Batch 2: Content data (journals, quests, achievements) - load after delay
-      // Only fetch 7 recent journals initially for faster loading
-      const [journals, quests, achievements] = await Promise.all([
-        fetchJournals(7), // Fetch only 7 recent journals initially
-        fetchQuests(),
-        fetchAchievements()
+        fetchConfig(),
+        fetchJournals(7) // Fetch only 7 recent journals initially
       ]);
 
       if (mountedRef.current) {
@@ -95,11 +84,9 @@ export const useCharacterData = (defaultData) => {
           // Journal data
           journal: journals || [],
 
-          // Quests data (with nameTranslations and descTranslations from NocoDB)
-          quests: quests || defaultData.quests || [],
-
-          // Achievements data (with nameTranslations, descTranslations, specialRewardTranslations from NocoDB)
-          achievements: achievements || defaultData.achievements || [],
+          // Quests/Achievements will be filled in background to avoid blocking first paint
+          quests: defaultData.quests || [],
+          achievements: defaultData.achievements || [],
 
           // Config data (if needed)
           config: config || {}
@@ -115,6 +102,22 @@ export const useCharacterData = (defaultData) => {
         
         // Set refresh cooldown after successful fetch
         setRefreshCooldown();
+
+        // Background load for quests/achievements (non-blocking)
+        Promise.all([fetchQuests(), fetchAchievements()])
+          .then(([quests, achievements]) => {
+            if (!mountedRef.current) return;
+            const updated = {
+              ...mergedData,
+              quests: quests || defaultData.quests || [],
+              achievements: achievements || defaultData.achievements || []
+            };
+            setData(updated);
+            setCachedData(updated);
+          })
+          .catch((bgError) => {
+            console.warn('⚠️ Background load failed (quests/achievements):', bgError);
+          });
         
       }
     } catch (err) {

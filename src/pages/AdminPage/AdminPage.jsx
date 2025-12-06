@@ -22,6 +22,7 @@ const AdminPage = ({ onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataLoading, setDataLoading] = useState(false); // Loading state for data
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [activeTab, setActiveTab] = useState('create-achievement');
   const [autoApprove, setAutoApprove] = useState(false);
   const [achievements, setAchievements] = useState([]);
@@ -113,6 +114,7 @@ const AdminPage = ({ onBack }) => {
       console.error('❌ Error loading admin data:', error);
     } finally {
       setDataLoading(false);
+      setHasLoadedOnce(true);
     }
   };
 
@@ -637,7 +639,7 @@ const AdminPage = ({ onBack }) => {
   }
 
   // Show loading screen while data is being fetched
-  if (dataLoading) {
+  if (!hasLoadedOnce && dataLoading) {
     return <LoadingDialog />;
   }
 

@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCharacter } from '../../../contexts';
 
 const Avatar = () => {
   const data = useCharacter();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const defaultAvatar = "https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300";
+  const resolvedAvatar = data.avatarUrl || defaultAvatar;
+  const [avatarSrc, setAvatarSrc] = useState(resolvedAvatar);
+
+  useEffect(() => {
+    setAvatarSrc(resolvedAvatar);
+    setImageLoaded(false);
+  }, [resolvedAvatar]);
 
   const xpPercentage = (data.currentXP / data.maxXP) * 100;
-
-  // Avatar URL priority: NocoDB -> template
-  const avatarUrl = data.avatarUrl || 
-    "https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300";
 
   return (
     <div className="avatar-container">
@@ -20,10 +24,22 @@ const Avatar = () => {
           </div>
         )}
         <img 
-          src={avatarUrl} 
+          src={avatarSrc}
           alt="Character Avatar" 
           className="avatar-img"
+          loading="lazy"
+          decoding="async"
+          fetchpriority="high"
+          width="300"
+          height="300"
           onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            if (avatarSrc !== defaultAvatar) {
+              setAvatarSrc(defaultAvatar);
+            } else {
+              setImageLoaded(true);
+            }
+          }}
           style={{ opacity: imageLoaded ? 1 : 0 }}
         />
       </div>

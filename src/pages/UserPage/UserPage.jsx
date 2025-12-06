@@ -106,6 +106,7 @@ const UserPage = ({ onBack }) => {
   const [journalExpanded, setJournalExpanded] = useState(false);
   const [questsExpanded, setQuestsExpanded] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
+  const [criticalLoaded, setCriticalLoaded] = useState(false);
 
   // Review submitted visibility state - hidden by default
   const [reviewSubmittedExpanded, setReviewSubmittedExpanded] = useState(false);
@@ -241,6 +242,7 @@ const UserPage = ({ onBack }) => {
     // Load all data from NocoDB in optimized sequence
     const loadData = async () => {
       setDataLoading(true);
+      setCriticalLoaded(false);
       
       try {
 
@@ -364,9 +366,7 @@ const UserPage = ({ onBack }) => {
         }
 
         setProfileLoaded(true);
-
-        // Delay before Phase 2 to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        setCriticalLoaded(true);
 
         // Phase 2: Load quests and achievements data in staggered batches
 
@@ -470,6 +470,7 @@ const UserPage = ({ onBack }) => {
         setAllAchievements([]);
         setAvailableAchievements([]);
         setAchievementConfirmations([]);
+        setCriticalLoaded(true);
       } finally {
         setDataLoading(false);
       }
@@ -1851,22 +1852,21 @@ const UserPage = ({ onBack }) => {
     return activePending;
   };
 
-  if (showPasswordModal) {
-    return (
-      <PasswordModal
-        onSubmit={handlePasswordSubmit}
-        onCancel={handlePasswordCancel}
-        enableRemember
-      />
-    );
-  }
-
   if (!isAuthenticated) {
-    return null;
+    if (showPasswordModal) {
+      return (
+        <PasswordModal
+          onSubmit={handlePasswordSubmit}
+          onCancel={handlePasswordCancel}
+          enableRemember
+        />
+      );
+    }
+    return <LoadingDialog />;
   }
 
-  // Show loading screen while data is being fetched
-  if (dataLoading) {
+  // Show loading until critical data (config/profile/status) is ready
+  if (!criticalLoaded) {
     return <LoadingDialog />;
   }
 
