@@ -54,7 +54,7 @@ const HomePage = () => {
       <div className="container">
         <CharacterSheet onNavigateToNotes={() => navigate('/user/meos05')} />
         
-        {/* Cooldown Notice */}
+        {/* Cooldown Notice*/}
         {showCooldownNotice && (
           <div style={{
             position: 'fixed',
