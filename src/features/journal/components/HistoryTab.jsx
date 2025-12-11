@@ -15,29 +15,65 @@ const HistoryTab = () => {
   const { t, lang } = useLanguage();
   const scrollRefs = useRef({});
   const listRef = useRef(null);
-  const LOAD_MORE_BATCH = 50; // Load 50 journals per batch
+  const LOAD_MORE_BATCH = 25; // Load 25 journals per batch (1 page)
 
-  // Initialize with journals from initial load (200 records)
+  const MIN_DAYS_TO_SHOW = 10; // Always load enough journals to show at least 10 days
+  const loadingRef = useRef(false); // Prevent concurrent loads
+
+  // Initialize with journals from context and auto-load until we have 10 days
   useEffect(() => {
-    if (data.journal && data.journal.length > 0) {
-      // Always sync with latest data.journal, avoiding duplicates
-      setLoadedJournals(prev => {
-        if (prev.length === 0) {
-          // First load
-          return data.journal;
-        }
-        // Merge: keep existing loaded journals and add any new ones from data.journal
-        const existingIds = new Set(prev.map(j => j.id));
-        const newFromContext = data.journal.filter(j => !existingIds.has(j.id));
-        if (newFromContext.length > 0) {
-          return [...newFromContext, ...prev];
-        }
-        return prev;
-      });
-      // Only set offset on first load
-      setCurrentOffset(prev => prev === 0 ? data.journal.length : prev);
+    if (data.journal && data.journal.length > 0 && loadedJournals.length === 0) {
+      // First load from context
+      setLoadedJournals(data.journal);
+      setCurrentOffset(data.journal.length);
     }
   }, [data.journal]);
+
+  // Auto-load more journals until we have at least 10 days
+  useEffect(() => {
+    const loadUntilEnoughDays = async () => {
+      if (loadingRef.current || !hasMore || loadedJournals.length === 0) return;
+      
+      // Count unique days
+      const uniqueDays = new Set(
+        loadedJournals.map(j => {
+          const date = j.createdAt || j.timestamp;
+          if (!date) return null;
+          const d = new Date(date);
+          return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        }).filter(Boolean)
+      );
+
+      if (uniqueDays.size >= MIN_DAYS_TO_SHOW) return;
+
+      loadingRef.current = true;
+      try {
+        const moreJournals = await fetchJournals(25, currentOffset);
+        if (moreJournals.length > 0) {
+          setLoadedJournals(prev => {
+            const existingIds = new Set(prev.map(j => j.id));
+            const newJournals = moreJournals.filter(j => !existingIds.has(j.id));
+            return [...prev, ...newJournals];
+          });
+          setCurrentOffset(prev => prev + moreJournals.length);
+          if (moreJournals.length < 25) {
+            setHasMore(false);
+          }
+        } else {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Error loading journals:', error);
+        setHasMore(false);
+      } finally {
+        loadingRef.current = false;
+      }
+    };
+
+    // Small delay to avoid rate limiting
+    const timer = setTimeout(loadUntilEnoughDays, 300);
+    return () => clearTimeout(timer);
+  }, [loadedJournals, currentOffset, hasMore]);
 
   // Load more journals when scrolling near bottom
   const loadMoreJournals = async () => {
@@ -72,26 +108,7 @@ const HistoryTab = () => {
     }
   };
 
-  // Auto-load more if no scrollbar (content too short)
-  useEffect(() => {
-    const checkAndLoadMore = async () => {
-      const listElement = listRef.current;
-      if (!listElement || isLoadingMore || !hasMore) return;
-
-      // Check if content is scrollable
-      const hasScrollbar = listElement.scrollHeight > listElement.clientHeight;
-      
-      if (!hasScrollbar && loadedJournals.length > 0) {
-        // Add delay before auto-loading to prevent rapid consecutive requests
-        await new Promise(resolve => setTimeout(resolve, 800));
-        loadMoreJournals();
-      }
-    };
-
-    // Check after render with longer initial delay
-    const timer = setTimeout(checkAndLoadMore, 500);
-    return () => clearTimeout(timer);
-  }, [loadedJournals, hasMore, isLoadingMore]);
+  // Removed auto-load to prevent rate limiting - user must scroll to load more
 
   // Detect scroll near bottom
   useEffect(() => {

@@ -596,7 +596,7 @@ export const fetchConfig = async () => {
  * @param {number} offset - Number of records to skip (for pagination)
  * @returns {Promise<Array>} Array of journal entries
  */
-export const fetchJournals = async (limit = 50, offset = 0) => {
+export const fetchJournals = async (limit = 25, offset = 0) => {
   try {
     // Use static data in development
     if (USE_STATIC_DATA) {
@@ -605,52 +605,28 @@ export const fetchJournals = async (limit = 50, offset = 0) => {
       return [];
     }
 
-    // NocoDB limits pageSize to 25, so we need to fetch multiple pages
+    // NocoDB limits pageSize to 25, fetch single page per call for lazy loading
     const NOCO_PAGE_SIZE = 25;
-    const startPage = Math.floor(offset / NOCO_PAGE_SIZE) + 1;
-    const pagesNeeded = Math.ceil(limit / NOCO_PAGE_SIZE);
-    
-    let allRecords = [];
-    let currentPage = startPage;
-    let hasMore = true;
+    const page = Math.floor(offset / NOCO_PAGE_SIZE) + 1;
+    const endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${NOCO_PAGE_SIZE}`;
 
     if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetching journals: limit=${limit}, offset=${offset}, startPage=${startPage}, pagesNeeded=${pagesNeeded}`);
+      console.log(`📔 Fetching journals: page=${page}, offset=${offset}`);
     }
 
-    while (hasMore && allRecords.length < limit) {
-      const endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${currentPage}&pageSize=${NOCO_PAGE_SIZE}`;
-      const data = await nocoRequest(endpoint, { method: 'GET' });
+    const data = await nocoRequest(endpoint, { method: 'GET' });
 
-      if (!data.list || data.list.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      allRecords = allRecords.concat(data.list);
-      hasMore = data.pageInfo && !data.pageInfo.isLastPage;
-      currentPage++;
-
-      // Small delay between pages to avoid rate limiting
-      if (hasMore && allRecords.length < limit) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-
-    // Trim to requested limit
-    allRecords = allRecords.slice(0, limit);
-
-    if (allRecords.length === 0) {
+    if (!data.list || data.list.length === 0) {
       console.warn('⚠️ No journal records found in NocoDB');
       return [];
     }
 
     if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetched ${allRecords.length} journals total`);
+      console.log(`📔 Fetched ${data.list.length} journals, page ${page}`);
     }
 
     // Transform NocoDB journals to frontend format
-    const journals = allRecords.map(record => {
+    const journals = data.list.map(record => {
       // Parse created_time to Date object
       let timestamp = new Date();
       if (record.created_time) {
@@ -676,6 +652,91 @@ export const fetchJournals = async (limit = 50, offset = 0) => {
     return journals;
   } catch (error) {
     console.error('❌ Error fetching journals from NocoDB:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all journals for today from NocoDB
+ * Keeps fetching batches of 25 until no more today's journals found
+ * @returns {Promise<Array>} Array of today's journal entries
+ */
+export const fetchTodayJournals = async () => {
+  try {
+    if (USE_STATIC_DATA) {
+      return [];
+    }
+
+    const NOCO_PAGE_SIZE = 25;
+    let allTodayJournals = [];
+    let page = 1;
+    let hasMore = true;
+    let foundNonTodayEntry = false;
+
+    // Get today's date range in Vietnam timezone
+    const now = new Date();
+    const vietnamTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+    const startOfDay = new Date(vietnamTime);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📔 Fetching today's journals, date: ${vietnamTime.toDateString()}`);
+    }
+
+    while (hasMore && !foundNonTodayEntry) {
+      const endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${NOCO_PAGE_SIZE}`;
+      const data = await nocoRequest(endpoint, { method: 'GET' });
+
+      if (!data.list || data.list.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      // Filter and check each record
+      for (const record of data.list) {
+        const timestamp = record.created_time ? new Date(record.created_time) : new Date();
+        
+        // Check if this entry is from today (Vietnam timezone)
+        const recordVietnamTime = new Date(timestamp.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+        
+        if (recordVietnamTime >= startOfDay) {
+          // Transform to frontend format
+          const timeStr = timestamp.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          allTodayJournals.push({
+            id: record.Id || record.title,
+            entry: record.caption || '',
+            time: timeStr,
+            timestamp: timestamp,
+            createdAt: timestamp
+          });
+        } else {
+          // Found an entry from before today, stop fetching
+          foundNonTodayEntry = true;
+          break;
+        }
+      }
+
+      hasMore = data.pageInfo && !data.pageInfo.isLastPage;
+      page++;
+
+      // Small delay between pages
+      if (hasMore && !foundNonTodayEntry) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📔 Fetched ${allTodayJournals.length} journals for today`);
+    }
+
+    return allTodayJournals;
+  } catch (error) {
+    console.error('❌ Error fetching today journals from NocoDB:', error);
     return [];
   }
 };

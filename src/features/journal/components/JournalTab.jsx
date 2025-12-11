@@ -10,7 +10,7 @@ const JournalTab = () => {
   const today = new Date();
   const { t, lang } = useLanguage();
 
-  // Filter journal entries to show only today's entries (Vietnam timezone)
+  // Filter journal entries to show only today's entries from context data
   const todayJournals = useMemo(() => {
     if (!data.journal) return null;
     return filterTodayItems(data.journal);

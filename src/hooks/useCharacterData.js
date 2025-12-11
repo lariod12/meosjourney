@@ -51,7 +51,7 @@ export const useCharacterData = (defaultData) => {
         fetchStatus(),
         fetchProfile(),
         fetchConfig(),
-        fetchJournals(200)
+        fetchJournals(7)
       ]);
 
       if (mountedRef.current) {
