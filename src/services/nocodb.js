@@ -605,11 +605,20 @@ export const fetchJournals = async (limit = 7, offset = 0) => {
       return [];
     }
 
-    // Use API in production - fetch with limit and offset
-    const data = await nocoRequest(
-      `${TABLE_IDS.JOURNALS}/records?sort=-created_time&limit=${limit}&offset=${offset}`,
-      { method: 'GET' }
-    );
+    // Use API in production
+    // NocoDB newer versions restrict offset usage; use offset=0 for first page
+    // and fall back to page/pageSize for subsequent pages.
+    let endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time`;
+
+    if (offset > 0) {
+      const pageSize = limit;
+      const page = Math.floor(offset / pageSize) + 1; // 0-based offset -> 1-based page
+      endpoint += `&page=${page}&pageSize=${pageSize}`;
+    } else {
+      endpoint += `&limit=${limit}&offset=0`;
+    }
+
+    const data = await nocoRequest(endpoint, { method: 'GET' });
 
     if (!data.list || data.list.length === 0) {
       console.warn('⚠️ No journal records found in NocoDB');
@@ -638,7 +647,7 @@ export const fetchJournals = async (limit = 7, offset = 0) => {
         entry: record.caption || '',
         time: timeStr,
         timestamp: timestamp,
-        createdAt: record.CreatedAt
+        createdAt: timestamp
       };
     });
 

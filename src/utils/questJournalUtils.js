@@ -117,7 +117,10 @@ export const saveQuestCompletionJournal = async (quest, characterId) => {
       caption: journalContent
     }, characterId);
 
-    console.log('✅ Quest completion journal saved:', questName);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Quest completion journal saved:', questName);
+    }
+
     return result;
   } catch (error) {
     console.error('❌ Error saving quest completion journal:', error);
@@ -143,7 +146,10 @@ export const saveAchievementCompletionJournal = async (achievement, characterId)
       caption: journalContent
     }, characterId);
 
-    console.log('✅ Achievement completion journal saved:', achievementName);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement completion journal saved:', achievementName);
+    }
+
     return result;
   } catch (error) {
     console.error('❌ Error saving achievement completion journal:', error);
@@ -232,7 +238,10 @@ export const saveProfileChangeJournal = async (action, type, item, characterId) 
       caption: journalContent
     }, characterId);
 
-    console.log(`✅ Profile ${action} journal saved: ${type} - ${item}`);
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`✅ Profile ${action} journal saved: ${type} - ${item}`);
+    }
+
     return result;
   } catch (error) {
     console.error('❌ Error saving profile change journal:', error);

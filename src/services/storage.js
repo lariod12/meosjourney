@@ -19,10 +19,14 @@ const compressImage = async (file, options = {}) => {
   };
 
   try {
-    console.log('📦 Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+    if (import.meta.env.MODE !== 'production') {
+      console.log('📦 Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+    }
     const compressedFile = await imageCompression(file, defaultOptions);
-    console.log('✅ Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
-    console.log('💾 Size reduction:', ((1 - compressedFile.size / file.size) * 100).toFixed(1), '%');
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('💾 Size reduction:', ((1 - compressedFile.size / file.size) * 100).toFixed(1), '%');
+    }
     return compressedFile;
   } catch (error) {
     console.error('❌ Compression failed, using original file:', error);
@@ -257,7 +261,9 @@ export const uploadQuestConfirmImage = async (file, questName) => {
     const snapshot = await uploadBytes(storageRef, compressedFile);
 
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('🔗 Download URL:', downloadURL);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔗 Download URL:', downloadURL);
+    }
 
     return {
       url: downloadURL,
@@ -311,14 +317,20 @@ export const uploadAchievementConfirmImage = async (file, achievementName) => {
     const storagePath = `achievements-confirm/${fileName}`;
     const storageRef = ref(storage, storagePath);
 
-    console.log('📤 Uploading achievement confirmation image to:', storagePath);
-    console.log('🏆 Achievement name prefix:', sanitizedAchievementName);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('📤 Uploading achievement confirmation image to:', storagePath);
+      console.log('🏆 Achievement name prefix:', sanitizedAchievementName);
+    }
 
     const snapshot = await uploadBytes(storageRef, compressedFile);
-    console.log('✅ Achievement confirmation image uploaded successfully');
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Achievement confirmation image uploaded successfully');
+    }
 
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('🔗 Download URL:', downloadURL);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('🔗 Download URL:', downloadURL);
+    }
 
     return {
       url: downloadURL,
@@ -375,7 +387,9 @@ export const deleteImageByUrl = async (downloadUrl) => {
     }
 
     await deleteQuestImage(storagePath);
-    console.log('✅ Image deleted by URL:', downloadUrl);
+    if (import.meta.env.MODE !== 'production') {
+      console.log('✅ Image deleted by URL:', downloadUrl);
+    }
 
   } catch (error) {
     console.error('❌ Error deleting image by URL:', error);

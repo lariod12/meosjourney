@@ -51,7 +51,7 @@ export const useCharacterData = (defaultData) => {
         fetchStatus(),
         fetchProfile(),
         fetchConfig(),
-        fetchJournals(7) // Fetch only 7 recent journals initially
+        fetchJournals(200)
       ]);
 
       if (mountedRef.current) {

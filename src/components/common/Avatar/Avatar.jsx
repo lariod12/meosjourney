@@ -29,7 +29,7 @@ const Avatar = () => {
           className="avatar-img"
           loading="lazy"
           decoding="async"
-          fetchpriority="high"
+          fetchPriority="high"
           width="300"
           height="300"
           onLoad={() => setImageLoaded(true)}

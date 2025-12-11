@@ -11,7 +11,7 @@ const HistoryTab = () => {
   const [loadedJournals, setLoadedJournals] = useState([]); // Journals loaded so far
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true); // Whether there's more data to load
-  const [currentOffset, setCurrentOffset] = useState(7); // Start from 7 (initial load)
+  const [currentOffset, setCurrentOffset] = useState(0);
   const { t, lang } = useLanguage();
   const scrollRefs = useRef({});
   const listRef = useRef(null);
@@ -21,6 +21,7 @@ const HistoryTab = () => {
   useEffect(() => {
     if (data.journal && data.journal.length > 0 && loadedJournals.length === 0) {
       setLoadedJournals(data.journal);
+      setCurrentOffset(data.journal.length);
     }
   }, [data.journal]);
 
@@ -51,6 +52,7 @@ const HistoryTab = () => {
       }
     } catch (error) {
       console.error('❌ Error loading more journals:', error);
+      setHasMore(false);
     } finally {
       setIsLoadingMore(false);
     }
@@ -271,7 +273,7 @@ const HistoryTab = () => {
         );
       })}
       
-      {isLoadingMore && (
+      {isLoadingMore && hasMore && displayDays.length > 0 && (
         <div className="history-skeleton-loader">
           <div className="skeleton-line"></div>
         </div>
