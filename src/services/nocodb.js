@@ -596,7 +596,7 @@ export const fetchConfig = async () => {
  * @param {number} offset - Number of records to skip (for pagination)
  * @returns {Promise<Array>} Array of journal entries
  */
-export const fetchJournals = async (limit = 7, offset = 0) => {
+export const fetchJournals = async (limit = 50, offset = 0) => {
   try {
     // Use static data in development
     if (USE_STATIC_DATA) {
@@ -605,30 +605,52 @@ export const fetchJournals = async (limit = 7, offset = 0) => {
       return [];
     }
 
-    // Use API in production
-    // NocoDB newer versions restrict offset usage; use offset=0 for first page
-    // and fall back to page/pageSize for subsequent pages.
-    let endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time`;
+    // NocoDB limits pageSize to 25, so we need to fetch multiple pages
+    const NOCO_PAGE_SIZE = 25;
+    const startPage = Math.floor(offset / NOCO_PAGE_SIZE) + 1;
+    const pagesNeeded = Math.ceil(limit / NOCO_PAGE_SIZE);
+    
+    let allRecords = [];
+    let currentPage = startPage;
+    let hasMore = true;
 
-    if (offset > 0) {
-      const pageSize = limit;
-      const page = Math.floor(offset / pageSize) + 1; // 0-based offset -> 1-based page
-      endpoint += `&page=${page}&pageSize=${pageSize}`;
-    } else {
-      endpoint += `&limit=${limit}&offset=0`;
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📔 Fetching journals: limit=${limit}, offset=${offset}, startPage=${startPage}, pagesNeeded=${pagesNeeded}`);
     }
 
-    const data = await nocoRequest(endpoint, { method: 'GET' });
+    while (hasMore && allRecords.length < limit) {
+      const endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${currentPage}&pageSize=${NOCO_PAGE_SIZE}`;
+      const data = await nocoRequest(endpoint, { method: 'GET' });
 
-    if (!data.list || data.list.length === 0) {
+      if (!data.list || data.list.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      allRecords = allRecords.concat(data.list);
+      hasMore = data.pageInfo && !data.pageInfo.isLastPage;
+      currentPage++;
+
+      // Small delay between pages to avoid rate limiting
+      if (hasMore && allRecords.length < limit) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // Trim to requested limit
+    allRecords = allRecords.slice(0, limit);
+
+    if (allRecords.length === 0) {
       console.warn('⚠️ No journal records found in NocoDB');
       return [];
     }
 
-    // Fetched journals
+    if (import.meta.env.MODE !== 'production') {
+      console.log(`📔 Fetched ${allRecords.length} journals total`);
+    }
 
     // Transform NocoDB journals to frontend format
-    const journals = data.list.map(record => {
+    const journals = allRecords.map(record => {
       // Parse created_time to Date object
       let timestamp = new Date();
       if (record.created_time) {

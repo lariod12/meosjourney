@@ -34,7 +34,7 @@ export const useCharacterData = (defaultData) => {
     if (!forceRefresh && !dataLoadedRef.current) {
       const cachedData = getCachedData();
       if (cachedData) {
-        console.log('✅ Using cached data');
+        console.log('✅ Using cached data, journals count:', cachedData.journal?.length || 0);
         setData(cachedData);
         setLoading(false);
         dataLoadedRef.current = true;

@@ -17,11 +17,25 @@ const HistoryTab = () => {
   const listRef = useRef(null);
   const LOAD_MORE_BATCH = 50; // Load 50 journals per batch
 
-  // Initialize with the 7 journals from initial load
+  // Initialize with journals from initial load (200 records)
   useEffect(() => {
-    if (data.journal && data.journal.length > 0 && loadedJournals.length === 0) {
-      setLoadedJournals(data.journal);
-      setCurrentOffset(data.journal.length);
+    if (data.journal && data.journal.length > 0) {
+      // Always sync with latest data.journal, avoiding duplicates
+      setLoadedJournals(prev => {
+        if (prev.length === 0) {
+          // First load
+          return data.journal;
+        }
+        // Merge: keep existing loaded journals and add any new ones from data.journal
+        const existingIds = new Set(prev.map(j => j.id));
+        const newFromContext = data.journal.filter(j => !existingIds.has(j.id));
+        if (newFromContext.length > 0) {
+          return [...newFromContext, ...prev];
+        }
+        return prev;
+      });
+      // Only set offset on first load
+      setCurrentOffset(prev => prev === 0 ? data.journal.length : prev);
     }
   }, [data.journal]);
 
