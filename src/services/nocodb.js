@@ -126,7 +126,7 @@ const pendingRequests = new Map();
 
 // Request throttling to prevent rate limiting
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 450 : 250;
+const MIN_REQUEST_INTERVAL = isProductionMode() ? 900 : 300;
 
 const LAST_REQUEST_TIME_KEY = 'meo_noco_last_request_time';
 const PENALTY_UNTIL_KEY = 'meo_noco_penalty_until';
@@ -167,7 +167,7 @@ const setPersistedPenaltyUntil = (time) => {
 
 let penaltyUntil = 0;
 
-const MAX_CONCURRENT_REQUESTS = 2;
+const MAX_CONCURRENT_REQUESTS = isProductionMode() ? 1 : 2;
 let activeRequests = 0;
 const requestWaiters = [];
 
@@ -250,6 +250,14 @@ const fetchStaticData = async () => {
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
   const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
 
+  if (!NOCODB_BASE_URL) {
+    throw new Error('Missing VITE_NOCODB_BASE_URL');
+  }
+
+  if (!NOCODB_TOKEN) {
+    throw new Error('Missing VITE_NOCODB_TOKEN');
+  }
+
   await acquireRequestSlot();
 
   try {
@@ -287,12 +295,29 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
 
         // Handle rate limiting with exponential backoff
         if (response.status === 429) {
-          const penaltyMs = import.meta.env.MODE === 'staging' ? 8000 : 5000;
-          penaltyUntil = Date.now() + penaltyMs;
+          const retryAfterHeader = response.headers.get('retry-after');
+          let retryAfterMs = 0;
+          if (retryAfterHeader) {
+            const retryAfterSeconds = Number(retryAfterHeader);
+            if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+              retryAfterMs = retryAfterSeconds * 1000;
+            } else {
+              const retryAfterDate = new Date(retryAfterHeader);
+              const retryAfterTime = retryAfterDate.getTime();
+              if (!Number.isNaN(retryAfterTime)) {
+                retryAfterMs = Math.max(0, retryAfterTime - Date.now());
+              }
+            }
+          }
+
+          const baseDelay = isProductionMode() ? 3000 : 1500;
+          const exponentialDelay = baseDelay * Math.pow(2, attempt);
+          const jitter = Math.floor(Math.random() * 350);
+          const delay = Math.min(45000, Math.max(retryAfterMs, exponentialDelay) + jitter);
+
+          penaltyUntil = Date.now() + delay;
           setPersistedPenaltyUntil(penaltyUntil);
           if (attempt < retries) {
-            const baseDelay = import.meta.env.MODE === 'staging' ? 2500 : 1500;
-            const delay = baseDelay * Math.pow(2, attempt);
             console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;

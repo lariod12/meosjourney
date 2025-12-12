@@ -1301,8 +1301,17 @@ body {
 }
 
 .review-group-content {
-    padding: 20px;
+    padding: 12px;
     animation: slideDown 0.3s ease-out;
+}
+
+.userpage-review-loading {
+    padding: 12px;
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    margin-bottom: 12px;
+    font-style: italic;
 }
 
 .review-status-section {

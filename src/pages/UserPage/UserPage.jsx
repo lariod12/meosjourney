@@ -107,6 +107,8 @@ const UserPage = ({ onBack }) => {
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [criticalLoaded, setCriticalLoaded] = useState(false);
 
+  const [reviewSubmittedLoading, setReviewSubmittedLoading] = useState(true);
+
   // Review submitted visibility state - hidden by default
   const [reviewSubmittedExpanded, setReviewSubmittedExpanded] = useState(false);
 
@@ -214,6 +216,8 @@ const UserPage = ({ onBack }) => {
   const reloadDataAfterSubmit = async () => {
     try {
       clearNocoDBCache();
+
+      setReviewSubmittedLoading(true);
       
       // Reload quests and achievements data
       const [questsData, questConfirmsData, achievementsData, achievementConfirmsData] = await Promise.all([
@@ -234,10 +238,13 @@ const UserPage = ({ onBack }) => {
       setAvailableAchievements(availableAchievementsData);
       setAchievementConfirmations(achievementConfirmsData);
 
+      setReviewSubmittedLoading(false);
+
       // Notify HomePage to refresh
       try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
     } catch (error) {
       console.error('❌ Error reloading data after submit:', error);
+      setReviewSubmittedLoading(false);
     }
   };
 
@@ -375,6 +382,8 @@ const UserPage = ({ onBack }) => {
 
         // Phase 2: Load quests and achievements data in staggered batches
 
+        setReviewSubmittedLoading(true);
+
         
         // Batch 2a: Load quests data
         const [questsData, questConfirmsData] = await Promise.all([
@@ -402,6 +411,8 @@ const UserPage = ({ onBack }) => {
         setAllAchievements(achievementsData);
         setAvailableAchievements(availableAchievementsData);
         setAchievementConfirmations(achievementConfirmsData);
+
+        setReviewSubmittedLoading(false);
 
 
 
@@ -471,6 +482,7 @@ const UserPage = ({ onBack }) => {
         setAllAchievements([]);
         setAvailableAchievements([]);
         setAchievementConfirmations([]);
+        setReviewSubmittedLoading(false);
         setCriticalLoaded(true);
       } finally {
         setDataLoading(false);
@@ -2764,11 +2776,14 @@ const UserPage = ({ onBack }) => {
                 setReviewSubmittedExpanded(!reviewSubmittedExpanded);
               }}
             >
-              {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({getAllQuestSubmissions().length + getAllAchievementSubmissions().length})
+              {reviewSubmittedExpanded ? '▼' : '▸'} Review Submitted ({reviewSubmittedLoading ? 'Loading...' : (getAllQuestSubmissions().length + getAllAchievementSubmissions().length)})
             </h2>
 
             {reviewSubmittedExpanded && (
               <div className="section-content">
+                {reviewSubmittedLoading && (
+                  <div className="userpage-review-loading">Review Submitted is loading...</div>
+                )}
                 {/* Pending Review Group - Always show */}
                 <div className="review-group">
                   <h3
