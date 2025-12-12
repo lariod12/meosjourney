@@ -69,6 +69,25 @@ const TABLE_IDS = import.meta.env.MODE === 'production' ? TABLE_IDS_PRODUCTION :
 // Helper function to check if current mode should use production behavior
 const isProductionMode = () => import.meta.env.MODE === 'production' || import.meta.env.MODE === 'staging';
 
+const parseNocoDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'object' && typeof value.seconds === 'number') {
+    return new Date(value.seconds * 1000);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const isoCandidate = trimmed.includes(' ') ? trimmed.replace(' ', 'T') : trimmed;
+    const date = new Date(isoCandidate);
+    if (!Number.isNaN(date.getTime())) return date;
+    const fallback = new Date(trimmed);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 // Helper function to generate UTC+7 timestamp with milliseconds for uniqueness
 const getUTC7Timestamp = () => {
   const now = new Date();
@@ -949,8 +968,8 @@ export const fetchQuests = async () => {
           descTranslations: descTranslations,
           xp: record.xp || 0,
           questsConfirmId: questConfirmId, // Link to quest_confirm (ID of linked record)
-          createdAt: record.created_time ? new Date(record.created_time) : null,
-          completedAt: record.completed_time ? new Date(record.completed_time) : null,
+          createdAt: parseNocoDate(record.created_time),
+          completedAt: parseNocoDate(record.completed_time),
           updatedAt: record.UpdatedAt
         };
       });
@@ -1069,11 +1088,12 @@ export const fetchQuestConfirmations = async () => {
 
         return {
           id: record.Id,
+          questsId: record.quests_id || record.quest_id || record.quest || record.quests || null,
           name: record.quest_name || record.title || 'Unnamed Quest',
           desc: record.desc || '',
           imgUrl: imgUrl,
           status: record.status || 'pending',
-          createdAt: record.created_time ? new Date(record.created_time) : new Date(record.CreatedAt)
+          createdAt: parseNocoDate(record.created_time) || parseNocoDate(record.CreatedAt)
         };
       });
 
@@ -1709,8 +1729,8 @@ export const fetchAchievements = async () => {
           dueDate: dueDate,
           achievementConfirmId: record.achievement_confirm || null, // Link to achievement_confirm
           hasConfirmation: hasConfirmation, // Helper flag
-          createdAt: record.created_time ? new Date(record.created_time) : null,
-          completedAt: record.completed_time ? new Date(record.completed_time) : null, // Completed timestamp
+          createdAt: parseNocoDate(record.created_time),
+          completedAt: parseNocoDate(record.completed_time), // Completed timestamp
           updatedAt: record.UpdatedAt
         };
       });
@@ -1801,8 +1821,10 @@ export const fetchAchievementConfirmations = async () => {
           achievementName: record.achievement_name || '',
           desc: record.desc || '',
           achievementsId: record.achievements_id || null,
+          imgUrl: imageUrl,
           imageUrl: imageUrl,
-          createdAt: record.created_time ? new Date(record.created_time) : null,
+          status: record.status || 'pending',
+          createdAt: parseNocoDate(record.created_time),
           updatedAt: record.UpdatedAt
         };
       });

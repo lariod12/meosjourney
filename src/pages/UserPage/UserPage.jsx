@@ -170,6 +170,28 @@ const UserPage = ({ onBack }) => {
   const getLocalizedDesc = (item) => resolveLocalizedValue(item?.descTranslations, item?.desc);
   const getLocalizedReward = (item) => resolveLocalizedValue(item?.specialRewardTranslations, item?.specialReward);
 
+  const toDateValue = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'object' && typeof value.seconds === 'number') {
+      return new Date(value.seconds * 1000);
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const formatDateTime = (value) => {
+    const date = toDateValue(value);
+    if (!date) return null;
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const applyStatusProfileToForm = (statusData, profile) => {
     setFormData(prev => {
       const next = { ...prev };
@@ -300,10 +322,6 @@ const UserPage = ({ onBack }) => {
             if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
           });
           setExistingDoings(normalized);
-          // Debug: Log existing doings (development only)
-          if (import.meta.env.MODE !== 'production') {
-            console.log('✅ Existing doings:', normalized);
-          }
 
           // Prepare existing locations
           const locArr = Array.isArray(statusData.location) ? statusData.location : [];
@@ -337,15 +355,6 @@ const UserPage = ({ onBack }) => {
           setOriginalStatusData(originalStatus);
 
           // Apply to form
-          if (import.meta.env.MODE !== 'production') {
-            console.log('📝 Loading status data into form:', {
-              doing: originalStatus.doing,
-              location: originalStatus.location,
-              mood: originalStatus.mood,
-              caption: originalStatus.caption
-            });
-          }
-          
           setFormData(prev => ({
             ...prev,
             doing: originalStatus.doing,
@@ -445,10 +454,6 @@ const UserPage = ({ onBack }) => {
         try {
           const photoAlbumsData = await fetchPhotoAlbums();
           setPhotoAlbums(photoAlbumsData || []);
-          // Debug: Log photo albums loaded (development only)
-          if (import.meta.env.MODE !== 'production') {
-            console.log('📸 Photo albums loaded:', photoAlbumsData?.length || 0);
-          }
         } catch (albumError) {
           console.warn('⚠️ Failed to load photo albums:', albumError);
           setPhotoAlbums([]);
@@ -1536,26 +1541,42 @@ const UserPage = ({ onBack }) => {
   // Check if quest has ANY confirmation (not just today)
   const hasQuestConfirmation = (questId) => {
     // NocoDB: Match by questsId field in confirmation record
-    return questConfirmations.some(c => c.questsId === questId);
+    const targetId = String(questId);
+    return questConfirmations.some(c => c?.questsId !== null && c?.questsId !== undefined && String(c.questsId) === targetId);
   };
 
   // Get all quest submissions (quests that have confirmation) - include completed
   const getAllQuestSubmissions = () => {
-    const questsWithConfirmation = allQuests.filter(q => hasQuestConfirmation(q.id)).map(quest => {
-      const confirmation = getQuestConfirmationData(quest.id);
-      return {
-        ...quest,
-        confirmation
-      };
+    const questMap = new Map(allQuests.map(q => [String(q.id), q]));
+    const merged = new Map();
+
+    allQuests.forEach(quest => {
+      if (quest?.completedAt) {
+        merged.set(String(quest.id), {
+          ...quest,
+          confirmation: getQuestConfirmationData(quest.id)
+        });
+      }
     });
 
-    return questsWithConfirmation;
+    questConfirmations.forEach(conf => {
+      if (!conf?.questsId) return;
+      const quest = questMap.get(String(conf.questsId));
+      if (!quest) return;
+      merged.set(String(quest.id), {
+        ...quest,
+        confirmation: conf
+      });
+    });
+
+    return Array.from(merged.values());
   };
 
   // Get quest confirmation data (get the most recent one if multiple exist)
   const getQuestConfirmationData = (questId) => {
     // NocoDB: Find confirmation by questsId
-    return questConfirmations.find(c => c.questsId === questId) || null;
+    const targetId = String(questId);
+    return questConfirmations.find(c => c?.questsId !== null && c?.questsId !== undefined && String(c.questsId) === targetId) || null;
   };
 
   // Achievement submission handlers
@@ -1665,33 +1686,49 @@ const UserPage = ({ onBack }) => {
     // Filter out achievements that are already selected OR have pending confirmation
     return availableAchievements.filter(a => {
       if (selectedAchievementIds.includes(a.id)) return false;
-      return !hasAchievementConfirmation(a.name);
+      return !hasAchievementConfirmation(a.id);
     });
   };
 
   // Check if achievement has ANY confirmation (not just today)
   const hasAchievementConfirmation = (achievementId) => {
     // NocoDB: Match by achievementsId field in confirmation record
-    return achievementConfirmations.some(c => c.achievementsId === achievementId);
+    const targetId = String(achievementId);
+    return achievementConfirmations.some(c => c?.achievementsId !== null && c?.achievementsId !== undefined && String(c.achievementsId) === targetId);
   };
 
   // Get all achievement submissions (achievements that have confirmation) - include completed
   const getAllAchievementSubmissions = () => {
-    const achievementsWithConfirmation = allAchievements.filter(a => hasAchievementConfirmation(a.id)).map(achievement => {
-      const confirmation = getAchievementConfirmationData(achievement.id);
-      return {
-        ...achievement,
-        confirmation
-      };
+    const achievementMap = new Map(allAchievements.map(a => [String(a.id), a]));
+    const merged = new Map();
+
+    allAchievements.forEach(achievement => {
+      if (achievement?.completedAt) {
+        merged.set(String(achievement.id), {
+          ...achievement,
+          confirmation: getAchievementConfirmationData(achievement.id)
+        });
+      }
     });
 
-    return achievementsWithConfirmation;
+    achievementConfirmations.forEach(conf => {
+      if (!conf?.achievementsId) return;
+      const achievement = achievementMap.get(String(conf.achievementsId));
+      if (!achievement) return;
+      merged.set(String(achievement.id), {
+        ...achievement,
+        confirmation: conf
+      });
+    });
+
+    return Array.from(merged.values());
   };
 
   // Get achievement confirmation data (get the most recent one if multiple exist)
   const getAchievementConfirmationData = (achievementId) => {
     // NocoDB: Find confirmation by achievementsId
-    return achievementConfirmations.find(c => c.achievementsId === achievementId) || null;
+    const targetId = String(achievementId);
+    return achievementConfirmations.find(c => c?.achievementsId !== null && c?.achievementsId !== undefined && String(c.achievementsId) === targetId) || null;
   };
 
   // Helper function to check if a submission is overdue
@@ -1731,121 +1768,102 @@ const UserPage = ({ onBack }) => {
 
   // Get completed quest submissions - PRIORITY 1: có completedAt != null VÀ có confirmation
   const getCompletedQuestConfirmations = () => {
-    const completed = allQuests.filter(quest => {
-      const hasCompleted = quest.completedAt !== null && quest.completedAt !== undefined;
-      const hasConfirmation = hasQuestConfirmation(quest.name);
-      return hasCompleted && hasConfirmation;
-    }).map(quest => {
-      const confirmation = getQuestConfirmationData(quest.name);
-      return {
+    return allQuests
+      .filter(quest => quest?.completedAt !== null && quest?.completedAt !== undefined)
+      .map(quest => ({
         ...quest,
-        confirmation
-      };
-    });
-
-    return completed;
+        confirmation: getQuestConfirmationData(quest.id)
+      }));
   };
 
   // Get failed (overdue) quest submissions - PRIORITY 2: CHƯA completed VÀ overdue (có hoặc không có confirmation)
   const getFailedQuestConfirmations = () => {
-    const completedIds = getCompletedQuestConfirmations().map(q => q.id);
+    const questMap = new Map(allQuests.map(q => [String(q.id), q]));
 
-    const failed = allQuests.filter(quest => {
-      // Loại bỏ quest đã completed
-      if (completedIds.includes(quest.id)) return false;
-
-      // Failed nếu: CHƯA completed VÀ đã quá hạn createdAt
-      const isNotCompleted = !quest.completedAt;
-      const isOverdue = isSubmissionOverdue(quest, 'quest');
-      return isNotCompleted && isOverdue;
-    }).map(quest => {
-      const confirmation = hasQuestConfirmation(quest.name) ? getQuestConfirmationData(quest.name) : null;
-      return {
-        ...quest,
-        confirmation
-      };
-    });
-
-    return failed;
+    return questConfirmations
+      .filter(c => {
+        const status = String(c?.status || '').toLowerCase();
+        return status === 'failed';
+      })
+      .map(c => {
+        const quest = c?.questsId ? questMap.get(String(c.questsId)) : null;
+        if (!quest || quest?.completedAt) return null;
+        return {
+          ...quest,
+          confirmation: c
+        };
+      })
+      .filter(Boolean);
   };
 
   // Get pending quest submissions - PRIORITY 3: có confirmation, CHƯA completed, CHƯA overdue
   const getActivePendingQuestConfirmations = () => {
-    const completedIds = getCompletedQuestConfirmations().map(q => q.id);
-    const failedIds = getFailedQuestConfirmations().map(q => q.id);
+    const questMap = new Map(allQuests.map(q => [String(q.id), q]));
 
-    const allSubmissions = getAllQuestSubmissions();
-    const activePending = allSubmissions.filter(quest => {
-      // Loại bỏ quest đã completed hoặc failed
-      if (completedIds.includes(quest.id) || failedIds.includes(quest.id)) return false;
-
-      // Pending nếu: chưa completed VÀ chưa quá hạn createdAt
-      const isNotCompleted = !quest.completedAt;
-      const isNotOverdue = !isSubmissionOverdue(quest, 'quest');
-      return isNotCompleted && isNotOverdue;
-    });
-
-    return activePending;
+    return questConfirmations
+      .filter(c => {
+        const status = String(c?.status || '').toLowerCase();
+        return status === 'pending';
+      })
+      .map(c => {
+        const quest = c?.questsId ? questMap.get(String(c.questsId)) : null;
+        if (!quest || quest?.completedAt) return null;
+        return {
+          ...quest,
+          confirmation: c
+        };
+      })
+      .filter(Boolean);
   };
 
   // Get completed achievement submissions - PRIORITY 1: có completedAt != null VÀ có confirmation
   const getCompletedAchievementConfirmations = () => {
-    const completed = allAchievements.filter(achievement => {
-      const hasCompleted = achievement.completedAt !== null && achievement.completedAt !== undefined;
-      const hasConfirmation = hasAchievementConfirmation(achievement.name);
-      return hasCompleted && hasConfirmation;
-    }).map(achievement => {
-      const confirmation = getAchievementConfirmationData(achievement.name);
-      return {
+    return allAchievements
+      .filter(achievement => achievement?.completedAt !== null && achievement?.completedAt !== undefined)
+      .map(achievement => ({
         ...achievement,
-        confirmation
-      };
-    });
-
-    return completed;
+        confirmation: getAchievementConfirmationData(achievement.id)
+      }));
   };
 
   // Get failed (overdue) achievement submissions - PRIORITY 2: CHƯA completed VÀ có dueDate VÀ overdue
   const getFailedAchievementConfirmations = () => {
-    const completedIds = getCompletedAchievementConfirmations().map(a => a.id);
+    const achievementMap = new Map(allAchievements.map(a => [String(a.id), a]));
 
-    const failed = allAchievements.filter(achievement => {
-      // Loại bỏ achievement đã completed
-      if (completedIds.includes(achievement.id)) return false;
-
-      // Failed chỉ khi: CHƯA completed VÀ có dueDate VÀ đã quá hạn
-      const isNotCompleted = !achievement.completedAt;
-      const hasDeadline = achievement.dueDate;
-      const isOverdue = hasDeadline && isSubmissionOverdue(achievement, 'achievement');
-      return isNotCompleted && isOverdue;
-    }).map(achievement => {
-      const confirmation = hasAchievementConfirmation(achievement.name) ? getAchievementConfirmationData(achievement.name) : null;
-      return {
-        ...achievement,
-        confirmation
-      };
-    });
-
-    return failed;
+    return achievementConfirmations
+      .filter(c => {
+        const status = String(c?.status || '').toLowerCase();
+        return status === 'failed';
+      })
+      .map(c => {
+        const achievement = c?.achievementsId ? achievementMap.get(String(c.achievementsId)) : null;
+        if (!achievement || achievement?.completedAt) return null;
+        return {
+          ...achievement,
+          confirmation: c
+        };
+      })
+      .filter(Boolean);
   };
 
   // Get pending achievement submissions - PRIORITY 3: có confirmation, CHƯA completed, CHƯA overdue
   const getActivePendingAchievementConfirmations = () => {
-    const completedIds = getCompletedAchievementConfirmations().map(a => a.id);
-    const failedIds = getFailedAchievementConfirmations().map(a => a.id);
+    const achievementMap = new Map(allAchievements.map(a => [String(a.id), a]));
 
-    const allSubmissions = getAllAchievementSubmissions();
-    const activePending = allSubmissions.filter(achievement => {
-      // Loại bỏ achievement đã completed hoặc failed
-      if (completedIds.includes(achievement.id) || failedIds.includes(achievement.id)) return false;
-
-      // Pending nếu: chưa completed VÀ (không có dueDate HOẶC chưa quá hạn dueDate)
-      const isNotCompleted = !achievement.completedAt;
-      const isNotOverdue = !achievement.dueDate || !isSubmissionOverdue(achievement, 'achievement');
-      return isNotCompleted && isNotOverdue;
-    });
-
-    return activePending;
+    return achievementConfirmations
+      .filter(c => {
+        const status = String(c?.status || '').toLowerCase();
+        return status === 'pending';
+      })
+      .map(c => {
+        const achievement = c?.achievementsId ? achievementMap.get(String(c.achievementsId)) : null;
+        if (!achievement || achievement?.completedAt) return null;
+        return {
+          ...achievement,
+          confirmation: c
+        };
+      })
+      .filter(Boolean);
   };
 
   if (!isAuthenticated) {
@@ -2771,15 +2789,7 @@ const UserPage = ({ onBack }) => {
                           <div className="pending-items-list">
                             {getActivePendingQuestConfirmations().map(quest => {
                               const createdAt = quest.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedDate = formatDateTime(createdAt);
 
                               return (
                                 <div key={quest.id} className="pending-item">
@@ -2820,15 +2830,7 @@ const UserPage = ({ onBack }) => {
                           <div className="pending-items-list">
                             {getActivePendingAchievementConfirmations().map(achievement => {
                               const createdAt = achievement.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedDate = formatDateTime(createdAt);
                               const displayName = getLocalizedName(achievement);
                               const specialRewardText = getLocalizedReward(achievement);
 
@@ -2898,15 +2900,7 @@ const UserPage = ({ onBack }) => {
                           <div className="pending-items-list">
                             {getFailedQuestConfirmations().map(quest => {
                               const createdAt = quest.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedDate = formatDateTime(createdAt);
 
                               return (
                                 <div key={quest.id} className="pending-item failed">
@@ -2950,15 +2944,7 @@ const UserPage = ({ onBack }) => {
                           <div className="pending-items-list">
                             {getFailedAchievementConfirmations().map(achievement => {
                               const createdAt = achievement.confirmation?.createdAt;
-                              const formattedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedDate = formatDateTime(createdAt);
                               const displayName = getLocalizedName(achievement);
                               const specialRewardText = getLocalizedReward(achievement);
 
@@ -3029,24 +3015,8 @@ const UserPage = ({ onBack }) => {
                             {getCompletedQuestConfirmations().map(quest => {
                               const createdAt = quest.confirmation?.createdAt;
                               const completedAt = quest.completedAt;
-                              const formattedSubmittedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-                              const formattedCompletedDate = completedAt
-                                ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedSubmittedDate = formatDateTime(createdAt);
+                              const formattedCompletedDate = formatDateTime(completedAt);
 
                               return (
                                 <div key={quest.id} className="pending-item completed">
@@ -3091,24 +3061,8 @@ const UserPage = ({ onBack }) => {
                             {getCompletedAchievementConfirmations().map(achievement => {
                               const createdAt = achievement.confirmation?.createdAt;
                               const completedAt = achievement.completedAt;
-                              const formattedSubmittedDate = createdAt
-                                ? new Date(createdAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
-                              const formattedCompletedDate = completedAt
-                                ? new Date(completedAt.seconds * 1000).toLocaleDateString('vi-VN', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                                : null;
+                              const formattedSubmittedDate = formatDateTime(createdAt);
+                              const formattedCompletedDate = formatDateTime(completedAt);
                               const displayName = getLocalizedName(achievement);
                               const specialRewardText = getLocalizedReward(achievement);
 
