@@ -47,11 +47,46 @@ export const useCharacterData = (defaultData) => {
       setLoading(true);
 
       // Critical batch: status, profile, config, and today's journal
-      const [status, profile, config, journals] = await Promise.all([
-        fetchStatus(),
-        fetchProfile(),
-        fetchConfig(),
-        fetchJournals(7)
+      const statusPromise = fetchStatus().catch((statusError) => {
+        console.warn('⚠️ Failed to fetch status:', statusError);
+        return null;
+      });
+      const configPromise = fetchConfig().catch((configError) => {
+        console.warn('⚠️ Failed to fetch config:', configError);
+        return null;
+      });
+      const journalsPromise = fetchJournals(7).catch((journalsError) => {
+        console.warn('⚠️ Failed to fetch journals:', journalsError);
+        return null;
+      });
+
+      let profile = null;
+      try {
+        profile = await fetchProfile();
+      } catch (profileError) {
+        console.warn('⚠️ Failed to fetch profile:', profileError);
+      }
+
+      if (mountedRef.current) {
+        setData((prev) => ({
+          ...prev,
+          name: profile?.name || prev.name || defaultData.name,
+          caption: profile?.caption || prev.caption || defaultData.caption,
+          currentXP: profile?.currentXP ?? prev.currentXP ?? defaultData.currentXP ?? 0,
+          maxXP: profile?.maxXP ?? prev.maxXP ?? defaultData.maxXP ?? 1000,
+          level: profile?.level ?? prev.level ?? defaultData.level ?? 0,
+          introduce: profile?.introduce || prev.introduce || defaultData.introduce || '',
+          hobbies: profile?.hobbies?.map(name => ({ name })) || prev.hobbies || defaultData.hobbies || [],
+          skills: profile?.skills?.map(name => ({ name })) || prev.skills || defaultData.skills || [],
+          social: profile?.social || prev.social || defaultData.social || {},
+          avatarUrl: profile?.avatarUrl || prev.avatarUrl || null,
+        }));
+      }
+
+      const [status, config, journals] = await Promise.all([
+        statusPromise,
+        configPromise,
+        journalsPromise
       ]);
 
       if (mountedRef.current) {
@@ -61,9 +96,9 @@ export const useCharacterData = (defaultData) => {
           // Profile data
           name: profile?.name || defaultData.name,
           caption: profile?.caption || defaultData.caption,
-          currentXP: profile?.currentXP || defaultData.currentXP || 0,
-          maxXP: profile?.maxXP || defaultData.maxXP || 1000,
-          level: profile?.level || defaultData.level || 0,
+          currentXP: profile?.currentXP ?? defaultData.currentXP ?? 0,
+          maxXP: profile?.maxXP ?? defaultData.maxXP ?? 1000,
+          level: profile?.level ?? defaultData.level ?? 0,
           introduce: profile?.introduce || defaultData.introduce || '',
           // Map arrays: NocoDB returns strings, frontend expects {name: string}
           hobbies: profile?.hobbies?.map(name => ({ name })) || defaultData.hobbies || [],

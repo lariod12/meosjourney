@@ -73,11 +73,6 @@ const GalleryTab = () => {
     try {
       const data = await fetchHomePageGallery();
 
-      if (import.meta.env.MODE !== 'production') {
-        console.log('🎨 GalleryTab: Fetched gallery records:', data);
-        console.log('🎨 GalleryTab: Gallery count:', data?.length || 0);
-      }
-
       setGalleries(data);
     } catch (error) {
       console.error('Error loading gallery:', error);

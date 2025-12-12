@@ -139,31 +139,8 @@ const PhotoAlbumTab = () => {
 
   const loadAlbums = async () => {
     setLoading(true);
-    try {
-      // Debug: Log photo albums fetch start (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('📸 PhotoAlbumTab: Fetching photo albums...');
-      }
-      
+    try {  
       const data = await fetchPhotoAlbums();
-      
-      // Debug: Log photo albums fetch result (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('📸 PhotoAlbumTab: Fetched albums:', data);
-        console.log('📸 PhotoAlbumTab: Album count:', data?.length || 0);
-        
-        // Debug: Log first album images structure
-        if (data && data.length > 0) {
-          const firstAlbum = data[0];
-          console.log('📸 First album structure:', firstAlbum);
-          console.log('📸 First album images:', firstAlbum.img);
-          
-          if (firstAlbum.img && firstAlbum.img.length > 0) {
-            console.log('📸 First image structure:', firstAlbum.img[0]);
-            console.log('📸 First image URL:', firstAlbum.img[0].signedUrl || firstAlbum.img[0].url);
-          }
-        }
-      }
       
       setAlbums(data);
     } catch (error) {

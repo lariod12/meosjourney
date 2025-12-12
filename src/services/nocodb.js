@@ -610,19 +610,11 @@ export const fetchJournals = async (limit = 25, offset = 0) => {
     const page = Math.floor(offset / NOCO_PAGE_SIZE) + 1;
     const endpoint = `${TABLE_IDS.JOURNALS}/records?sort=-created_time&page=${page}&pageSize=${NOCO_PAGE_SIZE}`;
 
-    if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetching journals: page=${page}, offset=${offset}`);
-    }
-
     const data = await nocoRequest(endpoint, { method: 'GET' });
 
     if (!data.list || data.list.length === 0) {
       console.warn('⚠️ No journal records found in NocoDB');
       return [];
-    }
-
-    if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetched ${data.list.length} journals, page ${page}`);
     }
 
     // Transform NocoDB journals to frontend format
@@ -728,10 +720,6 @@ export const fetchTodayJournals = async () => {
       if (hasMore && !foundNonTodayEntry) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-    }
-
-    if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetched ${allTodayJournals.length} journals for today`);
     }
 
     return allTodayJournals;
@@ -3560,11 +3548,6 @@ export const fetchPhotoAlbums = async () => {
 
       const albums = response.list || [];
 
-      // Debug: Log raw albums data (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('🔍 Raw photo albums data:', albums);
-      }
-
       // Process image URLs for each album
       const processedAlbums = albums.map(album => {
         if (album.img && Array.isArray(album.img)) {
@@ -3619,11 +3602,6 @@ export const fetchPhotoAlbums = async () => {
         return album;
       });
 
-      // Debug: Log processed albums (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('✅ Processed photo albums:', processedAlbums);
-      }
-
       return processedAlbums;
     } catch (error) {
       console.error('❌ Error fetching photo albums from NocoDB:', error);
@@ -3643,10 +3621,6 @@ export const fetchHomePageGallery = async () => {
 
   return deduplicateRequest(cacheKey, async () => {
     try {
-      // Debug: Log gallery fetch start (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('🔍 Fetching home page gallery from NocoDB...');
-      }
 
       const response = await nocoRequest(
         `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?sort=-CreatedAt&limit=100`,
@@ -3660,12 +3634,6 @@ export const fetchHomePageGallery = async () => {
         const title = typeof record.title === 'string' ? record.title : '';
         return title.toLowerCase().includes('gallery');
       });
-
-      // Debug: Log filtered gallery data (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('🔍 Raw gallery records:', galleryRecords);
-        console.log('🔍 Gallery count:', galleryRecords.length);
-      }
 
       // Process image URLs for each gallery record (like photo albums)
       const processedGallery = galleryRecords.map(record => {
@@ -3711,15 +3679,6 @@ export const fetchHomePageGallery = async () => {
           };
         });
 
-        // Debug: Log image URL processing (development only)
-        if (import.meta.env.MODE !== 'production') {
-          console.log('🖼️ Processing gallery record:', {
-            title: record.title,
-            desc: record.desc,
-            imageCount: processedImages.length
-          });
-        }
-
         return {
           Id: record.Id,
           title: typeof record.title === 'string' ? record.title : '',
@@ -3728,11 +3687,6 @@ export const fetchHomePageGallery = async () => {
           created_time: record.created_time || record.CreatedAt
         };
       });
-
-      // Debug: Log processed gallery (development only)
-      if (import.meta.env.MODE !== 'production') {
-        console.log('✅ Processed gallery records:', processedGallery);
-      }
 
       return processedGallery;
     } catch (error) {

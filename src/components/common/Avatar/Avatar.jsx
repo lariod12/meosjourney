@@ -27,7 +27,7 @@ const Avatar = () => {
           src={avatarSrc}
           alt="Character Avatar" 
           className="avatar-img"
-          loading="lazy"
+          loading="eager"
           decoding="async"
           fetchPriority="high"
           width="300"
