@@ -10,6 +10,7 @@ const HistoryTab = () => {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [loadedJournals, setLoadedJournals] = useState([]); // Journals loaded so far
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isAutoLoadingMore, setIsAutoLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true); // Whether there's more data to load
   const [currentOffset, setCurrentOffset] = useState(0);
   const { t, lang } = useLanguage();
@@ -47,6 +48,7 @@ const HistoryTab = () => {
       if (uniqueDays.size >= MIN_DAYS_TO_SHOW) return;
 
       loadingRef.current = true;
+      setIsAutoLoadingMore(true);
       try {
         const moreJournals = await fetchJournals(25, currentOffset, { source: 'history' });
         if (moreJournals.length > 0) {
@@ -67,6 +69,7 @@ const HistoryTab = () => {
         setHasMore(false);
       } finally {
         loadingRef.current = false;
+        setIsAutoLoadingMore(false);
       }
     };
 
@@ -77,7 +80,7 @@ const HistoryTab = () => {
 
   // Load more journals when scrolling near bottom
   const loadMoreJournals = async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || isAutoLoadingMore || loadingRef.current || !hasMore) return;
 
     setIsLoadingMore(true);
     try {
@@ -270,6 +273,10 @@ const HistoryTab = () => {
     );
   }
 
+  const loadingMoreText = lang === 'VI' ? 'Đang tải thêm' : 'Loading more';
+  const loadedAllText = lang === 'VI' ? 'Đã tải hết' : 'All loaded';
+  const isFetchingMore = isLoadingMore || isAutoLoadingMore;
+
   return (
     <div 
       ref={listRef}
@@ -303,11 +310,15 @@ const HistoryTab = () => {
           </div>
         );
       })}
-      
-      {isLoadingMore && hasMore && displayDays.length > 0 && (
-        <div className="history-skeleton-loader">
-          <div className="skeleton-line"></div>
-        </div>
+
+      {hasMore ? (
+        isFetchingMore ? (
+          <div className="history-load-more" aria-live="polite">
+            <div className="history-load-more-text">{loadingMoreText}</div>
+          </div>
+        ) : null
+      ) : (
+        <div className="history-load-end" aria-live="polite">{loadedAllText}</div>
       )}
     </div>
   );

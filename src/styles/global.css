@@ -1144,6 +1144,44 @@ body {
     border: 2px solid var(--black);
 }
 
+.history-load-more {
+    padding: 6px 0;
+    margin: 6px 0;
+    background: transparent;
+}
+
+.history-load-more-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--black);
+    text-align: center;
+}
+
+.history-load-more-text::after {
+    content: '...';
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+    overflow: hidden;
+    vertical-align: bottom;
+    animation: history-dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes history-dots {
+    0% { width: 0; }
+    100% { width: 1.2em; }
+}
+
+.history-load-end {
+    padding: 6px 0;
+    margin: 6px 0;
+    background: transparent;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--gray-dark);
+    text-align: center;
+}
+
 @keyframes skeleton-loading {
     0% {
         background-position: 200% 0;
