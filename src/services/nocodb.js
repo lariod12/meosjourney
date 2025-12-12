@@ -107,7 +107,46 @@ const pendingRequests = new Map();
 
 // Request throttling to prevent rate limiting
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 500 : 200; // 500ms for staging, 200ms for others
+const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 900 : 600;
+
+const LAST_REQUEST_TIME_KEY = 'meo_noco_last_request_time';
+
+const getPersistedLastRequestTime = () => {
+  try {
+    const v = localStorage.getItem(LAST_REQUEST_TIME_KEY);
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const setPersistedLastRequestTime = (time) => {
+  try {
+    localStorage.setItem(LAST_REQUEST_TIME_KEY, String(time));
+  } catch {
+  }
+};
+
+const MAX_CONCURRENT_REQUESTS = 1;
+let activeRequests = 0;
+const requestWaiters = [];
+
+const acquireRequestSlot = async () => {
+  if (activeRequests < MAX_CONCURRENT_REQUESTS) {
+    activeRequests += 1;
+    return;
+  }
+
+  await new Promise((resolve) => requestWaiters.push(resolve));
+  activeRequests += 1;
+};
+
+const releaseRequestSlot = () => {
+  activeRequests = Math.max(0, activeRequests - 1);
+  const next = requestWaiters.shift();
+  if (next) next();
+};
 
 // Deduplicate concurrent requests - if same request is in-flight, return the same promise
 const deduplicateRequest = async (key, requestFn) => {
@@ -172,68 +211,77 @@ const fetchStaticData = async () => {
 const nocoRequest = async (endpoint, options = {}, retries = 3) => {
   const url = `${NOCODB_BASE_URL}/api/v2/tables/${endpoint}`;
 
-  // Throttle requests to prevent rate limiting
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-  }
-  lastRequestTime = Date.now();
+  await acquireRequestSlot();
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'xc-token': NOCODB_TOKEN,
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
+  try {
+    // Throttle requests to prevent rate limiting
+    const persistedLastRequestTime = getPersistedLastRequestTime();
+    const effectiveLastRequestTime = Math.max(lastRequestTime, persistedLastRequestTime);
 
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        if (attempt < retries) {
-          // Staging: 2s, 5s, 10s | Others: 1s, 2s, 4s
-          const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
-          const delay = baseDelay * Math.pow(2, attempt);
-          console.warn(` Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorDetail;
-        try {
-          errorDetail = JSON.parse(errorText);
-        } catch {
-          errorDetail = errorText;
-        }
-        console.error(' NocoDB API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          url,
-          method: options.method || 'GET',
-          errorDetail
-        });
-        throw new Error(`NocoDB API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetail)}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      if (attempt === retries) {
-        throw error;
-      }
-      // For network errors, also retry with exponential backoff
-      const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
-      const delay = baseDelay * Math.pow(2, attempt);
-      console.warn(` Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+    const now = Date.now();
+    const timeSinceLastRequest = now - effectiveLastRequestTime;
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+      const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
+    const stampedNow = Date.now();
+    lastRequestTime = stampedNow;
+    setPersistedLastRequestTime(stampedNow);
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'xc-token': NOCODB_TOKEN,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        });
+
+        // Handle rate limiting with exponential backoff
+        if (response.status === 429) {
+          if (attempt < retries) {
+            const baseDelay = import.meta.env.MODE === 'staging' ? 2500 : 1500;
+            const delay = baseDelay * Math.pow(2, attempt);
+            console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          throw new Error(`NocoDB API rate limit exceeded after ${retries} retries`);
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorDetail;
+          try {
+            errorDetail = JSON.parse(errorText);
+          } catch {
+            errorDetail = errorText;
+          }
+          console.error('❌ NocoDB API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            url,
+            method: options.method || 'GET',
+            errorDetail
+          });
+          throw new Error(`NocoDB API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorDetail)}`);
+        }
+
+        return response.json();
+      } catch (error) {
+        if (attempt === retries) {
+          throw error;
+        }
+        const baseDelay = import.meta.env.MODE === 'staging' ? 2500 : 1500;
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  } finally {
+    releaseRequestSlot();
   }
 };
 

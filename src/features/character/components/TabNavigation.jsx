@@ -79,14 +79,11 @@ const TabNavigation = ({ tabs, navClassName = 'tab-nav', btnClassName = 'tab-btn
       <div 
         className="tab-content-wrapper"
       >
-        {tabs.map(tab => (
-          <div
-            key={tab.id}
-            className={`${tab.contentClassName || 'tab-content'} ${activeTab === tab.id ? 'active' : ''}`}
-          >
-            {tab.content}
-          </div>
-        ))}
+        <div
+          className={`${currentTab?.contentClassName || 'tab-content'} active`}
+        >
+          {currentTab?.content}
+        </div>
       </div>
     </>
   );
