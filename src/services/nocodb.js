@@ -107,9 +107,10 @@ const pendingRequests = new Map();
 
 // Request throttling to prevent rate limiting
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 900 : 600;
+const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 450 : 250;
 
 const LAST_REQUEST_TIME_KEY = 'meo_noco_last_request_time';
+const PENALTY_UNTIL_KEY = 'meo_noco_penalty_until';
 
 const getPersistedLastRequestTime = () => {
   try {
@@ -128,7 +129,26 @@ const setPersistedLastRequestTime = (time) => {
   }
 };
 
-const MAX_CONCURRENT_REQUESTS = 1;
+const getPersistedPenaltyUntil = () => {
+  try {
+    const v = localStorage.getItem(PENALTY_UNTIL_KEY);
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const setPersistedPenaltyUntil = (time) => {
+  try {
+    localStorage.setItem(PENALTY_UNTIL_KEY, String(time));
+  } catch {
+  }
+};
+
+let penaltyUntil = 0;
+
+const MAX_CONCURRENT_REQUESTS = 2;
 let activeRequests = 0;
 const requestWaiters = [];
 
@@ -218,7 +238,14 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
     const persistedLastRequestTime = getPersistedLastRequestTime();
     const effectiveLastRequestTime = Math.max(lastRequestTime, persistedLastRequestTime);
 
-    const now = Date.now();
+    const persistedPenaltyUntil = getPersistedPenaltyUntil();
+    const effectivePenaltyUntil = Math.max(penaltyUntil, persistedPenaltyUntil);
+
+    let now = Date.now();
+    if (effectivePenaltyUntil > now) {
+      await new Promise(resolve => setTimeout(resolve, effectivePenaltyUntil - now));
+      now = Date.now();
+    }
     const timeSinceLastRequest = now - effectiveLastRequestTime;
     if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
       const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
@@ -241,6 +268,9 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
 
         // Handle rate limiting with exponential backoff
         if (response.status === 429) {
+          const penaltyMs = import.meta.env.MODE === 'staging' ? 8000 : 5000;
+          penaltyUntil = Date.now() + penaltyMs;
+          setPersistedPenaltyUntil(penaltyUntil);
           if (attempt < retries) {
             const baseDelay = import.meta.env.MODE === 'staging' ? 2500 : 1500;
             const delay = baseDelay * Math.pow(2, attempt);
@@ -354,8 +384,9 @@ export const fetchStatus = async () => {
 /**
  * Fetch profile data from NocoDB
  */
-export const fetchProfile = async () => {
-  const cacheKey = 'profile';
+export const fetchProfile = async (options = {}) => {
+  const { includeAvatar = true } = options || {};
+  const cacheKey = includeAvatar ? 'profile' : 'profile_light';
 
   return deduplicateRequest(cacheKey, async () => {
     try {
@@ -417,102 +448,104 @@ export const fetchProfile = async () => {
 
       // Step 2: Fetch avatar image from attachments_gallery (if linked)
       let avatarUrl = null;
-      try {
-        // Debug: Log avatar fetching (development only)
-        if (!isProductionMode()) {
-          console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
-          console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
-        }
-
-        let attachmentsData;
-
-        // Development mode: different schema (no profile_id field, use signedPath)
-        if (!isProductionMode()) {
-          // Debug: Log development mode query (development only)
+      if (includeAvatar) {
+        try {
+          // Debug: Log avatar fetching (development only)
           if (!isProductionMode()) {
-            console.log('🛠️ Development mode: using simplified query');
-          }
-          attachmentsData = await nocoRequest(
-            `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
-            { method: 'GET' }
-          );
-        } else {
-          // Production mode: original query with profile_id filtering
-          attachmentsData = await nocoRequest(
-            `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
-            { method: 'GET' }
-          );
-        }
-
-        // Debug: Log attachments found (development only)
-        if (!isProductionMode()) {
-          console.log('📎 Avatar attachments found:', attachmentsData.list?.length || 0);
-        }
-
-        if (attachmentsData.list && attachmentsData.list.length > 0) {
-          const attachment = attachmentsData.list[0];
-          // Debug: Log attachment processing (development only)
-          if (!isProductionMode()) {
-            console.log('🖼️ Processing attachment:', attachment.Id);
+            console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
+            console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
           }
 
-          if (attachment.img_bw) {
-            // Parse img_bw if it's a string (NocoDB returns it as JSON string)
-            let imgBwArray = attachment.img_bw;
-            if (typeof imgBwArray === 'string') {
-              imgBwArray = JSON.parse(imgBwArray);
+          let attachmentsData;
+
+          // Development mode: different schema (no profile_id field, use signedPath)
+          if (!isProductionMode()) {
+            // Debug: Log development mode query (development only)
+            if (!isProductionMode()) {
+              console.log('🛠️ Development mode: using simplified query');
+            }
+            attachmentsData = await nocoRequest(
+              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
+              { method: 'GET' }
+            );
+          } else {
+            // Production mode: original query with profile_id filtering
+            attachmentsData = await nocoRequest(
+              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
+              { method: 'GET' }
+            );
+          }
+
+          // Debug: Log attachments found (development only)
+          if (!isProductionMode()) {
+            console.log('📎 Avatar attachments found:', attachmentsData.list?.length || 0);
+          }
+
+          if (attachmentsData.list && attachmentsData.list.length > 0) {
+            const attachment = attachmentsData.list[0];
+            // Debug: Log attachment processing (development only)
+            if (!isProductionMode()) {
+              console.log('🖼️ Processing attachment:', attachment.Id);
             }
 
-            // Get first image from array
-            if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
-              const imgBw = imgBwArray[0];
-
-              // Development mode: use signedPath, Production mode: use signedUrl
-              if (!isProductionMode()) {
-                // Debug: Log development mode URL handling (development only)
-                if (!isProductionMode()) {
-                  console.log('🛠️ Development mode: using signedPath');
-                }
-                avatarUrl = imgBw.signedPath || imgBw.path || null;
-                // Construct full URL for signedPath
-                if (avatarUrl) {
-                  avatarUrl = `${NOCODB_BASE_URL}/${avatarUrl}`;
-                }
-              } else {
-                // Debug: Log production mode URL handling (development only)
-                if (!isProductionMode()) {
-                  console.log('🏭 Production mode: using signedUrl');
-                }
-                avatarUrl = imgBw.signedUrl || imgBw.url || null;
+            if (attachment.img_bw) {
+              // Parse img_bw if it's a string (NocoDB returns it as JSON string)
+              let imgBwArray = attachment.img_bw;
+              if (typeof imgBwArray === 'string') {
+                imgBwArray = JSON.parse(imgBwArray);
               }
 
-              // Debug: Log URL extraction result (development only)
-              if (!isProductionMode()) {
-                console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
-                if (avatarUrl) {
-                  console.log('🔗 Final avatar URL:', avatarUrl);
+              // Get first image from array
+              if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
+                const imgBw = imgBwArray[0];
+
+                // Development mode: use signedPath, Production mode: use signedUrl
+                if (!isProductionMode()) {
+                  // Debug: Log development mode URL handling (development only)
+                  if (!isProductionMode()) {
+                    console.log('🛠️ Development mode: using signedPath');
+                  }
+                  avatarUrl = imgBw.signedPath || imgBw.path || null;
+                  // Construct full URL for signedPath
+                  if (avatarUrl) {
+                    avatarUrl = `${NOCODB_BASE_URL}/${avatarUrl}`;
+                  }
+                } else {
+                  // Debug: Log production mode URL handling (development only)
+                  if (!isProductionMode()) {
+                    console.log('🏭 Production mode: using signedUrl');
+                  }
+                  avatarUrl = imgBw.signedUrl || imgBw.url || null;
+                }
+
+                // Debug: Log URL extraction result (development only)
+                if (!isProductionMode()) {
+                  console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
+                  if (avatarUrl) {
+                    console.log('🔗 Final avatar URL:', avatarUrl);
+                  }
+                }
+              } else {
+                // Debug: Log empty array (development only)
+                if (!isProductionMode()) {
+                  console.log('❌ No images in img_bw array');
                 }
               }
             } else {
-              // Debug: Log empty array (development only)
+              // Debug: Log missing field (development only)
               if (!isProductionMode()) {
-                console.log('❌ No images in img_bw array');
+                console.log('❌ No img_bw field in attachment');
               }
             }
           } else {
-            // Debug: Log missing field (development only)
+            // Debug: Log no attachments (development only)
             if (!isProductionMode()) {
-              console.log('❌ No img_bw field in attachment');
+              console.log('❌ No attachments found for profile');
             }
           }
-        } else {
-          // Debug: Log no attachments (development only)
-          if (!isProductionMode()) {
-            console.log('❌ No attachments found for profile');
-          }
+        } catch (avatarError) {
+          console.warn('⚠️ Failed to fetch avatar image:', avatarError);
         }
-      } catch (avatarError) {
-        console.warn('⚠️ Failed to fetch avatar image:', avatarError);
       }
 
       // Parse JSON fields

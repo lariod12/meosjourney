@@ -4,14 +4,14 @@ import { useCharacter } from '../../../contexts';
 const Avatar = () => {
   const data = useCharacter();
   const [imageLoaded, setImageLoaded] = useState(false);
-  const defaultAvatar = "https://api.dicebear.com/7.x/pixel-art/svg?seed=RPGCharacter&backgroundColor=ffffff&size=300";
-  const resolvedAvatar = data.avatarUrl || defaultAvatar;
-  const [avatarSrc, setAvatarSrc] = useState(resolvedAvatar);
+  const [hasError, setHasError] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
 
   useEffect(() => {
-    setAvatarSrc(resolvedAvatar);
+    setAvatarSrc(data.avatarUrl || null);
     setImageLoaded(false);
-  }, [resolvedAvatar]);
+    setHasError(false);
+  }, [data.avatarUrl]);
 
   const xpPercentage = (data.currentXP / data.maxXP) * 100;
 
@@ -19,29 +19,28 @@ const Avatar = () => {
     <div className="avatar-container">
       <div className="avatar-frame">
         {!imageLoaded && (
-          <div className="avatar-loading">
+          <div className="avatar-loading" aria-label="Loading avatar">
             <div className="loading-spinner"></div>
           </div>
         )}
-        <img 
-          src={avatarSrc}
-          alt="Character Avatar" 
-          className="avatar-img"
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
-          width="300"
-          height="300"
-          onLoad={() => setImageLoaded(true)}
-          onError={() => {
-            if (avatarSrc !== defaultAvatar) {
-              setAvatarSrc(defaultAvatar);
-            } else {
-              setImageLoaded(true);
-            }
-          }}
-          style={{ opacity: imageLoaded ? 1 : 0 }}
-        />
+        {avatarSrc && !hasError && (
+          <img 
+            src={avatarSrc}
+            alt="Character Avatar" 
+            className="avatar-img"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            width="300"
+            height="300"
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {
+              setHasError(true);
+              setImageLoaded(false);
+            }}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
+          />
+        )}
       </div>
 
       <div className="character-name">{data.name}</div>

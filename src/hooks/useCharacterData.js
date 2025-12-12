@@ -39,53 +39,34 @@ export const useCharacterData = (defaultData) => {
         return null;
       });
 
-      let profile = null;
-      try {
-        profile = await fetchProfile();
-      } catch (profileError) {
+      const profileLightPromise = fetchProfile({ includeAvatar: false }).catch((profileError) => {
         console.warn('⚠️ Failed to fetch profile:', profileError);
-      }
+        return null;
+      });
 
-      if (mountedRef.current) {
-        setData((prev) => ({
-          ...prev,
-          name: profile?.name || prev.name || defaultData.name,
-          caption: profile?.caption || prev.caption || defaultData.caption,
-          currentXP: profile?.currentXP ?? prev.currentXP ?? defaultData.currentXP ?? 0,
-          maxXP: profile?.maxXP ?? prev.maxXP ?? defaultData.maxXP ?? 1000,
-          level: profile?.level ?? prev.level ?? defaultData.level ?? 0,
-          introduce: profile?.introduce || prev.introduce || defaultData.introduce || '',
-          hobbies: profile?.hobbies?.map(name => ({ name })) || prev.hobbies || defaultData.hobbies || [],
-          skills: profile?.skills?.map(name => ({ name })) || prev.skills || defaultData.skills || [],
-          social: profile?.social || prev.social || defaultData.social || {},
-          avatarUrl: profile?.avatarUrl || prev.avatarUrl || null,
-        }));
-      }
-
-      const [status, config, journals] = await Promise.all([
+      const [status, config, journals, profile] = await Promise.all([
         statusPromise,
         configPromise,
-        journalsPromise
+        journalsPromise,
+        profileLightPromise
       ]);
 
       if (mountedRef.current) {
         // Merge with default data
         const mergedData = {
           ...defaultData,
-          // Profile data
+          // Profile data (critical for StatusBox)
           name: profile?.name || defaultData.name,
           caption: profile?.caption || defaultData.caption,
           currentXP: profile?.currentXP ?? defaultData.currentXP ?? 0,
           maxXP: profile?.maxXP ?? defaultData.maxXP ?? 1000,
           level: profile?.level ?? defaultData.level ?? 0,
           introduce: profile?.introduce || defaultData.introduce || '',
-          // Map arrays: NocoDB returns strings, frontend expects {name: string}
           hobbies: profile?.hobbies?.map(name => ({ name })) || defaultData.hobbies || [],
           skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
-          // Social links
           social: profile?.social || defaultData.social || {},
-          // Avatar URL from NocoDB
-          avatarUrl: profile?.avatarUrl || null,
+          // Avatar is deferred (heavy)
+          avatarUrl: null,
           
           // Status data
           status: {
@@ -109,6 +90,18 @@ export const useCharacterData = (defaultData) => {
         setData(mergedData);
         setLoading(false);
         setError(null);
+
+        // Fetch avatar in background (heavy)
+        fetchProfile({ includeAvatar: true })
+          .then((profileWithAvatar) => {
+            if (!mountedRef.current || !profileWithAvatar?.avatarUrl) return;
+            setData((prev) => ({
+              ...prev,
+              avatarUrl: profileWithAvatar.avatarUrl
+            }));
+          })
+          .catch(() => {
+          });
 
         // Background load for quests/achievements (non-blocking)
         Promise.all([fetchQuests(), fetchAchievements()])
