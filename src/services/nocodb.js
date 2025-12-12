@@ -102,33 +102,15 @@ if (!isProductionMode()) {
   console.log(`🔧 NocoDB Mode: ${import.meta.env.MODE}, Using ${envName} table IDs`);
 }
 
-// Simple in-memory cache to prevent duplicate requests (especially in dev mode with StrictMode)
-const requestCache = new Map();
-const pendingRequests = new Map(); // Track in-flight requests
-const CACHE_DURATION = 60000; // 60 seconds (1 minute) - increased to reduce API calls
+// Track in-flight requests (prevents duplicate concurrent calls, e.g. React StrictMode)
+const pendingRequests = new Map();
 
 // Request throttling to prevent rate limiting
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = import.meta.env.MODE === 'staging' ? 500 : 200; // 500ms for staging, 200ms for others
 
-const getCachedRequest = (key) => {
-  const cached = requestCache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
-  }
-  return null;
-};
-
-const setCachedRequest = (key, data) => {
-  requestCache.set(key, { data, timestamp: Date.now() });
-};
-
 // Deduplicate concurrent requests - if same request is in-flight, return the same promise
 const deduplicateRequest = async (key, requestFn) => {
-  // Check cache first
-  const cached = getCachedRequest(key);
-  if (cached) return cached;
-
   // Check if request is already in-flight
   if (pendingRequests.has(key)) {
     // Debug: Log waiting request (development only)
@@ -141,7 +123,6 @@ const deduplicateRequest = async (key, requestFn) => {
   // Execute the request and store the promise
   const promise = requestFn()
     .then(data => {
-      setCachedRequest(key, data);
       pendingRequests.delete(key);
       return data;
     })
@@ -152,6 +133,36 @@ const deduplicateRequest = async (key, requestFn) => {
 
   pendingRequests.set(key, promise);
   return promise;
+};
+
+/**
+ * Clear all cached requests
+ * Use this when you need to force fresh data (e.g., after updates)
+ */
+export const clearNocoDBCache = () => {
+  pendingRequests.clear();
+  // Debug: Log cache cleared (development only)
+  if (!isProductionMode()) {
+    console.log('🗑️ NocoDB cache cleared');
+  }
+};
+
+/**
+ * Clear specific cached request by key
+ */
+export const clearCachedRequest = (key) => {
+  pendingRequests.delete(key);
+};
+
+/**
+ * Fetch static data from public folder (development mode)
+ */
+const fetchStaticData = async () => {
+  const response = await fetch('/nocodb-data.json');
+  if (!response.ok) {
+    throw new Error('Failed to fetch static NocoDB data');
+  }
+  return response.json();
 };
 
 /**
@@ -187,7 +198,7 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
           // Staging: 2s, 5s, 10s | Others: 1s, 2s, 4s
           const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
           const delay = baseDelay * Math.pow(2, attempt);
-          console.warn(`⚠️ Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+          console.warn(` Rate limited, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -202,7 +213,7 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
         } catch {
           errorDetail = errorText;
         }
-        console.error('❌ NocoDB API error:', {
+        console.error(' NocoDB API error:', {
           status: response.status,
           statusText: response.statusText,
           url,
@@ -220,41 +231,10 @@ const nocoRequest = async (endpoint, options = {}, retries = 3) => {
       // For network errors, also retry with exponential backoff
       const baseDelay = import.meta.env.MODE === 'staging' ? 2000 : 1000;
       const delay = baseDelay * Math.pow(2, attempt);
-      console.warn(`⚠️ Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
+      console.warn(` Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${retries})`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-};
-
-/**
- * Clear all cached requests
- * Use this when you need to force fresh data (e.g., after updates)
- */
-export const clearNocoDBCache = () => {
-  requestCache.clear();
-  pendingRequests.clear();
-  // Debug: Log cache cleared (development only)
-  if (!isProductionMode()) {
-    console.log('🗑️ NocoDB cache cleared');
-  }
-};
-
-/**
- * Clear specific cached request by key
- */
-export const clearCachedRequest = (key) => {
-  requestCache.delete(key);
-};
-
-/**
- * Fetch static data from public folder (development mode)
- */
-const fetchStaticData = async () => {
-  const response = await fetch('/nocodb-data.json');
-  if (!response.ok) {
-    throw new Error('Failed to fetch static NocoDB data');
-  }
-  return response.json();
 };
 
 /**
@@ -596,7 +576,7 @@ export const fetchConfig = async () => {
  * @param {number} offset - Number of records to skip (for pagination)
  * @returns {Promise<Array>} Array of journal entries
  */
-export const fetchJournals = async (limit = 25, offset = 0) => {
+export const fetchJournals = async (limit = 25, offset = 0, options = {}) => {
   try {
     // Use static data in development
     if (USE_STATIC_DATA) {
@@ -604,6 +584,8 @@ export const fetchJournals = async (limit = 25, offset = 0) => {
       // Static data doesn't have journals yet
       return [];
     }
+
+    const { source } = options || {};
 
     // NocoDB limits pageSize to 25, fetch single page per call for lazy loading
     const NOCO_PAGE_SIZE = 25;
@@ -641,6 +623,18 @@ export const fetchJournals = async (limit = 25, offset = 0) => {
       };
     });
 
+    if (import.meta.env.MODE !== 'production' && source === 'daily') {
+      const sample = journals.slice(0, 10).map((j) => ({
+        id: j.id,
+        time: j.time,
+        entry: (j.entry || '').toString().slice(0, 120)
+      }));
+      console.log('[DailyJournal][fetchJournals] Response', {
+        count: journals.length,
+        sample
+      });
+    }
+
     return journals;
   } catch (error) {
     console.error('❌ Error fetching journals from NocoDB:', error);
@@ -653,11 +647,13 @@ export const fetchJournals = async (limit = 25, offset = 0) => {
  * Keeps fetching batches of 25 until no more today's journals found
  * @returns {Promise<Array>} Array of today's journal entries
  */
-export const fetchTodayJournals = async () => {
+export const fetchTodayJournals = async (options = {}) => {
   try {
     if (USE_STATIC_DATA) {
       return [];
     }
+
+    const { source } = options || {};
 
     const NOCO_PAGE_SIZE = 25;
     let allTodayJournals = [];
@@ -671,8 +667,10 @@ export const fetchTodayJournals = async () => {
     const startOfDay = new Date(vietnamTime);
     startOfDay.setHours(0, 0, 0, 0);
 
-    if (import.meta.env.MODE !== 'production') {
-      console.log(`📔 Fetching today's journals, date: ${vietnamTime.toDateString()}`);
+    if (import.meta.env.MODE !== 'production' && source === 'daily') {
+      console.log('[DailyJournal][fetchTodayJournals] Start', {
+        date: vietnamTime.toDateString(),
+      });
     }
 
     while (hasMore && !foundNonTodayEntry) {
@@ -720,6 +718,19 @@ export const fetchTodayJournals = async () => {
       if (hasMore && !foundNonTodayEntry) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+    }
+
+    if (import.meta.env.MODE !== 'production' && source === 'daily') {
+      const sample = allTodayJournals.slice(0, 15).map((j) => ({
+        id: j.id,
+        time: j.time,
+        entry: (j.entry || '').toString().slice(0, 120)
+      }));
+      console.log('[DailyJournal][fetchTodayJournals] Done', {
+        count: allTodayJournals.length,
+        pagesFetched: page - 1,
+        sample
+      });
     }
 
     return allTodayJournals;

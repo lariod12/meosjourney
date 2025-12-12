@@ -11,7 +11,6 @@ import { fetchConfig, fetchQuests, fetchQuestConfirmations, fetchAchievements, f
 import { sendAdminAchievementCreatedNotification, sendAdminQuestCreatedNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../services/discord';
 import { saveQuestCompletionJournal, saveAchievementCompletionJournal } from '../../utils/questJournalUtils';
 // import { deleteImageByUrl } from '../../services/storage'; // Deprecated - NocoDB handles image deletion automatically
-import { clearCache } from '../../utils/cacheManager';
 
 const SESSION_KEY = 'admin_meos05_access';
 
@@ -178,7 +177,6 @@ const AdminPage = ({ onBack }) => {
 
     try {
       // Clear cache first to force fresh data
-      clearCache();
       clearNocoDBCache();
 
       // Reload all data (both quests and achievements)
@@ -1104,7 +1102,6 @@ const AdminPage = ({ onBack }) => {
       }
 
       // Clear cache to force homepage refresh with new XP
-      clearCache();
       clearNocoDBCache();
 
       // Build success message with level up info if applicable
@@ -1313,7 +1310,6 @@ const AdminPage = ({ onBack }) => {
       }
 
       // Clear cache to force homepage refresh with new XP
-      clearCache();
       clearNocoDBCache();
 
       // Build success message with level up info if applicable

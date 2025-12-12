@@ -48,7 +48,7 @@ const HistoryTab = () => {
 
       loadingRef.current = true;
       try {
-        const moreJournals = await fetchJournals(25, currentOffset);
+        const moreJournals = await fetchJournals(25, currentOffset, { source: 'history' });
         if (moreJournals.length > 0) {
           setLoadedJournals(prev => {
             const existingIds = new Set(prev.map(j => j.id));
@@ -81,7 +81,7 @@ const HistoryTab = () => {
 
     setIsLoadingMore(true);
     try {
-      const moreJournals = await fetchJournals(LOAD_MORE_BATCH, currentOffset);
+      const moreJournals = await fetchJournals(LOAD_MORE_BATCH, currentOffset, { source: 'history' });
       
       if (moreJournals.length === 0) {
         // No more data
