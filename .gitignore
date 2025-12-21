@@ -23,7 +23,7 @@ local/
 # Keep these env files in git for team
 # .env.development
 # .env.staging
-# .env.production
+.env.production
 
 # Editor directories and files
 .vscode/*

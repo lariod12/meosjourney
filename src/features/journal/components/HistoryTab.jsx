@@ -19,7 +19,15 @@ const HistoryTab = () => {
   const LOAD_MORE_BATCH = 25; // Load 25 journals per batch (1 page)
 
   const MIN_DAYS_TO_SHOW = 10; // Always load enough journals to show at least 10 days
+  const MAX_DAYS_TO_SHOW = 15; // Only show up to 15 most recent history days
   const loadingRef = useRef(false); // Prevent concurrent loads
+
+  const getVietnamDayKey = useCallback((dateLike) => {
+    if (!dateLike) return null;
+    const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }); // YYYY-MM-DD
+  }, []);
 
   // Initialize with journals from context and auto-load until we have 10 days
   useEffect(() => {
@@ -30,22 +38,49 @@ const HistoryTab = () => {
     }
   }, [data.journal]);
 
+  // Group journal entries by date (Vietnam timezone)
+  const historyData = useMemo(() => {
+    if (loadedJournals.length === 0) return [];
+    return groupJournalsByDate(loadedJournals);
+  }, [loadedJournals]);
+
+  // Prepare display data: translate and drop empty entries
+  const displayDays = useMemo(() => {
+    return historyData
+      .map(day => {
+        const entries = day.entries
+          .map(e => ({
+            id: e.id,
+            time: e.time,
+            text: (translateJournalEntry(e.entry, lang, t) || '').trim()
+          }))
+          .filter(e => !!e.text);
+        return { ...day, entries };
+      })
+      .filter(day => day.entries.length > 0);
+  }, [historyData, lang, t]);
+
+  const reachedMaxDays = displayDays.length >= MAX_DAYS_TO_SHOW;
+  const cappedDisplayDays = useMemo(() => {
+    return displayDays.slice(0, MAX_DAYS_TO_SHOW);
+  }, [displayDays]);
+
   // Auto-load more journals until we have at least 10 days
   useEffect(() => {
     const loadUntilEnoughDays = async () => {
       if (loadingRef.current || !hasMore || loadedJournals.length === 0) return;
+      if (reachedMaxDays) return;
       
       // Count unique days
       const uniqueDays = new Set(
         loadedJournals.map(j => {
           const date = j.createdAt || j.timestamp;
-          if (!date) return null;
-          const d = new Date(date);
-          return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          return getVietnamDayKey(date);
         }).filter(Boolean)
       );
 
-      if (uniqueDays.size >= MIN_DAYS_TO_SHOW) return;
+      const targetDays = Math.min(MIN_DAYS_TO_SHOW, MAX_DAYS_TO_SHOW);
+      if (uniqueDays.size >= targetDays) return;
 
       loadingRef.current = true;
       setIsAutoLoadingMore(true);
@@ -76,10 +111,11 @@ const HistoryTab = () => {
     // Small delay to avoid rate limiting
     const timer = setTimeout(loadUntilEnoughDays, 300);
     return () => clearTimeout(timer);
-  }, [loadedJournals, currentOffset, hasMore]);
+  }, [loadedJournals, currentOffset, hasMore, reachedMaxDays, getVietnamDayKey]);
 
   // Load more journals when scrolling near bottom
-  const loadMoreJournals = async () => {
+  const loadMoreJournals = useCallback(async () => {
+    if (reachedMaxDays) return;
     if (isLoadingMore || isAutoLoadingMore || loadingRef.current || !hasMore) return;
 
     setIsLoadingMore(true);
@@ -109,19 +145,21 @@ const HistoryTab = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [reachedMaxDays, isLoadingMore, isAutoLoadingMore, hasMore, currentOffset]);
 
   // Removed auto-load to prevent rate limiting - user must scroll to load more
 
   // Detect scroll near bottom
   useEffect(() => {
     const handleScroll = (e) => {
+      if (reachedMaxDays) return;
       const element = e.target;
       const scrollPosition = element.scrollTop + element.clientHeight;
       const scrollHeight = element.scrollHeight;
       const threshold = 200; // Load more when 200px from bottom
 
-      if (scrollHeight - scrollPosition < threshold && hasMore && !isLoadingMore) {
+      const isFetchingMore = isLoadingMore || isAutoLoadingMore;
+      if (scrollHeight - scrollPosition < threshold && hasMore && !isFetchingMore) {
         loadMoreJournals();
       }
     };
@@ -131,13 +169,7 @@ const HistoryTab = () => {
       listElement.addEventListener('scroll', handleScroll);
       return () => listElement.removeEventListener('scroll', handleScroll);
     }
-  }, [hasMore, isLoadingMore, currentOffset]);
-
-  // Group journal entries by date (Vietnam timezone)
-  const historyData = useMemo(() => {
-    if (loadedJournals.length === 0) return [];
-    return groupJournalsByDate(loadedJournals);
-  }, [loadedJournals]);
+  }, [hasMore, isLoadingMore, isAutoLoadingMore, reachedMaxDays, loadMoreJournals]);
 
   const toggleExpand = useCallback((index) => {
     setExpandedIndex(current => current === index ? null : index);
@@ -215,7 +247,7 @@ const HistoryTab = () => {
   useEffect(() => {
     const cleanupFunctions = [];
     
-    historyData.forEach((_, index) => {
+    cappedDisplayDays.forEach((_, index) => {
       if (expandedIndex === index && scrollRefs.current[index]) {
         const element = scrollRefs.current[index];
         
@@ -231,7 +263,7 @@ const HistoryTab = () => {
     return () => {
       cleanupFunctions.forEach(cleanup => cleanup());
     };
-  }, [expandedIndex, historyData, setupDragScroll]);
+  }, [expandedIndex, cappedDisplayDays, setupDragScroll]);
 
   // Handle loading state
   if (!data.journal) {
@@ -243,28 +275,6 @@ const HistoryTab = () => {
   }
 
   // Handle empty state
-  if (historyData.length === 0) {
-    return (
-      <div className="history-list">
-        <div className="empty-message history-empty-message">{t('history.empty')}</div>
-      </div>
-    );
-  }
-
-  // Prepare display data: translate and drop empty entries
-  const displayDays = historyData
-    .map(day => {
-      const entries = day.entries
-        .map(e => ({
-          id: e.id,
-          time: e.time,
-          text: (translateJournalEntry(e.entry, lang, t) || '').trim()
-        }))
-        .filter(e => !!e.text);
-      return { ...day, entries };
-    })
-    .filter(day => day.entries.length > 0);
-
   if (displayDays.length === 0) {
     return (
       <div className="history-list">
@@ -280,9 +290,9 @@ const HistoryTab = () => {
   return (
     <div 
       ref={listRef}
-      className={`history-list ${displayDays.length > 1 ? 'multiple-items' : 'single-item'}`}
+      className={`history-list ${cappedDisplayDays.length > 1 ? 'multiple-items' : 'single-item'}`}
     >
-      {displayDays.map((day, index) => {
+      {cappedDisplayDays.map((day, index) => {
         // Create unique key using date string
         const dayKey = `day-${day.date.getTime()}-${index}`;
         
@@ -311,15 +321,17 @@ const HistoryTab = () => {
         );
       })}
 
-      {hasMore ? (
+      {hasMore && !reachedMaxDays ? (
         isFetchingMore ? (
           <div className="history-load-more" aria-live="polite">
             <div className="history-load-more-text">{loadingMoreText}</div>
           </div>
         ) : null
-      ) : (
-        <div className="history-load-end" aria-live="polite">{loadedAllText}</div>
-      )}
+      ) : !reachedMaxDays ? (
+        <div className="history-load-end" aria-live="polite">
+          {loadedAllText}
+        </div>
+      ) : null}
     </div>
   );
 };
