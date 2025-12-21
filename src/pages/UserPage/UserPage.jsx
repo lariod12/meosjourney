@@ -97,7 +97,27 @@ const UserPage = ({ onBack }) => {
   const moodRef = useRef(null);
   const doingRef = useRef(null);
   const locationRef = useRef(null);
+  const doingInputRef = useRef(null);
+  const locationInputRef = useRef(null);
+  const moodInputRef = useRef(null);
   const [moodOpen, setMoodOpen] = useState(false);
+
+  const preventEnterJump = (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+    }
+  };
+
+  const focusInputSafely = (ref) => {
+    const el = ref?.current;
+    if (!el) return;
+    // Avoid unexpected scroll jumps on mobile
+    try {
+      el.focus({ preventScroll: true });
+    } catch {
+      el.focus();
+    }
+  };
 
   // Collapse/expand states - Status expanded by default to show current data
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -2088,18 +2108,24 @@ const UserPage = ({ onBack }) => {
                       type="text"
                       id="doing"
                       name="doing"
+                      ref={doingInputRef}
                       value={formData.doing}
                       onChange={handleChange}
                       placeholder="e.g., Studying character design"
                       autoComplete="off"
                       onFocus={openDoingDropdown}
                       onClick={openDoingDropdown}
+                      onKeyDown={preventEnterJump}
                     />
                     {formData.doing && (
                       <button
                         type="button"
                         className="suggest-clear-btn"
-                        onClick={() => setFormData(prev => ({ ...prev, doing: '' }))}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, doing: '' }));
+                          focusInputSafely(doingInputRef);
+                        }}
                         aria-label="Clear current activity"
                       >
                         ✕
@@ -2110,9 +2136,10 @@ const UserPage = ({ onBack }) => {
                         <button
                           type="button"
                           className="suggest-close-btn"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
                             setDoingOpen(false);
+                            focusInputSafely(doingInputRef);
                           }}
                           aria-label="Close activity suggestions"
                         >
@@ -2124,9 +2151,11 @@ const UserPage = ({ onBack }) => {
                               key={item}
                               role="option"
                               className="suggest-item"
-                              onMouseDown={() => {
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
                                 setFormData(prev => ({ ...prev, doing: item }));
                                 setDoingOpen(false);
+                                focusInputSafely(doingInputRef);
                               }}
                             >
                               {item}
@@ -2145,18 +2174,24 @@ const UserPage = ({ onBack }) => {
                       type="text"
                       id="location"
                       name="location"
+                      ref={locationInputRef}
                       value={formData.location}
                       onChange={handleChange}
                       placeholder="e.g., Home, Coffee shop, Office"
                       autoComplete="off"
                       onFocus={openLocationDropdown}
                       onClick={openLocationDropdown}
+                      onKeyDown={preventEnterJump}
                     />
                     {formData.location && (
                       <button
                         type="button"
                         className="suggest-clear-btn"
-                        onClick={() => setFormData(prev => ({ ...prev, location: '' }))}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, location: '' }));
+                          focusInputSafely(locationInputRef);
+                        }}
                         aria-label="Clear location"
                       >
                         ✕
@@ -2167,9 +2202,10 @@ const UserPage = ({ onBack }) => {
                         <button
                           type="button"
                           className="suggest-close-btn"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
                             setLocationOpen(false);
+                            focusInputSafely(locationInputRef);
                           }}
                           aria-label="Close location suggestions"
                         >
@@ -2181,9 +2217,11 @@ const UserPage = ({ onBack }) => {
                               key={item}
                               role="option"
                               className="suggest-item"
-                              onMouseDown={() => {
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
                                 setFormData(prev => ({ ...prev, location: item }));
                                 setLocationOpen(false);
+                                focusInputSafely(locationInputRef);
                               }}
                             >
                               {item}
@@ -2202,18 +2240,24 @@ const UserPage = ({ onBack }) => {
                       type="text"
                       id="mood"
                       name="mood"
+                      ref={moodInputRef}
                       value={formData.mood}
                       onChange={handleChange}
                       placeholder="e.g., buồn ngủ, hạnh phúc"
                       autoComplete="off"
                       onFocus={openMoodDropdown}
                       onClick={openMoodDropdown}
+                      onKeyDown={preventEnterJump}
                     />
                     {formData.mood && (
                       <button
                         type="button"
                         className="suggest-clear-btn"
-                        onClick={() => setFormData(prev => ({ ...prev, mood: '' }))}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, mood: '' }));
+                          focusInputSafely(moodInputRef);
+                        }}
                         aria-label="Clear mood"
                       >
                         ✕
@@ -2224,9 +2268,10 @@ const UserPage = ({ onBack }) => {
                         <button
                           type="button"
                           className="suggest-close-btn"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
                             setMoodOpen(false);
+                            focusInputSafely(moodInputRef);
                           }}
                           aria-label="Close mood suggestions"
                         >
@@ -2238,9 +2283,11 @@ const UserPage = ({ onBack }) => {
                               key={item}
                               role="option"
                               className="suggest-item"
-                              onMouseDown={() => {
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
                                 setFormData(prev => ({ ...prev, mood: item }));
                                 setMoodOpen(false);
+                                focusInputSafely(moodInputRef);
                               }}
                             >
                               {item}
