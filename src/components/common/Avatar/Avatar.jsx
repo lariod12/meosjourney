@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCharacter } from '../../../contexts';
 
 const Avatar = () => {
@@ -6,6 +6,7 @@ const Avatar = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
+  const imgRef = useRef(null);
 
   useEffect(() => {
     setAvatarSrc(data.avatarUrl || null);
@@ -13,18 +14,30 @@ const Avatar = () => {
     setHasError(false);
   }, [data.avatarUrl]);
 
+  // If the image is already in cache (preloaded), onLoad may not fire reliably.
+  // This ensures we flip to loaded state when the browser already has the image.
+  useEffect(() => {
+    if (!avatarSrc || hasError) return;
+    const el = imgRef.current;
+    if (!el) return;
+    if (el.complete && el.naturalWidth > 0) {
+      setImageLoaded(true);
+    }
+  }, [avatarSrc, hasError]);
+
   const xpPercentage = (data.currentXP / data.maxXP) * 100;
 
   return (
     <div className="avatar-container">
       <div className="avatar-frame">
-        {!imageLoaded && (
+        {avatarSrc && !imageLoaded && !hasError && (
           <div className="avatar-loading" aria-label="Loading avatar">
             <div className="loading-spinner"></div>
           </div>
         )}
         {avatarSrc && !hasError && (
           <img 
+            ref={imgRef}
             src={avatarSrc}
             alt="Character Avatar" 
             className="avatar-img"

@@ -1,6 +1,42 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchStatus, fetchProfile, fetchConfig, fetchTodayJournals, fetchQuests, fetchAchievements } from '../services';
 
+const preloadImage = (url, timeoutMs = 12000) => {
+  if (!url) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    let done = false;
+    let timer = null;
+    const img = new Image();
+
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      resolve(ok);
+    };
+
+    timer = setTimeout(() => finish(false), timeoutMs);
+
+    img.onload = async () => {
+      try {
+        if (typeof img.decode === 'function') {
+          await img.decode();
+        }
+      } catch {
+      }
+      finish(true);
+    };
+
+    img.onerror = () => finish(false);
+    img.src = url;
+
+    if (img.complete) {
+      img.onload?.();
+    }
+  });
+};
+
 /**
  * Custom hook for fetching character data
  * Fetches data from NocoDB (primary data source)
@@ -39,7 +75,8 @@ export const useCharacterData = (defaultData) => {
         return null;
       });
 
-      const profileLightPromise = fetchProfile({ includeAvatar: false }).catch((profileError) => {
+      // Fetch profile with avatar early so the avatar image can start loading ASAP
+      const profilePromise = fetchProfile({ includeAvatar: true }).catch((profileError) => {
         console.warn('⚠️ Failed to fetch profile:', profileError);
         return null;
       });
@@ -48,10 +85,14 @@ export const useCharacterData = (defaultData) => {
         statusPromise,
         configPromise,
         journalsPromise,
-        profileLightPromise
+        profilePromise
       ]);
 
       if (mountedRef.current) {
+        // Ensure avatar image is fetched during loading so that when the UI appears
+        // the avatar is already available (best-effort with timeout).
+        await preloadImage(profile?.avatarUrl);
+
         // Merge with default data
         const mergedData = {
           ...defaultData,
@@ -65,8 +106,8 @@ export const useCharacterData = (defaultData) => {
           hobbies: profile?.hobbies?.map(name => ({ name })) || defaultData.hobbies || [],
           skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
           social: profile?.social || defaultData.social || {},
-          // Avatar is deferred (heavy)
-          avatarUrl: null,
+          // Avatar is loaded in the critical batch for faster rendering
+          avatarUrl: profile?.avatarUrl || null,
           
           // Status data
           status: {
@@ -90,18 +131,6 @@ export const useCharacterData = (defaultData) => {
         setData(mergedData);
         setLoading(false);
         setError(null);
-
-        // Fetch avatar in background (heavy)
-        fetchProfile({ includeAvatar: true })
-          .then((profileWithAvatar) => {
-            if (!mountedRef.current || !profileWithAvatar?.avatarUrl) return;
-            setData((prev) => ({
-              ...prev,
-              avatarUrl: profileWithAvatar.avatarUrl
-            }));
-          })
-          .catch(() => {
-          });
 
         // Background load for quests/achievements (non-blocking)
         Promise.all([fetchQuests(), fetchAchievements()])
