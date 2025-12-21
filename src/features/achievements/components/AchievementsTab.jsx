@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCharacter } from '../../../contexts';
 import AchievementModal from './AchievementModal';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { useLanguage } from '../../../contexts';
 
-export default function AchievementsTab() {
+export default function AchievementsTab({ isActive = true }) {
   const data = useCharacter();
   const [selectedAchievement, setSelectedAchievement] = useState(null);
   const { t, getLocalized } = useLanguage();
+
+  // Reset UI-only state when leaving the tab
+  useEffect(() => {
+    if (isActive) return;
+    setSelectedAchievement(null);
+  }, [isActive]);
 
   // Handle loading state
   if (!data.achievements) {

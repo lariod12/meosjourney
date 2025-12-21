@@ -1,13 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCharacter } from '../../../contexts';
 import QuestDetailModal from '../../../components/QuestDetailModal/QuestDetailModal';
 import { filterTodayItems } from '../../../utils/dateFilter';
 import { useLanguage } from '../../../contexts';
 
-const QuestsTab = () => {
+const QuestsTab = ({ isActive = true }) => {
   const data = useCharacter();
   const [selectedQuest, setSelectedQuest] = useState(null);
   const { t, getLocalized } = useLanguage();
+
+  // Reset UI-only state when leaving the tab
+  useEffect(() => {
+    if (isActive) return;
+    setSelectedQuest(null);
+  }, [isActive]);
 
   // Filter quests to show only today's quests (Vietnam timezone)
   const todayQuests = useMemo(() => {

@@ -5,7 +5,7 @@ import { groupJournalsByDate, translateJournalEntry } from '../../../utils/journ
 import { useLanguage } from '../../../contexts';
 import { fetchJournals } from '../../../services';
 
-const HistoryTab = () => {
+const HistoryTab = ({ isActive = true }) => {
   const data = useCharacter();
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [loadedJournals, setLoadedJournals] = useState([]); // Journals loaded so far
@@ -28,6 +28,12 @@ const HistoryTab = () => {
     if (isNaN(d.getTime())) return null;
     return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }); // YYYY-MM-DD
   }, []);
+
+  // Reset UI-only state when leaving the tab (keep loaded data)
+  useEffect(() => {
+    if (isActive) return;
+    setExpandedIndex(null);
+  }, [isActive]);
 
   // Initialize with journals from context and auto-load until we have 10 days
   useEffect(() => {

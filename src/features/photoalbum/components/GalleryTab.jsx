@@ -7,7 +7,7 @@ const getItemsPerView = (width) => {
   return 1;
 };
 
-const GalleryTab = () => {
+const GalleryTab = ({ isActive = true }) => {
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGallery, setSelectedGallery] = useState(null);
@@ -18,6 +18,14 @@ const GalleryTab = () => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
   const modalContentRef = useRef(null);
+
+  // Reset UI-only state when leaving the tab (keep loaded data)
+  useEffect(() => {
+    if (isActive) return;
+    setSelectedGallery(null);
+    setZoomedImage(null);
+    setCarouselIndex(0);
+  }, [isActive]);
 
   useEffect(() => {
     const handleResize = () => {

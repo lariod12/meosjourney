@@ -42,7 +42,7 @@ const DailyActivities = () => {
 
   return (
     <div className="daily-activities-section">
-      <TabNavigation tabs={tabs} />
+      <TabNavigation tabs={tabs} keepAlive />
     </div>
   );
 };

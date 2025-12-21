@@ -7,7 +7,7 @@ const getItemsPerView = (width) => {
   return 1;
 };
 
-const PhotoAlbumTab = () => {
+const PhotoAlbumTab = ({ isActive = true }) => {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
@@ -18,6 +18,14 @@ const PhotoAlbumTab = () => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
   const modalContentRef = useRef(null);
+
+  // Reset UI-only state when leaving the tab (keep loaded data)
+  useEffect(() => {
+    if (isActive) return;
+    setSelectedAlbum(null);
+    setZoomedImage(null);
+    setCarouselIndex(0);
+  }, [isActive]);
 
   useEffect(() => {
     const handleResize = () => {
