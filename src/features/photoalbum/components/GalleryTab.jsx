@@ -10,6 +10,7 @@ const getItemsPerView = (width) => {
 const GalleryTab = ({ isActive = true }) => {
   const [galleries, setGalleries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [selectedGallery, setSelectedGallery] = useState(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(() =>
@@ -73,9 +74,13 @@ const GalleryTab = ({ isActive = true }) => {
     setCarouselIndex((prev) => Math.min(prev, maxStartIndex));
   }, [itemsPerView, selectedGallery]);
 
+  // Lazy load: only fetch when tab becomes active for the first time
   useEffect(() => {
+    if (!isActive || hasLoadedOnce) return;
+    
+    setHasLoadedOnce(true);
     loadGallery();
-  }, []);
+  }, [isActive, hasLoadedOnce]);
 
   const loadGallery = async () => {
     try {

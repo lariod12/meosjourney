@@ -72,8 +72,11 @@ const HistoryTab = ({ isActive = true }) => {
   }, [displayDays]);
 
   // Auto-load more journals until we have at least 10 days
+  // Only run when tab is active to avoid unnecessary API calls
   useEffect(() => {
     const loadUntilEnoughDays = async () => {
+      // Skip loading if tab is not active
+      if (!isActive) return;
       if (loadingRef.current || !hasMore || loadedJournals.length === 0) return;
       if (reachedMaxDays) return;
       
@@ -117,7 +120,7 @@ const HistoryTab = ({ isActive = true }) => {
     // Small delay to avoid rate limiting
     const timer = setTimeout(loadUntilEnoughDays, 300);
     return () => clearTimeout(timer);
-  }, [loadedJournals, currentOffset, hasMore, reachedMaxDays, getVietnamDayKey]);
+  }, [isActive, loadedJournals, currentOffset, hasMore, reachedMaxDays, getVietnamDayKey]);
 
   // Load more journals when scrolling near bottom
   const loadMoreJournals = useCallback(async () => {

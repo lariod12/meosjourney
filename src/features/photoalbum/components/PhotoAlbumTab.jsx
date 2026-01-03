@@ -10,6 +10,7 @@ const getItemsPerView = (width) => {
 const PhotoAlbumTab = ({ isActive = true }) => {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(() =>
@@ -127,10 +128,16 @@ const PhotoAlbumTab = ({ isActive = true }) => {
     }
   };
 
+  // Lazy load: only fetch when tab becomes active for the first time
   useEffect(() => {
-    loadAlbums();
+    if (!isActive || hasLoadedOnce) return;
     
-    // Listen for photo album refresh events
+    setHasLoadedOnce(true);
+    loadAlbums();
+  }, [isActive, hasLoadedOnce]);
+
+  // Listen for photo album refresh events
+  useEffect(() => {
     const handleRefresh = () => {
       if (import.meta.env.MODE !== 'production') {
         console.log('📸 PhotoAlbumTab: Refreshing albums after upload...');

@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchStatus, fetchProfile, fetchConfig, fetchTodayJournals, fetchQuests, fetchAchievements } from '../services';
 
-const preloadImage = (url, timeoutMs = 12000) => {
+/**
+ * Preload image with reduced timeout for faster page load
+ * Returns quickly if image loads, or after timeout (non-blocking)
+ */
+const preloadImage = (url, timeoutMs = 5000) => {
   if (!url) return Promise.resolve(false);
 
   return new Promise((resolve) => {
@@ -16,6 +20,7 @@ const preloadImage = (url, timeoutMs = 12000) => {
       resolve(ok);
     };
 
+    // Reduced timeout from 12s to 5s for faster page load
     timer = setTimeout(() => finish(false), timeoutMs);
 
     img.onload = async () => {
@@ -24,6 +29,7 @@ const preloadImage = (url, timeoutMs = 12000) => {
           await img.decode();
         }
       } catch {
+        // Decode failed, but image loaded - still OK
       }
       finish(true);
     };
@@ -89,9 +95,11 @@ export const useCharacterData = (defaultData) => {
       ]);
 
       if (mountedRef.current) {
-        // Ensure avatar image is fetched during loading so that when the UI appears
-        // the avatar is already available (best-effort with timeout).
-        await preloadImage(profile?.avatarUrl);
+        // Start avatar preload in background (non-blocking)
+        // Avatar component has its own loading state, so we don't need to wait here
+        if (profile?.avatarUrl) {
+          preloadImage(profile.avatarUrl);
+        }
 
         // Merge with default data
         const mergedData = {
