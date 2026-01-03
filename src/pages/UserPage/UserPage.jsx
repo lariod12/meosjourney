@@ -872,216 +872,257 @@ const UserPage = ({ onBack }) => {
     try {
       const results = [];
 
-      // Submit Profile Update (if has changes)
+      // ============================================
+      // OPTIMIZATION: Pre-check which sections have data to submit
+      // Only create promises for sections that actually need to be submitted
+      // ============================================
+      
       const hasProfileChanges = 
         formData.introduce.trim() !== originalProfileData.introduce ||
         formData.caption.trim() !== originalProfileData.caption ||
         JSON.stringify(profileData.skills) !== JSON.stringify(originalProfileData.skills) ||
         JSON.stringify(profileData.hobbies) !== JSON.stringify(originalProfileData.hobbies);
 
-      if (hasProfileChanges) {
-        try {
-          // Use NocoDB to update profile
-          const profileResult = await updateProfile({
-            introduce: formData.introduce,
-            caption: formData.caption,
-            skills: profileData.skills,
-            hobbies: profileData.hobbies
-          }, originalProfileData);
-
-          if (profileResult.success) {
-            if (profileResult.message !== 'No changes to save') {
-              results.push({ type: 'success', item: 'Profile' });
-              // Update original profile data after successful save
-              setOriginalProfileData({
-                introduce: formData.introduce,
-                caption: formData.caption,
-                skills: [...profileData.skills],
-                hobbies: [...profileData.hobbies]
-              });
-            }
-          } else {
-            console.warn('⚠️ Profile not saved:', profileResult.message);
-            results.push({ type: 'failed', item: 'Profile' });
-          }
-        } catch (error) {
-          console.error('❌ Error saving profile:', error);
-          results.push({ type: 'failed', item: 'Profile' });
-        }
-      }
-
-      // Submit Status Update (only if has changes from original)
       const hasStatusChanges = 
         formData.doing.trim() !== originalStatusData.doing ||
         formData.location.trim() !== originalStatusData.location ||
         formData.mood.trim() !== originalStatusData.mood ||
         formData.caption.trim() !== originalStatusData.caption;
 
-      if (hasStatusChanges) {
-        try {
-          const statusResult = await saveStatus({
-            doing: formData.doing,
-            location: formData.location,
-            caption: formData.caption,
-            mood: formData.mood
-          }, CHARACTER_ID);
+      const hasJournalEntry = formData.journalEntry.trim().length > 0;
+      const hasAlbumImages = albumImages.length > 0;
+      const hasGalleryImages = galleryImages.length > 0 && profileData.id;
+      const hasQuestSubmissions = selectedQuestSubmissions.length > 0;
+      const hasAchievementSubmissions = selectedAchievementSubmissions.length > 0;
 
-          if (statusResult.success) {
-            results.push({ type: 'success', item: 'Status' });
+      // ============================================
+      // PARALLEL BATCH 1: Independent sections (Profile, Journal, Album, Gallery)
+      // These don't depend on each other and can run in parallel
+      // ============================================
+      const parallelPromises = [];
 
-            // Invalidate cache and cooldown, notify Home to refresh immediately
-            try { clearNocoDBCache(); } catch { }
-            try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+      // Profile Update Promise
+      if (hasProfileChanges) {
+        parallelPromises.push(
+          (async () => {
+            try {
+              const profileResult = await updateProfile({
+                introduce: formData.introduce,
+                caption: formData.caption,
+                skills: profileData.skills,
+                hobbies: profileData.hobbies
+              }, originalProfileData);
 
-            // Create journal entries for changed fields
-            const newDoing = formData.doing.trim();
-            const newLocation = formData.location.trim();
-            const newMood = formData.mood.trim();
-            const newCaption = formData.caption.trim();
-
-            const oldDoing = originalStatusData.doing;
-            const oldLocation = originalStatusData.location;
-            const oldMood = originalStatusData.mood;
-            const oldCaption = originalStatusData.caption;
-
-            // Check and save journal entry for each changed field
-            if (newDoing !== oldDoing) {
-              try {
-                await saveStatusChangeJournal('doing', oldDoing, newDoing, CHARACTER_ID);
-              } catch (journalError) {
-                console.warn('⚠️ Failed to save activity change journal:', journalError);
+              if (profileResult.success) {
+                if (profileResult.message !== 'No changes to save') {
+                  setOriginalProfileData({
+                    introduce: formData.introduce,
+                    caption: formData.caption,
+                    skills: [...profileData.skills],
+                    hobbies: [...profileData.hobbies]
+                  });
+                  return { type: 'success', item: 'Profile' };
+                }
+                return null; // No change, no result
+              } else {
+                console.warn('⚠️ Profile not saved:', profileResult.message);
+                return { type: 'failed', item: 'Profile' };
               }
+            } catch (error) {
+              console.error('❌ Error saving profile:', error);
+              return { type: 'failed', item: 'Profile' };
             }
-
-            if (newLocation !== oldLocation) {
-              try {
-                await saveStatusChangeJournal('location', oldLocation, newLocation, CHARACTER_ID);
-              } catch (journalError) {
-                console.warn('⚠️ Failed to save location change journal:', journalError);
-              }
-            }
-
-            if (newMood !== oldMood) {
-              try {
-                await saveStatusChangeJournal('mood', oldMood, newMood, CHARACTER_ID);
-              } catch (journalError) {
-                console.warn('⚠️ Failed to save mood change journal:', journalError);
-              }
-            }
-
-            if (newCaption !== oldCaption) {
-              try {
-                await saveStatusChangeJournal('caption', oldCaption, newCaption, CHARACTER_ID);
-              } catch (journalError) {
-                console.warn('⚠️ Failed to save caption change journal:', journalError);
-              }
-            }
-
-            // Update original status data after successful save
-            setOriginalStatusData({
-              doing: newDoing,
-              location: newLocation,
-              mood: newMood,
-              caption: newCaption
-            });
-          } else if (statusResult.message === 'No data to save') {
-            // Don't add to results if no change
-          } else {
-            console.warn('⚠️ Status not saved:', statusResult.message);
-            results.push({ type: 'failed', item: 'Status' });
-          }
-        } catch (error) {
-          console.error('❌ Error saving status:', error);
-          results.push({ type: 'failed', item: 'Status' });
-        }
+          })()
+        );
       }
 
-      // Submit Journal Entry (if has content)
-      if (formData.journalEntry.trim()) {
-        try {
-          const journalResult = await saveJournal({
-            caption: formData.journalEntry
-          }, CHARACTER_ID);
+      // Journal Entry Promise
+      if (hasJournalEntry) {
+        parallelPromises.push(
+          (async () => {
+            try {
+              const journalResult = await saveJournal({
+                caption: formData.journalEntry
+              }, CHARACTER_ID);
 
-          if (journalResult.success) {
-            results.push({ type: 'success', item: 'Journal' });
-            try { clearNocoDBCache(); } catch { }
-            try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
-          } else {
-            results.push({ type: 'failed', item: 'Journal' });
-          }
-        } catch (error) {
-          console.error('❌ Error saving journal:', error);
-          results.push({ type: 'failed', item: 'Journal' });
-        }
+              if (journalResult.success) {
+                try { clearNocoDBCache(); } catch { }
+                try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+                return { type: 'success', item: 'Journal' };
+              } else {
+                return { type: 'failed', item: 'Journal' };
+              }
+            } catch (error) {
+              console.error('❌ Error saving journal:', error);
+              return { type: 'failed', item: 'Journal' };
+            }
+          })()
+        );
       }
 
-      // Submit Photo Album (if has images)
-      if (albumImages.length > 0) {
-        if (!hasValidAlbumImages()) {
-          results.push({ type: 'failed', item: 'Photo Album (missing files)' });
-        } else {
-          try {
-            const albumResult = await savePhotoAlbum({
-              description: formData.albumDescription,
-              imageFiles: albumImages.map(img => img.file)
-            });
-
-            if (albumResult.success) {
-              results.push({
-                type: 'success',
-                item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)`
+      // Photo Album Promise
+      if (hasAlbumImages) {
+        parallelPromises.push(
+          (async () => {
+            if (!hasValidAlbumImages()) {
+              return { type: 'failed', item: 'Photo Album (missing files)' };
+            }
+            try {
+              const albumResult = await savePhotoAlbum({
+                description: formData.albumDescription,
+                imageFiles: albumImages.map(img => img.file)
               });
 
-              // Clear album form after successful upload
-              setAlbumImages([]);
-              setFormData(prev => ({ ...prev, albumDescription: '' }));
-
-              // Notify PhotoAlbumTab to refresh
-              try {
-                window.dispatchEvent(new Event('photoalbum:refresh'));
-              } catch (eventError) {
-                console.warn('⚠️ Could not dispatch photo album refresh event:', eventError);
+              if (albumResult.success) {
+                setAlbumImages([]);
+                setFormData(prev => ({ ...prev, albumDescription: '' }));
+                try { window.dispatchEvent(new Event('photoalbum:refresh')); } catch { }
+                return {
+                  type: 'success',
+                  item: `Photo Album (${albumResult.uploadedCount}/${albumResult.totalCount} images)`
+                };
+              } else {
+                return { type: 'failed', item: 'Photo Album' };
               }
-            } else {
-              results.push({ type: 'failed', item: 'Photo Album' });
+            } catch (error) {
+              console.error('❌ Error saving photo album:', error);
+              return { type: 'failed', item: 'Photo Album' };
             }
-          } catch (error) {
-            console.error('❌ Error saving photo album:', error);
-            results.push({ type: 'failed', item: 'Photo Album' });
-          }
-        }
+          })()
+        );
       }
 
-      // Submit Profile Gallery (if has images)
-      if (galleryImages.length > 0 && profileData.id) {
-        try {
-          const galleryResult = await uploadProfileGalleryImages(
-            profileData.id, 
-            galleryImages.map(img => img.file),
-            formData.galleryDescription || ''
-          );
+      // Profile Gallery Promise
+      if (hasGalleryImages) {
+        parallelPromises.push(
+          (async () => {
+            try {
+              const galleryResult = await uploadProfileGalleryImages(
+                profileData.id, 
+                galleryImages.map(img => img.file),
+                formData.galleryDescription || ''
+              );
 
-          if (galleryResult.success) {
-            results.push({
-              type: 'success',
-              item: `Profile Gallery (${galleryResult.uploadedCount}/${galleryResult.totalCount} images)`
-            });
-
-            setGalleryImages([]);
-            setFormData(prev => ({ ...prev, galleryDescription: '' }));
-          } else {
-            results.push({ type: 'failed', item: 'Profile Gallery' });
-          }
-        } catch (error) {
-          console.error('❌ Error uploading profile gallery images:', error);
-          results.push({ type: 'failed', item: 'Profile Gallery' });
-        }
+              if (galleryResult.success) {
+                setGalleryImages([]);
+                setFormData(prev => ({ ...prev, galleryDescription: '' }));
+                return {
+                  type: 'success',
+                  item: `Profile Gallery (${galleryResult.uploadedCount}/${galleryResult.totalCount} images)`
+                };
+              } else {
+                return { type: 'failed', item: 'Profile Gallery' };
+              }
+            } catch (error) {
+              console.error('❌ Error uploading profile gallery images:', error);
+              return { type: 'failed', item: 'Profile Gallery' };
+            }
+          })()
+        );
       }
+
+      // ============================================
+      // Status Update - runs separately because it has journal entries that depend on it
+      // But can run in parallel with the batch above
+      // ============================================
+      if (hasStatusChanges) {
+        parallelPromises.push(
+          (async () => {
+            try {
+              const statusResult = await saveStatus({
+                doing: formData.doing,
+                location: formData.location,
+                caption: formData.caption,
+                mood: formData.mood
+              }, CHARACTER_ID);
+
+              if (statusResult.success) {
+                try { clearNocoDBCache(); } catch { }
+                try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+
+                // Create journal entries for changed fields (in parallel)
+                const newDoing = formData.doing.trim();
+                const newLocation = formData.location.trim();
+                const newMood = formData.mood.trim();
+                const newCaption = formData.caption.trim();
+
+                const oldDoing = originalStatusData.doing;
+                const oldLocation = originalStatusData.location;
+                const oldMood = originalStatusData.mood;
+                const oldCaption = originalStatusData.caption;
+
+                const journalPromises = [];
+                if (newDoing !== oldDoing) {
+                  journalPromises.push(
+                    saveStatusChangeJournal('doing', oldDoing, newDoing, CHARACTER_ID).catch(e => 
+                      console.warn('⚠️ Failed to save activity change journal:', e)
+                    )
+                  );
+                }
+                if (newLocation !== oldLocation) {
+                  journalPromises.push(
+                    saveStatusChangeJournal('location', oldLocation, newLocation, CHARACTER_ID).catch(e =>
+                      console.warn('⚠️ Failed to save location change journal:', e)
+                    )
+                  );
+                }
+                if (newMood !== oldMood) {
+                  journalPromises.push(
+                    saveStatusChangeJournal('mood', oldMood, newMood, CHARACTER_ID).catch(e =>
+                      console.warn('⚠️ Failed to save mood change journal:', e)
+                    )
+                  );
+                }
+                if (newCaption !== oldCaption) {
+                  journalPromises.push(
+                    saveStatusChangeJournal('caption', oldCaption, newCaption, CHARACTER_ID).catch(e =>
+                      console.warn('⚠️ Failed to save caption change journal:', e)
+                    )
+                  );
+                }
+
+                // Wait for all status journals in parallel
+                await Promise.all(journalPromises);
+
+                setOriginalStatusData({
+                  doing: newDoing,
+                  location: newLocation,
+                  mood: newMood,
+                  caption: newCaption
+                });
+                return { type: 'success', item: 'Status' };
+              } else if (statusResult.message === 'No data to save') {
+                return null; // No change
+              } else {
+                console.warn('⚠️ Status not saved:', statusResult.message);
+                return { type: 'failed', item: 'Status' };
+              }
+            } catch (error) {
+              console.error('❌ Error saving status:', error);
+              return { type: 'failed', item: 'Status' };
+            }
+          })()
+        );
+      }
+
+      // ============================================
+      // Execute all parallel promises and collect results
+      // ============================================
+      if (parallelPromises.length > 0) {
+        const parallelResults = await Promise.all(parallelPromises);
+        parallelResults.forEach(result => {
+          if (result) results.push(result);
+        });
+      }
+
+      // ============================================
+      // SEQUENTIAL: Quest and Achievement Confirmations
+      // These need to run sequentially due to dependencies (auto-approve, XP, Discord order)
+      // ============================================
 
       // Submit Quest Confirmations (if has submissions)
       let didAutoApprove = false;
-      if (selectedQuestSubmissions.length > 0) {
+      if (hasQuestSubmissions) {
 
         for (let i = 0; i < selectedQuestSubmissions.length; i++) {
           const submission = selectedQuestSubmissions[i];
@@ -1227,7 +1268,7 @@ const UserPage = ({ onBack }) => {
       }
 
       // Submit Achievement Confirmations (if has submissions)
-      if (selectedAchievementSubmissions.length > 0) {
+      if (hasAchievementSubmissions) {
 
         for (let i = 0; i < selectedAchievementSubmissions.length; i++) {
           const submission = selectedAchievementSubmissions[i];
