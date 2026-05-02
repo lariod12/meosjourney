@@ -1,19 +1,24 @@
 # Agent Instructions for blog-art-minimal
 
 ## Project Overview
-RPG character sheet website built with React + Vite. Black & white sketch/game art theme with mobile-first responsive design.
+Meo's Journey is an RPG character sheet and quest/journal tracker built with React 19, Vite 7, React Router, NocoDB, and Discord webhooks. The public home page shows the character sheet, while protected user/admin routes handle status updates, journals, quest and achievement submissions, photo albums, profile gallery uploads, approvals, XP updates, and notifications.
 
 ## File Structure
 ```
 src/
+├── components/        # Shared components and layout/common UI
+├── config/            # Environment-backed constants
+├── contexts/          # Character and language context providers
+├── data/              # Static fallback character data
+├── features/          # Feature modules for character, quests, journal, achievements, photo album
+├── hooks/             # Custom React hooks
+├── locales/           # Home page translations
+├── pages/             # Routed pages: HomePage, UserPage, AdminPage
+├── services/          # NocoDB, Discord, storage service layer
 ├── styles/            # Global CSS
-├── components/        # React components
-├── contexts/          # React Context providers
-├── data/             # Static data (characterData.js)
-├── hooks/            # Custom React hooks
-├── utils/            # Utility functions
-├── App.jsx           # Main app component
-└── main.jsx          # Vite entry point
+├── utils/             # Date, journal, and quest journal helpers
+├── App.jsx            # Router and page wiring
+└── main.jsx           # Vite entry point
 ```
 
 
@@ -36,8 +41,12 @@ src/
 ## Architecture Standards
 - **Mobile-first design**: All components must be optimized for mobile devices first
 - Component-based React structure with separation of concerns
-- Follow established folder structure: `src/components/`, `src/features/`, `src/services/`
+- Routes are defined in `src/App.jsx`: `/`, `/user/meos05`, `/admin/meos05`
+- Follow established folder structure: `src/components/`, `src/features/`, `src/pages/`, `src/services/`
 - Use React hooks and context for state management
+- NocoDB is the primary data source; `src/data/characterData.js` is fallback/default data
+- `src/services/nocodb.js` owns table IDs, request throttling, deduplication, image URL handling, and CRUD operations
+- `src/services/discord.js` owns user/admin webhook notifications
 - Maintain component scalability and reusability
 
 ## Design System Requirements
@@ -55,7 +64,9 @@ src/
 - Use BEM-like naming: `.component-element-modifier`
 
 ## File Organization
-- Documentation: `local/` folder (except root README.md)
+- Documentation: update existing `.md` files only unless explicitly asked to create a new one
+- Primary docs: root `README.md`, root `AGENTS.md`, and existing files in `docs/`
+- Local database/reference exports: `local/`
 - Component CSS: Co-located with components, use prefixed class names
 - Global styles: Single file `src/styles/global.css` (imported in App.jsx)
 - Static assets: `src/assets/` for images, fonts, icons only
@@ -63,8 +74,8 @@ src/
 
 ## Database Operations
 - Reference `local/DatabaseArchitecture.md` for schema understanding
-- Use Firebase MCP tools for database operations
-- Check existing data structure in `local/firestore_data_*.json` files
+- Use NocoDB service helpers in `src/services/nocodb.js` for app data operations
+- Check existing data structure in `local/firestore_data_*.json` files when legacy Firebase context is needed
 
 ### NocoDB Link Operations (One-to-One Relationships)
 
@@ -297,4 +308,48 @@ const relatedRecord = records.find(r => r.Id === lookupKey);
 - Do not run dev because server is already running 
 - Do not use pnpm deploy because we working on local no need to do this
 - Do not create .md file
-- You need to read README.md at root to know the context  
+- You need to read README.md at root to know the context
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **meosjourney** (1631 symbols, 2412 relationships, 140 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/meosjourney/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/meosjourney/clusters` | All functional areas |
+| `gitnexus://repo/meosjourney/processes` | All execution flows |
+| `gitnexus://repo/meosjourney/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->

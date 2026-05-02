@@ -1,369 +1,148 @@
 # Troubleshooting Guide
 
-## Common Issues and Solutions
+## Quick Checks
 
-### ❌ Issue 1: Blank Page on GitHub Pages
-
-**Symptoms:**
-- Page loads but shows blank white screen
-- Console shows 404 errors for CSS/JS files
-- Example: `GET /blog-art-minimal/assets/index.css 404`
-
-**Cause:**
-Base path in `vite.config.js` doesn't match repository name.
-
-**Solution:**
-```js
-// vite.config.js
-export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/YOUR-REPO-NAME/' : '/',
-  // ...
-}));
-```
-
-**Example:**
-- Repo: `github.com/username/meosjourney`
-- Custom domain: `https://meosjourney.info/`
-- Base: `/` ✅ (root path for custom domain)
-
----
-
-### ❌ Issue 2: Avatar Not Loading (404)
-
-**Symptoms:**
-- Avatar shows fallback DiceBear image
-- Console shows: `GET /public/avatars/avatar.png 404`
-
-**Cause:**
-Incorrect path to public assets in Vite.
-
-**Wrong:**
-```js
-fetch('/public/avatars/avatar.png')  // ❌ Wrong
-```
-
-**Correct:**
-```js
-fetch('/avatars/avatar.png')  // ✅ Correct
-```
-
-**Explanation:**
-In Vite, files in `/public` folder are served at root URL. The `/public/` prefix is automatically removed during build.
-
-**File Structure:**
-```
-project/
-├── public/
-│   └── avatars/
-│       └── avatar.png
-```
-
-**Build Output:**
-```
-dist/
-├── avatars/
-│   └── avatar.png
-```
-
-**Deployed URL:**
-```
-https://username.github.io/repo-name/avatars/avatar.png
-NOT: /public/avatars/avatar.png
-```
-
----
-
-### ❌ Issue 3: GitHub Actions Workflow Fails
-
-**Symptoms:**
-- Build job fails with pnpm version error
-- Error: `Multiple versions of pnpm specified`
-
-**Cause:**
-pnpm version specified in both workflow and package.json.
-
-**Solution:**
-Remove version from workflow, let it read from package.json:
-
-```yaml
-# .github/workflows/deploy.yml
-- name: Setup pnpm
-  uses: pnpm/action-setup@v4
-  # ❌ with:
-  # ❌   version: 10
-```
-
-The action will auto-detect version from:
-```json
-// package.json
-{
-  "packageManager": "pnpm@10.14.0"
-}
-```
-
----
-
-### ❌ Issue 4: CSS/JS Not Loading After Deploy
-
-**Symptoms:**
-- Site deployed but no styling
-- Console: Multiple 404 errors for assets
-
-**Possible Causes & Solutions:**
-
-**1. Wrong Base Path**
-```js
-// vite.config.js - Check this matches your repo name
-base: '/your-repo-name/'
-```
-
-**2. Jekyll Processing**
-Create `.nojekyll` file in root:
-```bash
-touch .nojekyll
-```
-
-**3. GitHub Pages Source Setting**
-- Go to Settings > Pages
-- Source: Select **GitHub Actions** (not branch)
-
----
-
-### ❌ Issue 5: Changes Not Reflecting on Live Site
-
-**Symptoms:**
-- Code changed but site still shows old version
-- Pushed to GitHub but no updates
-
-**Solutions:**
-
-**1. Check Workflow Status**
-- Go to Actions tab in GitHub
-- Wait for workflow to complete (green ✅)
-- Usually takes 2-3 minutes
-
-**2. Hard Refresh Browser**
-```
-Windows: Ctrl + Shift + R
-Mac: Cmd + Shift + R
-```
-
-**3. Clear Browser Cache**
-```
-Chrome: DevTools > Network tab > Disable cache
-```
-
-**4. Check Build Artifacts**
-```bash
-# Build locally to verify
-pnpm run build
-
-# Check dist/ folder contents
-dir dist  # Windows
-ls dist   # Mac/Linux
-```
-
----
-
-### ❌ Issue 6: Development Server Issues
-
-**Symptoms:**
-- `pnpm run dev` doesn't start
-- Port already in use
-- Hot reload not working
-
-**Solutions:**
-
-**1. Port Already in Use**
-```js
-// vite.config.js
-server: {
-  port: 3001,  // Change to different port
-  open: true
-}
-```
-
-**2. Clear Vite Cache**
-```bash
-# Remove node_modules and reinstall
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-
-# Clear Vite cache
-rm -rf .vite
-```
-
-**3. Check Node Version**
-```bash
-node --version  # Should be 18+
-pnpm --version  # Should be 8+
-```
-
----
-
-### ❌ Issue 7: Build Fails Locally
-
-**Symptoms:**
-- `pnpm run build` fails
-- Obfuscator errors
-- TypeScript/React errors
-
-**Solutions:**
-
-**1. Install Missing Dependencies**
-```bash
-pnpm install
-```
-
-**2. Check Obfuscator Config**
-If obfuscator causes issues, temporarily disable:
-```js
-// vite.config.js
-plugins: [
-  react(),
-  // mode === 'production' && obfuscatorPlugin({ ... })  // Commented out
-]
-```
-
-**3. Update Dependencies**
-```bash
-pnpm update
-```
-
----
-
-## Environment-Specific Issues
-
-### Development vs Production
-
-**Development (`pnpm run dev`)**
-- Base path: `/`
-- Source maps: enabled
-- Obfuscation: disabled
-- Console logs: visible
-
-**Production (`pnpm run build`)**
-- Base path: `/repo-name/`
-- Source maps: disabled
-- Obfuscation: enabled
-- Console logs: removed
-
-### Testing Production Build Locally
+Run these first when something feels off:
 
 ```bash
-# Build production
-pnpm run build
-
-# Preview locally
-pnpm run preview
-# Opens at http://localhost:4173
-
-# Should match GitHub Pages behavior
-```
-
----
-
-## Debugging Checklist
-
-When site doesn't work:
-
-- [ ] Check repository name matches base path
-- [ ] Verify `.nojekyll` exists
-- [ ] Confirm GitHub Pages source = GitHub Actions
-- [ ] Check workflow completed successfully
-- [ ] Verify assets in `dist/` folder
-- [ ] Test production build locally with `pnpm run preview`
-- [ ] Check browser console for errors
-- [ ] Clear browser cache and hard refresh
-- [ ] Verify all dependencies installed
-- [ ] Check Node.js version (18+)
-
----
-
-## Getting Help
-
-### Useful Commands
-
-```bash
-# Check git status
 git status
-
-# View recent commits
-git log --oneline -5
-
-# Check remote URL
-git remote -v
-
-# View build output
+pnpm install
 pnpm run build
-
-# Test production locally
-pnpm run preview
 ```
 
-### Check GitHub Actions Logs
+The local dev server is configured for port `5555` in `vite.config.js`, but do not start it if one is already running.
 
-1. Go to your repo on GitHub
-2. Click **Actions** tab
-3. Click on latest workflow run
-4. Check each step for errors
-5. Download logs if needed
+## Common Issues
 
-### Browser DevTools
+### Blank Page After Deploy
 
-```
-F12 (Windows) or Cmd+Option+I (Mac)
-- Console: See JavaScript errors
-- Network: See 404 errors
-- Application: Check cached files
-```
+For the current custom domain deployment, Vite should use:
 
----
-
-## Known Issues
-
-### Issue: Obfuscation Makes Debugging Hard
-
-**Workaround:** Disable in development:
 ```js
-mode === 'production' && obfuscatorPlugin({ ... })
+base: '/',
 ```
 
-### Issue: Large Bundle Size
+If assets 404 in production, check:
 
-**Solutions:**
-- Check `dist/` size: `du -sh dist`
-- Analyze bundle: `pnpm add -D rollup-plugin-visualizer`
-- Lazy load components with `React.lazy()`
+- `vite.config.js`
+- `CNAME`
+- GitHub Pages source is GitHub Actions
+- The workflow completed successfully
+- Browser cache has been hard refreshed
 
----
+### GitHub Actions Does Not Deploy
 
-## Prevention Tips
+The workflow only runs automatically when pushing to `main` with a commit message that starts with `public:`.
 
-1. **Always test locally before deploying**
-   ```bash
-   pnpm run build
-   pnpm run preview
-   ```
+Examples:
 
-2. **Use correct base path from start**
-   - Match repository name exactly
-   - Include trailing slash: `/repo-name/`
+```bash
+git commit -m "public: update homepage"
+```
 
-3. **Don't edit `dist/` folder**
-   - It's regenerated on each build
-   - Make changes in `src/` instead
+Normal commits do not trigger deploy:
 
-4. **Commit often with clear messages**
-   ```bash
-   git commit -m "Fix: specific issue description"
-   ```
+```bash
+git commit -m "update: refresh docs"
+```
 
-5. **Keep dependencies updated**
-   ```bash
-   pnpm update
-   ```
+You can also trigger the workflow manually from GitHub Actions.
 
----
+### Build Fails
 
-**Need more help?** Check [DEPLOY.md](DEPLOY.md) for deployment guide.
+Check the dependency/tooling versions:
+
+- `packageManager`: `pnpm@10.14.0`
+- React: `19.2.1`
+- Vite: `7.1.9`
+- GitHub Actions Node: `20`
+
+Local check:
+
+```bash
+pnpm install
+pnpm run build
+```
+
+Production build uses Terser and drops console/debugger output. The obfuscator plugin is installed but currently disabled in `vite.config.js`.
+
+### NocoDB Data Does Not Load
+
+Check environment variables:
+
+- `VITE_NOCODB_BASE_URL`
+- `VITE_NOCODB_TOKEN`
+- `VITE_NOCODB_USE_STATIC` when using static local data
+- `VITE_CHARACTER_ID` if overriding the default character
+
+Then inspect browser Network logs for NocoDB status codes.
+
+### NocoDB Rate Limit Or Slow Requests
+
+`src/services/nocodb.js` throttles requests and stores timing guards in localStorage:
+
+```javascript
+localStorage.removeItem('meo_noco_last_request_time');
+localStorage.removeItem('meo_noco_penalty_until');
+```
+
+Use this only during local debugging. If production hits rate limits, reduce parallel calls or keep the stricter production request pacing.
+
+### Stale Data On Home Page
+
+The current app does not use the old `meo_journey_home_cache` key. Home data refreshes through:
+
+- `clearNocoDBCache`
+- `window.dispatchEvent(new Event('meo:refresh'))`
+- `useCharacterData().refetch`
+
+If a mutation succeeds but home data stays stale, inspect the mutation flow in `UserPage.jsx` or `AdminPage.jsx`.
+
+### Avatar Or Uploaded Images Do Not Load
+
+For public assets in Vite:
+
+```javascript
+fetch('/avatars/avatar.png');
+```
+
+For NocoDB-uploaded images:
+
+- Development: use `signedPath` or `path`, then build full URL from `VITE_NOCODB_BASE_URL`.
+- Staging/Production: use `signedUrl` first, then `url` fallback.
+- Parse NocoDB attachment fields if they arrive as JSON strings.
+
+### Discord Notifications Fail
+
+Check:
+
+- Webhook still exists and has channel permissions.
+- The browser console status code and response body.
+- Embed fields are not over Discord limits.
+- Proof image URLs are accessible.
+
+Webhook URLs are secrets; do not paste full values into docs, logs, or chat.
+
+### Password Modal Blocks User/Admin Page
+
+Both protected routes read config from NocoDB:
+
+- `/user/meos05`
+- `/admin/meos05`
+
+If password checks fail unexpectedly, verify `fetchConfig` and the `pwDailyUpdate` field in the active NocoDB environment.
+
+## Current Routes
+
+| Route | Source |
+| --- | --- |
+| `/` | `src/App.jsx` and `src/pages/HomePage/CharacterSheet.jsx` |
+| `/user/meos05` | `src/pages/UserPage/UserPage.jsx` |
+| `/admin/meos05` | `src/pages/AdminPage/AdminPage.jsx` |
+
+## Related Docs
+
+- `docs/CACHE-SYSTEM.md`
+- `docs/WHEN-CACHE-CLEARS-VI.md`
+- `docs/DEPLOY.md`
+- `docs/DISCORD-SETUP.md`

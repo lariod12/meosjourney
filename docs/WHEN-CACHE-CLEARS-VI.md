@@ -1,252 +1,95 @@
 # Khi Nào Cache Được Xóa?
 
-## 📋 Tóm Tắt
+## Tóm Tắt
 
-Hiện tại, `clearCache()` **KHÔNG được gọi tự động** trong code. Cache chỉ bị xóa trong các trường hợp sau:
+Hiện tại dự án không còn dùng cache dữ liệu home page kiểu cũ (`meo_journey_home_cache`). NocoDB service chỉ giữ cache tạm trong bộ nhớ cho các request đang chạy, cộng thêm hai timestamp trong localStorage để chống spam request và giảm lỗi rate limit.
 
-## 🔄 Các Trường Hợp Cache Bị Xóa
+Vì vậy "xóa cache" trong code hiện tại chủ yếu có nghĩa là gọi `clearNocoDBCache` để xóa danh sách request đang pending, rồi fetch lại dữ liệu.
 
-### 1. ⏰ Tự Động Hết Hạn (Không Xóa, Chỉ Bỏ Qua)
-**Khi:** Sau 5 phút kể từ lần lưu cache
+## Các Loại Cache Hiện Có
 
-**Cách hoạt động:**
-```javascript
-// Cache KHÔNG bị xóa, chỉ bị coi là "hết hạn"
-if (now - timestamp < CACHE_DURATION) {
-  // Dùng cache
-} else {
-  // Bỏ qua cache, fetch mới
-}
-```
+| Loại | Nơi lưu | Tự hết hạn? | Dùng để |
+| --- | --- | --- | --- |
+| `pendingRequests` | Bộ nhớ runtime | Có, khi request xong | Tránh gọi trùng request cùng key |
+| `meo_noco_last_request_time` | localStorage | Không tự xóa | Ghi nhớ lần request gần nhất để throttle |
+| `meo_noco_penalty_until` | localStorage | Bị bỏ qua khi thời gian đã qua | Ghi nhớ thời điểm hết penalty sau rate limit |
 
-**Lưu ý:** Cache vẫn còn trong localStorage, chỉ không được sử dụng nữa.
+Không có cache dữ liệu 5 phút cho toàn bộ home page trong source hiện tại.
 
-### 2. 🖱️ User Xóa Thủ Công
-**Khi:** User tự xóa trong browser console
+## Khi Nào Cache Được Xóa Trong Code?
 
-**Cách thực hiện:**
-```javascript
-// Trong browser console
-localStorage.removeItem('meo_journey_home_cache');
-```
+### 1. Khi Gọi `clearNocoDBCache`
 
-### 3. 🧹 Browser Clear Data
-**Khi:** User xóa browser data/cookies
+Hàm này nằm trong `src/services/nocodb.js` và xóa `pendingRequests`.
 
-**Các trường hợp:**
-- Clear browsing data (Ctrl+Shift+Del)
-- Clear site data trong DevTools
-- Private/Incognito mode (không lưu cache)
+Các luồng đang dùng:
 
-### 4. 🔧 Developer Clear (Chưa Implement)
-**Hiện tại:** KHÔNG có trong code
+- User page reload sau submit quest/achievement.
+- User page cập nhật profile/status/journal/media và phát event refresh khi cần.
+- Admin page refresh dữ liệu.
+- Admin page approve quest/achievement để ép home page lấy XP/trạng thái mới.
 
-**Có thể thêm trong tương lai:**
-```javascript
-// Ví dụ: Xóa cache khi logout
-const handleLogout = () => {
-  clearCache();
-  // ... logout logic
-};
+### 2. Khi Request Hoàn Thành
 
-// Ví dụ: Xóa cache khi update data
-const handleUpdateQuest = async (questData) => {
-  await updateQuest(questData);
-  clearCache(); // Force refresh
-};
-```
+Mỗi request được đưa vào `pendingRequests` bằng `deduplicateRequest`. Khi promise resolve hoặc reject, key đó được xóa tự động.
 
-## 📊 Trạng Thái Hiện Tại
+Điều này giúp:
 
-### Code Hiện Tại (App.jsx)
-```jsx
-const { data, loading } = useCharacterData(characterData);
-//                        ↑
-//                        Không destructure clearCache
-```
+- Nhiều component gọi cùng một dữ liệu không tạo nhiều request song song.
+- React StrictMode trong development không làm spam NocoDB quá mạnh.
 
-**Nghĩa là:**
-- ✅ Cache được tạo tự động
-- ✅ Cache được sử dụng tự động
-- ❌ KHÔNG có cách xóa cache từ UI
-- ❌ KHÔNG có nút refresh thủ công
+### 3. Khi Developer Xóa Timing Keys Thủ Công
 
-### Hook Có Sẵn (useCharacterData)
-```javascript
-return {
-  data,
-  loading,
-  error,
-  refetch,        // ← Force refresh (có sẵn nhưng chưa dùng)
-  clearCache      // ← Xóa cache (có sẵn nhưng chưa dùng)
-};
-```
-
-## 🎯 Khi Nào NÊN Xóa Cache?
-
-### Scenario 1: User Update Data
-**Vấn đề:**
-```
-1. User vào home page → Cache data (level: 5)
-2. User vào /user/meos05 → Update level thành 6
-3. User quay lại home page → Vẫn thấy level: 5 (từ cache)
-```
-
-**Giải pháp:** Xóa cache sau khi update
-```javascript
-// Trong UserPage.jsx
-const handleSaveStatus = async () => {
-  await saveStatus(statusData);
-  clearCache(); // Xóa cache để home page load data mới
-  navigate('/');
-};
-```
-
-### Scenario 2: Admin Update Data
-**Vấn đề:**
-```
-1. User vào home page → Cache data
-2. Admin update achievements/quests
-3. User refresh → Vẫn thấy data cũ (từ cache)
-```
-
-**Giải pháp:** Xóa cache sau khi admin update
-```javascript
-// Trong AdminPage.jsx
-const handleSaveAchievement = async () => {
-  await saveAchievement(data);
-  clearCache(); // Xóa cache
-  // User sẽ thấy data mới khi vào home page
-};
-```
-
-### Scenario 3: Manual Refresh Button
-**Vấn đề:** User muốn xem data mới ngay lập tức
-
-**Giải pháp:** Thêm nút refresh
-```jsx
-// Trong HomePage
-const { data, loading, refetch } = useCharacterData(characterData);
-
-<button onClick={refetch}>
-  🔄 Refresh Data
-</button>
-```
-
-## 💡 Khuyến Nghị
-
-### Option 1: Không Làm Gì (Hiện Tại)
-**Ưu điểm:**
-- Đơn giản
-- Cache tự động hết hạn sau 5 phút
-- Không cần code thêm
-
-**Nhược điểm:**
-- User có thể thấy data cũ trong 5 phút
-- Không có cách force refresh
-
-**Phù hợp khi:**
-- Data ít thay đổi
-- 5 phút delay chấp nhận được
-
-### Option 2: Thêm Manual Refresh (Khuyến Nghị)
-**Thêm vào App.jsx:**
-```jsx
-const HomePage = () => {
-  const { data, loading, refetch } = useCharacterData(characterData);
-  
-  return (
-    <CharacterProvider data={data}>
-      <div className="bg-pattern"></div>
-      <div className="container">
-        <CharacterSheet onNavigateToNotes={() => navigate('/user/meos05')} />
-        
-        {/* Thêm nút refresh */}
-        <div style={{ position: 'fixed', bottom: 20, right: 20 }}>
-          <button 
-            onClick={refetch}
-            style={{
-              background: '#000',
-              color: '#fff',
-              border: '2px solid #000',
-              padding: '10px 20px',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            🔄 Refresh
-          </button>
-        </div>
-      </div>
-    </CharacterProvider>
-  );
-};
-```
-
-**Hoặc dùng CacheStatus component:**
-```jsx
-import CacheStatus from '../components/CacheStatus';
-
-const { data, loading, refetch } = useCharacterData(characterData);
-
-<CacheStatus onRefresh={refetch} />
-```
-
-### Option 3: Auto Clear Sau Update (Nâng Cao)
-**Xóa cache tự động khi update data:**
+Nếu đang debug rate limit, có thể xóa hai key throttle:
 
 ```javascript
-// Trong UserPage.jsx
-import { clearCache } from '../utils/cacheManager';
-
-const handleSave = async () => {
-  await saveStatus(statusData);
-  clearCache(); // Xóa cache
-  navigate('/'); // Về home sẽ fetch data mới
-};
+localStorage.removeItem('meo_noco_last_request_time');
+localStorage.removeItem('meo_noco_penalty_until');
 ```
+
+Không cần xóa `meo_journey_home_cache` vì key đó không còn được dùng.
+
+## Refresh Event Hiện Tại
+
+### `meo:refresh`
+
+`src/App.jsx` lắng nghe event này và gọi `refetch(true)` từ `useCharacterData`.
 
 ```javascript
-// Trong AdminPage.jsx
-import { clearCache } from '../utils/cacheManager';
-
-const handleSaveAchievement = async () => {
-  await saveAchievement(data);
-  clearCache(); // Xóa cache
-};
+window.dispatchEvent(new Event('meo:refresh'));
 ```
 
-## 🔍 Kiểm Tra Cache Hiện Tại
+### `photoalbum:refresh`
 
-### Trong Browser Console:
+`PhotoAlbumTab.jsx` lắng nghe event này để reload album.
+
 ```javascript
-// Xem cache
-const cache = localStorage.getItem('meo_journey_home_cache');
-console.log(JSON.parse(cache));
-
-// Xem tuổi cache
-const { timestamp } = JSON.parse(cache);
-const ageInSeconds = (Date.now() - timestamp) / 1000;
-console.log(`Cache age: ${ageInSeconds} seconds`);
-
-// Xóa cache thủ công
-localStorage.removeItem('meo_journey_home_cache');
+window.dispatchEvent(new Event('photoalbum:refresh'));
 ```
 
-## 📝 Tóm Tắt
+## Khi Nào Nên Gọi Refresh?
 
-| Trường Hợp | Tự Động? | Hiện Tại |
-|------------|----------|----------|
-| Hết hạn sau 5 phút | ✅ Có | ✅ Hoạt động |
-| User xóa thủ công | ❌ Không | ⚠️ Phải dùng console |
-| Clear browser data | ✅ Có | ✅ Hoạt động |
-| Sau khi update data | ❌ Không | ❌ Chưa implement |
-| Nút refresh trong UI | ❌ Không | ❌ Chưa implement |
+| Tình huống | Nên làm |
+| --- | --- |
+| Cập nhật status/profile | Gọi `clearNocoDBCache` và dispatch `meo:refresh` |
+| Submit quest/achievement | Reload submissions, clear NocoDB cache, dispatch `meo:refresh` |
+| Admin approve/reject | Clear NocoDB cache, reload admin list, refresh home if XP/status đổi |
+| Upload photo album | Dispatch `photoalbum:refresh` sau khi save thành công |
+| Chỉ đọc dữ liệu | Không cần clear cache |
 
-## 🎯 Kết Luận
+## Điểm Cần Nhớ
 
-**Hiện tại:** `clearCache()` chỉ được gọi thủ công qua console, KHÔNG có trong UI.
+- Cache hiện tại là in-memory request dedupe, không phải persisted data cache.
+- `clearNocoDBCache` không xóa localStorage timing keys.
+- Staging và production xử lý ảnh giống nhau: ưu tiên `signedUrl`.
+- Development có thể dùng `signedPath`/`path` và dựng URL từ `VITE_NOCODB_BASE_URL`.
+- Nếu thấy dữ liệu home chưa cập nhật, kiểm tra mutation flow có dispatch `meo:refresh` chưa.
 
-**Khuyến nghị:** Thêm nút refresh hoặc auto-clear sau update để UX tốt hơn.
+## File Liên Quan
 
-**Nếu không thêm gì:** Cache vẫn hoạt động tốt, tự động hết hạn sau 5 phút.
+- `src/services/nocodb.js`
+- `src/hooks/useCharacterData.js`
+- `src/App.jsx`
+- `src/pages/UserPage/UserPage.jsx`
+- `src/pages/AdminPage/AdminPage.jsx`
+- `docs/CACHE-SYSTEM.md`
