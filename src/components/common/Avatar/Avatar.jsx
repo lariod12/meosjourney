@@ -7,6 +7,8 @@ const Avatar = () => {
   const [hasError, setHasError] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
   const imgRef = useRef(null);
+  const showLoading = data.avatarLoading || (avatarSrc && !imageLoaded && !hasError);
+  const showPlaceholder = !showLoading && (!avatarSrc || hasError);
 
   useEffect(() => {
     setAvatarSrc(data.avatarUrl || null);
@@ -30,9 +32,15 @@ const Avatar = () => {
   return (
     <div className="avatar-container">
       <div className="avatar-frame">
-        {avatarSrc && !imageLoaded && !hasError && (
+        {showLoading && (
           <div className="avatar-loading" aria-label="Loading avatar">
             <div className="loading-spinner"></div>
+            <div className="avatar-loading-text">Loading</div>
+          </div>
+        )}
+        {showPlaceholder && (
+          <div className="avatar-placeholder" aria-label="Avatar unavailable">
+            <span>?</span>
           </div>
         )}
         {avatarSrc && !hasError && (

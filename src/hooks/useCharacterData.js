@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchStatus, fetchProfile, fetchConfig, fetchTodayJournals, fetchQuests, fetchAchievements } from '../services';
 
+const HOME_DATA_CACHE_KEY = 'meo_home_data_snapshot';
+const HOME_DATA_CACHE_TTL = 15 * 60 * 1000;
+
 /**
  * Preload image with reduced timeout for faster page load
  * Returns quickly if image loads, or after timeout (non-blocking)
@@ -43,6 +46,71 @@ const preloadImage = (url, timeoutMs = 5000) => {
   });
 };
 
+const createInitialHomeData = (defaultData) => ({
+  ...defaultData,
+  avatarLoading: true,
+  journal: null,
+  quests: null,
+  achievements: null,
+  config: {}
+});
+
+const reviveHomeData = (data) => ({
+  ...data,
+  avatarLoading: false,
+  status: {
+    ...(data.status || {}),
+    timestamp: data.status?.timestamp ? new Date(data.status.timestamp) : new Date()
+  }
+});
+
+const readHomeDataCache = () => {
+  try {
+    const raw = localStorage.getItem(HOME_DATA_CACHE_KEY);
+    if (!raw) return null;
+
+    const payload = JSON.parse(raw);
+    if (!payload?.data || !payload.savedAt) return null;
+    if (Date.now() - payload.savedAt > HOME_DATA_CACHE_TTL) return null;
+
+    return reviveHomeData(payload.data);
+  } catch {
+    return null;
+  }
+};
+
+const writeHomeDataCache = (data) => {
+  try {
+    const { config, ...cacheableData } = data;
+    localStorage.setItem(HOME_DATA_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      data: cacheableData
+    }));
+  } catch {
+  }
+};
+
+const mergeProfileStatusData = (baseData, defaultData, profile, status) => ({
+  ...baseData,
+  name: profile?.name || baseData.name || defaultData.name,
+  caption: profile?.caption || baseData.caption || defaultData.caption,
+  currentXP: profile?.currentXP ?? baseData.currentXP ?? defaultData.currentXP ?? 0,
+  maxXP: profile?.maxXP ?? baseData.maxXP ?? defaultData.maxXP ?? 1000,
+  level: profile?.level ?? baseData.level ?? defaultData.level ?? 0,
+  introduce: profile?.introduce || baseData.introduce || defaultData.introduce || '',
+  hobbies: profile?.hobbies?.map(name => ({ name })) || baseData.hobbies || defaultData.hobbies || [],
+  skills: profile?.skills?.map(name => ({ name })) || baseData.skills || defaultData.skills || [],
+  social: profile?.social || baseData.social || defaultData.social || {},
+  avatarUrl: profile?.avatarUrl || baseData.avatarUrl || null,
+  avatarLoading: false,
+  status: {
+    doing: status?.doing || baseData.status?.doing || defaultData.status?.doing || [],
+    location: status?.location || baseData.status?.location || defaultData.status?.location || [],
+    mood: status?.mood || baseData.status?.mood || defaultData.status?.mood || [],
+    timestamp: status?.timestamp ? new Date(status.timestamp) : new Date()
+  }
+});
+
 /**
  * Custom hook for fetching character data
  * Fetches data from NocoDB (primary data source)
@@ -51,8 +119,9 @@ const preloadImage = (url, timeoutMs = 5000) => {
  * @returns {Object} { data, loading, error, refetch }
  */
 export const useCharacterData = (defaultData) => {
-  const [data, setData] = useState(defaultData);
-  const [loading, setLoading] = useState(true);
+  const [initialCache] = useState(() => readHomeDataCache());
+  const [data, setData] = useState(() => initialCache || createInitialHomeData(defaultData));
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState(null);
   const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -65,91 +134,80 @@ export const useCharacterData = (defaultData) => {
 
     try {
       fetchingRef.current = true;
-      setLoading(true);
+      if (forceRefresh) {
+        try { localStorage.removeItem(HOME_DATA_CACHE_KEY); } catch { }
+      }
+      setLoading(prev => prev || forceRefresh);
+      setData(prev => {
+        if (prev?.avatarUrl || prev?.avatarLoading) return prev;
+        return { ...prev, avatarLoading: true };
+      });
 
-      // Critical batch: status, profile, config, and today's journal
+      // First paint only needs profile/status. Other data hydrates in the background.
       const statusPromise = fetchStatus().catch((statusError) => {
         console.warn('⚠️ Failed to fetch status:', statusError);
         return null;
       });
-      const configPromise = fetchConfig().catch((configError) => {
-        console.warn('⚠️ Failed to fetch config:', configError);
-        return null;
-      });
-      const journalsPromise = fetchTodayJournals({ source: 'daily' }).catch((journalsError) => {
-        console.warn('⚠️ Failed to fetch journals:', journalsError);
-        return null;
-      });
 
-      // Fetch profile with avatar early so the avatar image can start loading ASAP
       const profilePromise = fetchProfile({ includeAvatar: true }).catch((profileError) => {
         console.warn('⚠️ Failed to fetch profile:', profileError);
         return null;
       });
 
-      const [status, config, journals, profile] = await Promise.all([
+      const [status, profile] = await Promise.all([
         statusPromise,
-        configPromise,
-        journalsPromise,
         profilePromise
       ]);
 
       if (mountedRef.current) {
-        // Start avatar preload in background (non-blocking)
-        // Avatar component has its own loading state, so we don't need to wait here
         if (profile?.avatarUrl) {
-          preloadImage(profile.avatarUrl);
+          await preloadImage(profile.avatarUrl, 3000);
         }
+        if (!mountedRef.current) return;
 
-        // Merge with default data
-        const mergedData = {
-          ...defaultData,
-          // Profile data (critical for StatusBox)
-          name: profile?.name || defaultData.name,
-          caption: profile?.caption || defaultData.caption,
-          currentXP: profile?.currentXP ?? defaultData.currentXP ?? 0,
-          maxXP: profile?.maxXP ?? defaultData.maxXP ?? 1000,
-          level: profile?.level ?? defaultData.level ?? 0,
-          introduce: profile?.introduce || defaultData.introduce || '',
-          hobbies: profile?.hobbies?.map(name => ({ name })) || defaultData.hobbies || [],
-          skills: profile?.skills?.map(name => ({ name })) || defaultData.skills || [],
-          social: profile?.social || defaultData.social || {},
-          // Avatar is loaded in the critical batch for faster rendering
-          avatarUrl: profile?.avatarUrl || null,
-          
-          // Status data
-          status: {
-            doing: status?.doing || defaultData.status?.doing || [],
-            location: status?.location || defaultData.status?.location || [],
-            mood: status?.mood || defaultData.status?.mood || [],
-            timestamp: status?.timestamp ? new Date(status.timestamp) : new Date()
-          },
-
-          // Journal data
-          journal: journals || [],
-
-          // Quests/Achievements will be filled in background to avoid blocking first paint
-          quests: defaultData.quests || [],
-          achievements: defaultData.achievements || [],
-
-          // Config data (if needed)
-          config: config || {}
-        };
-
-        setData(mergedData);
+        setData(prev => {
+          const nextData = mergeProfileStatusData(prev, defaultData, profile, status);
+          writeHomeDataCache(nextData);
+          return nextData;
+        });
         setLoading(false);
         setError(null);
 
-        // Background load for quests/achievements (non-blocking)
+        Promise.all([
+          fetchTodayJournals({ source: 'daily' }).catch((journalsError) => {
+            console.warn('⚠️ Failed to fetch journals:', journalsError);
+            return null;
+          }),
+          fetchConfig().catch((configError) => {
+            console.warn('⚠️ Failed to fetch config:', configError);
+            return null;
+          })
+        ])
+          .then(([journals, config]) => {
+            if (!mountedRef.current) return;
+            setData(prev => {
+              const updated = {
+                ...prev,
+                journal: journals || [],
+                config: config || {}
+              };
+              writeHomeDataCache(updated);
+              return updated;
+            });
+          });
+
         Promise.all([fetchQuests(), fetchAchievements()])
           .then(([quests, achievements]) => {
             if (!mountedRef.current) return;
-            const updated = {
-              ...mergedData,
-              quests: quests || defaultData.quests || [],
-              achievements: achievements || defaultData.achievements || []
-            };
-            setData(updated);
+            setData(prev => {
+              const updated = {
+                ...prev,
+                quests: quests || [],
+                achievements: achievements || []
+              };
+              writeHomeDataCache(updated);
+              return updated;
+            });
           })
           .catch((bgError) => {
             console.warn('⚠️ Background load failed (quests/achievements):', bgError);
@@ -161,8 +219,7 @@ export const useCharacterData = (defaultData) => {
       if (mountedRef.current) {
         setError(err);
         setLoading(false);
-        // Keep using default data on error
-        setData(defaultData);
+        setData(prev => prev || createInitialHomeData(defaultData));
       }
     } finally {
       fetchingRef.current = false;

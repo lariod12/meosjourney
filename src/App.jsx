@@ -34,12 +34,9 @@ const HomePage = () => {
     return () => window.removeEventListener('meo:refresh', handleRefresh);
   }, [refetch]);
 
-  // Show loading dialog while fetching data (includes avatar)
-  if (loading) {
-    return <LoadingDialog />;
-  }
-
-  return (
+  return loading ? (
+    <LoadingDialog />
+  ) : (
     <CharacterProvider data={data}>
       <div className="bg-pattern"></div>
       <div className="container">

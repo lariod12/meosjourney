@@ -129,14 +129,14 @@ docs/TROUBLESHOOTING.md      # Common operational issues
 
 ### Home Page Data Flow
 
-`useCharacterData()` fetches critical data first:
+`useCharacterData()` renders immediately from cached/fallback data, then hydrates NocoDB data in priority order:
 
 - status
-- config
-- today's journals
 - profile with avatar
+- today's journals
+- config
 
-Quests and achievements load afterward in the background to avoid blocking first paint. Avatar preloading is non-blocking.
+Quests and achievements load afterward in the background to avoid blocking first paint. Avatar preloading is non-blocking. A short-lived home snapshot in `localStorage` keeps repeat visits fast while fresh NocoDB data revalidates.
 
 ### NocoDB Service
 
@@ -151,7 +151,7 @@ Quests and achievements load afterward in the background to avoid blocking first
 
 ### Refresh Behavior
 
-The app no longer uses the old `meo_journey_home_cache` home-data cache. Fresh data is requested through:
+The app no longer uses the old `meo_journey_home_cache` home-data cache. Home rendering now uses a short-lived `meo_home_data_snapshot` for fast repeat visits, then fresh data is requested through:
 
 - `clearNocoDBCache`
 - `meo:refresh`
@@ -170,6 +170,7 @@ Keep future updates aligned with the current maintenance direction:
 - NocoDB service code stays modular under `src/services/nocodb/`, with `src/services/nocodb.js` acting as the compatibility barrel export.
 - Avoid broad `react-icons` imports. Add supported icons to `src/components/IconRenderer/iconRegistry.js` so the bundle stays small.
 - User submit flow uses dirty-section tracking and skips heavy quest/achievement reloads when only profile/status/journal/media changed.
+- Home page uses stale-while-revalidate loading: show cached/fallback UI immediately, hydrate profile/status first, and load journal/config/quests/achievements in the background.
 - Status updates still write to the same NocoDB `status` structure. Status journal history is grouped into one `journals.caption` record per status submit, with multiple lines for changed fields.
 - Do not reintroduce Firebase/storage legacy services. NocoDB is the active data and upload path.
 

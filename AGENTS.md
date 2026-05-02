@@ -59,6 +59,7 @@ src/
 - Do not reintroduce Firebase or old storage service files. Uploads and data operations should use NocoDB helpers.
 - Keep `IconRenderer` and `IconPicker` backed by `src/components/IconRenderer/iconRegistry.js`; avoid wildcard or whole-pack `react-icons` imports.
 - Preserve optimized user submit behavior: use dirty-section tracking, skip heavy quest/achievement reloads unless task submissions or auto-approve require them, and keep simple profile/status/journal submits fast.
+- Preserve optimized home loading: render cached/fallback data immediately, hydrate profile/status first, then load journal/config/quests/achievements in the background.
 - Preserve NocoDB table structure for status and journals. Status saves still update the same status fields; status journal history should be one grouped `journals.caption` record per status submit with one line per changed field.
 - When adding new behavior, update existing docs/rules when the maintenance contract changes; do not create new `.md` files unless explicitly requested.
 

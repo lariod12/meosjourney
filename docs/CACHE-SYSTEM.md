@@ -2,7 +2,7 @@
 
 ## Overview
 
-The current app does not use the old Firebase/localStorage home-page data cache. Data now flows through `src/services/nocodb.js`, which provides request deduplication, throttling, retry backoff, and small persisted timing guards for NocoDB API calls.
+The current app does not use the old Firebase/localStorage `meo_journey_home_cache`. Data flows through `src/services/nocodb.js`, which provides request deduplication, throttling, retry backoff, and small persisted timing guards for NocoDB API calls. Home page rendering also uses a short-lived `localStorage` snapshot so repeat visits can render immediately while NocoDB revalidates in the background.
 
 The goal is to prevent duplicate concurrent requests and NocoDB rate-limit spikes while still allowing fresh data after user/admin updates.
 
@@ -29,21 +29,34 @@ Two localStorage keys are used only for request pacing:
 
 These keys do not cache app data. They only help prevent immediate retry bursts after refreshes.
 
+### Home Snapshot Cache
+
+The home page stores a short-lived snapshot under `meo_home_data_snapshot`.
+
+| Key | Purpose |
+| --- | --- |
+| `meo_home_data_snapshot` | Speeds up repeat home visits by rendering the latest non-sensitive home data immediately, then replacing it with fresh NocoDB data. |
+
+The snapshot expires after 15 minutes. It intentionally omits sensitive config data.
+
 ### Hook Layer
 
 `src/hooks/useCharacterData.js` fetches home-page data from NocoDB:
 
-- Critical first paint: status, config, today journals, profile with avatar.
+- Initial render: uses a short-lived `localStorage` home snapshot when available, otherwise renders fallback `characterData` immediately.
+- First NocoDB hydration: status and profile with avatar.
+- Background hydration: today's journals, config, quests, and achievements.
 - Avatar image preloads in the background.
-- Quests and achievements load afterward without blocking the first render.
 - `refetch` is exposed so `App.jsx` can refresh when it receives `meo:refresh`.
+
+The home snapshot is stale-while-revalidate: it improves perceived load time but fresh NocoDB data still replaces it after fetches finish. Sensitive config data is not persisted in the snapshot.
 
 ## Main Data Flow
 
 1. `App.jsx` renders the home route.
-2. `useCharacterData(characterData)` fetches critical NocoDB data.
-3. Home page displays fallback/default data only if fetching fails.
-4. Background fetch fills quests and achievements.
+2. `useCharacterData(characterData)` renders cached/fallback data immediately.
+3. Status/profile hydrate first from NocoDB.
+4. Background fetch fills journals, config, quests, and achievements.
 5. User/admin mutations call NocoDB helpers.
 6. Mutation flows call `clearNocoDBCache` and dispatch refresh events when needed.
 
@@ -58,7 +71,7 @@ These keys do not cache app data. They only help prevent immediate retry bursts 
 
 ## What Was Removed Or Replaced
 
-The older docs referenced `src/utils/cacheManager.js` and `meo_journey_home_cache`. That module and key are not part of the current source tree. The current behavior is request deduplication and rate-limit protection, not a five-minute persisted home-data cache.
+The older docs referenced `src/utils/cacheManager.js` and `meo_journey_home_cache`. That module and key are not part of the current source tree. The replacement is request deduplication, rate-limit protection, and the short-lived `meo_home_data_snapshot` used only for faster home rendering.
 
 ## Environment Behavior
 
