@@ -164,6 +164,12 @@
   overflow-wrap: break-word;
 }
 
+.photoalbum-card-desc-content-empty,
+.photoalbum-modal-desc-empty {
+  color: #777777;
+  font-style: italic;
+}
+
 .photoalbum-card-date {
   font-size: 11px;
   color: #666666;

@@ -167,6 +167,8 @@ const GalleryTab = ({ isActive = true }) => {
         {galleries.map((gallery) => {
           const images = gallery.img || [];
           const firstImage = images.length > 0 ? images[0] : null;
+          const galleryDesc = typeof gallery.desc === 'string' ? gallery.desc.trim() : '';
+          const galleryNotePlaceholder = lang === 'VI' ? 'Chưa có ghi chú' : 'No note yet';
           const createdDate = gallery.created_time
             ? new Date(gallery.created_time)
             : null;
@@ -202,11 +204,12 @@ const GalleryTab = ({ isActive = true }) => {
                 )}
               </div>
               <div className="gallery-card-desc">
-                <div className="gallery-card-desc-content">
-                  {(() => {
-                    const text = gallery.desc || gallery.title || 'Gallery';
-                    return text.length > 30 ? `${text.substring(0, 30)}...` : text;
-                  })()}
+                <div className={`gallery-card-desc-content${galleryDesc ? '' : ' gallery-card-desc-content-empty'}`}>
+                  {galleryDesc
+                    ? galleryDesc.length > 30
+                      ? `${galleryDesc.substring(0, 30)}...`
+                      : galleryDesc
+                    : galleryNotePlaceholder}
                 </div>
                 {createdDate && (
                   <div className="gallery-card-date">
@@ -268,22 +271,28 @@ const GalleryTab = ({ isActive = true }) => {
               </button>
             </div>
 
-            {selectedGallery.desc && (
-              <div className="gallery-modal-desc">
-                {selectedGallery.desc}
-                {(() => {
-                  const modalDate = selectedGallery.created_time
-                    ? new Date(selectedGallery.created_time)
-                    : null;
+            <div className="gallery-modal-desc">
+              {(() => {
+                const selectedDesc = typeof selectedGallery.desc === 'string' ? selectedGallery.desc.trim() : '';
+                const notePlaceholder = lang === 'VI' ? 'Chưa có ghi chú' : 'No note yet';
+                const modalDate = selectedGallery.created_time
+                  ? new Date(selectedGallery.created_time)
+                  : null;
 
-                  return modalDate && (
-                    <div className="gallery-modal-date">
-                      {formatDateTime(modalDate, lang === 'VI')}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+                return (
+                  <>
+                    <span className={selectedDesc ? '' : 'gallery-modal-desc-empty'}>
+                      {selectedDesc || notePlaceholder}
+                    </span>
+                    {modalDate && (
+                      <div className="gallery-modal-date">
+                        {formatDateTime(modalDate, lang === 'VI')}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
 
             {zoomedImage && (
               <div className="gallery-zoom-overlay" onClick={closeZoom}>

@@ -187,6 +187,8 @@ const PhotoAlbumTab = ({ isActive = true }) => {
         {albums.map((album) => {
           const images = album.img || [];
           const firstImage = images.length > 0 ? images[0] : null;
+          const albumDesc = typeof album.desc === 'string' ? album.desc.trim() : '';
+          const albumNotePlaceholder = lang === 'VI' ? 'Chưa có ghi chú' : 'No note yet';
           const createdDate = album.created_time
             ? new Date(album.created_time)
             : album.CreatedAt
@@ -218,23 +220,25 @@ const PhotoAlbumTab = ({ isActive = true }) => {
               )}
 
               <div className="photoalbum-card-content">
-                {album.desc && (
-                  <div className="photoalbum-card-desc-wrapper">
-                    <div className="photoalbum-card-note-badge" title={album.desc}>
-                      {lang === 'VI' ? 'Ghi chú' : 'Note'}
-                    </div>
-                    <div className="photoalbum-card-desc-text" title={album.desc}>
-                      <div className="photoalbum-card-desc-content">
-                        {album.desc.length > 35 ? `${album.desc.substring(0, 35)}...` : album.desc}
-                      </div>
-                      {createdDate && (
-                        <div className="photoalbum-card-date">
-                          {formatDateTime(createdDate, lang === 'VI')}
-                        </div>
-                      )}
-                    </div>
+                <div className="photoalbum-card-desc-wrapper">
+                  <div className="photoalbum-card-note-badge" title={albumDesc || albumNotePlaceholder}>
+                    {lang === 'VI' ? 'Ghi chú' : 'Note'}
                   </div>
-                )}
+                  <div className="photoalbum-card-desc-text" title={albumDesc || albumNotePlaceholder}>
+                    <div className={`photoalbum-card-desc-content${albumDesc ? '' : ' photoalbum-card-desc-content-empty'}`}>
+                      {albumDesc
+                        ? albumDesc.length > 35
+                          ? `${albumDesc.substring(0, 35)}...`
+                          : albumDesc
+                        : albumNotePlaceholder}
+                    </div>
+                    {createdDate && (
+                      <div className="photoalbum-card-date">
+                        {formatDateTime(createdDate, lang === 'VI')}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -290,29 +294,35 @@ const PhotoAlbumTab = ({ isActive = true }) => {
               </button>
             </div>
 
-            {selectedAlbum.desc && (
-              <div className="photoalbum-modal-desc-wrapper">
-                <div className="photoalbum-modal-note-badge" title={selectedAlbum.desc}>
-                  {lang === 'VI' ? 'Ghi chú' : 'Note'}
-                </div>
-                <div className="photoalbum-modal-desc">
-                  {selectedAlbum.desc}
-                  {(() => {
-                    const modalDate = selectedAlbum.created_time
-                      ? new Date(selectedAlbum.created_time)
-                      : selectedAlbum.CreatedAt
-                        ? new Date(selectedAlbum.CreatedAt)
-                        : null;
+            <div className="photoalbum-modal-desc-wrapper">
+              {(() => {
+                const selectedDesc = typeof selectedAlbum.desc === 'string' ? selectedAlbum.desc.trim() : '';
+                const notePlaceholder = lang === 'VI' ? 'Chưa có ghi chú' : 'No note yet';
+                const modalDate = selectedAlbum.created_time
+                  ? new Date(selectedAlbum.created_time)
+                  : selectedAlbum.CreatedAt
+                    ? new Date(selectedAlbum.CreatedAt)
+                    : null;
 
-                    return modalDate && (
-                      <div className="photoalbum-modal-date">
-                        {formatDateTime(modalDate, lang === 'VI')}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
+                return (
+                  <>
+                    <div className="photoalbum-modal-note-badge" title={selectedDesc || notePlaceholder}>
+                      {lang === 'VI' ? 'Ghi chú' : 'Note'}
+                    </div>
+                    <div className="photoalbum-modal-desc">
+                      <span className={selectedDesc ? '' : 'photoalbum-modal-desc-empty'}>
+                        {selectedDesc || notePlaceholder}
+                      </span>
+                      {modalDate && (
+                        <div className="photoalbum-modal-date">
+                          {formatDateTime(modalDate, lang === 'VI')}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
 
             {zoomedImage && (
               <div className="photoalbum-zoom-overlay" onClick={closeZoom}>

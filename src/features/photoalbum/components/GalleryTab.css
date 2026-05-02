@@ -215,6 +215,13 @@
   width: 100%;
 }
 
+.gallery-card-desc-content-empty,
+.gallery-modal-desc-empty {
+  color: #777777;
+  font-style: italic;
+  font-weight: normal;
+}
+
 .gallery-card-date {
   font-size: 1em;
   color: #666666;
