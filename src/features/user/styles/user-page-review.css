@@ -1,0 +1,369 @@
+/* ========================================
+   Review Submitted Section
+   ======================================== */
+
+.review-group {
+    margin-bottom: 30px;
+    border: 3px solid #000000;
+    background-color: #ffffff;
+}
+
+.review-group:last-child {
+    margin-bottom: 0;
+}
+
+.review-group-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin: 0;
+    padding: 15px 20px;
+    border-bottom: 2px solid #000000;
+    color: #000000;
+    background-color: #f9f9f9;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.review-group-title.clickable {
+    cursor: pointer;
+}
+
+.review-group-title.clickable:hover {
+    background-color: #e9e9e9;
+    color: #333333;
+}
+
+.review-group-title.failed {
+    background-color: #f9f9f9;
+    color: #000000;
+}
+
+.review-group-title.failed:hover {
+    background-color: #e9e9e9;
+}
+
+.review-group-title.completed {
+    background-color: #f9f9f9;
+    border-bottom-width: 3px;
+}
+
+.review-group-title.completed:hover {
+    background-color: #e9e9e9;
+}
+
+.review-group-content {
+    padding: 12px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.userpage-review-loading {
+    padding: 12px;
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+.review-status-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 3px solid #000000;
+    background-color: #f9f9f9;
+}
+
+.review-status-section:last-child {
+    margin-bottom: 0;
+}
+
+.review-status-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid #000000;
+    color: #000000;
+    text-align: center;
+}
+
+.pending-category {
+    margin-bottom: 30px;
+}
+
+.pending-category:last-child {
+    margin-bottom: 0;
+}
+
+.pending-category-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000000;
+    color: #000000;
+}
+
+.pending-subcategory-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #666666;
+    color: #333333;
+}
+
+.pending-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Scrollbar styling for pending list */
+.pending-items-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pending-items-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border: 1px solid #000000;
+}
+
+.pending-items-list::-webkit-scrollbar-thumb {
+    background: #000000;
+    border: 1px solid #000000;
+}
+
+.pending-items-list::-webkit-scrollbar-thumb:hover {
+    background: #333333;
+}
+
+.pending-item {
+    border: 2px solid #000000;
+    padding: 15px;
+    background-color: #ffffff;
+}
+
+.pending-item.failed {
+    background-color: #f5f5f5;
+    border-style: dashed;
+    opacity: 0.8;
+}
+
+.pending-item.completed {
+    background-color: #ffffff;
+    border-width: 3px;
+}
+
+.pending-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cccccc;
+}
+
+.pending-item-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pending-item-badge {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    padding: 4px 12px;
+    border: 2px solid #000000;
+    font-weight: bold;
+}
+
+.pending-item-badge.pending {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.pending-item-badge.failed {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+    text-decoration: line-through;
+}
+
+.pending-item-badge.completed {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+}
+
+.pending-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pending-item-xp {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.pending-item-date {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    color: #666666;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+.pending-item-date.overdue {
+    color: #000000;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.pending-item-date.completed {
+    color: #333333;
+    font-weight: bold;
+}
+
+.pending-item-desc {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    color: #333333;
+    margin: 5px 0;
+}
+
+.pending-item-image {
+    margin-top: 10px;
+    border: 2px solid #000000;
+    overflow: hidden;
+}
+
+.pending-item-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.empty-message {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: #666666;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    background-color: #f9f9f9;
+    border: 2px dashed #cccccc;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .review-group {
+        margin-bottom: 20px;
+        border-width: 2px;
+    }
+
+    .review-group-title {
+        font-size: 20px;
+        padding: 12px 16px;
+        border-bottom-width: 2px;
+    }
+
+    .review-group-title.completed {
+        border-bottom-width: 2px;
+    }
+
+    .review-group-content {
+        padding: 16px;
+    }
+
+    .review-status-section {
+        padding: 16px;
+        margin-bottom: 30px;
+    }
+
+    .review-status-title {
+        font-size: 22px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+    }
+
+    .pending-category-title {
+        font-size: 20px;
+    }
+
+    .pending-subcategory-title {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .pending-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .pending-item-badge {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .review-group {
+        margin-bottom: 16px;
+        border-width: 2px;
+    }
+
+    .review-group-title {
+        font-size: 18px;
+        padding: 10px 12px;
+        border-bottom-width: 2px;
+    }
+
+    .review-group-content {
+        padding: 12px;
+    }
+
+    .review-status-section {
+        padding: 12px;
+        margin-bottom: 20px;
+        border-width: 2px;
+    }
+
+    .review-status-title {
+        font-size: 20px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom-width: 2px;
+    }
+
+    .pending-category {
+        margin-bottom: 20px;
+    }
+
+    .pending-category-title {
+        font-size: 18px;
+        padding-bottom: 8px;
+    }
+
+    .pending-subcategory-title {
+        font-size: 15px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .pending-item {
+        padding: 12px;
+        border-width: 2px;
+    }
+
+    .pending-item.completed {
+        border-width: 2px;
+    }
+}

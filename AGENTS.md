@@ -313,7 +313,7 @@ const relatedRecord = records.find(r => r.Id === lookupKey);
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **meosjourney** (1631 symbols, 2412 relationships, 140 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **meosjourney** (1592 symbols, 2015 relationships, 10 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

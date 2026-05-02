@@ -1,32 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import * as FaIcons from 'react-icons/fa';
-import * as MdIcons from 'react-icons/md';
-import * as IoIcons from 'react-icons/io5';
-import * as BiIcons from 'react-icons/bi';
-import * as AiIcons from 'react-icons/ai';
-import * as BsIcons from 'react-icons/bs';
-import * as FiIcons from 'react-icons/fi';
-import * as GiIcons from 'react-icons/gi';
-import * as HiIcons from 'react-icons/hi2';
-import * as RiIcons from 'react-icons/ri';
+import { ICON_NAMES, ICON_REGISTRY } from '../IconRenderer/iconRegistry';
 import './IconPicker.css';
 
-// Combine all icon libraries
-const allIcons = {
-  ...FaIcons,
-  ...MdIcons,
-  ...IoIcons,
-  ...BiIcons,
-  ...AiIcons,
-  ...BsIcons,
-  ...FiIcons,
-  ...GiIcons,
-  ...HiIcons,
-  ...RiIcons
-};
-
 const ICONS_PER_PAGE = 100;
-const ALL_ICON_NAMES = Object.keys(allIcons);
 
 const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,11 +28,11 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
   useEffect(() => {
     if (showAll) {
       // Show all icons with pagination
-      const allIconNames = ALL_ICON_NAMES.slice(0, displayCount);
+      const allIconNames = ICON_NAMES.slice(0, displayCount);
       setFilteredIcons(allIconNames);
     } else if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      const filtered = ALL_ICON_NAMES
+      const filtered = ICON_NAMES
         .filter(iconName => iconName.toLowerCase().includes(search))
         .slice(0, 50); // Limit to 50 results for performance
       setFilteredIcons(filtered);
@@ -74,8 +50,8 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
     const scrollBottom = scrollHeight - scrollTop - clientHeight;
 
     // Load more when near bottom (within 100px)
-    if (scrollBottom < 100 && displayCount < ALL_ICON_NAMES.length) {
-      setDisplayCount(prev => Math.min(prev + ICONS_PER_PAGE, ALL_ICON_NAMES.length));
+    if (scrollBottom < 100 && displayCount < ICON_NAMES.length) {
+      setDisplayCount(prev => Math.min(prev + ICONS_PER_PAGE, ICON_NAMES.length));
     }
   };
 
@@ -102,7 +78,7 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
   };
 
   const renderIcon = (iconName) => {
-    const IconComponent = allIcons[iconName];
+    const IconComponent = ICON_REGISTRY[iconName];
     return IconComponent ? <IconComponent size={24} /> : null;
   };
 
@@ -156,7 +132,7 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
         >
           {showAll && (
             <div className="icon-picker-header">
-              Showing {filteredIcons.length} of {ALL_ICON_NAMES.length} icons
+              Showing {filteredIcons.length} of {ICON_NAMES.length} icons
             </div>
           )}
           <div className="icon-picker-grid">
@@ -172,7 +148,7 @@ const IconPicker = ({ value, onChange, placeholder = "Search icons..." }) => {
               </button>
             ))}
           </div>
-          {showAll && displayCount < ALL_ICON_NAMES.length && (
+          {showAll && displayCount < ICON_NAMES.length && (
             <div className="icon-picker-loading">
               Scroll down to load more...
             </div>

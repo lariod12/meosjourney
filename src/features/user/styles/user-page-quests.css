@@ -1,0 +1,299 @@
+/* ========================================
+   Daily Quests Update Section
+   ======================================== */
+
+.quest-add-section {
+    margin-bottom: 30px;
+}
+
+.btn-add-quest {
+    width: 100%;
+    padding: 14px 18px;
+    border: 3px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.btn-add-quest:hover:not(:disabled) {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.btn-add-quest:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quest-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 3px solid #000000;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 9999;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Always-visible dropdown variant (no button) */
+.quest-dropdown.dropdown-static {
+  position: relative;
+  top: 0;
+  left: auto;
+  right: auto;
+  box-shadow: none;
+  max-height: 360px;
+}
+
+/* Collapse toggle button for static dropdowns */
+.dropdown-collapse-btn {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+  text-align: left;
+}
+.dropdown-collapse-btn:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
+.quest-dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.quest-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.quest-dropdown-item:hover {
+    background: #000000;
+    color: #ffffff;
+}
+
+.quest-dropdown-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    flex: 1;
+}
+
+.quest-dropdown-xp {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.no-quests-message {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: #666666;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Quest Submission Form */
+.quest-submission-form {
+    border: 3px solid #000000;
+    padding: 25px;
+    margin-bottom: 25px;
+    background-color: #f9f9f9;
+}
+
+.quest-submission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px dashed #cccccc;
+}
+
+.quest-submission-header.clickable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    padding: 15px;
+    margin: -15px -15px 20px -15px;
+    border-radius: 4px;
+}
+
+.quest-submission-header.clickable:hover {
+    background-color: #f5f5f5;
+}
+
+.quest-submission-content {
+    animation: slideDown 0.3s ease-out;
+}
+
+.quest-submission-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: #000000;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.quest-xp-badge {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 4px 12px;
+    border: 2px solid #000000;
+    display: inline-block;
+}
+
+.btn-remove-quest {
+    background: #ffffff;
+    border: 2px solid #000000;
+    color: #000000;
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-remove-quest:hover {
+    background: #000000;
+    color: #ffffff;
+}
+
+/* Image Upload Section */
+.image-upload-section {
+    margin-top: 10px;
+}
+
+.image-upload-placeholder {
+    border: 3px dashed #000000;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #ffffff;
+}
+
+.btn-upload-image {
+    display: inline-block;
+    padding: 14px 24px;
+    border: 3px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-upload-image:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.btn-upload-image.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.image-preview-container {
+    position: relative;
+    border: 3px solid #000000;
+    padding: 10px;
+    background-color: #ffffff;
+}
+
+.image-preview {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    display: block;
+}
+
+.btn-remove-image {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border: 2px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-remove-image:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+
+
+/* Responsive adjustments for quest section */
+@media (max-width: 768px) {
+    .quest-submission-form {
+        padding: 20px 15px;
+    }
+
+    .quest-submission-title {
+        font-size: 20px;
+    }
+
+    .quest-xp-badge {
+        font-size: 14px;
+        padding: 3px 10px;
+    }
+
+    .image-preview {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .quest-dropdown-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .quest-dropdown-xp {
+        margin-left: 0;
+    }
+
+    .quest-submission-title {
+        font-size: 18px;
+    }
+
+    .quest-xp-badge {
+        font-size: 13px;
+        padding: 2px 8px;
+    }
+}
