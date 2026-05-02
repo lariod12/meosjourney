@@ -49,6 +49,19 @@ src/
 - `src/services/discord.js` owns user/admin webhook notifications
 - Maintain component scalability and reusability
 
+## Maintenance Continuity Rules
+- Before changing code, read `README.md` and this `AGENTS.md`, then preserve the maintenance direction already established.
+- Keep `/user/meos05` and `/admin/meos05` lazy-loaded from `src/App.jsx`; do not make route imports eager again.
+- Keep `src/pages/UserPage/` and `src/pages/AdminPage/` as thin wrappers only. Feature implementations belong in `src/features/user/` and `src/features/admin/`.
+- Continue splitting large User/Admin UI into section components and hooks. Prefer adding focused files under `components/sections/`, `hooks/`, or `styles/` instead of growing giant page files.
+- Keep user/admin CSS split by section: user styles in `src/features/user/styles/`, admin styles in `src/features/admin/styles/`, and only truly shared rules in `src/styles/global.css`.
+- Keep NocoDB helpers modular under `src/services/nocodb/`; `src/services/nocodb.js` should stay a barrel/compatibility export.
+- Do not reintroduce Firebase or old storage service files. Uploads and data operations should use NocoDB helpers.
+- Keep `IconRenderer` and `IconPicker` backed by `src/components/IconRenderer/iconRegistry.js`; avoid wildcard or whole-pack `react-icons` imports.
+- Preserve optimized user submit behavior: use dirty-section tracking, skip heavy quest/achievement reloads unless task submissions or auto-approve require them, and keep simple profile/status/journal submits fast.
+- Preserve NocoDB table structure for status and journals. Status saves still update the same status fields; status journal history should be one grouped `journals.caption` record per status submit with one line per changed field.
+- When adding new behavior, update existing docs/rules when the maintenance contract changes; do not create new `.md` files unless explicitly requested.
+
 ## Design System Requirements
 - **Color palette**: Strict black (#000000), white (#ffffff), and grayscale only
 - **Typography**: Use sketch fonts (Patrick Hand, Kalam, Architects Daughter)

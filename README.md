@@ -16,10 +16,10 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 ## Current Stack
 
-- React `19.2.1`
+- React `19.2.5`
 - React Router DOM `7.9.4`
 - Vite `7.1.9`
-- pnpm `10.14.0`
+- pnpm `10.33.2`
 - NocoDB API via `src/services/nocodb.js`
 - Discord webhooks via `src/services/discord.js`
 - Terser production minification
@@ -159,6 +159,19 @@ The app no longer uses the old `meo_journey_home_cache` home-data cache. Fresh d
 - `useCharacterData` refetch
 
 See `docs/CACHE-SYSTEM.md` for details.
+
+### Maintenance Notes
+
+Keep future updates aligned with the current maintenance direction:
+
+- Route pages stay thin. `/user/meos05` and `/admin/meos05` are lazy-loaded from `src/App.jsx`, with feature implementations under `src/features/user/` and `src/features/admin/`.
+- Keep large page UI split into feature section components/hooks. Do not move user/admin logic back into `src/pages/` wrappers or grow new all-in-one page files.
+- Keep CSS split by feature/section. User page styles live under `src/features/user/styles/`; admin page styles live under `src/features/admin/styles/`; shared global rules stay in `src/styles/global.css`.
+- NocoDB service code stays modular under `src/services/nocodb/`, with `src/services/nocodb.js` acting as the compatibility barrel export.
+- Avoid broad `react-icons` imports. Add supported icons to `src/components/IconRenderer/iconRegistry.js` so the bundle stays small.
+- User submit flow uses dirty-section tracking and skips heavy quest/achievement reloads when only profile/status/journal/media changed.
+- Status updates still write to the same NocoDB `status` structure. Status journal history is grouped into one `journals.caption` record per status submit, with multiple lines for changed fields.
+- Do not reintroduce Firebase/storage legacy services. NocoDB is the active data and upload path.
 
 ## Deployment
 
