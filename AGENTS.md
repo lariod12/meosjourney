@@ -91,6 +91,18 @@ src/
 - Use NocoDB service helpers in `src/services/nocodb.js` for app data operations
 - Check existing data structure in `local/firestore_data_*.json` files when legacy Firebase context is needed
 
+### NocoDB MCP Access
+
+- This project has a local NocoDB MCP server configured as `nocodb-meosjourney` for agent-assisted database inspection and record work.
+- Codex local config: `C:\Users\ADMIN\.codex\config.toml` under `[mcp_servers.nocodb_meosjourney]`.
+- Claude Code project config: `.mcp.json` in this repo. This file contains a private MCP token and is ignored by git through the root dot-folder ignore rule.
+- Never copy the NocoDB MCP token into docs, commits, logs, or chat responses.
+- Use NocoDB MCP when the task needs live NocoDB context such as checking records, validating existing data, inspecting table content, or verifying a database-side issue.
+- For app code changes, keep using `src/services/nocodb/` helpers as the runtime data layer. MCP is for agent operations, not browser runtime code.
+- Before any write/update/delete through MCP, confirm the intended environment and table. Be extra careful with production data.
+- If MCP connection fails with 404 or auth errors, ask the user to regenerate the MCP URL/token from the NocoDB Base Settings and update both local configs. Do not guess or replace tokens from public docs.
+- Prefer staging/development verification first when changing behavior related to records, image fields, relationships, status, journals, album, gallery, quests, or achievements.
+
 ### NocoDB Link Operations (One-to-One Relationships)
 
 **Important**: When linking records in NocoDB one-to-one relationships, use the **Foreign Key field** directly, NOT the LinkToAnotherRecord field.

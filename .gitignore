@@ -18,6 +18,7 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+.mcp.json
 local/
 
 # Keep these env files in git for team
