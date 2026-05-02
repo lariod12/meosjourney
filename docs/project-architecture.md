@@ -147,6 +147,8 @@ src/services/nocodb/
 
 Keep runtime data access inside these service helpers. NocoDB MCP is for local agent operations such as live schema/record inspection, not browser runtime code.
 
+See `docs/nocodb-database-architecture.md` for the detailed NocoDB table map, relationships, field constraints, and image storage rules.
+
 ## Environment Modes
 
 The app uses different NocoDB table IDs by Vite mode:

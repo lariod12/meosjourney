@@ -119,6 +119,7 @@ Important root/docs files:
 ```text
 AGENTS.md                    # Agent/project rules plus GitNexus context
 docs/project-architecture.md # Architecture, structure, data flow, and maintenance overview
+docs/nocodb-database-architecture.md # NocoDB tables, relationships, constraints, and data rules
 docs/CACHE-SYSTEM.md         # Current NocoDB request cache/throttle behavior
 docs/WHEN-CACHE-CLEARS-VI.md # Vietnamese cache/refresh notes
 docs/DEPLOY.md               # GitHub Pages deployment guide
@@ -225,6 +226,7 @@ See `AGENTS.md` for the full development and design rules.
 
 - `AGENTS.md` - Development rules, architecture standards, database notes, and GitNexus block
 - `docs/project-architecture.md` - Architecture, structure, data flow, services, styling, and extension guide
+- `docs/nocodb-database-architecture.md` - NocoDB table map, relationships, field rules, image handling, and data constraints
 - `docs/CACHE-SYSTEM.md` - Current cache/request deduplication behavior
 - `docs/WHEN-CACHE-CLEARS-VI.md` - Vietnamese cache refresh explanation
 - `docs/DEPLOY.md` - GitHub Pages deployment
