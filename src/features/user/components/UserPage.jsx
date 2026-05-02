@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import './UserPage.css';
 
 import { fetchConfig, fetchProfile, fetchStatus, updateProfile, saveStatus, saveJournal, fetchQuests, fetchQuestConfirmations, fetchAchievements, fetchAchievementConfirmations, saveQuestConfirmation, saveAchievementConfirmation, updateQuest, updateAchievement, batchUpdateQuestConfirmationStatus, clearNocoDBCache, updateProfileXP, savePhotoAlbum, fetchPhotoAlbums, uploadProfileGalleryImages, fetchProfileGallery, CHARACTER_ID } from '../../../services/nocodb';
-import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangeJournal, saveProfileChangeJournal } from '../../../utils/questJournalUtils';
+import { saveQuestCompletionJournal, saveAchievementCompletionJournal, saveStatusChangesJournal, saveProfileChangeJournal } from '../../../utils/questJournalUtils';
 import { uploadQuestConfirmationImage, uploadAchievementConfirmationImage } from '../../../services/nocodb';
 import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdminQuestCompletedNotification, sendAdminAchievementCompletedNotification, sendLevelUpNotification } from '../../../services/discord';
 import PasswordModal from '../../../components/PasswordModal/PasswordModal';
@@ -15,6 +15,22 @@ import UserPageHeader from './sections/UserPageHeader';
 import { useUserPageHeader } from '../hooks/useUserPageHeader';
 
 const SESSION_KEY = 'meos05_access';
+const FIELD_SECTIONS = {
+  introduce: ['profile'],
+  caption: ['profile', 'status'],
+  doing: ['status'],
+  location: ['status'],
+  mood: ['status'],
+  journalEntry: ['journal'],
+  albumDescription: ['album'],
+  galleryDescription: ['gallery']
+};
+
+const arraysMatch = (left = [], right = []) => {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => item === right[index]);
+};
 
 const UserPage = ({ onBack }) => {
   const [existingMoods, setExistingMoods] = useState([]);
@@ -114,6 +130,7 @@ const UserPage = ({ onBack }) => {
   const doingInputRef = useRef(null);
   const locationInputRef = useRef(null);
   const moodInputRef = useRef(null);
+  const dirtySectionsRef = useRef(new Set());
   const [moodOpen, setMoodOpen] = useState(false);
   const {
     formattedDate,
@@ -124,6 +141,18 @@ const UserPage = ({ onBack }) => {
     if (e.key === 'Enter' && !e.isComposing) {
       e.preventDefault();
     }
+  };
+
+  const markDirtySection = (section) => {
+    dirtySectionsRef.current.add(section);
+  };
+
+  const markFieldDirty = (name) => {
+    FIELD_SECTIONS[name]?.forEach(markDirtySection);
+  };
+
+  const clearDirtySections = (...sections) => {
+    sections.forEach(section => dirtySectionsRef.current.delete(section));
   };
 
   const focusInputSafely = (ref) => {
@@ -415,6 +444,7 @@ const UserPage = ({ onBack }) => {
           console.warn('⚠️ No status found');
         }
 
+        dirtySectionsRef.current.clear();
         setProfileLoaded(true);
         setCriticalLoaded(true);
 
@@ -637,6 +667,8 @@ const UserPage = ({ onBack }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    markFieldDirty(name);
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -657,6 +689,7 @@ const UserPage = ({ onBack }) => {
   const handleAddSkill = async () => {
     const skill = formData.newSkill.trim();
     if (skill && !profileData.skills.includes(skill)) {
+      markDirtySection('profile');
       setProfileData(prev => ({
         ...prev,
         skills: [...prev.skills, skill]
@@ -676,6 +709,7 @@ const UserPage = ({ onBack }) => {
   };
 
   const handleRemoveSkill = async (skillToRemove) => {
+    markDirtySection('profile');
     setProfileData(prev => ({
       ...prev,
       skills: prev.skills.filter(skill => skill !== skillToRemove)
@@ -693,6 +727,7 @@ const UserPage = ({ onBack }) => {
   const handleAddHobby = async () => {
     const hobby = formData.newHobby.trim();
     if (hobby && !profileData.hobbies.includes(hobby)) {
+      markDirtySection('profile');
       setProfileData(prev => ({
         ...prev,
         hobbies: [...prev.hobbies, hobby]
@@ -712,6 +747,7 @@ const UserPage = ({ onBack }) => {
   };
 
   const handleRemoveHobby = async (hobbyToRemove) => {
+    markDirtySection('profile');
     setProfileData(prev => ({
       ...prev,
       hobbies: prev.hobbies.filter(hobby => hobby !== hobbyToRemove)
@@ -797,12 +833,68 @@ const UserPage = ({ onBack }) => {
     return true;
   };
 
+  const getSubmitPlan = () => {
+    const dirtySections = dirtySectionsRef.current;
+    const hasProfileChanges = dirtySections.has('profile') && (
+      formData.introduce.trim() !== (originalProfileData.introduce || '') ||
+      formData.caption.trim() !== (originalProfileData.caption || '') ||
+      !arraysMatch(profileData.skills, originalProfileData.skills) ||
+      !arraysMatch(profileData.hobbies, originalProfileData.hobbies)
+    );
+
+    const hasStatusChanges = dirtySections.has('status') && (
+      formData.doing.trim() !== (originalStatusData?.doing || '') ||
+      formData.location.trim() !== (originalStatusData?.location || '') ||
+      formData.mood.trim() !== (originalStatusData?.mood || '') ||
+      formData.caption.trim() !== (originalStatusData?.caption || '')
+    );
+
+    const hasJournalEntry = dirtySections.has('journal') && formData.journalEntry.trim().length > 0;
+    const hasAlbumImages = dirtySections.has('album') && albumImages.length > 0;
+    const hasGalleryImages = dirtySections.has('gallery') && galleryImages.length > 0 && profileData.id;
+    const hasQuestSubmissions = selectedQuestSubmissions.length > 0;
+    const hasAchievementSubmissions = selectedAchievementSubmissions.length > 0;
+
+    return {
+      hasProfileChanges,
+      hasStatusChanges,
+      hasJournalEntry,
+      hasAlbumImages,
+      hasGalleryImages,
+      hasQuestSubmissions,
+      hasAchievementSubmissions,
+      hasAnyData:
+        hasProfileChanges ||
+        hasStatusChanges ||
+        hasJournalEntry ||
+        hasAlbumImages ||
+        hasGalleryImages ||
+        hasQuestSubmissions ||
+        hasAchievementSubmissions
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isSubmitting) return;
 
     if (!validateAlbumSection() || !validateGallerySection()) {
+      return;
+    }
+
+    const submitPlan = getSubmitPlan();
+
+    if (!submitPlan.hasAnyData) {
+      setConfirmModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'No Data',
+        message: 'No data to save. Please fill in at least one field.',
+        confirmText: 'OK',
+        cancelText: null,
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      });
       return;
     }
 
@@ -817,7 +909,7 @@ const UserPage = ({ onBack }) => {
       onConfirm: () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         // Start actual submission after user confirms
-        performSubmit();
+        performSubmit(submitPlan);
       },
       onCancel: () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -825,7 +917,7 @@ const UserPage = ({ onBack }) => {
     });
   };
 
-  const performSubmit = async () => {
+  const performSubmit = async (submitPlan = getSubmitPlan()) => {
     setIsSubmitting(true);
 
     // Show processing dialog (no buttons, cannot close)
@@ -843,29 +935,15 @@ const UserPage = ({ onBack }) => {
 
     try {
       const results = [];
-
-      // ============================================
-      // OPTIMIZATION: Pre-check which sections have data to submit
-      // Only create promises for sections that actually need to be submitted
-      // ============================================
-      
-      const hasProfileChanges = 
-        formData.introduce.trim() !== originalProfileData.introduce ||
-        formData.caption.trim() !== originalProfileData.caption ||
-        JSON.stringify(profileData.skills) !== JSON.stringify(originalProfileData.skills) ||
-        JSON.stringify(profileData.hobbies) !== JSON.stringify(originalProfileData.hobbies);
-
-      const hasStatusChanges = 
-        formData.doing.trim() !== originalStatusData.doing ||
-        formData.location.trim() !== originalStatusData.location ||
-        formData.mood.trim() !== originalStatusData.mood ||
-        formData.caption.trim() !== originalStatusData.caption;
-
-      const hasJournalEntry = formData.journalEntry.trim().length > 0;
-      const hasAlbumImages = albumImages.length > 0;
-      const hasGalleryImages = galleryImages.length > 0 && profileData.id;
-      const hasQuestSubmissions = selectedQuestSubmissions.length > 0;
-      const hasAchievementSubmissions = selectedAchievementSubmissions.length > 0;
+      const {
+        hasProfileChanges,
+        hasStatusChanges,
+        hasJournalEntry,
+        hasAlbumImages,
+        hasGalleryImages,
+        hasQuestSubmissions,
+        hasAchievementSubmissions
+      } = submitPlan;
 
       // ============================================
       // PARALLEL BATCH 1: Independent sections (Profile, Journal, Album, Gallery)
@@ -893,8 +971,10 @@ const UserPage = ({ onBack }) => {
                     skills: [...profileData.skills],
                     hobbies: [...profileData.hobbies]
                   });
+                  clearDirtySections('profile');
                   return { type: 'success', item: 'Profile' };
                 }
+                clearDirtySections('profile');
                 return null; // No change, no result
               } else {
                 console.warn('⚠️ Profile not saved:', profileResult.message);
@@ -920,6 +1000,7 @@ const UserPage = ({ onBack }) => {
               if (journalResult.success) {
                 try { clearNocoDBCache(); } catch { }
                 try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+                clearDirtySections('journal');
                 return { type: 'success', item: 'Journal' };
               } else {
                 return { type: 'failed', item: 'Journal' };
@@ -948,6 +1029,7 @@ const UserPage = ({ onBack }) => {
               if (albumResult.success) {
                 setAlbumImages([]);
                 setFormData(prev => ({ ...prev, albumDescription: '' }));
+                clearDirtySections('album');
                 try { window.dispatchEvent(new Event('photoalbum:refresh')); } catch { }
                 return {
                   type: 'success',
@@ -978,6 +1060,7 @@ const UserPage = ({ onBack }) => {
               if (galleryResult.success) {
                 setGalleryImages([]);
                 setFormData(prev => ({ ...prev, galleryDescription: '' }));
+                clearDirtySections('gallery');
                 return {
                   type: 'success',
                   item: `Profile Gallery (${galleryResult.uploadedCount}/${galleryResult.totalCount} images)`
@@ -1023,38 +1106,27 @@ const UserPage = ({ onBack }) => {
                 const oldMood = originalStatusData.mood;
                 const oldCaption = originalStatusData.caption;
 
-                const journalPromises = [];
+                const statusChanges = [];
                 if (newDoing !== oldDoing) {
-                  journalPromises.push(
-                    saveStatusChangeJournal('doing', oldDoing, newDoing, CHARACTER_ID).catch(e => 
-                      console.warn('⚠️ Failed to save activity change journal:', e)
-                    )
-                  );
+                  statusChanges.push({ fieldType: 'doing', oldValue: oldDoing, newValue: newDoing });
                 }
                 if (newLocation !== oldLocation) {
-                  journalPromises.push(
-                    saveStatusChangeJournal('location', oldLocation, newLocation, CHARACTER_ID).catch(e =>
-                      console.warn('⚠️ Failed to save location change journal:', e)
-                    )
-                  );
+                  statusChanges.push({ fieldType: 'location', oldValue: oldLocation, newValue: newLocation });
                 }
                 if (newMood !== oldMood) {
-                  journalPromises.push(
-                    saveStatusChangeJournal('mood', oldMood, newMood, CHARACTER_ID).catch(e =>
-                      console.warn('⚠️ Failed to save mood change journal:', e)
-                    )
-                  );
+                  statusChanges.push({ fieldType: 'mood', oldValue: oldMood, newValue: newMood });
                 }
                 if (newCaption !== oldCaption) {
-                  journalPromises.push(
-                    saveStatusChangeJournal('caption', oldCaption, newCaption, CHARACTER_ID).catch(e =>
-                      console.warn('⚠️ Failed to save caption change journal:', e)
-                    )
-                  );
+                  statusChanges.push({ fieldType: 'caption', oldValue: oldCaption, newValue: newCaption });
                 }
 
-                // Wait for all status journals in parallel
-                await Promise.all(journalPromises);
+                if (statusChanges.length > 0) {
+                  try {
+                    await saveStatusChangesJournal(statusChanges, CHARACTER_ID);
+                  } catch (e) {
+                    console.warn('⚠️ Failed to save status changes journal:', e);
+                  }
+                }
 
                 setOriginalStatusData({
                   doing: newDoing,
@@ -1062,8 +1134,10 @@ const UserPage = ({ onBack }) => {
                   mood: newMood,
                   caption: newCaption
                 });
+                clearDirtySections('status');
                 return { type: 'success', item: 'Status' };
               } else if (statusResult.message === 'No data to save') {
+                clearDirtySections('status');
                 return null; // No change
               } else {
                 console.warn('⚠️ Status not saved:', statusResult.message);
@@ -1427,8 +1501,14 @@ const UserPage = ({ onBack }) => {
         }
 
         if (successItems.length > 0) {
-          // Reload data after successful submit
-          reloadDataAfterSubmit();
+          const shouldReloadTaskData = hasQuestSubmissions || hasAchievementSubmissions || didAutoApprove;
+
+          if (shouldReloadTaskData) {
+            reloadDataAfterSubmit();
+          } else {
+            try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+            try { window.dispatchEvent(new Event('photoalbum:refresh')); } catch { }
+          }
         }
 
         // If there is any success, allow user to jump to Home
@@ -2094,6 +2174,7 @@ const UserPage = ({ onBack }) => {
                         className="suggest-clear-btn"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
+                          markDirtySection('status');
                           setFormData(prev => ({ ...prev, doing: '' }));
                           focusInputSafely(doingInputRef);
                         }}
@@ -2124,6 +2205,7 @@ const UserPage = ({ onBack }) => {
                               className="suggest-item"
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
+                                markDirtySection('status');
                                 setFormData(prev => ({ ...prev, doing: item }));
                                 setDoingOpen(false);
                                 focusInputSafely(doingInputRef);
@@ -2160,6 +2242,7 @@ const UserPage = ({ onBack }) => {
                         className="suggest-clear-btn"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
+                          markDirtySection('status');
                           setFormData(prev => ({ ...prev, location: '' }));
                           focusInputSafely(locationInputRef);
                         }}
@@ -2190,6 +2273,7 @@ const UserPage = ({ onBack }) => {
                               className="suggest-item"
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
+                                markDirtySection('status');
                                 setFormData(prev => ({ ...prev, location: item }));
                                 setLocationOpen(false);
                                 focusInputSafely(locationInputRef);
@@ -2226,6 +2310,7 @@ const UserPage = ({ onBack }) => {
                         className="suggest-clear-btn"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
+                          markDirtySection('status');
                           setFormData(prev => ({ ...prev, mood: '' }));
                           focusInputSafely(moodInputRef);
                         }}
@@ -2256,6 +2341,7 @@ const UserPage = ({ onBack }) => {
                               className="suggest-item"
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
+                                markDirtySection('status');
                                 setFormData(prev => ({ ...prev, mood: item }));
                                 setMoodOpen(false);
                                 focusInputSafely(moodInputRef);
@@ -2327,6 +2413,7 @@ const UserPage = ({ onBack }) => {
                         onChange={(e) => {
                           const files = Array.from(e.target.files);
                           if (files.length > 0) {
+                            markDirtySection('album');
                             const newImages = files.map(file => ({
                               id: Date.now() + Math.random(),
                               file,
@@ -2352,6 +2439,7 @@ const UserPage = ({ onBack }) => {
                             type="button"
                             className="photoalbum-remove-btn"
                             onClick={() => {
+                              markDirtySection('album');
                               URL.revokeObjectURL(image.preview);
                               setAlbumImages(prev => prev.filter(img => img.id !== image.id));
                             }}
@@ -2404,6 +2492,7 @@ const UserPage = ({ onBack }) => {
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
                           if (files.length > 0) {
+                            markDirtySection('gallery');
                             const newImages = files.map(file => ({
                               id: Date.now() + Math.random(),
                               file,
@@ -2429,6 +2518,7 @@ const UserPage = ({ onBack }) => {
                             type="button"
                             className="userpage-gallery-remove-btn"
                             onClick={() => {
+                              markDirtySection('gallery');
                               URL.revokeObjectURL(image.preview);
                               setGalleryImages(prev => prev.filter(img => img.id !== image.id));
                             }}

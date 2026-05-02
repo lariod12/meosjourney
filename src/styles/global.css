@@ -975,6 +975,10 @@ body {
     margin-bottom: 5px;
 }
 
+.journal-text {
+    white-space: pre-line;
+}
+
 /* === HISTORY TAB === */
 .history-list {
     padding: 10px 0;

@@ -183,6 +183,16 @@ export const generateStatusChangeJournalEntry = (fieldType, oldValue, newValue) 
   return `[Status Update] ${fieldName}`;
 };
 
+export const generateStatusChangesJournalEntry = (changes = []) => {
+  const lines = changes
+    .map(({ fieldType, oldValue, newValue }) =>
+      generateStatusChangeJournalEntry(fieldType, oldValue, newValue).replace('[Status Update] ', '')
+    )
+    .filter(Boolean);
+
+  return ['[Status Update]', ...lines].join('\n');
+};
+
 /**
  * Save status change as journal entry
  * @param {string} fieldType - Type of field ('mood', 'location', 'doing')
@@ -202,6 +212,21 @@ export const saveStatusChangeJournal = async (fieldType, oldValue, newValue, cha
     return result;
   } catch (error) {
     console.error('❌ Error saving status change journal:', error);
+    throw error;
+  }
+};
+
+export const saveStatusChangesJournal = async (changes, characterId) => {
+  try {
+    const journalContent = generateStatusChangesJournalEntry(changes);
+
+    const result = await saveJournal({
+      caption: journalContent
+    }, characterId);
+
+    return result;
+  } catch (error) {
+    console.error('❌ Error saving status changes journal:', error);
     throw error;
   }
 };
