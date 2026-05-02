@@ -29,6 +29,7 @@ src/
   - camelCase for JS/JSX variables/functions
   - PascalCase for React components
 - **Comments**: Minimal code comments
+- **Documentation language**: Always write project documentation in English
 
 
 ## Git & Development Workflow
@@ -80,6 +81,7 @@ src/
 ## File Organization
 - Documentation: update existing `.md` files only unless explicitly asked to create a new one
 - Primary docs: root `README.md`, root `AGENTS.md`, and existing files in `docs/`
+- All documentation content must be written in English unless the user explicitly asks for another language
 - Local database/reference exports: `local/`
 - Component CSS: Co-located with components, use prefixed class names
 - Global styles: Single file `src/styles/global.css` (imported in App.jsx)
