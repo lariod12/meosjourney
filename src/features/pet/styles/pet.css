@@ -209,14 +209,16 @@
   top: 198px;
   width: min(42%, 168px);
   min-height: 56px;
-  border: 3px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 3px 3px 0 #cccccc;
+  box-shadow: 2px 2px 0 #cccccc;
   padding: 9px 12px;
   font-size: 0.72rem;
   font-weight: 900;
   line-height: 1.18;
+  transform-origin: 82% 100%;
+  animation: pet-bubble-idle 4.8s ease-in-out infinite;
+  will-change: transform;
 }
 
 .pet-bubble::before,
@@ -224,25 +226,28 @@
   content: '';
   position: absolute;
   display: block;
-  border: 3px solid #000000;
   border-radius: 50%;
   background: #ffffff;
+  animation: pet-bubble-tail-idle 4.8s ease-in-out infinite;
+  will-change: transform;
 }
 
 .pet-bubble::before {
-  right: -16px;
-  bottom: -13px;
+  right: -8px;
+  bottom: -8px;
   width: 18px;
   height: 18px;
   box-shadow: 2px 2px 0 #cccccc;
+  animation-delay: 0.18s;
 }
 
 .pet-bubble::after {
-  right: -28px;
-  bottom: -22px;
+  right: -16px;
+  bottom: -14px;
   width: 9px;
   height: 9px;
   box-shadow: 2px 2px 0 #cccccc;
+  animation-delay: 0.34s;
 }
 
 .pet-bubble p {
@@ -635,6 +640,40 @@
   }
 }
 
+@keyframes pet-bubble-idle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.4deg) scale(1);
+  }
+
+  28% {
+    transform: translateY(-3px) rotate(0.35deg) scale(1.012);
+  }
+
+  58% {
+    transform: translateY(-1px) rotate(-0.15deg) scale(0.996);
+  }
+
+  78% {
+    transform: translateY(-4px) rotate(0.2deg) scale(1.006);
+  }
+}
+
+@keyframes pet-bubble-tail-idle {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  36% {
+    transform: translate(1px, -2px) scale(1.08);
+  }
+
+  68% {
+    transform: translate(-1px, 1px) scale(0.96);
+  }
+}
+
 @keyframes pet-mood-float {
   0% {
     opacity: 0;
@@ -661,6 +700,9 @@
   .pet-character,
   .pet-character__eye,
   .pet-nameplate__flip,
+  .pet-bubble,
+  .pet-bubble::before,
+  .pet-bubble::after,
   .pet-mood-float {
     animation: none;
   }
@@ -687,11 +729,11 @@
   }
 
   .pet-bubble::before {
-    right: -12px;
+    right: -7px;
   }
 
   .pet-bubble::after {
-    right: -23px;
+    right: -14px;
   }
 
   .pet-mood-float {
