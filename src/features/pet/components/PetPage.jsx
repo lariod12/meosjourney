@@ -208,7 +208,7 @@ const PetInfoDropdown = ({ expanded, onToggle }) => (
 
 const PetPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('food');
-  const [infoExpanded, setInfoExpanded] = useState(false);
+  const [infoExpanded, setInfoExpanded] = useState(true);
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
   const items = useMemo(() => TAB_ITEMS[activeTab] ?? TAB_ITEMS.food, [activeTab]);
   const moodFloatStyles = useMemo(() => (
