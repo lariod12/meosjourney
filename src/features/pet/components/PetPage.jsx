@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   LuChevronLeft, LuChevronDown,
   LuUtensils, LuHeart, LuActivity, LuGauge,
@@ -107,6 +107,55 @@ const PET_DROPDOWN_STATUS_ROWS = PET_STATUS_ROWS.filter(({ key }) => (
   key === 'health' || key === 'hunger' || key === 'sanity'
 ));
 
+const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
+const PET_MOOD_FLOAT_OPTIONS = {
+  animationSeconds: 3,
+  runIntervalSeconds: 8,
+  itemsPerRun: 3,
+  itemDelaySeconds: 1.5,
+  bubbleSizePx: 78,
+  iconSizePx: 18,
+  floatDistancePx: 96,
+  startOffsetRangePx: 18,
+  endOffsetRangePx: 44,
+  rotateRangeDeg: 9,
+  startScale: 0.58,
+  endScale: 1.12
+};
+
+const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
+
+const createMoodFloatVariant = () => {
+  const startOffsetPx = randomBetween(-PET_MOOD_FLOAT_OPTIONS.startOffsetRangePx, PET_MOOD_FLOAT_OPTIONS.startOffsetRangePx);
+  const endOffsetPx = randomBetween(-PET_MOOD_FLOAT_OPTIONS.endOffsetRangePx, PET_MOOD_FLOAT_OPTIONS.endOffsetRangePx);
+
+  return {
+    id: `${Date.now()}-${Math.random()}`,
+    startOffsetPx,
+    midOffsetPx: Math.round((startOffsetPx + endOffsetPx) / 2),
+    endOffsetPx,
+    startRotateDeg: randomBetween(-PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg, PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg),
+    midRotateDeg: randomBetween(-PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg, PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg),
+    endRotateDeg: randomBetween(-PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg, PET_MOOD_FLOAT_OPTIONS.rotateRangeDeg)
+  };
+};
+
+const createMoodFloatBatch = () => (
+  Array.from({ length: PET_MOOD_FLOAT_OPTIONS.itemsPerRun }, (_, index) => ({
+    ...createMoodFloatVariant(),
+    delaySeconds: index * PET_MOOD_FLOAT_OPTIONS.itemDelaySeconds
+  }))
+);
+
+const moodFloatStyle = {
+  '--pet-mood-duration': `${PET_MOOD_FLOAT_OPTIONS.animationSeconds}s`,
+  '--pet-mood-size': `${PET_MOOD_FLOAT_OPTIONS.bubbleSizePx}px`,
+  '--pet-mood-icon-size': `${PET_MOOD_FLOAT_OPTIONS.iconSizePx}px`,
+  '--pet-mood-rise-end': `-${PET_MOOD_FLOAT_OPTIONS.floatDistancePx}px`,
+  '--pet-mood-start-scale': PET_MOOD_FLOAT_OPTIONS.startScale,
+  '--pet-mood-end-scale': PET_MOOD_FLOAT_OPTIONS.endScale
+};
+
 const PetItemCard = ({ item }) => {
   const Icon = ITEM_ICONS[item.shape] ?? LuPackage2;
   return (
@@ -160,7 +209,28 @@ const PetInfoDropdown = ({ expanded, onToggle }) => (
 const PetPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('food');
   const [infoExpanded, setInfoExpanded] = useState(false);
+  const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
   const items = useMemo(() => TAB_ITEMS[activeTab] ?? TAB_ITEMS.food, [activeTab]);
+  const moodFloatStyles = useMemo(() => (
+    moodFloatBatch.map((moodFloatItem) => ({
+      ...moodFloatStyle,
+      '--pet-mood-delay': `${moodFloatItem.delaySeconds}s`,
+      '--pet-mood-start-x': `${moodFloatItem.startOffsetPx}px`,
+      '--pet-mood-mid-x': `${moodFloatItem.midOffsetPx}px`,
+      '--pet-mood-end-x': `${moodFloatItem.endOffsetPx}px`,
+      '--pet-mood-start-rotate': `${moodFloatItem.startRotateDeg}deg`,
+      '--pet-mood-mid-rotate': `${moodFloatItem.midRotateDeg}deg`,
+      '--pet-mood-end-rotate': `${moodFloatItem.endRotateDeg}deg`
+    }))
+  ), [moodFloatBatch]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setMoodFloatBatch(createMoodFloatBatch());
+    }, PET_MOOD_FLOAT_OPTIONS.runIntervalSeconds * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const handleBack = () => {
     if (onBack) { onBack(); return; }
@@ -174,13 +244,27 @@ const PetPage = ({ onBack }) => {
           <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
             <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
           </button>
-          <div className="pet-nameplate">Méos Home</div>
+          <div className="pet-nameplate" aria-label="Méo, current location Home">
+            <span className="pet-nameplate__flip" aria-hidden="true">
+              <span className="pet-nameplate__face pet-nameplate__face--front">Méo</span>
+              <span className="pet-nameplate__face pet-nameplate__face--back">Home</span>
+            </span>
+          </div>
           <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} />
         </div>
 
         <div className="pet-stage">
           <div className="pet-bubble">
             <p>I'm hungry. Missing your yummy meals.</p>
+          </div>
+
+          <div className="pet-stage-indicators" aria-label="Pet context">
+            {moodFloatBatch.map((moodFloatItem, index) => (
+              <div key={moodFloatItem.id} className="pet-mood-float" style={moodFloatStyles[index]} aria-label={`Current mood ${PET_CURRENT_MOOD.label}`}>
+                <PET_CURRENT_MOOD.Icon className="pet-mood-float__icon" aria-hidden="true" />
+                <span>{PET_CURRENT_MOOD.label}</span>
+              </div>
+            ))}
           </div>
 
           <div className="pet-character pet-character--pet" role="img" aria-label="Meo pet placeholder">
