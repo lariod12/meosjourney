@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import {
-  LuChevronLeft, LuEllipsis,
+  LuChevronLeft, LuChevronDown,
   LuUtensils, LuHeart, LuActivity, LuGauge,
   LuTrophy, LuHeartPulse, LuSoup, LuBrain,
   LuCake, LuBeef, LuApple, LuMilk, LuFish, LuCookie,
   LuShowerHead, LuShirt, LuBedSingle, LuBrush, LuBath, LuBandage,
-  LuPackage2, LuCarFront, LuPlane, LuGamepad2, LuBookOpen, LuFootprints, LuPuzzle
+  LuPackage2, LuCarFront, LuPlane, LuGamepad2, LuBookOpen, LuFootprints, LuPuzzle,
+  LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain
 } from 'react-icons/lu';
 import '../styles/pet.css';
 
@@ -28,7 +29,16 @@ const ITEM_ICONS = {
   ball: LuGamepad2,
   book: LuBookOpen,
   walk: LuFootprints,
-  puzzle: LuPuzzle
+  puzzle: LuPuzzle,
+  happy: LuSmile,
+  laugh: LuLaugh,
+  calm: LuMeh,
+  grumpy: LuFrown,
+  sparkle: LuSparkles,
+  sleepy: LuMoon,
+  sunny: LuSun,
+  cozy: LuCloudSun,
+  gloomy: LuCloudRain
 };
 
 const TAB_ITEMS = {
@@ -64,6 +74,17 @@ const TAB_ITEMS = {
     { name: 'Puzzle', count: 1, shape: 'puzzle' },
     { name: 'Sprint', count: 0, shape: 'walk' },
     { name: 'Kite', count: 1, shape: 'plane' }
+  ],
+  moods: [
+    { name: 'Happy', count: 0, shape: 'happy' },
+    { name: 'Silly', count: 1, shape: 'laugh' },
+    { name: 'Calm', count: 0, shape: 'calm' },
+    { name: 'Grumpy', count: 0, shape: 'grumpy' },
+    { name: 'Spark', count: 2, shape: 'sparkle' },
+    { name: 'Sleepy', count: 1, shape: 'sleepy' },
+    { name: 'Sunny', count: 0, shape: 'sunny' },
+    { name: 'Cozy', count: 1, shape: 'cozy' },
+    { name: 'Gloomy', count: 0, shape: 'gloomy' }
   ]
 };
 
@@ -71,6 +92,7 @@ const TABS = [
   { key: 'food', label: 'Food', Icon: LuUtensils },
   { key: 'care', label: 'Care', Icon: LuHeart },
   { key: 'activity', label: 'Activity', Icon: LuActivity },
+  { key: 'moods', label: 'Moods', Icon: LuSmile },
   { key: 'status', label: 'Status', Icon: LuGauge }
 ];
 
@@ -80,6 +102,10 @@ const PET_STATUS_ROWS = [
   { key: 'hunger', label: 'Hunger', value: 38, Icon: LuSoup },
   { key: 'sanity', label: 'Sanity', value: 72, Icon: LuBrain }
 ];
+
+const PET_DROPDOWN_STATUS_ROWS = PET_STATUS_ROWS.filter(({ key }) => (
+  key === 'health' || key === 'hunger' || key === 'sanity'
+));
 
 const PetItemCard = ({ item }) => {
   const Icon = ITEM_ICONS[item.shape] ?? LuPackage2;
@@ -109,8 +135,31 @@ const PetStatusPanel = () => (
   </div>
 );
 
+const PetInfoDropdown = ({ expanded, onToggle }) => (
+  <div className="pet-info-dropdown">
+    <button
+      type="button"
+      className={`pet-round-button ${expanded ? 'pet-round-button--flipped' : ''}`}
+      onClick={onToggle}
+      aria-label={expanded ? 'Collapse pet info' : 'Expand pet info'}
+      aria-expanded={expanded}
+    >
+      <LuChevronDown className="pet-topbar-icon" aria-hidden="true" />
+    </button>
+    <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
+      {PET_DROPDOWN_STATUS_ROWS.map(({ key, label, value, Icon }) => (
+        <div key={key} className="pet-info-item pet-info-item--stat" aria-label={`${label} ${value}%`}>
+          <Icon className="pet-info-item__icon" aria-hidden="true" />
+          <span className="pet-info-item__label">{value}%</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const PetPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('food');
+  const [infoExpanded, setInfoExpanded] = useState(false);
   const items = useMemo(() => TAB_ITEMS[activeTab] ?? TAB_ITEMS.food, [activeTab]);
 
   const handleBack = () => {
@@ -121,17 +170,15 @@ const PetPage = ({ onBack }) => {
   return (
     <main className="pet-page">
       <section className="pet-phone" aria-label="Virtual pet preview">
-        <div className="pet-stage">
-          <div className="pet-topbar">
-            <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
-              <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
-            </button>
-            <div className="pet-nameplate">Méos Home</div>
-            <button type="button" className="pet-round-button" aria-label="More options">
-              <LuEllipsis className="pet-topbar-icon" aria-hidden="true" />
-            </button>
-          </div>
+        <div className="pet-topbar">
+          <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
+            <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
+          </button>
+          <div className="pet-nameplate">Méos Home</div>
+          <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} />
+        </div>
 
+        <div className="pet-stage">
           <div className="pet-bubble">
             <p>I'm hungry. Missing your yummy meals.</p>
           </div>
