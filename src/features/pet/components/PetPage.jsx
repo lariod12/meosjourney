@@ -123,6 +123,11 @@ const PET_MOOD_FLOAT_OPTIONS = {
   endScale: 1.12
 };
 
+const PET_THOUGHT_BUBBLE_OPTIONS = {
+  playDurationSeconds: 7,
+  replayDelaySeconds: 5
+};
+
 const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
 
 const createMoodFloatVariant = () => {
@@ -210,6 +215,7 @@ const PetPage = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('food');
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
+  const [thoughtBubbleVisible, setThoughtBubbleVisible] = useState(false);
   const items = useMemo(() => TAB_ITEMS[activeTab] ?? TAB_ITEMS.food, [activeTab]);
   const moodFloatStyles = useMemo(() => (
     moodFloatBatch.map((moodFloatItem) => ({
@@ -230,6 +236,28 @@ const PetPage = ({ onBack }) => {
     }, PET_MOOD_FLOAT_OPTIONS.runIntervalSeconds * 1000);
 
     return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    let hideTimeoutId;
+    let replayTimeoutId;
+    const playDurationMs = PET_THOUGHT_BUBBLE_OPTIONS.playDurationSeconds * 1000;
+    const replayDelayMs = PET_THOUGHT_BUBBLE_OPTIONS.replayDelaySeconds * 1000;
+
+    const playThoughtBubble = () => {
+      setThoughtBubbleVisible(true);
+      hideTimeoutId = window.setTimeout(() => {
+        setThoughtBubbleVisible(false);
+        replayTimeoutId = window.setTimeout(playThoughtBubble, replayDelayMs);
+      }, playDurationMs);
+    };
+
+    playThoughtBubble();
+
+    return () => {
+      window.clearTimeout(hideTimeoutId);
+      window.clearTimeout(replayTimeoutId);
+    };
   }, []);
 
   const handleBack = () => {
@@ -254,7 +282,7 @@ const PetPage = ({ onBack }) => {
         </div>
 
         <div className="pet-stage">
-          <div className="pet-bubble">
+          <div className={`pet-bubble ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
             <p>I'm hungry. Missing your yummy meals.</p>
           </div>
 

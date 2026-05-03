@@ -203,6 +203,18 @@
 }
 
 .pet-bubble {
+  --pet-bubble-shadow: 2px 2px 0 #cccccc;
+  --pet-bubble-dot-duration: 0.48s;
+  --pet-bubble-panel-duration: 0.62s;
+  --pet-bubble-text-duration: 0.46s;
+  --pet-bubble-idle-duration: 3.8s;
+  --pet-bubble-enter-panel-delay: 0.58s;
+  --pet-bubble-enter-large-dot-delay: 0.28s;
+  --pet-bubble-enter-text-delay: 0.94s;
+  --pet-bubble-out-dot-delay: 0.12s;
+  --pet-bubble-out-panel-delay: 0.28s;
+  --pet-bubble-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --pet-bubble-out-ease: cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
   z-index: 7;
   left: 34px;
@@ -210,15 +222,30 @@
   width: min(42%, 168px);
   min-height: 56px;
   border-radius: 26px;
-  background: #ffffff;
-  box-shadow: 2px 2px 0 #cccccc;
+  background: transparent;
+  box-shadow: none;
   padding: 9px 12px;
   font-size: 0.72rem;
   font-weight: 900;
   line-height: 1.18;
   transform-origin: 82% 100%;
-  animation: pet-bubble-idle 4.8s ease-in-out infinite;
-  will-change: transform;
+  transform: translateY(3px) rotate(-0.36deg) scale(0.965);
+  transition:
+    background var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay),
+    box-shadow var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay),
+    transform var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay);
+  will-change: background, box-shadow, transform;
+}
+
+.pet-bubble--visible {
+  background: #ffffff;
+  box-shadow: var(--pet-bubble-shadow);
+  transform: translateY(0) rotate(-0.18deg) scale(1);
+  animation: pet-bubble-visible-idle var(--pet-bubble-idle-duration) ease-in-out 1.45s infinite;
+  transition:
+    background var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay),
+    box-shadow var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay),
+    transform var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay);
 }
 
 .pet-bubble::before,
@@ -228,8 +255,13 @@
   display: block;
   border-radius: 50%;
   background: #ffffff;
-  animation: pet-bubble-tail-idle 4.8s ease-in-out infinite;
-  will-change: transform;
+  opacity: 0;
+  transform: translate(0, 2px) scale(0.28);
+  transform-origin: center;
+  transition:
+    opacity var(--pet-bubble-dot-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-dot-delay),
+    transform var(--pet-bubble-dot-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-dot-delay);
+  will-change: opacity, transform;
 }
 
 .pet-bubble::before {
@@ -237,8 +269,7 @@
   bottom: -8px;
   width: 18px;
   height: 18px;
-  box-shadow: 2px 2px 0 #cccccc;
-  animation-delay: 0.18s;
+  box-shadow: var(--pet-bubble-shadow);
 }
 
 .pet-bubble::after {
@@ -246,13 +277,44 @@
   bottom: -14px;
   width: 9px;
   height: 9px;
-  box-shadow: 2px 2px 0 #cccccc;
-  animation-delay: 0.34s;
+  box-shadow: var(--pet-bubble-shadow);
+}
+
+.pet-bubble--visible::after {
+  opacity: 1;
+  animation: pet-bubble-dot-visible-idle 3.2s ease-in-out 1.18s infinite;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease),
+    transform var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease);
+}
+
+.pet-bubble--visible::before {
+  opacity: 1;
+  animation: pet-bubble-dot-visible-idle 3.2s ease-in-out 1.32s infinite;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-large-dot-delay),
+    transform var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-large-dot-delay);
 }
 
 .pet-bubble p {
   margin: 0;
+  opacity: 0;
   text-align: left;
+  transform: translateY(4px);
+  transition:
+    opacity var(--pet-bubble-text-duration) var(--pet-bubble-out-ease),
+    transform var(--pet-bubble-text-duration) var(--pet-bubble-out-ease);
+  will-change: opacity, transform;
+}
+
+.pet-bubble--visible p {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--pet-bubble-text-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-text-delay),
+    transform var(--pet-bubble-text-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-text-delay);
 }
 
 .pet-stage-indicators {
@@ -640,37 +702,33 @@
   }
 }
 
-@keyframes pet-bubble-idle {
+@keyframes pet-bubble-visible-idle {
   0%,
   100% {
-    transform: translateY(0) rotate(-0.4deg) scale(1);
+    transform: translateY(0) rotate(-0.18deg) scale(1);
   }
 
-  28% {
-    transform: translateY(-3px) rotate(0.35deg) scale(1.012);
+  32% {
+    transform: translateY(-2px) rotate(0.16deg) scale(1.006);
   }
 
-  58% {
-    transform: translateY(-1px) rotate(-0.15deg) scale(0.996);
-  }
-
-  78% {
-    transform: translateY(-4px) rotate(0.2deg) scale(1.006);
+  64% {
+    transform: translateY(-1px) rotate(-0.08deg) scale(0.998);
   }
 }
 
-@keyframes pet-bubble-tail-idle {
+@keyframes pet-bubble-dot-visible-idle {
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
 
-  36% {
-    transform: translate(1px, -2px) scale(1.08);
+  44% {
+    transform: translate(1px, -1px) scale(1.06);
   }
 
-  68% {
-    transform: translate(-1px, 1px) scale(0.96);
+  72% {
+    transform: translate(-1px, 0) scale(0.98);
   }
 }
 
@@ -703,8 +761,23 @@
   .pet-bubble,
   .pet-bubble::before,
   .pet-bubble::after,
+  .pet-bubble p,
   .pet-mood-float {
     animation: none;
+    transition: none;
+  }
+
+  .pet-bubble {
+    background: #ffffff;
+    box-shadow: var(--pet-bubble-shadow);
+    transform: translateY(0) rotate(-0.4deg) scale(1);
+  }
+
+  .pet-bubble::before,
+  .pet-bubble::after,
+  .pet-bubble p {
+    opacity: 1;
+    transform: none;
   }
 
   .pet-mood-float {
