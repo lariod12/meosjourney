@@ -9,6 +9,7 @@ import './styles/global.css';
 
 const UserPage = lazy(() => import('./pages/UserPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const PetPage = lazy(() => import('./pages/PetPage'));
 
 const withPageLoader = (element) => (
   <Suspense fallback={<LoadingDialog />}>
@@ -54,6 +55,7 @@ const App = () => {
     <Router basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/pet" element={withPageLoader(<PetPage onBack={() => window.history.back()} />)} />
         <Route path="/user/meos05" element={withPageLoader(<UserPage onBack={() => window.history.back()} />)} />
         <Route path="/admin/meos05" element={withPageLoader(<AdminPage onBack={() => window.history.back()} />)} />
       </Routes>
