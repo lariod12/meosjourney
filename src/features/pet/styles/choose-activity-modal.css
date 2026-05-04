@@ -1,0 +1,307 @@
+/* Choose Activity Modal Overlay */
+.choose-activity-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* Choose Activity Modal Container */
+.choose-activity-modal {
+  background: #ffffff;
+  border: 4px solid #000000;
+  border-radius: 16px;
+  box-shadow: 8px 8px 0 #000000;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: chooseModalSlideIn 0.25s ease-out;
+}
+
+@keyframes chooseModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Header */
+.choose-activity-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-bottom: 3px solid #000000;
+  flex-shrink: 0;
+}
+
+.choose-activity-modal__title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  color: #000000;
+}
+
+.choose-activity-modal__close {
+  background: #ffffff;
+  border: 3px solid #000000;
+  color: #000000;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 0 #999999;
+  font-weight: 700;
+}
+
+.choose-activity-modal__close:hover {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.choose-activity-modal__close:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #999999;
+}
+
+.choose-activity-modal__close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal Body */
+.choose-activity-modal__body {
+  padding: 24px;
+  background: #ffffff;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Search Input */
+.choose-activity-modal__search {
+  margin-bottom: 20px;
+}
+
+.choose-activity-modal__search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #999999;
+  transition: all 0.15s ease;
+}
+
+.choose-activity-modal__search-input:focus {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.choose-activity-modal__search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Activity List */
+.choose-activity-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.choose-activity-modal__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 3px 3px 0 #999999;
+  text-align: left;
+  width: 100%;
+}
+
+.choose-activity-modal__item:hover {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.choose-activity-modal__item:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #999999;
+}
+
+.choose-activity-modal__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.choose-activity-modal__item-icon {
+  flex-shrink: 0;
+}
+
+.choose-activity-modal__item-empty {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: #999999;
+  font-weight: 600;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.choose-activity-modal__item-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: #000000;
+  font-weight: 600;
+}
+
+.choose-activity-modal__empty {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: #999999;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Item Wrapper */
+.choose-activity-modal__item-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.choose-activity-modal__item--expanded {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+/* Action Buttons */
+.choose-activity-modal__actions {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 3px solid #000000;
+  border-top: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  background: #f5f5f5;
+  animation: expandActions 0.2s ease-out;
+}
+
+@keyframes expandActions {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 100px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+.choose-activity-modal__action-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 3px 3px 0 #999999;
+}
+
+.choose-activity-modal__action-btn:hover {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.choose-activity-modal__action-btn:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #999999;
+}
+
+.choose-activity-modal__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.choose-activity-modal__action-btn--confirm {
+  background: #000000;
+  color: #ffffff;
+}
+
+.choose-activity-modal__action-btn--update {
+  background: #ffffff;
+  color: #000000;
+}
+/* Responsive Design */
+@media (max-width: 480px) {
+  .choose-activity-modal {
+    max-width: 100%;
+    margin: 0 16px;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 #000000;
+  }
+
+  .choose-activity-modal__header {
+    padding: 16px 20px;
+  }
+
+  .choose-activity-modal__title {
+    font-size: 1.1rem;
+  }
+
+  .choose-activity-modal__body {
+    padding: 20px;
+  }
+
+  .choose-activity-modal__list {
+    max-height: 300px;
+  }
+}

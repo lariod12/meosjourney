@@ -1,0 +1,200 @@
+/* Update Icon Modal Overlay */
+.update-icon-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 20px;
+}
+
+/* Update Icon Modal Container */
+.update-icon-modal {
+  background: #ffffff;
+  border: 4px solid #000000;
+  border-radius: 16px;
+  box-shadow: 8px 8px 0 #000000;
+  max-width: 450px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: updateIconModalSlideIn 0.25s ease-out;
+}
+
+@keyframes updateIconModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Header */
+.update-icon-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-bottom: 3px solid #000000;
+  flex-shrink: 0;
+}
+
+.update-icon-modal__title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  color: #000000;
+}
+
+.update-icon-modal__close {
+  background: #ffffff;
+  border: 3px solid #000000;
+  color: #000000;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 0 #999999;
+  font-weight: 700;
+}
+
+.update-icon-modal__close:hover {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.update-icon-modal__close:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #999999;
+}
+
+.update-icon-modal__close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal Body */
+.update-icon-modal__body {
+  padding: 24px;
+  background: #ffffff;
+  flex: 1;
+}
+
+.update-icon-modal__activity-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: #666666;
+  margin: 0 0 20px 0;
+}
+
+.update-icon-modal__activity-name strong {
+  color: #000000;
+  font-weight: 700;
+}
+
+.update-icon-modal__field {
+  margin-bottom: 20px;
+}
+
+.update-icon-modal__label {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+/* Modal Footer */
+.update-icon-modal__footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-top: 3px solid #000000;
+  flex-shrink: 0;
+}
+
+.update-icon-modal__button {
+  flex: 1;
+  padding: 12px 24px;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 4px 4px 0 #999999;
+}
+
+.update-icon-modal__button:hover {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
+.update-icon-modal__button:active {
+  transform: translateY(1px);
+  box-shadow: 3px 3px 0 #999999;
+}
+
+.update-icon-modal__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.update-icon-modal__button--cancel {
+  background: #ffffff;
+  color: #000000;
+}
+
+.update-icon-modal__button--save {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .update-icon-modal {
+    max-width: 100%;
+    margin: 0 16px;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 #000000;
+  }
+
+  .update-icon-modal__header {
+    padding: 16px 20px;
+  }
+
+  .update-icon-modal__title {
+    font-size: 1.1rem;
+  }
+
+  .update-icon-modal__body {
+    padding: 20px;
+  }
+
+  .update-icon-modal__footer {
+    padding: 16px 20px;
+  }
+}

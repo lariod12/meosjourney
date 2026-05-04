@@ -9,11 +9,13 @@ import {
   LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain,
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
   LuClapperboard, LuMusic, LuShoppingBag, LuScissors, LuWashingMachine, LuDumbbell, LuPaintbrush,
-  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus
+  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { fetchStatus, saveStatus } from '../../../services';
 import AddActivityModal from './AddActivityModal';
+import ChooseActivityModal from './ChooseActivityModal';
+import UpdateIconModal from './UpdateIconModal';
 import ConfirmActivityModal from './ConfirmActivityModal';
 import '../styles/pet.css';
 
@@ -257,7 +259,7 @@ const PetItemCard = ({ item, showCount = true, isCurrent = false, onClick }) => 
         item.icon ? (
           <IconRenderer iconName={item.icon} size={44} className="pet-item-icon" />
         ) : (
-          <span className="pet-item-card__empty">Empty</span>
+          <span className="pet-item-card__empty">&#60;&#62;</span>
         )
       ) : (
         <Icon className="pet-item-icon" aria-hidden="true" />
@@ -318,6 +320,9 @@ const PetPage = ({ onBack }) => {
   const [activityItems, setActivityItems] = useState([]);
   const [currentActivityName, setCurrentActivityName] = useState('');
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [isChooseActivityModalOpen, setIsChooseActivityModalOpen] = useState(false);
+  const [isUpdateIconModalOpen, setIsUpdateIconModalOpen] = useState(false);
+  const [activityToUpdate, setActivityToUpdate] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [isSavingActivity, setIsSavingActivity] = useState(false);
@@ -400,6 +405,74 @@ const PetPage = ({ onBack }) => {
   const handleBack = () => {
     if (onBack) { onBack(); return; }
     window.history.back();
+  };
+
+  const handleChooseActivityConfirm = async (activity) => {
+    setIsSavingActivity(true);
+
+    try {
+      const result = await saveStatus({
+        doing: {
+          name: activity.name,
+          icon: activity.icon
+        }
+      });
+
+      if (result.success) {
+        setCurrentActivityName(activity.name);
+        setActivityItems(prev => {
+          const filtered = prev.filter(item => item.name !== activity.name);
+          return [activity, ...filtered];
+        });
+        setIsChooseActivityModalOpen(false);
+      } else {
+        console.error('Failed to set activity:', result.message);
+        alert('Failed to set activity. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error setting activity:', error);
+      alert('Failed to set activity. Please try again.');
+    } finally {
+      setIsSavingActivity(false);
+    }
+  };
+
+  const handleChooseActivityUpdate = (activity) => {
+    // Close choose modal and open update icon modal
+    setIsChooseActivityModalOpen(false);
+    setActivityToUpdate(activity);
+    setIsUpdateIconModalOpen(true);
+  };
+
+  const handleUpdateIcon = async (updatedActivity) => {
+    setIsSavingActivity(true);
+
+    try {
+      const result = await saveStatus({
+        doing: {
+          name: updatedActivity.name,
+          icon: updatedActivity.icon
+        }
+      });
+
+      if (result.success) {
+        // Update activity in list
+        setActivityItems(prev => {
+          const filtered = prev.filter(item => item.name !== updatedActivity.name);
+          return [updatedActivity, ...filtered];
+        });
+        setIsUpdateIconModalOpen(false);
+        setActivityToUpdate(null);
+      } else {
+        console.error('Failed to update icon:', result.message);
+        alert('Failed to update icon. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating icon:', error);
+      alert('Failed to update icon. Please try again.');
+    } finally {
+      setIsSavingActivity(false);
+    }
   };
 
   const handleAddActivity = async (newActivity, setAsCurrent) => {
@@ -583,15 +656,26 @@ const PetPage = ({ onBack }) => {
             ) : (
               <div className="pet-item-grid">
                 {activeTab === 'activity' && (
-                  <button
-                    type="button"
-                    className="pet-item-card pet-item-card--add"
-                    onClick={() => setIsAddActivityModalOpen(true)}
-                    aria-label="Add new activity"
-                  >
-                    <LuPlus className="pet-item-icon" aria-hidden="true" />
-                    <span className="pet-item-card__name">Add</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="pet-item-card pet-item-card--add"
+                      onClick={() => setIsAddActivityModalOpen(true)}
+                      aria-label="Add new activity"
+                    >
+                      <LuPlus className="pet-item-icon" aria-hidden="true" />
+                      <span className="pet-item-card__name">Add</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="pet-item-card pet-item-card--choose"
+                      onClick={() => setIsChooseActivityModalOpen(true)}
+                      aria-label="Choose existing activity"
+                    >
+                      <LuSearch className="pet-item-icon" aria-hidden="true" />
+                      <span className="pet-item-card__name">Choose</span>
+                    </button>
+                  </>
                 )}
                 {items.map((item, index) => (
                   <PetItemCard
@@ -608,12 +692,31 @@ const PetPage = ({ onBack }) => {
         </section>
       </section>
 
+      <ChooseActivityModal
+        isOpen={isChooseActivityModalOpen}
+        onClose={() => setIsChooseActivityModalOpen(false)}
+        onConfirm={handleChooseActivityConfirm}
+        onUpdate={handleChooseActivityUpdate}
+        existingActivities={activityItems}
+        isLoading={isSavingActivity}
+      />
+
       <AddActivityModal
         isOpen={isAddActivityModalOpen}
         onClose={() => setIsAddActivityModalOpen(false)}
         onSave={handleAddActivity}
         isLoading={isSavingActivity}
-        existingActivities={activityItems}
+        />
+
+      <UpdateIconModal
+        isOpen={isUpdateIconModalOpen}
+        onClose={() => {
+          setIsUpdateIconModalOpen(false);
+          setActivityToUpdate(null);
+        }}
+        onSave={handleUpdateIcon}
+        activity={activityToUpdate}
+        isLoading={isSavingActivity}
       />
 
       <ConfirmActivityModal
