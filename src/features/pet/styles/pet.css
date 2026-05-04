@@ -582,6 +582,13 @@
   cursor: pointer;
 }
 
+.pet-item-card--activity {
+  grid-template-rows: 54px auto;
+  align-content: center;
+  gap: 10px;
+  padding-top: 16px;
+}
+
 .pet-item-icon {
   width: 44px;
   height: 44px;
@@ -658,10 +665,21 @@
   vertical-align: middle;
 }
 
+/* Empty Icon Text */
+.pet-item-card__empty {
+  font-family: ''Playfair Display'', serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: #999999;
+  font-weight: 600;
+}
 .pet-item-card__name {
+  max-width: 100%;
   font-size: 0.95rem;
   line-height: 1.1;
   font-weight: 800;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 @keyframes pet-idle {
@@ -887,3 +905,73 @@
     box-shadow: 8px 8px 0 #000000;
   }
 }
+
+/* Add Activity Card Style */
+.pet-item-card--add {
+  background: #ffffff;
+  border-style: dashed;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.pet-item-card--add:hover,
+.pet-item-card--add:focus-visible {
+  opacity: 1;
+  background: #f9f9f9;
+}
+
+.pet-item-card--add .pet-item-icon {
+  opacity: 0.7;
+}
+
+.pet-item-card--add:hover .pet-item-icon,
+.pet-item-card--add:focus-visible .pet-item-icon {
+  opacity: 1;
+}
+
+/* Current Activity Card Style */
+.pet-item-card--current {
+  background: #000000;
+  color: #ffffff;
+  position: relative;
+}
+
+.pet-item-card--current .pet-item-icon {
+  color: #ffffff;
+  filter: brightness(0) invert(1);
+}
+
+.pet-item-card--current .pet-item-card__name {
+  color: #ffffff;
+}
+
+.pet-item-card__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 2px solid #000000;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.pet-item-card--current:hover,
+.pet-item-card--current:focus-visible {
+  background: #1a1a1a;
+}
+
+@media (max-width: 480px) {
+  .pet-item-card__badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    top: 6px;
+    right: 6px;
+  }
+}
+

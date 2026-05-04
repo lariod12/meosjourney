@@ -3,11 +3,39 @@ import { useCharacter } from '../../../contexts/CharacterContext';
 import TabNavigation from './TabNavigation';
 import { TimeAgo } from '../../../components/common';
 import { useLanguage } from '../../../contexts';
+import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 
 const StatusBox = () => {
   const data = useCharacter();
   const [pageLoadTime] = useState(() => new Date());
   const { t } = useLanguage();
+
+  const getStatusText = (value) => {
+    if (Array.isArray(value)) {
+      return getStatusText(value[0]);
+    }
+
+    if (value && typeof value === 'object') {
+      return typeof value.name === 'string' ? value.name : '';
+    }
+
+    return value || '';
+  };
+
+  const getStatusIcon = (value) => {
+    if (Array.isArray(value)) {
+      return getStatusIcon(value[0]);
+    }
+
+    if (value && typeof value === 'object') {
+      return typeof value.icon === 'string' ? value.icon : '';
+    }
+
+    return '';
+  };
+
+  const currentActivityText = getStatusText(data.status.doing);
+  const currentActivityIcon = getStatusIcon(data.status.doing);
 
   const tabs = [
     {
@@ -17,27 +45,23 @@ const StatusBox = () => {
       content: (
         <div className="status-content">
           <div className="status-indicator">
-            <span className="status-dot"></span>
+            {currentActivityIcon && (
+              <IconRenderer iconName={currentActivityIcon} size={18} className="status-activity-icon" />
+            )}
             <span>
-              {Array.isArray(data.status.doing)
-                ? (data.status.doing[0] || '')
-                : (data.status.doing || '')}
+              {currentActivityText}
             </span>
           </div>
           <div className="status-location">
             <span className="status-label">{t('status.location')}</span>
             <span>
-              {Array.isArray(data.status.location)
-                ? (data.status.location[0] || '')
-                : (data.status.location || '')}
+              {getStatusText(data.status.location)}
             </span>
           </div>
           <div className="status-mood">
             <span className="status-label">{t('status.mood')}</span>
             <span>
-              {Array.isArray(data.status.mood)
-                ? (data.status.mood[0] || '')
-                : (data.status.mood || '')}
+              {getStatusText(data.status.mood)}
             </span>
           </div>
           <div className="status-time">

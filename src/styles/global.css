@@ -742,6 +742,11 @@ body {
     animation: pulse 2s ease-in-out infinite;
 }
 
+.status-activity-icon {
+    flex-shrink: 0;
+    color: var(--black);
+}
+
 @keyframes pulse {
 
     0%,

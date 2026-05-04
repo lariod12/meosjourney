@@ -8,6 +8,7 @@ import { sendQuestSubmissionNotification, sendAchievementNotification, sendAdmin
 import PasswordModal from '../../../components/PasswordModal/PasswordModal';
 import ConfirmModal from '../../../components/ConfirmModal/ConfirmModal';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
+import IconPicker from '../../../components/IconPicker/IconPicker';
 import { LoadingDialog } from '../../../components/common';
 import { usePasswordGate } from '../../auth/hooks/usePasswordGate';
 import CollapsibleSection from './sections/CollapsibleSection';
@@ -19,6 +20,7 @@ const FIELD_SECTIONS = {
   introduce: ['profile'],
   caption: ['profile', 'status'],
   doing: ['status'],
+  doingIcon: ['status'],
   location: ['status'],
   mood: ['status'],
   journalEntry: ['journal'],
@@ -45,6 +47,7 @@ const UserPage = ({ onBack }) => {
   const [formData, setFormData] = useState({
     noteDate: new Date().toISOString().split('T')[0],
     doing: '',
+    doingIcon: '',
     location: '',
     caption: '',
     mood: '',
@@ -184,16 +187,75 @@ const UserPage = ({ onBack }) => {
   const [failedGroupExpanded, setFailedGroupExpanded] = useState(false);
   const [completedGroupExpanded, setCompletedGroupExpanded] = useState(false);
 
+  const getStatusItemName = (value) => {
+    if (value && typeof value === 'object') {
+      return typeof value.name === 'string' ? value.name.trim() : String(value.name || '').trim();
+    }
+
+    if (value === undefined || value === null) return '';
+    return typeof value === 'string' ? value.trim() : String(value).trim();
+  };
+
+  const getStatusItemIcon = (value) => {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const icon = getStatusItemIcon(item);
+        if (icon) return icon;
+      }
+      return '';
+    }
+
+    if (value && typeof value === 'object') {
+      return typeof value.icon === 'string' ? value.icon.trim() : '';
+    }
+
+    return '';
+  };
+
   const normalizeStatusValue = (value) => {
     if (Array.isArray(value)) {
       for (const item of value) {
-        const str = typeof item === 'string' ? item.trim() : String(item || '').trim();
+        const str = getStatusItemName(item);
         if (str) return str;
       }
       return '';
     }
-    if (value === undefined || value === null) return '';
-    return typeof value === 'string' ? value.trim() : String(value).trim();
+    return getStatusItemName(value);
+  };
+
+  const normalizeStatusList = (value) => {
+    const list = Array.isArray(value) ? value : [value];
+    const seen = new Set();
+    const normalized = [];
+
+    list.forEach((item) => {
+      const name = getStatusItemName(item);
+      const key = name.toLowerCase();
+      if (name && !seen.has(key)) {
+        seen.add(key);
+        normalized.push(name);
+      }
+    });
+
+    return normalized;
+  };
+
+  const normalizeStatusActivityList = (value) => {
+    const list = Array.isArray(value) ? value : [value];
+    const seen = new Set();
+    const normalized = [];
+
+    list.forEach((item) => {
+      const name = getStatusItemName(item);
+      const icon = getStatusItemIcon(item);
+      const key = name.toLowerCase();
+      if (name && !seen.has(key)) {
+        seen.add(key);
+        normalized.push({ name, icon });
+      }
+    });
+
+    return normalized;
   };
 
   const resolveLocalizedValue = (value, fallback = '') => {
@@ -272,6 +334,7 @@ const UserPage = ({ onBack }) => {
 
       if (statusData) {
         next.doing = normalizeStatusValue(statusData.doing);
+        next.doingIcon = getStatusItemIcon(statusData.doing);
         next.location = normalizeStatusValue(statusData.location);
         next.mood = normalizeStatusValue(statusData.mood);
       }
@@ -317,7 +380,7 @@ const UserPage = ({ onBack }) => {
 
   // Debug: Log formData changes
   useEffect(() => {
-  }, [formData.doing, formData.location, formData.mood, formData.caption]);
+  }, [formData.doing, formData.doingIcon, formData.location, formData.mood, formData.caption]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -387,41 +450,18 @@ const UserPage = ({ onBack }) => {
           }
           
           // Prepare existing doings
-          const doingsArr = Array.isArray(statusData.doing) ? statusData.doing : [];
-          const seen = new Set();
-          const normalized = [];
-          doingsArr.forEach((d) => {
-            const s = String(d).trim();
-            const key = s.toLowerCase();
-            if (s && !seen.has(key)) { seen.add(key); normalized.push(s); }
-          });
-          setExistingDoings(normalized);
+          setExistingDoings(normalizeStatusActivityList(statusData.doing));
 
           // Prepare existing locations
-          const locArr = Array.isArray(statusData.location) ? statusData.location : [];
-          const seenLoc = new Set();
-          const normalizedLocs = [];
-          locArr.forEach((l) => {
-            const s = String(l).trim();
-            const key = s.toLowerCase();
-            if (s && !seenLoc.has(key)) { seenLoc.add(key); normalizedLocs.push(s); }
-          });
-          setExistingLocations(normalizedLocs);
+          setExistingLocations(normalizeStatusList(statusData.location));
 
           // Prepare existing moods
-          const moodArr = Array.isArray(statusData.mood) ? statusData.mood : [];
-          const seenMood = new Set();
-          const normalizedMoods = [];
-          moodArr.forEach((m) => {
-            const s = String(m).trim();
-            const key = s.toLowerCase();
-            if (s && !seenMood.has(key)) { seenMood.add(key); normalizedMoods.push(s); }
-          });
-          setExistingMoods(normalizedMoods);
+          setExistingMoods(normalizeStatusList(statusData.mood));
 
           // Save original status data
           const originalStatus = {
             doing: normalizeStatusValue(statusData.doing),
+            doingIcon: getStatusItemIcon(statusData.doing),
             location: normalizeStatusValue(statusData.location),
             mood: normalizeStatusValue(statusData.mood),
             caption: profile?.caption || ''
@@ -432,6 +472,7 @@ const UserPage = ({ onBack }) => {
           setFormData(prev => ({
             ...prev,
             doing: originalStatus.doing,
+            doingIcon: originalStatus.doingIcon,
             location: originalStatus.location,
             mood: originalStatus.mood,
             caption: originalStatus.caption,
@@ -440,7 +481,7 @@ const UserPage = ({ onBack }) => {
 
 
         } else {
-          setOriginalStatusData({ doing: '', location: '', mood: '', caption: '' });
+          setOriginalStatusData({ doing: '', doingIcon: '', location: '', mood: '', caption: '' });
           console.warn('⚠️ No status found');
         }
 
@@ -611,7 +652,10 @@ const UserPage = ({ onBack }) => {
       setDoingSuggestions(pool.slice(0, 10));
       return;
     }
-    const suggestions = pool.filter(d => d.toLowerCase().includes(q) || d.toLowerCase().startsWith(q));
+    const suggestions = pool.filter((item) => {
+      const name = getStatusItemName(item).toLowerCase();
+      return name.includes(q) || name.startsWith(q);
+    });
     setDoingSuggestions(suggestions.slice(0, 10));
     setDoingOpen(suggestions.length > 0);
   };
@@ -844,6 +888,7 @@ const UserPage = ({ onBack }) => {
 
     const hasStatusChanges = dirtySections.has('status') && (
       formData.doing.trim() !== (originalStatusData?.doing || '') ||
+      formData.doingIcon.trim() !== (originalStatusData?.doingIcon || '') ||
       formData.location.trim() !== (originalStatusData?.location || '') ||
       formData.mood.trim() !== (originalStatusData?.mood || '') ||
       formData.caption.trim() !== (originalStatusData?.caption || '')
@@ -1085,7 +1130,10 @@ const UserPage = ({ onBack }) => {
           (async () => {
             try {
               const statusResult = await saveStatus({
-                doing: formData.doing,
+                doing: {
+                  name: formData.doing,
+                  icon: formData.doingIcon
+                },
                 location: formData.location,
                 caption: formData.caption,
                 mood: formData.mood
@@ -1097,6 +1145,7 @@ const UserPage = ({ onBack }) => {
 
                 // Create journal entries for changed fields (in parallel)
                 const newDoing = formData.doing.trim();
+                const newDoingIcon = formData.doingIcon.trim();
                 const newLocation = formData.location.trim();
                 const newMood = formData.mood.trim();
                 const newCaption = formData.caption.trim();
@@ -1130,6 +1179,7 @@ const UserPage = ({ onBack }) => {
 
                 setOriginalStatusData({
                   doing: newDoing,
+                  doingIcon: newDoingIcon,
                   location: newLocation,
                   mood: newMood,
                   caption: newCaption
@@ -2154,69 +2204,95 @@ const UserPage = ({ onBack }) => {
           >
                 <div className="form-group">
                   <label htmlFor="doing">Current Activity</label>
-                  <div className="suggest-wrap" ref={doingRef}>
-                    <input
-                      type="text"
-                      id="doing"
-                      name="doing"
-                      ref={doingInputRef}
-                      value={formData.doing}
-                      onChange={handleChange}
-                      placeholder="e.g., Studying character design"
-                      autoComplete="off"
-                      onFocus={openDoingDropdown}
-                      onClick={openDoingDropdown}
-                      onKeyDown={preventEnterJump}
-                    />
-                    {formData.doing && (
-                      <button
-                        type="button"
-                        className="suggest-clear-btn"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          markDirtySection('status');
-                          setFormData(prev => ({ ...prev, doing: '' }));
-                          focusInputSafely(doingInputRef);
-                        }}
-                        aria-label="Clear current activity"
-                      >
-                        ✕
-                      </button>
-                    )}
-                    {doingOpen && doingSuggestions.length > 0 && (
-                      <div className="suggest-dropdown" role="listbox">
+                  <div className="userpage-current-activity-fields">
+                    <div className="suggest-wrap userpage-current-activity-text" ref={doingRef}>
+                      <input
+                        type="text"
+                        id="doing"
+                        name="doing"
+                        ref={doingInputRef}
+                        value={formData.doing}
+                        onChange={handleChange}
+                        placeholder="e.g., Studying character design"
+                        autoComplete="off"
+                        onFocus={openDoingDropdown}
+                        onClick={openDoingDropdown}
+                        onKeyDown={preventEnterJump}
+                      />
+                      {formData.doing && (
                         <button
                           type="button"
-                          className="suggest-close-btn"
+                          className="suggest-clear-btn"
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            setDoingOpen(false);
+                            markDirtySection('status');
+                            setFormData(prev => ({ ...prev, doing: '', doingIcon: '' }));
                             focusInputSafely(doingInputRef);
                           }}
-                          aria-label="Close activity suggestions"
+                          aria-label="Clear current activity"
                         >
-                          Close
+                          ✕
                         </button>
-                        <div className="suggest-dropdown-list">
-                          {doingSuggestions.map((item) => (
-                            <div
-                              key={item}
-                              role="option"
-                              className="suggest-item"
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                markDirtySection('status');
-                                setFormData(prev => ({ ...prev, doing: item }));
-                                setDoingOpen(false);
-                                focusInputSafely(doingInputRef);
-                              }}
-                            >
-                              {item}
-                            </div>
-                          ))}
+                      )}
+                      {doingOpen && doingSuggestions.length > 0 && (
+                        <div className="suggest-dropdown" role="listbox">
+                          <button
+                            type="button"
+                            className="suggest-close-btn"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setDoingOpen(false);
+                              focusInputSafely(doingInputRef);
+                            }}
+                            aria-label="Close activity suggestions"
+                          >
+                            Close
+                          </button>
+                          <div className="suggest-dropdown-list">
+                            {doingSuggestions.map((item) => {
+                              const itemName = getStatusItemName(item);
+                              const itemIcon = getStatusItemIcon(item);
+
+                              return (
+                                <div
+                                  key={itemName}
+                                  role="option"
+                                  className="suggest-item userpage-doing-suggest-item"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    markDirtySection('status');
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      doing: itemName,
+                                      doingIcon: itemIcon
+                                    }));
+                                    setDoingOpen(false);
+                                    focusInputSafely(doingInputRef);
+                                  }}
+                                >
+                                  {itemIcon && (
+                                    <IconRenderer iconName={itemIcon} size={18} className="userpage-doing-suggest-icon" />
+                                  )}
+                                  <span>{itemName}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div className="userpage-current-activity-icon">
+                      <IconPicker
+                        value={formData.doingIcon}
+                        onChange={(event) => handleChange({
+                          target: {
+                            name: 'doingIcon',
+                            value: event.target.value
+                          }
+                        })}
+                        placeholder="Icon..."
+                      />
+                    </div>
                   </div>
                 </div>
 

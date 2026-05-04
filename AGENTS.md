@@ -3,6 +3,35 @@
 ## Project Overview
 Meo's Journey is an RPG character sheet and quest/journal tracker built with React 19, Vite 7, React Router, NocoDB, and Discord webhooks. The public home page shows the character sheet, while protected user/admin routes handle status updates, journals, quest and achievement submissions, photo albums, profile gallery uploads, approvals, XP updates, and notifications.
 
+## Recent Updates (2026-05-04)
+
+### Pet Page Activity Management System
+Added comprehensive activity management with current activity tracking:
+
+**Features:**
+- Add new activities with icon picker
+- Two save modes: "Save Only" (add to list) and "Save & Show" (set as current)
+- Click existing activities to set as current (with confirmation modal)
+- Visual indicator for current activity (black background, white text, "Current" badge)
+- Current activity displayed on home page
+
+**Components:**
+- `AddActivityModal.jsx`: 3-button modal (Cancel, Save Only, Save & Show)
+- `ConfirmActivityModal.jsx`: Confirmation dialog for setting current activity
+- Activity cards with dashed border for "Add" button
+- Current activity card with inverted colors and badge
+
+**Data Structure:**
+- Activities stored in `status.current_activity` as JSON array
+- First item in array = current activity (displayed on home)
+- Format: `[{ "name": "Gaming", "icon": "LuGamepad2" }, ...]`
+
+**Styling:**
+- Black/white theme with Playfair Display italic font
+- Dashed borders for add/placeholder elements
+- Solid black borders (3-4px) with offset shadows
+- Current activity: black background, white text, "Current" badge top-right
+
 ## File Structure
 ```
 src/
@@ -11,10 +40,21 @@ src/
 ├── contexts/          # Character and language context providers
 ├── data/              # Static fallback character data
 ├── features/          # Feature modules for character, quests, journal, achievements, photo album
+│   ├── pet/
+│   │   ├── components/
+│   │   │   ├── PetPage.jsx              # Main pet page with activity management
+│   │   │   ├── AddActivityModal.jsx     # Add activity modal (3 buttons)
+│   │   │   └── ConfirmActivityModal.jsx # Confirm set current modal
+│   │   └── styles/
+│   │       ├── pet.css                  # Pet page styles + current activity indicator
+│   │       ├── add-activity-modal.css   # Add modal styles
+│   │       └── confirm-activity-modal.css # Confirm modal styles
 ├── hooks/             # Custom React hooks
 ├── locales/           # Home page translations
 ├── pages/             # Routed pages: HomePage, UserPage, AdminPage
 ├── services/          # NocoDB, Discord, storage service layer
+│   └── nocodb/
+│       └── profile.js # Status & profile services (fetchStatus, saveStatus)
 ├── styles/            # Global CSS
 ├── utils/             # Date, journal, and quest journal helpers
 ├── App.jsx            # Router and page wiring
@@ -341,7 +381,7 @@ const relatedRecord = records.find(r => r.Id === lookupKey);
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **meosjourney** (1592 symbols, 2015 relationships, 10 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **meosjourney** (1813 symbols, 2327 relationships, 19 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

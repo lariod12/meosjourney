@@ -1,5 +1,54 @@
 import { TABLE_IDS, USE_STATIC_DATA, fetchStaticData, nocoRequest, deduplicateRequest, isProductionMode, parseNocoDate, NOCODB_BASE_URL } from './core.js';
 
+const parseJsonArray = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value === undefined || value === null || value === '') {
+    return [];
+  }
+
+  if (typeof value !== 'string') {
+    return [value];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [value];
+  }
+};
+
+const normalizeActivityItem = (item) => {
+  if (typeof item === 'string') {
+    const name = item.trim();
+    return name ? { name, icon: '' } : null;
+  }
+
+  if (item && typeof item === 'object') {
+    const name = typeof item.name === 'string' ? item.name.trim() : String(item.name || '').trim();
+    const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
+    return name ? { name, icon } : null;
+  }
+
+  const name = String(item || '').trim();
+  return name ? { name, icon: '' } : null;
+};
+
+const normalizeActivityItems = (value) => (
+  parseJsonArray(value)
+    .map(normalizeActivityItem)
+    .filter(Boolean)
+);
+
+const normalizeStringArray = (value) => (
+  parseJsonArray(value)
+    .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
+    .filter(Boolean)
+);
+
 export const fetchStatus = async () => {
   const cacheKey = 'status';
 
@@ -12,9 +61,9 @@ export const fetchStatus = async () => {
 
         return {
           id: staticData.status.id,
-          doing: statusRecord.current_activity || [],
-          mood: statusRecord.mood || [], // Changed from 'moods' to 'mood' to match database column
-          location: statusRecord.location || [],
+          doing: normalizeActivityItems(statusRecord.current_activity),
+          mood: normalizeStringArray(statusRecord.mood), // Changed from 'moods' to 'mood' to match database column
+          location: normalizeStringArray(statusRecord.location),
           timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
           createdAt: statusRecord.CreatedAt,
           updatedAt: statusRecord.UpdatedAt
@@ -34,17 +83,9 @@ export const fetchStatus = async () => {
       const statusRecord = data.list[0];
 
       // Parse JSON fields
-      const currentActivity = Array.isArray(statusRecord.current_activity)
-        ? statusRecord.current_activity
-        : (statusRecord.current_activity ? JSON.parse(statusRecord.current_activity) : []);
-
-      const moods = Array.isArray(statusRecord.mood)
-        ? statusRecord.mood
-        : (statusRecord.mood ? JSON.parse(statusRecord.mood) : []);
-
-      const location = Array.isArray(statusRecord.location)
-        ? statusRecord.location
-        : (statusRecord.location ? JSON.parse(statusRecord.location) : []);
+      const currentActivity = normalizeActivityItems(statusRecord.current_activity);
+      const moods = normalizeStringArray(statusRecord.mood);
+      const location = normalizeStringArray(statusRecord.location);
 
       return {
         id: statusRecord.Id,
@@ -582,18 +623,7 @@ export const saveStatus = async (statusData) => {
       throw new Error('No status record found to update');
     }
 
-    const normalizeArray = (value) => {
-      if (Array.isArray(value)) {
-        return value
-          .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
-          .filter(Boolean);
-      }
-      if (value === undefined || value === null) {
-        return [];
-      }
-      const strValue = typeof value === 'string' ? value.trim() : String(value).trim();
-      return strValue ? [strValue] : [];
-    };
+    const normalizeArray = (value) => normalizeStringArray(Array.isArray(value) ? value : [value]);
 
     const prependStatusValue = (newValue, existingList) => {
       const existing = normalizeArray(existingList);
@@ -610,7 +640,39 @@ export const saveStatus = async (statusData) => {
       return [strValue, ...filteredExisting];
     };
 
-    const currentActivities = normalizeArray(currentStatus.doing);
+    const prependActivityValue = (newValue, existingList) => {
+  const existing = normalizeActivityItems(existingList);
+  const nextActivity = normalizeActivityItem(newValue);
+
+  if (!nextActivity) {
+    return [];
+  }
+
+  // Check if activity already exists (case-insensitive)
+  const existingIndex = existing.findIndex(
+    (item) => item.name.toLowerCase() === nextActivity.name.toLowerCase()
+  );
+
+  // If activity exists, update its icon and move to front
+  if (existingIndex !== -1) {
+    const updatedActivity = {
+      name: nextActivity.name,
+      icon: nextActivity.icon || existing[existingIndex].icon || ''
+    };
+    
+    // Remove old entry and prepend updated one
+    const filteredExisting = existing.filter((_, index) => index !== existingIndex);
+    return [updatedActivity, ...filteredExisting];
+  }
+
+  // If activity doesn't exist, prepend new one
+  return [{
+    name: nextActivity.name,
+    icon: nextActivity.icon || ''
+  }, ...existing];
+};
+
+    const currentActivities = normalizeActivityItems(currentStatus.doing);
     const currentLocations = normalizeArray(currentStatus.location);
     const currentMoods = normalizeArray(currentStatus.mood);
 
@@ -619,7 +681,7 @@ export const saveStatus = async (statusData) => {
     // Map frontend fields to NocoDB columns
     // Note: NocoDB columns are JSON/Array, so we wrap strings in arrays if needed
     if (statusData.doing !== undefined) {
-      updates.current_activity = prependStatusValue(statusData.doing, currentActivities);
+      updates.current_activity = prependActivityValue(statusData.doing, currentActivities);
     }
 
     if (statusData.location !== undefined) {
