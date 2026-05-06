@@ -47,6 +47,21 @@ import {
   FaUnlock
 } from 'react-icons/fa';
 import { MdEmojiEvents, MdFavorite, MdSchool, MdSportsEsports } from 'react-icons/md';
+import {
+  LuApple,
+  LuBandage,
+  LuBath,
+  LuBedSingle,
+  LuBeef,
+  LuBrush,
+  LuCake,
+  LuCookie,
+  LuCupSoda,
+  LuFish,
+  LuMilk,
+  LuShirt,
+  LuShowerHead
+} from 'react-icons/lu';
 
 export const ICON_REGISTRY = {
   FaBicycle,
@@ -98,7 +113,20 @@ export const ICON_REGISTRY = {
   MdEmojiEvents,
   MdFavorite,
   MdSchool,
-  MdSportsEsports
+  MdSportsEsports,
+  LuApple,
+  LuBandage,
+  LuBath,
+  LuBedSingle,
+  LuBeef,
+  LuBrush,
+  LuCake,
+  LuCookie,
+  LuCupSoda,
+  LuFish,
+  LuMilk,
+  LuShirt,
+  LuShowerHead
 };
 
 export const ICON_NAMES = Object.keys(ICON_REGISTRY).sort();

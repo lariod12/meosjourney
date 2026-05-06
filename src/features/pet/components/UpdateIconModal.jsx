@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import IconPicker from '../../../components/IconPicker/IconPicker';
 import '../styles/update-icon-modal.css';
 
-const UpdateIconModal = ({ isOpen, onClose, onSave, activity, isLoading = false }) => {
+const UpdateIconModal = ({ isOpen, onClose, onSave, activity, isLoading = false, itemLabel = 'Activity' }) => {
   const [selectedIcon, setSelectedIcon] = useState('');
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const UpdateIconModal = ({ isOpen, onClose, onSave, activity, isLoading = false 
 
         <div className="update-icon-modal__body">
           <p className="update-icon-modal__activity-name">
-            Activity: <strong>{activity.name}</strong>
+            {itemLabel}: <strong>{activity.name}</strong>
           </p>
 
           <div className="update-icon-modal__field">

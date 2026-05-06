@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import '../styles/choose-activity-modal.css';
 
-const ChooseActivityModal = ({ isOpen, onClose, onConfirm, onUpdate, existingActivities, isLoading = false }) => {
+const ChooseActivityModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  onUpdate,
+  existingActivities,
+  isLoading = false,
+  title = 'Choose Activity',
+  searchPlaceholder = 'Search activities...',
+  emptyText = 'No activities found',
+  confirmLabel = 'Confirm'
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [expandedActivity, setExpandedActivity] = useState(null);
@@ -61,7 +72,7 @@ const ChooseActivityModal = ({ isOpen, onClose, onConfirm, onUpdate, existingAct
     <div className="choose-activity-modal-overlay" onClick={handleClose}>
       <div className="choose-activity-modal" onClick={(e) => e.stopPropagation()}>
         <div className="choose-activity-modal__header">
-          <h2 className="choose-activity-modal__title">Choose Activity</h2>
+          <h2 className="choose-activity-modal__title">{title}</h2>
           <button
             type="button"
             className="choose-activity-modal__close"
@@ -78,7 +89,7 @@ const ChooseActivityModal = ({ isOpen, onClose, onConfirm, onUpdate, existingAct
             <input
               type="text"
               className="choose-activity-modal__search-input"
-              placeholder="Search activities..."
+              placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               disabled={isLoading}
@@ -88,7 +99,7 @@ const ChooseActivityModal = ({ isOpen, onClose, onConfirm, onUpdate, existingAct
 
           <div className="choose-activity-modal__list">
             {filteredActivities.length === 0 ? (
-              <p className="choose-activity-modal__empty">No activities found</p>
+              <p className="choose-activity-modal__empty">{emptyText}</p>
             ) : (
               filteredActivities.map((activity) => {
                 const isExpanded = expandedActivity?.name === activity.name;
@@ -116,7 +127,7 @@ const ChooseActivityModal = ({ isOpen, onClose, onConfirm, onUpdate, existingAct
                           onClick={() => handleConfirm(activity)}
                           disabled={isLoading}
                         >
-                          {isLoading ? 'Loading...' : 'Confirm'}
+                          {isLoading ? 'Loading...' : confirmLabel}
                         </button>
                         <button
                           type="button"

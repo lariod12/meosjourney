@@ -620,6 +620,27 @@
   line-height: 1;
 }
 
+.pet-status-row__input {
+  box-sizing: border-box;
+  width: 76px;
+  min-height: 38px;
+  margin-left: auto;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 2px 2px 0 #cccccc;
+}
+
+.pet-status-row__input:focus-visible {
+  outline: 3px solid #666666;
+  outline-offset: 2px;
+}
+
 .pet-status-row__track {
   height: 17px;
   border: 3px solid #000000;
@@ -647,6 +668,11 @@
   height: 24px;
   flex: 0 0 auto;
   stroke-width: 2;
+}
+
+.pet-item-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .pet-item-card__count {
@@ -984,4 +1010,3 @@
     right: 6px;
   }
 }
-

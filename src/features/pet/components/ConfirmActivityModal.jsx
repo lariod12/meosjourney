@@ -3,7 +3,18 @@ import '../styles/confirm-activity-modal.css';
 import { useState, useEffect, useMemo } from 'react';
 import IconPicker from '../../../components/IconPicker/IconPicker';
 
-const ConfirmActivityModal = ({ isOpen, onClose, onConfirm, activityName, activityIcon = '', isLoading = false }) => {
+const ConfirmActivityModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  activityName,
+  activityIcon = '',
+  isLoading = false,
+  title = 'Set Current Activity',
+  messageLabel = 'current activity',
+  iconErrorText = '(Please select an icon for the activity.)',
+  note = 'This will be displayed on the home page.'
+}) => {
   const [selectedIcon, setSelectedIcon] = useState('');
 
   // Reset icon when modal opens
@@ -39,7 +50,7 @@ const ConfirmActivityModal = ({ isOpen, onClose, onConfirm, activityName, activi
     <div className="confirm-activity-modal-overlay" onClick={handleClose}>
       <div className="confirm-activity-modal" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-activity-modal__header">
-          <h2 className="confirm-activity-modal__title">Set Current Activity</h2>
+          <h2 className="confirm-activity-modal__title">{title}</h2>
           <button
             type="button"
             className="confirm-activity-modal__close"
@@ -65,15 +76,15 @@ const ConfirmActivityModal = ({ isOpen, onClose, onConfirm, activityName, activi
           
             {!selectedIcon.trim() && (
               <p className="confirm-activity-modal__error">
-                <strong>(Please select an icon for the activity.)</strong>
+                <strong>{iconErrorText}</strong>
               </p>
             )}</div>
 
           <p className="confirm-activity-modal__message">
-            Do you want to set <strong>"{activityName}"</strong> as your current activity?
+            Do you want to set <strong>"{activityName}"</strong> as your {messageLabel}?
           </p>
           <p className="confirm-activity-modal__note">
-            This will be displayed on the home page.
+            {note}
           </p>
         </div>
 

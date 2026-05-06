@@ -43,6 +43,8 @@ const normalizeActivityItems = (value) => (
     .filter(Boolean)
 );
 
+const normalizeStatusItems = normalizeActivityItems;
+
 const normalizeStringArray = (value) => (
   parseJsonArray(value)
     .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
@@ -62,7 +64,7 @@ export const fetchStatus = async () => {
         return {
           id: staticData.status.id,
           doing: normalizeActivityItems(statusRecord.current_activity),
-          mood: normalizeStringArray(statusRecord.mood), // Changed from 'moods' to 'mood' to match database column
+          mood: normalizeStatusItems(statusRecord.mood), // Changed from 'moods' to 'mood' to match database column
           location: normalizeStringArray(statusRecord.location),
           timestamp: statusRecord.UpdatedAt || statusRecord.CreatedAt || new Date(),
           createdAt: statusRecord.CreatedAt,
@@ -84,7 +86,7 @@ export const fetchStatus = async () => {
 
       // Parse JSON fields
       const currentActivity = normalizeActivityItems(statusRecord.current_activity);
-      const moods = normalizeStringArray(statusRecord.mood);
+      const moods = normalizeStatusItems(statusRecord.mood);
       const location = normalizeStringArray(statusRecord.location);
 
       return {
@@ -674,7 +676,7 @@ export const saveStatus = async (statusData) => {
 
     const currentActivities = normalizeActivityItems(currentStatus.doing);
     const currentLocations = normalizeArray(currentStatus.location);
-    const currentMoods = normalizeArray(currentStatus.mood);
+    const currentMoods = normalizeStatusItems(currentStatus.mood);
 
     const updates = {};
 
@@ -689,7 +691,7 @@ export const saveStatus = async (statusData) => {
     }
 
     if (statusData.mood !== undefined) {
-      updates.mood = prependStatusValue(statusData.mood, currentMoods);
+      updates.mood = prependActivityValue(statusData.mood, currentMoods);
     }
 
     // If no updates, return success

@@ -12,7 +12,7 @@ import {
   LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
-import { fetchStatus, saveStatus } from '../../../services';
+import { fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
 import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
@@ -153,9 +153,8 @@ const PET_STATUS_ROWS = [
   { key: 'sanity', label: 'Sanity', value: 72, Icon: LuBrain }
 ];
 
-const PET_DROPDOWN_STATUS_ROWS = PET_STATUS_ROWS.filter(({ key }) => (
-  key === 'health' || key === 'hunger' || key === 'sanity'
-));
+const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
+const PET_ITEM_CATEGORIES = ['food', 'care'];
 
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
 const PET_MOOD_FLOAT_OPTIONS = {
@@ -198,6 +197,44 @@ const getActivityShape = (activityName) => {
   return matchedRule?.shape || 'default';
 };
 
+const getMoodShape = (moodName) => {
+  const normalizedName = normalizeActivityText(moodName);
+
+  if (['happy', 'vui', 'hanh phuc', 'yeu doi'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'happy';
+  }
+
+  if (['silly', 'laugh', 'cuoi', 'nhon', 'vui ve'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'laugh';
+  }
+
+  if (['calm', 'binh yen', 'binh tinh', 'thu gian'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'calm';
+  }
+
+  if (['grumpy', 'buon', 'cau', 'kho chiu', 'tuc'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'grumpy';
+  }
+
+  if (['sleepy', 'ngu', 'met', 'mo mang'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'sleepy';
+  }
+
+  if (['sunny', 'nang', 'am ap'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'sunny';
+  }
+
+  if (['cozy', 'am', 'chill', 'de chiu'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'cozy';
+  }
+
+  if (['gloomy', 'mua', 'am u', 'tam trang'].some((keyword) => normalizedName.includes(keyword))) {
+    return 'gloomy';
+  }
+
+  return 'sparkle';
+};
+
 const normalizeActivityItems = (activities) => (
   (Array.isArray(activities) ? activities : [])
     .map((activity) => {
@@ -211,6 +248,99 @@ const normalizeActivityItems = (activities) => (
       return name ? { name, icon: '', shape: getActivityShape(name) } : null;
     })
     .filter(Boolean)
+);
+
+const normalizeMoodItems = (moods, fallbackItems = TAB_ITEMS.moods) => {
+  const sourceMoods = Array.isArray(moods) && moods.length > 0 ? moods : [];
+  const savedMoods = sourceMoods
+    .map((mood) => {
+      if (mood && typeof mood === 'object') {
+        const name = typeof mood.name === 'string' ? mood.name.trim() : String(mood.name || '').trim();
+        const icon = typeof mood.icon === 'string' ? mood.icon.trim() : '';
+        return name ? { name, icon, shape: getMoodShape(name) } : null;
+      }
+
+      const name = typeof mood === 'string' ? mood.trim() : String(mood || '').trim();
+      return name ? { name, icon: '', shape: getMoodShape(name) } : null;
+    })
+    .filter(Boolean);
+
+  const mergedMoods = [...savedMoods, ...fallbackItems];
+  const seenNames = new Set();
+
+  return mergedMoods.filter((mood) => {
+    const key = mood.name.toLowerCase();
+    if (seenNames.has(key)) {
+      return false;
+    }
+    seenNames.add(key);
+    if (!mood.icon) {
+      mood.icon = '';
+    }
+    return true;
+  });
+};
+
+const DEFAULT_PET_ITEMS = {
+  food: TAB_ITEMS.food.map(({ name, shape }) => ({ name, icon: '', shape })),
+  care: TAB_ITEMS.care.map(({ name, shape }) => ({ name, icon: '', shape }))
+};
+
+const DEFAULT_PET_STATUS = PET_STATUS_ROWS.reduce((status, row) => ({
+  ...status,
+  [row.key]: row.value
+}), {});
+
+const DEFAULT_PET_SHAPES = [...DEFAULT_PET_ITEMS.food, ...DEFAULT_PET_ITEMS.care].reduce((shapes, item) => {
+  shapes[item.name.toLowerCase()] = item.shape;
+  return shapes;
+}, {});
+
+const clampPetStatusValue = (value) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(numberValue)));
+};
+
+const normalizePetInventoryItems = (items, fallbackItems = []) => {
+  const sourceItems = Array.isArray(items) && items.length > 0 ? items : fallbackItems;
+
+  return sourceItems
+    .map((item) => {
+      if (!item) return null;
+      const name = typeof item.name === 'string' ? item.name.trim() : String(item.name || '').trim();
+      const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
+      const shape = item.shape || DEFAULT_PET_SHAPES[name.toLowerCase()] || 'box';
+      return name ? { name, icon, shape } : null;
+    })
+    .filter(Boolean);
+};
+
+const serializePetItems = (items) => (
+  normalizePetInventoryItems(items)
+    .map(({ name, icon }) => ({ name, icon }))
+);
+
+const upsertPetItem = (items, nextItem) => {
+  const normalizedItem = normalizePetInventoryItems([nextItem])[0];
+  if (!normalizedItem) return items;
+
+  const filteredItems = normalizePetInventoryItems(items).filter((item) => (
+    item.name.toLowerCase() !== normalizedItem.name.toLowerCase()
+  ));
+
+  return [normalizedItem, ...filteredItems];
+};
+
+const createPetStatusRows = (petStatus) => (
+  PET_STATUS_ROWS.map((row) => ({
+    ...row,
+    value: row.key === 'level' ? row.value : clampPetStatusValue(petStatus[row.key] ?? row.value),
+    editable: PET_STATUS_KEYS.includes(row.key)
+  }))
 );
 
 const createMoodFloatVariant = () => {
@@ -244,7 +374,7 @@ const moodFloatStyle = {
   '--pet-mood-end-scale': PET_MOOD_FLOAT_OPTIONS.endScale
 };
 
-const PetItemCard = ({ item, showCount = true, isCurrent = false, onClick }) => {
+const PetItemCard = ({ item, showCount = true, isCurrent = false, showEmptyIcon = false, onClick }) => {
   const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
   const ariaLabel = showCount ? `${item.name}, quantity ${item.count}` : item.name;
 
@@ -258,8 +388,10 @@ const PetItemCard = ({ item, showCount = true, isCurrent = false, onClick }) => 
       {!showCount ? (
         item.icon ? (
           <IconRenderer iconName={item.icon} size={44} className="pet-item-icon" />
-        ) : (
+        ) : showEmptyIcon ? (
           <span className="pet-item-card__empty">&#60;&#62;</span>
+        ) : (
+          <Icon className="pet-item-icon" aria-hidden="true" />
         )
       ) : (
         <Icon className="pet-item-icon" aria-hidden="true" />
@@ -273,13 +405,26 @@ const PetItemCard = ({ item, showCount = true, isCurrent = false, onClick }) => 
   );
 };
 
-const PetStatusPanel = () => (
+const PetStatusPanel = ({ rows, onStatusChange, isSaving }) => (
   <div className="pet-status-list" aria-label="Pet status cards">
-    {PET_STATUS_ROWS.map(({ key, label, value, Icon }) => (
+    {rows.map(({ key, label, value, Icon, editable }) => (
       <div key={key} className="pet-status-row" aria-label={`${label} ${value}%`}>
         <div className="pet-status-row__header">
           <Icon className="pet-status-icon" aria-hidden="true" />
           <span className="pet-status-row__title">{label}</span>
+          {editable && (
+            <input
+              type="number"
+              className="pet-status-row__input"
+              min="0"
+              max="100"
+              step="1"
+              value={value}
+              onChange={(event) => onStatusChange(key, event.target.value)}
+              disabled={isSaving}
+              aria-label={`${label} value`}
+            />
+          )}
         </div>
         <div className="pet-status-row__track" aria-hidden="true">
           <span style={{ width: `${value}%` }} />
@@ -290,7 +435,7 @@ const PetStatusPanel = () => (
   </div>
 );
 
-const PetInfoDropdown = ({ expanded, onToggle }) => (
+const PetInfoDropdown = ({ expanded, onToggle, rows }) => (
   <div className="pet-info-dropdown">
     <button
       type="button"
@@ -302,7 +447,7 @@ const PetInfoDropdown = ({ expanded, onToggle }) => (
       <LuChevronDown className="pet-topbar-icon" aria-hidden="true" />
     </button>
     <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
-      {PET_DROPDOWN_STATUS_ROWS.map(({ key, label, value, Icon }) => (
+      {rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => (
         <div key={key} className="pet-info-item pet-info-item--stat" aria-label={`${label} ${value}%`}>
           <Icon className="pet-info-item__icon" aria-hidden="true" />
           <span className="pet-info-item__label">{value}%</span>
@@ -318,17 +463,44 @@ const PetPage = ({ onBack }) => {
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
   const [thoughtBubbleVisible, setThoughtBubbleVisible] = useState(false);
   const [activityItems, setActivityItems] = useState([]);
+  const [moodItems, setMoodItems] = useState(() => normalizeMoodItems());
   const [currentActivityName, setCurrentActivityName] = useState('');
+  const [currentMoodName, setCurrentMoodName] = useState('');
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [isAddMoodModalOpen, setIsAddMoodModalOpen] = useState(false);
   const [isChooseActivityModalOpen, setIsChooseActivityModalOpen] = useState(false);
+  const [isChooseMoodModalOpen, setIsChooseMoodModalOpen] = useState(false);
   const [isUpdateIconModalOpen, setIsUpdateIconModalOpen] = useState(false);
+  const [isUpdateMoodIconModalOpen, setIsUpdateMoodIconModalOpen] = useState(false);
   const [activityToUpdate, setActivityToUpdate] = useState(null);
+  const [moodToUpdate, setMoodToUpdate] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isConfirmMoodModalOpen, setIsConfirmMoodModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [selectedMood, setSelectedMood] = useState(null);
   const [isSavingActivity, setIsSavingActivity] = useState(false);
+  const [isSavingMood, setIsSavingMood] = useState(false);
+  const [petItems, setPetItems] = useState(() => ({
+    food: DEFAULT_PET_ITEMS.food,
+    care: DEFAULT_PET_ITEMS.care
+  }));
+  const [petStatus, setPetStatus] = useState(() => ({
+    health: DEFAULT_PET_STATUS.health,
+    hunger: DEFAULT_PET_STATUS.hunger,
+    sanity: DEFAULT_PET_STATUS.sanity
+  }));
+  const [petItemModalCategory, setPetItemModalCategory] = useState(null);
+  const [isSavingPet, setIsSavingPet] = useState(false);
   const items = useMemo(() => (
-    activeTab === 'activity' ? activityItems : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
-  ), [activeTab, activityItems]);
+    activeTab === 'activity'
+      ? activityItems
+      : activeTab === 'moods'
+        ? moodItems
+        : PET_ITEM_CATEGORIES.includes(activeTab)
+          ? petItems[activeTab]
+          : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
+  ), [activeTab, activityItems, moodItems, petItems]);
+  const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const moodFloatStyles = useMemo(() => (
     moodFloatBatch.map((moodFloatItem) => ({
       ...moodFloatStyle,
@@ -341,31 +513,68 @@ const PetPage = ({ onBack }) => {
       '--pet-mood-end-rotate': `${moodFloatItem.endRotateDeg}deg`
     }))
   ), [moodFloatBatch]);
+  const currentMoodItem = useMemo(() => (
+    moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
+  ), [currentMoodName, moodItems]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadCurrentActivities = async () => {
+    const loadPetPageData = async () => {
       try {
-        const status = await fetchStatus();
+        const [status, pet] = await Promise.all([
+          fetchStatus(),
+          fetchPet().catch((error) => {
+            console.warn('⚠️ Failed to fetch pet table data:', error);
+            return null;
+          })
+        ]);
+
         if (!cancelled) {
           const activities = normalizeActivityItems(status?.doing);
+          const moods = normalizeMoodItems(status?.mood);
           setActivityItems(activities);
+          setMoodItems(moods);
           // Set current activity (first one in the list)
           if (activities.length > 0) {
             setCurrentActivityName(activities[0].name);
           }
+          if (moods.length > 0) {
+            setCurrentMoodName(moods[0].name);
+          }
+
+          setPetItems({
+            food: normalizePetInventoryItems(pet?.food, DEFAULT_PET_ITEMS.food),
+            care: normalizePetInventoryItems(pet?.care, DEFAULT_PET_ITEMS.care)
+          });
+
+          setPetStatus({
+            health: clampPetStatusValue(pet?.status?.health ?? DEFAULT_PET_STATUS.health),
+            hunger: clampPetStatusValue(pet?.status?.hunger ?? DEFAULT_PET_STATUS.hunger),
+            sanity: clampPetStatusValue(pet?.status?.sanity ?? DEFAULT_PET_STATUS.sanity)
+          });
         }
       } catch (error) {
-        console.warn('⚠️ Failed to fetch pet activities:', error);
+        console.warn('⚠️ Failed to fetch pet page data:', error);
         if (!cancelled) {
           setActivityItems([]);
+          setMoodItems(normalizeMoodItems());
           setCurrentActivityName('');
+          setCurrentMoodName('');
+          setPetItems({
+            food: DEFAULT_PET_ITEMS.food,
+            care: DEFAULT_PET_ITEMS.care
+          });
+          setPetStatus({
+            health: DEFAULT_PET_STATUS.health,
+            hunger: DEFAULT_PET_STATUS.hunger,
+            sanity: DEFAULT_PET_STATUS.sanity
+          });
         }
       }
     };
 
-    loadCurrentActivities();
+    loadPetPageData();
 
     return () => {
       cancelled = true;
@@ -405,6 +614,43 @@ const PetPage = ({ onBack }) => {
   const handleBack = () => {
     if (onBack) { onBack(); return; }
     window.history.back();
+  };
+
+  const handlePetStatusChange = (key, value) => {
+    setPetStatus(prev => ({
+      ...prev,
+      [key]: clampPetStatusValue(value)
+    }));
+  };
+
+  const handleAddPetItem = async (newItem) => {
+    if (!petItemModalCategory || isSavingPet) return;
+
+    setIsSavingPet(true);
+
+    try {
+      const category = petItemModalCategory;
+      const nextItems = upsertPetItem(petItems[category], newItem);
+      const result = await savePet({
+        [category]: serializePetItems(nextItems)
+      });
+
+      if (result.success) {
+        setPetItems(prev => ({
+          ...prev,
+          [category]: normalizePetInventoryItems(nextItems, DEFAULT_PET_ITEMS[category])
+        }));
+        setPetItemModalCategory(null);
+      } else {
+        console.error(`Failed to save pet ${category}:`, result.message);
+        alert(`Failed to save pet ${category}. Please try again.`);
+      }
+    } catch (error) {
+      console.error('Error saving pet item:', error);
+      alert('Failed to save pet item. Please try again.');
+    } finally {
+      setIsSavingPet(false);
+    }
   };
 
   const handleChooseActivityConfirm = async (activity) => {
@@ -535,6 +781,176 @@ const PetPage = ({ onBack }) => {
     }
   };
 
+  const handleChooseMoodConfirm = async (mood) => {
+    setIsSavingMood(true);
+
+    try {
+      const result = await saveStatus({
+        mood: {
+          name: mood.name,
+          icon: mood.icon
+        }
+      });
+
+      if (result.success) {
+        setCurrentMoodName(mood.name);
+        setMoodItems(prev => {
+          const filtered = prev.filter(item => item.name !== mood.name);
+          return [mood, ...filtered];
+        });
+        setIsChooseMoodModalOpen(false);
+      } else {
+        console.error('Failed to set mood:', result.message);
+        alert('Failed to set mood. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error setting mood:', error);
+      alert('Failed to set mood. Please try again.');
+    } finally {
+      setIsSavingMood(false);
+    }
+  };
+
+  const handleChooseMoodUpdate = (mood) => {
+    setIsChooseMoodModalOpen(false);
+    setMoodToUpdate(mood);
+    setIsUpdateMoodIconModalOpen(true);
+  };
+
+  const handleUpdateMoodIcon = async (updatedMood) => {
+    setIsSavingMood(true);
+
+    try {
+      const result = await saveStatus({
+        mood: {
+          name: updatedMood.name,
+          icon: updatedMood.icon
+        }
+      });
+
+      if (result.success) {
+        setMoodItems(prev => {
+          const filtered = prev.filter(item => item.name !== updatedMood.name);
+          return [{ ...updatedMood, shape: getMoodShape(updatedMood.name) }, ...filtered];
+        });
+        setIsUpdateMoodIconModalOpen(false);
+        setMoodToUpdate(null);
+      } else {
+        console.error('Failed to update mood icon:', result.message);
+        alert('Failed to update mood icon. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating mood icon:', error);
+      alert('Failed to update mood icon. Please try again.');
+    } finally {
+      setIsSavingMood(false);
+    }
+  };
+
+  const handleAddMood = async (newMood, setAsCurrent) => {
+    if (isSavingMood) return;
+
+    const moodName = String(newMood?.name || '').trim();
+    if (!moodName) return;
+
+    setIsSavingMood(true);
+
+    try {
+      const existingMood = moodItems.find(
+        item => item.name.toLowerCase() === moodName.toLowerCase()
+      );
+
+      const result = await saveStatus({
+        mood: {
+          name: moodName,
+          icon: newMood.icon || ''
+        }
+      });
+
+      if (result.success) {
+        const normalizedMood = {
+          name: moodName,
+          icon: newMood.icon || '',
+          shape: getMoodShape(moodName)
+        };
+
+        if (existingMood) {
+          setMoodItems(prev => {
+            const filtered = prev.filter(
+              item => item.name.toLowerCase() !== moodName.toLowerCase()
+            );
+            return [normalizedMood, ...filtered];
+          });
+        } else {
+          setMoodItems(prev => [normalizedMood, ...prev]);
+        }
+
+        if (setAsCurrent) {
+          setCurrentMoodName(moodName);
+        }
+
+        setIsAddMoodModalOpen(false);
+      } else {
+        console.error('Failed to save mood:', result.message);
+        alert('Failed to save mood. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving mood:', error);
+      alert('Failed to save mood. Please try again.');
+    } finally {
+      setIsSavingMood(false);
+    }
+  };
+
+  const handleMoodCardClick = (mood) => {
+    setSelectedMood(mood);
+    setIsConfirmMoodModalOpen(true);
+  };
+
+  const handleConfirmSetCurrentMood = async (newIcon, updateIconOnly = false) => {
+    if (!selectedMood || isSavingMood) return;
+
+    setIsSavingMood(true);
+
+    try {
+      const iconToSave = newIcon !== undefined ? newIcon : selectedMood.icon;
+      const result = await saveStatus({
+        mood: {
+          name: selectedMood.name,
+          icon: iconToSave
+        }
+      });
+
+      if (result.success) {
+        const updatedMood = {
+          ...selectedMood,
+          icon: iconToSave,
+          shape: getMoodShape(selectedMood.name)
+        };
+
+        if (!updateIconOnly) {
+          setCurrentMoodName(selectedMood.name);
+        }
+
+        setMoodItems(prev => {
+          const filtered = prev.filter(item => item.name !== selectedMood.name);
+          return [updatedMood, ...filtered];
+        });
+
+        setIsConfirmMoodModalOpen(false);
+        setSelectedMood(null);
+      } else {
+        console.error('Failed to set current mood:', result.message);
+        alert('Failed to set current mood. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error setting current mood:', error);
+      alert('Failed to set current mood. Please try again.');
+    } finally {
+      setIsSavingMood(false);
+    }
+  };
+
   const handleActivityCardClick = (activity) => {
     setSelectedActivity(activity);
     setIsConfirmModalOpen(true);
@@ -602,7 +1018,7 @@ const PetPage = ({ onBack }) => {
               <span className="pet-nameplate__face pet-nameplate__face--back">Home</span>
             </span>
           </div>
-          <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} />
+          <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} rows={petStatusRows} />
         </div>
 
         <div className="pet-stage">
@@ -612,9 +1028,13 @@ const PetPage = ({ onBack }) => {
 
           <div className="pet-stage-indicators" aria-label="Pet context">
             {moodFloatBatch.map((moodFloatItem, index) => (
-              <div key={moodFloatItem.id} className="pet-mood-float" style={moodFloatStyles[index]} aria-label={`Current mood ${PET_CURRENT_MOOD.label}`}>
-                <PET_CURRENT_MOOD.Icon className="pet-mood-float__icon" aria-hidden="true" />
-                <span>{PET_CURRENT_MOOD.label}</span>
+              <div key={moodFloatItem.id} className="pet-mood-float" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
+                {currentMoodItem?.icon ? (
+                  <IconRenderer iconName={currentMoodItem.icon} size={18} className="pet-mood-float__icon" />
+                ) : (
+                  <PET_CURRENT_MOOD.Icon className="pet-mood-float__icon" aria-hidden="true" />
+                )}
+                <span>{currentMoodItem?.name || PET_CURRENT_MOOD.label}</span>
               </div>
             ))}
           </div>
@@ -652,9 +1072,49 @@ const PetPage = ({ onBack }) => {
 
           <div className="pet-sheet-scroll">
             {activeTab === 'status' ? (
-              <PetStatusPanel />
+              <PetStatusPanel
+                rows={petStatusRows}
+                onStatusChange={handlePetStatusChange}
+                isSaving={isSavingPet}
+              />
             ) : (
               <div className="pet-item-grid">
+                {PET_ITEM_CATEGORIES.includes(activeTab) && (
+                  <button
+                    type="button"
+                    className="pet-item-card pet-item-card--add"
+                    onClick={() => setPetItemModalCategory(activeTab)}
+                    aria-label={`Add new ${activeTab} item`}
+                    disabled={isSavingPet}
+                  >
+                    <LuPlus className="pet-item-icon" aria-hidden="true" />
+                    <span className="pet-item-card__name">Add</span>
+                  </button>
+                )}
+                {activeTab === 'moods' && (
+                  <>
+                    <button
+                      type="button"
+                      className="pet-item-card pet-item-card--add"
+                      onClick={() => setIsAddMoodModalOpen(true)}
+                      aria-label="Add new mood"
+                      disabled={isSavingMood}
+                    >
+                      <LuPlus className="pet-item-icon" aria-hidden="true" />
+                      <span className="pet-item-card__name">Add</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="pet-item-card pet-item-card--choose"
+                      onClick={() => setIsChooseMoodModalOpen(true)}
+                      aria-label="Choose existing mood"
+                      disabled={isSavingMood}
+                    >
+                      <LuSearch className="pet-item-icon" aria-hidden="true" />
+                      <span className="pet-item-card__name">Choose</span>
+                    </button>
+                  </>
+                )}
                 {activeTab === 'activity' && (
                   <>
                     <button
@@ -681,9 +1141,19 @@ const PetPage = ({ onBack }) => {
                   <PetItemCard
                     key={`${item.name}-${item.shape}-${index}`}
                     item={item}
-                    showCount={activeTab !== 'activity'}
-                    isCurrent={activeTab === 'activity' && item.name === currentActivityName}
-                    onClick={activeTab === 'activity' ? () => handleActivityCardClick(item) : undefined}
+                    showCount={false}
+                    showEmptyIcon={activeTab === 'activity' || activeTab === 'moods'}
+                    isCurrent={
+                      (activeTab === 'activity' && item.name === currentActivityName)
+                      || (activeTab === 'moods' && item.name === currentMoodName)
+                    }
+                    onClick={
+                      activeTab === 'activity'
+                        ? () => handleActivityCardClick(item)
+                        : activeTab === 'moods'
+                          ? () => handleMoodCardClick(item)
+                          : undefined
+                    }
                   />
                 ))}
               </div>
@@ -701,12 +1171,58 @@ const PetPage = ({ onBack }) => {
         isLoading={isSavingActivity}
       />
 
+      <ChooseActivityModal
+        isOpen={isChooseMoodModalOpen}
+        onClose={() => setIsChooseMoodModalOpen(false)}
+        onConfirm={handleChooseMoodConfirm}
+        onUpdate={handleChooseMoodUpdate}
+        existingActivities={moodItems}
+        isLoading={isSavingMood}
+        title="Choose Mood"
+        searchPlaceholder="Search moods..."
+        emptyText="No moods found"
+      />
+
       <AddActivityModal
         isOpen={isAddActivityModalOpen}
         onClose={() => setIsAddActivityModalOpen(false)}
         onSave={handleAddActivity}
         isLoading={isSavingActivity}
-        />
+      />
+
+      <AddActivityModal
+        isOpen={isAddMoodModalOpen}
+        onClose={() => {
+          if (!isSavingMood) {
+            setIsAddMoodModalOpen(false);
+          }
+        }}
+        onSave={handleAddMood}
+        isLoading={isSavingMood}
+        title="Add New Mood"
+        itemLabel="Mood"
+        namePlaceholder="Enter mood name..."
+        saveOnlyLabel="Save Only"
+        saveAndSelectLabel="Save & Select"
+        showIconPicker
+        requireIcon
+      />
+
+      <AddActivityModal
+        isOpen={!!petItemModalCategory}
+        onClose={() => {
+          if (!isSavingPet) {
+            setPetItemModalCategory(null);
+          }
+        }}
+        onSave={handleAddPetItem}
+        isLoading={isSavingPet}
+        title={`Add New ${petItemModalCategory === 'care' ? 'Care' : 'Food'}`}
+        itemLabel="Name"
+        namePlaceholder={`Enter ${petItemModalCategory === 'care' ? 'care' : 'food'} name...`}
+        saveLabel="Save"
+        showSaveAndSelect={false}
+      />
 
       <UpdateIconModal
         isOpen={isUpdateIconModalOpen}
@@ -719,6 +1235,18 @@ const PetPage = ({ onBack }) => {
         isLoading={isSavingActivity}
       />
 
+      <UpdateIconModal
+        isOpen={isUpdateMoodIconModalOpen}
+        onClose={() => {
+          setIsUpdateMoodIconModalOpen(false);
+          setMoodToUpdate(null);
+        }}
+        onSave={handleUpdateMoodIcon}
+        activity={moodToUpdate}
+        isLoading={isSavingMood}
+        itemLabel="Mood"
+      />
+
       <ConfirmActivityModal
         isOpen={isConfirmModalOpen}
         onClose={() => {
@@ -729,6 +1257,21 @@ const PetPage = ({ onBack }) => {
         activityName={selectedActivity?.name || ''}
         activityIcon={selectedActivity?.icon || ''}
         isLoading={isSavingActivity}
+      />
+
+      <ConfirmActivityModal
+        isOpen={isConfirmMoodModalOpen}
+        onClose={() => {
+          setIsConfirmMoodModalOpen(false);
+          setSelectedMood(null);
+        }}
+        onConfirm={handleConfirmSetCurrentMood}
+        activityName={selectedMood?.name || ''}
+        activityIcon={selectedMood?.icon || ''}
+        isLoading={isSavingMood}
+        title="Set Current Mood"
+        messageLabel="current mood"
+        iconErrorText="(Please select an icon for the mood.)"
       />
     </main>
   );

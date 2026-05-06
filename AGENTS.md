@@ -25,6 +25,9 @@ Added comprehensive activity management with current activity tracking:
 - Activities stored in `status.current_activity` as JSON array
 - First item in array = current activity (displayed on home)
 - Format: `[{ "name": "Gaming", "icon": "LuGamepad2" }, ...]`
+- Food and care inventory are stored in the staging `pet` table as JSON arrays: `[{ "name": "value", "icon": "" }]`
+- Pet status values are stored in the staging `pet` table numeric columns: `status_health`, `status_hunger`, `status_sanity`
+- Pet level is not stored in the `pet` table
 
 **Styling:**
 - Black/white theme with Playfair Display italic font
