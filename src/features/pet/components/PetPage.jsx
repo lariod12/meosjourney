@@ -17,6 +17,7 @@ import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
 import ConfirmActivityModal from './ConfirmActivityModal';
+import UpdateLocationModal from './UpdateLocationModal';
 import '../styles/pet.css';
 
 const ITEM_ICONS = {
@@ -823,6 +824,7 @@ const PetPage = ({ onBack }) => {
   const [currentActivityName, setCurrentActivityName] = useState('');
   const [currentMoodName, setCurrentMoodName] = useState('');
   const [currentLocationName, setCurrentLocationName] = useState('Home');
+  const [locationHistory, setLocationHistory] = useState([]);
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
   const [isAddMoodModalOpen, setIsAddMoodModalOpen] = useState(false);
   const [isChooseActivityModalOpen, setIsChooseActivityModalOpen] = useState(false);
@@ -837,6 +839,8 @@ const PetPage = ({ onBack }) => {
   const [selectedMood, setSelectedMood] = useState(null);
   const [isSavingActivity, setIsSavingActivity] = useState(false);
   const [isSavingMood, setIsSavingMood] = useState(false);
+  const [isUpdateLocationModalOpen, setIsUpdateLocationModalOpen] = useState(false);
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -903,9 +907,11 @@ const PetPage = ({ onBack }) => {
           const activities = normalizeActivityItems(status?.doing);
           const moods = normalizeMoodItems(status?.mood);
           const locationName = getStatusText(status?.location) || 'Home';
+          const locations = Array.isArray(status?.location) ? status.location : [];
           setActivityItems(activities);
           setMoodItems(moods);
           setCurrentLocationName(locationName);
+          setLocationHistory(locations);
           // Set current activity (first one in the list)
           if (activities.length > 0) {
             setCurrentActivityName(activities[0].name);
@@ -1469,6 +1475,36 @@ const PetPage = ({ onBack }) => {
     }
   };
 
+  const handleUpdateLocation = async (newLocation) => {
+    if (isSavingLocation) return;
+
+    setIsSavingLocation(true);
+
+    try {
+      const result = await saveStatus({
+        location: newLocation
+      });
+
+      if (result.success) {
+        setCurrentLocationName(newLocation);
+        // Update location history by prepending new location
+        setLocationHistory(prev => {
+          const filtered = prev.filter(loc => loc.toLowerCase() !== newLocation.toLowerCase());
+          return [newLocation, ...filtered];
+        });
+        setIsUpdateLocationModalOpen(false);
+      } else {
+        console.error('Failed to update location:', result.message);
+        alert('Failed to update location. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating location:', error);
+      alert('Failed to update location. Please try again.');
+    } finally {
+      setIsSavingLocation(false);
+    }
+  };
+
   return (
     <main className="pet-page">
       <section className="pet-phone" aria-label="Virtual pet preview">
@@ -1476,12 +1512,17 @@ const PetPage = ({ onBack }) => {
           <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
             <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
           </button>
-          <div className="pet-nameplate" aria-label={`Méo, current location ${currentLocationName}`}>
+          <button
+            type="button"
+            className="pet-nameplate"
+            onClick={() => setIsUpdateLocationModalOpen(true)}
+            aria-label={`Méo, current location ${currentLocationName}. Click to change location`}
+          >
             <span className="pet-nameplate__flip" aria-hidden="true">
               <span className="pet-nameplate__face pet-nameplate__face--front">Méo</span>
               <span className="pet-nameplate__face pet-nameplate__face--back">{currentLocationName}</span>
             </span>
-          </div>
+          </button>
           <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} rows={petStatusRows} />
         </div>
 
@@ -1785,6 +1826,15 @@ const PetPage = ({ onBack }) => {
           setSelectedPetUseItem(null);
         }}
         onConfirm={handleConfirmUsePetItem}
+      />
+
+      <UpdateLocationModal
+        isOpen={isUpdateLocationModalOpen}
+        onClose={() => setIsUpdateLocationModalOpen(false)}
+        onSave={handleUpdateLocation}
+        currentLocation={currentLocationName}
+        locationHistory={locationHistory}
+        isLoading={isSavingLocation}
       />
     </main>
   );

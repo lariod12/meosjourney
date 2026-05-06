@@ -1,0 +1,394 @@
+/* Update Location Modal Overlay */
+.update-location-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+/* Modal Container */
+.update-location-modal {
+  box-sizing: border-box;
+  width: min(100%, 420px);
+  max-height: 90vh;
+  border: 4px solid #000000;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 7px 7px 0 #000000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.update-location-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 3px solid #000000;
+  background: #ffffff;
+}
+
+.update-location-modal__title {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.update-location-modal__close {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.update-location-modal__close:hover:not(:disabled) {
+  background: #000000;
+  color: #ffffff;
+  transform: rotate(90deg);
+}
+
+.update-location-modal__close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Body */
+.update-location-modal__body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Current Location Display */
+.update-location-modal__current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  background: #f7f7f7;
+  margin-bottom: 20px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+}
+
+.update-location-modal__current-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #666666;
+}
+
+.update-location-modal__current-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+/* Field */
+.update-location-modal__field {
+  margin-bottom: 20px;
+}
+
+.update-location-modal__label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+/* Input Wrapper with Dropdown */
+.update-location-modal__input-wrapper {
+  position: relative;
+}
+
+.update-location-modal__input {
+  width: 100%;
+  padding: 14px 88px 14px 16px;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.update-location-modal__input:focus {
+  box-shadow: 0 0 0 3px #cccccc;
+}
+
+.update-location-modal__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.update-location-modal__input::placeholder {
+  color: #999999;
+  font-weight: 500;
+}
+
+/* Clear Button */
+.update-location-modal__clear-button {
+  position: absolute;
+  right: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+}
+
+.update-location-modal__clear-button:hover:not(:disabled) {
+  background: #000000;
+  color: #ffffff;
+}
+
+.update-location-modal__clear-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dropdown Toggle Button */
+.update-location-modal__dropdown-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+}
+
+.update-location-modal__dropdown-toggle:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.update-location-modal__dropdown-toggle--open {
+  background: #000000;
+  color: #ffffff;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.update-location-modal__dropdown-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dropdown Menu */
+.update-location-modal__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #000000;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.update-location-modal__dropdown-item {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 2px solid #e0e0e0;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.update-location-modal__dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.update-location-modal__dropdown-item:hover:not(:disabled) {
+  background: #f7f7f7;
+}
+
+.update-location-modal__dropdown-item--selected {
+  background: #000000;
+  color: #ffffff;
+}
+
+.update-location-modal__dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Footer */
+.update-location-modal__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 18px 20px;
+  border-top: 3px solid #000000;
+  background: #ffffff;
+}
+
+.update-location-modal__button {
+  min-height: 48px;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-location-modal__button--cancel {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 3px 3px 0 #cccccc;
+}
+
+.update-location-modal__button--cancel:hover:not(:disabled) {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 #cccccc;
+}
+
+.update-location-modal__button--save {
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 3px 3px 0 #666666;
+}
+
+.update-location-modal__button--save:hover:not(:disabled) {
+  background: #1a1a1a;
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 #666666;
+}
+
+.update-location-modal__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar Styling */
+.update-location-modal__dropdown::-webkit-scrollbar,
+.update-location-modal__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.update-location-modal__dropdown::-webkit-scrollbar-track,
+.update-location-modal__body::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.update-location-modal__dropdown::-webkit-scrollbar-thumb,
+.update-location-modal__body::-webkit-scrollbar-thumb {
+  background: #999999;
+  border-radius: 4px;
+}
+
+.update-location-modal__dropdown::-webkit-scrollbar-thumb:hover,
+.update-location-modal__body::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .update-location-modal {
+    width: calc(100% - 20px);
+    max-height: 85vh;
+  }
+
+  .update-location-modal__header {
+    padding: 14px 16px;
+  }
+
+  .update-location-modal__title {
+    font-size: 1.2rem;
+  }
+
+  .update-location-modal__close {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+
+  .update-location-modal__body {
+    padding: 16px;
+  }
+
+  .update-location-modal__input {
+    padding: 12px 44px 12px 14px;
+    font-size: 1rem;
+  }
+
+  .update-location-modal__dropdown-toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .update-location-modal__dropdown-item {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+
+  .update-location-modal__footer {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .update-location-modal__button {
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+}

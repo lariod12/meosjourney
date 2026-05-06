@@ -178,6 +178,23 @@
   font-weight: 800;
   perspective: 520px;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  color: inherit;
+}
+
+.pet-nameplate:hover,
+.pet-nameplate:focus-visible {
+  outline: 3px solid #666666;
+  outline-offset: 3px;
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 #999999;
+}
+
+.pet-nameplate:active {
+  transform: translateY(0);
+  box-shadow: 2px 2px 0 #999999;
 }
 
 .pet-nameplate__flip {
