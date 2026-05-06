@@ -155,6 +155,37 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
+const PET_STATUS_DECAY_CHUNK_MS = 6 * 60 * 60 * 1000;
+const PET_STATUS_DECAY = {
+  hunger: 8,
+  sanity: 4,
+  health: 3
+};
+const PET_ITEM_EFFECTS = {
+  food: {
+    label: 'Food',
+    stats: {
+      hunger: 25
+    }
+  },
+  care: {
+    label: 'Care',
+    stats: {
+      health: 15,
+      sanity: 10
+    }
+  }
+};
+const PET_REACTION_LEVELS = {
+  stable: 'stable',
+  needsCare: 'needs-care',
+  critical: 'critical'
+};
+const PET_STAT_LABELS = {
+  health: 'Health',
+  hunger: 'Hunger',
+  sanity: 'Sanity'
+};
 
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
 const PET_MOOD_FLOAT_OPTIONS = {
@@ -305,6 +336,154 @@ const clampPetStatusValue = (value) => {
   return Math.min(100, Math.max(0, Math.round(numberValue)));
 };
 
+const clampPetStatus = (status = {}) => ({
+  health: clampPetStatusValue(status.health ?? DEFAULT_PET_STATUS.health),
+  hunger: clampPetStatusValue(status.hunger ?? DEFAULT_PET_STATUS.hunger),
+  sanity: clampPetStatusValue(status.sanity ?? DEFAULT_PET_STATUS.sanity)
+});
+
+const getPetStatusLevel = (value) => {
+  if (value < 30) {
+    return PET_REACTION_LEVELS.critical;
+  }
+
+  if (value < 70) {
+    return PET_REACTION_LEVELS.needsCare;
+  }
+
+  return PET_REACTION_LEVELS.stable;
+};
+
+const getWeakestPetStatus = (status = {}) => (
+  PET_STATUS_KEYS
+    .map((key) => ({ key, value: clampPetStatusValue(status[key]) }))
+    .reduce((weakest, stat) => (stat.value < weakest.value ? stat : weakest), {
+      key: 'health',
+      value: 100
+    })
+);
+
+const getPetReaction = (status = {}) => {
+  const weakest = getWeakestPetStatus(status);
+  const level = getPetStatusLevel(weakest.value);
+  const label = PET_STAT_LABELS[weakest.key] || 'Status';
+  const criticalMessages = {
+    health: 'Mình yếu quá. Chăm sóc một chút sẽ giúp mình hồi phục.',
+    hunger: 'Bụng mình trống rỗng rồi. Cho mình ăn với nha.',
+    sanity: 'Đầu mình hơi rối. Chăm sóc sẽ giúp mình bình tĩnh lại.'
+  };
+  const needsCareMessages = {
+    health: 'Mình vẫn ổn, nhưng được chăm sóc thêm thì sẽ khỏe hơn.',
+    hunger: 'Mình hơi đói rồi. Một món ăn nhẹ sẽ tuyệt lắm.',
+    sanity: 'Mình cần được dỗ dành một chút để tâm trạng tốt hơn.'
+  };
+
+  if (level === PET_REACTION_LEVELS.critical) {
+    return {
+      level,
+      weakest,
+      message: criticalMessages[weakest.key] || `${label} is critical.`
+    };
+  }
+
+  if (level === PET_REACTION_LEVELS.needsCare) {
+    return {
+      level,
+      weakest,
+      message: needsCareMessages[weakest.key] || `${label} needs attention.`
+    };
+  }
+
+  return {
+    level,
+    weakest,
+    message: 'Hôm nay mình thấy ổn. Cứ giữ mình ấm áp và được yêu thương nha.'
+  };
+};
+
+const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()) => {
+  const nextStatus = clampPetStatus(status);
+  const nextTickAt = now.toISOString();
+  const lastTickDate = lastStatusTickAt ? new Date(lastStatusTickAt) : null;
+
+  if (!lastTickDate || Number.isNaN(lastTickDate.getTime())) {
+    return {
+      status: nextStatus,
+      lastStatusTickAt: nextTickAt,
+      chunks: 0,
+      shouldSave: true
+    };
+  }
+
+  const elapsedMs = now.getTime() - lastTickDate.getTime();
+  const chunks = Math.max(0, Math.floor(elapsedMs / PET_STATUS_DECAY_CHUNK_MS));
+
+  if (chunks === 0) {
+    return {
+      status: nextStatus,
+      lastStatusTickAt,
+      chunks,
+      shouldSave: false
+    };
+  }
+
+  for (let index = 0; index < chunks; index += 1) {
+    nextStatus.hunger = clampPetStatusValue(nextStatus.hunger - PET_STATUS_DECAY.hunger);
+    nextStatus.sanity = clampPetStatusValue(nextStatus.sanity - PET_STATUS_DECAY.sanity);
+
+    if (nextStatus.hunger < 30 || nextStatus.sanity < 30) {
+      nextStatus.health = clampPetStatusValue(nextStatus.health - PET_STATUS_DECAY.health);
+    }
+  }
+
+  return {
+    status: nextStatus,
+    lastStatusTickAt: nextTickAt,
+    chunks,
+    shouldSave: true
+  };
+};
+
+const getPetItemUsePreview = (category, status = {}) => {
+  const effect = PET_ITEM_EFFECTS[category];
+  const currentStatus = clampPetStatus(status);
+
+  if (!effect) {
+    return {
+      canUse: false,
+      reason: '',
+      rows: [],
+      nextStatus: currentStatus
+    };
+  }
+
+  const nextStatus = { ...currentStatus };
+  const rows = Object.entries(effect.stats).map(([key, amount]) => {
+    const before = currentStatus[key];
+    const after = clampPetStatusValue(before + amount);
+    nextStatus[key] = after;
+
+    return {
+      key,
+      label: PET_STAT_LABELS[key] || key,
+      amount,
+      before,
+      after
+    };
+  });
+
+  const canUse = category === 'food'
+    ? currentStatus.hunger < 100
+    : currentStatus.health < 100 || currentStatus.sanity < 100;
+
+  return {
+    canUse,
+    reason: category === 'food' ? 'Hunger is already full.' : 'Health and sanity are already full.',
+    rows,
+    nextStatus
+  };
+};
+
 const normalizePetInventoryItems = (items, fallbackItems = []) => {
   const sourceItems = Array.isArray(items) && items.length > 0 ? items : fallbackItems;
 
@@ -336,11 +515,15 @@ const upsertPetItem = (items, nextItem) => {
 };
 
 const createPetStatusRows = (petStatus) => (
-  PET_STATUS_ROWS.map((row) => ({
-    ...row,
-    value: row.key === 'level' ? row.value : clampPetStatusValue(petStatus[row.key] ?? row.value),
-    editable: PET_STATUS_KEYS.includes(row.key)
-  }))
+  PET_STATUS_ROWS.map((row) => {
+    const value = row.key === 'level' ? row.value : clampPetStatusValue(petStatus[row.key] ?? row.value);
+
+    return {
+      ...row,
+      value,
+      statusLevel: PET_STATUS_KEYS.includes(row.key) ? getPetStatusLevel(value) : PET_REACTION_LEVELS.stable
+    };
+  })
 );
 
 const createMoodFloatVariant = () => {
@@ -374,15 +557,28 @@ const moodFloatStyle = {
   '--pet-mood-end-scale': PET_MOOD_FLOAT_OPTIONS.endScale
 };
 
-const PetItemCard = ({ item, showCount = true, isCurrent = false, showEmptyIcon = false, onClick }) => {
+const PetItemCard = ({
+  item,
+  showCount = true,
+  isCurrent = false,
+  showEmptyIcon = false,
+  disabled = false,
+  disabledReason = '',
+  onClick
+}) => {
   const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
-  const ariaLabel = showCount ? `${item.name}, quantity ${item.count}` : item.name;
+  const ariaLabel = [
+    showCount ? `${item.name}, quantity ${item.count}` : item.name,
+    disabled && disabledReason ? disabledReason : ''
+  ].filter(Boolean).join('. ');
 
   return (
     <button
       type="button"
-      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${isCurrent ? 'pet-item-card--current' : ''}`}
+      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${isCurrent ? 'pet-item-card--current' : ''} ${disabled ? 'pet-item-card--disabled' : ''}`}
       aria-label={ariaLabel}
+      aria-disabled={disabled}
+      disabled={disabled}
       onClick={onClick}
     >
       {!showCount ? (
@@ -405,35 +601,88 @@ const PetItemCard = ({ item, showCount = true, isCurrent = false, showEmptyIcon 
   );
 };
 
-const PetStatusPanel = ({ rows, onStatusChange, isSaving }) => (
+const PetStatusPanel = ({ rows }) => (
   <div className="pet-status-list" aria-label="Pet status cards">
-    {rows.map(({ key, label, value, Icon, editable }) => (
-      <div key={key} className="pet-status-row" aria-label={`${label} ${value}%`}>
+    {rows.map(({ key, label, value, Icon, statusLevel }) => (
+      <div
+        key={key}
+        className={`pet-status-row pet-status-row--${statusLevel}`}
+        aria-label={`${label} ${value}%`}
+      >
         <div className="pet-status-row__header">
           <Icon className="pet-status-icon" aria-hidden="true" />
           <span className="pet-status-row__title">{label}</span>
-          {editable && (
-            <input
-              type="number"
-              className="pet-status-row__input"
-              min="0"
-              max="100"
-              step="1"
-              value={value}
-              onChange={(event) => onStatusChange(key, event.target.value)}
-              disabled={isSaving}
-              aria-label={`${label} value`}
-            />
-          )}
+          <span className="pet-status-row__value">{value}%</span>
         </div>
         <div className="pet-status-row__track" aria-hidden="true">
           <span style={{ width: `${value}%` }} />
         </div>
-        <span className="pet-status-row__percent">{value}%</span>
       </div>
     ))}
   </div>
 );
+
+const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, onConfirm }) => {
+  if (!isOpen || !item || !preview) {
+    return null;
+  }
+
+  const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
+  const actionLabel = category === 'care' ? 'Use Care' : 'Use Food';
+
+  return (
+    <div className="pet-use-modal-overlay" role="presentation" onMouseDown={onClose}>
+      <div
+        className="pet-use-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pet-use-modal-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="pet-use-modal__header">
+          <div className="pet-use-modal__icon" aria-hidden="true">
+            {item.icon ? (
+              <IconRenderer iconName={item.icon} size={42} className="pet-use-modal__icon-svg" />
+            ) : (
+              <Icon className="pet-use-modal__icon-svg" aria-hidden="true" />
+            )}
+          </div>
+          <div>
+            <p className="pet-use-modal__eyebrow">{PET_ITEM_EFFECTS[category]?.label || 'Item'}</p>
+            <h2 id="pet-use-modal-title">{item.name}</h2>
+          </div>
+        </div>
+
+        <div className="pet-use-modal__preview" aria-label="Status preview">
+          {preview.rows.map(({ key, label, amount, before, after }) => (
+            <div key={key} className="pet-use-modal__row">
+              <span>{label}</span>
+              <strong>{before}%</strong>
+              <span aria-hidden="true">+</span>
+              <strong>{amount}</strong>
+              <span aria-hidden="true">=</span>
+              <strong>{after}%</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="pet-use-modal__actions">
+          <button type="button" className="pet-use-modal__button" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="pet-use-modal__button pet-use-modal__button--primary"
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Saving...' : actionLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PetInfoDropdown = ({ expanded, onToggle, rows }) => (
   <div className="pet-info-dropdown">
@@ -489,7 +738,9 @@ const PetPage = ({ onBack }) => {
     hunger: DEFAULT_PET_STATUS.hunger,
     sanity: DEFAULT_PET_STATUS.sanity
   }));
+  const [, setLastStatusTickAt] = useState(null);
   const [petItemModalCategory, setPetItemModalCategory] = useState(null);
+  const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
   const [isSavingPet, setIsSavingPet] = useState(false);
   const items = useMemo(() => (
     activeTab === 'activity'
@@ -501,6 +752,12 @@ const PetPage = ({ onBack }) => {
           : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
   ), [activeTab, activityItems, moodItems, petItems]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
+  const petReaction = useMemo(() => getPetReaction(petStatus), [petStatus]);
+  const selectedPetUsePreview = useMemo(() => (
+    selectedPetUseItem
+      ? getPetItemUsePreview(selectedPetUseItem.category, petStatus)
+      : null
+  ), [selectedPetUseItem, petStatus]);
   const moodFloatStyles = useMemo(() => (
     moodFloatBatch.map((moodFloatItem) => ({
       ...moodFloatStyle,
@@ -548,11 +805,27 @@ const PetPage = ({ onBack }) => {
             care: normalizePetInventoryItems(pet?.care, DEFAULT_PET_ITEMS.care)
           });
 
-          setPetStatus({
-            health: clampPetStatusValue(pet?.status?.health ?? DEFAULT_PET_STATUS.health),
-            hunger: clampPetStatusValue(pet?.status?.hunger ?? DEFAULT_PET_STATUS.hunger),
-            sanity: clampPetStatusValue(pet?.status?.sanity ?? DEFAULT_PET_STATUS.sanity)
-          });
+          const decayResult = calculatePetStatusDecay(clampPetStatus(pet?.status), pet?.lastStatusTickAt);
+          setPetStatus(decayResult.status);
+          setLastStatusTickAt(decayResult.lastStatusTickAt);
+
+          if (decayResult.shouldSave) {
+            setIsSavingPet(true);
+            savePet({
+              status: decayResult.status,
+              lastStatusTickAt: decayResult.lastStatusTickAt
+            }).then((result) => {
+              if (!result.success) {
+                console.warn('⚠️ Failed to save pet status tick:', result.message);
+              }
+            }).catch((error) => {
+              console.warn('⚠️ Failed to save pet status tick:', error);
+            }).finally(() => {
+              if (!cancelled) {
+                setIsSavingPet(false);
+              }
+            });
+          }
         }
       } catch (error) {
         console.warn('⚠️ Failed to fetch pet page data:', error);
@@ -570,6 +843,7 @@ const PetPage = ({ onBack }) => {
             hunger: DEFAULT_PET_STATUS.hunger,
             sanity: DEFAULT_PET_STATUS.sanity
           });
+          setLastStatusTickAt(null);
         }
       }
     };
@@ -616,13 +890,6 @@ const PetPage = ({ onBack }) => {
     window.history.back();
   };
 
-  const handlePetStatusChange = (key, value) => {
-    setPetStatus(prev => ({
-      ...prev,
-      [key]: clampPetStatusValue(value)
-    }));
-  };
-
   const handleAddPetItem = async (newItem) => {
     if (!petItemModalCategory || isSavingPet) return;
 
@@ -648,6 +915,44 @@ const PetPage = ({ onBack }) => {
     } catch (error) {
       console.error('Error saving pet item:', error);
       alert('Failed to save pet item. Please try again.');
+    } finally {
+      setIsSavingPet(false);
+    }
+  };
+
+  const handlePetItemClick = (item, category) => {
+    if (isSavingPet) return;
+
+    const preview = getPetItemUsePreview(category, petStatus);
+    if (!preview.canUse) return;
+
+    setSelectedPetUseItem({ item, category });
+  };
+
+  const handleConfirmUsePetItem = async () => {
+    if (!selectedPetUseItem || !selectedPetUsePreview?.canUse || isSavingPet) return;
+
+    const nextStatus = selectedPetUsePreview.nextStatus;
+    const nextTickAt = new Date().toISOString();
+    setIsSavingPet(true);
+
+    try {
+      const result = await savePet({
+        status: nextStatus,
+        lastStatusTickAt: nextTickAt
+      });
+
+      if (result.success) {
+        setPetStatus(nextStatus);
+        setLastStatusTickAt(nextTickAt);
+        setSelectedPetUseItem(null);
+      } else {
+        console.error('Failed to use pet item:', result.message);
+        alert('Failed to use pet item. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error using pet item:', error);
+      alert('Failed to use pet item. Please try again.');
     } finally {
       setIsSavingPet(false);
     }
@@ -1021,9 +1326,9 @@ const PetPage = ({ onBack }) => {
           <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} rows={petStatusRows} />
         </div>
 
-        <div className="pet-stage">
+        <div className={`pet-stage pet-stage--${petReaction.level}`}>
           <div className={`pet-bubble ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
-            <p>I'm hungry. Missing your yummy meals.</p>
+            <p>{petReaction.message}</p>
           </div>
 
           <div className="pet-stage-indicators" aria-label="Pet context">
@@ -1039,7 +1344,7 @@ const PetPage = ({ onBack }) => {
             ))}
           </div>
 
-          <div className="pet-character pet-character--pet" role="img" aria-label="Meo pet placeholder">
+          <div className={`pet-character pet-character--pet pet-character--${petReaction.level}`} role="img" aria-label="Meo pet placeholder">
             <span className="pet-character__ear pet-character__ear--left" />
             <span className="pet-character__ear pet-character__ear--right" />
             <span className="pet-character__face">
@@ -1074,8 +1379,6 @@ const PetPage = ({ onBack }) => {
             {activeTab === 'status' ? (
               <PetStatusPanel
                 rows={petStatusRows}
-                onStatusChange={handlePetStatusChange}
-                isSaving={isSavingPet}
               />
             ) : (
               <div className="pet-item-grid">
@@ -1137,25 +1440,36 @@ const PetPage = ({ onBack }) => {
                     </button>
                   </>
                 )}
-                {items.map((item, index) => (
-                  <PetItemCard
-                    key={`${item.name}-${item.shape}-${index}`}
-                    item={item}
-                    showCount={false}
-                    showEmptyIcon={activeTab === 'activity' || activeTab === 'moods'}
-                    isCurrent={
-                      (activeTab === 'activity' && item.name === currentActivityName)
-                      || (activeTab === 'moods' && item.name === currentMoodName)
-                    }
-                    onClick={
-                      activeTab === 'activity'
-                        ? () => handleActivityCardClick(item)
-                        : activeTab === 'moods'
-                          ? () => handleMoodCardClick(item)
-                          : undefined
-                    }
-                  />
-                ))}
+                {items.map((item, index) => {
+                  const petUsePreview = PET_ITEM_CATEGORIES.includes(activeTab)
+                    ? getPetItemUsePreview(activeTab, petStatus)
+                    : null;
+                  const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet));
+
+                  return (
+                    <PetItemCard
+                      key={`${item.name}-${item.shape}-${index}`}
+                      item={item}
+                      showCount={false}
+                      showEmptyIcon={activeTab === 'activity' || activeTab === 'moods'}
+                      isCurrent={
+                        (activeTab === 'activity' && item.name === currentActivityName)
+                        || (activeTab === 'moods' && item.name === currentMoodName)
+                      }
+                      disabled={isPetItemDisabled}
+                      disabledReason={petUsePreview?.reason}
+                      onClick={
+                        activeTab === 'activity'
+                          ? () => handleActivityCardClick(item)
+                          : activeTab === 'moods'
+                            ? () => handleMoodCardClick(item)
+                            : PET_ITEM_CATEGORIES.includes(activeTab)
+                              ? () => handlePetItemClick(item, activeTab)
+                              : undefined
+                      }
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1272,6 +1586,20 @@ const PetPage = ({ onBack }) => {
         title="Set Current Mood"
         messageLabel="current mood"
         iconErrorText="(Please select an icon for the mood.)"
+      />
+
+      <PetUseItemModal
+        isOpen={Boolean(selectedPetUseItem)}
+        category={selectedPetUseItem?.category}
+        item={selectedPetUseItem?.item}
+        preview={selectedPetUsePreview}
+        isLoading={isSavingPet}
+        onClose={() => {
+          if (!isSavingPet) {
+            setSelectedPetUseItem(null);
+          }
+        }}
+        onConfirm={handleConfirmUsePetItem}
       />
     </main>
   );

@@ -46,12 +46,19 @@ const normalizeStatusNumber = (value) => {
   return Number.isFinite(numberValue) ? numberValue : null;
 };
 
+const normalizeTimestamp = (value) => {
+  const timestamp = typeof value === 'string' ? value.trim() : String(value || '').trim();
+  return timestamp || null;
+};
+
 const setNumberUpdate = (updates, fieldName, value) => {
   const numberValue = Number(value);
   if (Number.isFinite(numberValue)) {
     updates[fieldName] = numberValue;
   }
 };
+
+let shouldSkipLastStatusTickAt = false;
 
 const getPetRecord = async () => {
   if (!TABLE_IDS.PET) {
@@ -83,6 +90,7 @@ const toPetData = (record) => {
       hunger: normalizeStatusNumber(record.status_hunger),
       sanity: normalizeStatusNumber(record.status_sanity)
     },
+    lastStatusTickAt: normalizeTimestamp(record.last_status_tick_at),
     createdAt: record.CreatedAt,
     updatedAt: record.UpdatedAt
   };
@@ -130,29 +138,53 @@ export const savePet = async (petUpdates = {}) => {
       setNumberUpdate(updates, 'status_sanity', status.sanity);
     }
 
+    const lastStatusTickAt = petUpdates.lastStatusTickAt ?? petUpdates.last_status_tick_at;
+    if (lastStatusTickAt !== undefined && !shouldSkipLastStatusTickAt) {
+      updates.last_status_tick_at = normalizeTimestamp(lastStatusTickAt);
+    }
+
     if (Object.keys(updates).length === 0) {
       return { success: true, message: 'No pet data to save' };
     }
 
     const currentRecord = await getPetRecord();
-    let response;
+    const saveUpdates = async (nextUpdates) => {
+      const retryCount = Object.prototype.hasOwnProperty.call(nextUpdates, 'last_status_tick_at') ? 0 : undefined;
 
-    if (currentRecord?.Id) {
-      response = await nocoRequest(`${TABLE_IDS.PET}/records`, {
-        method: 'PATCH',
-        body: JSON.stringify([{
-          Id: currentRecord.Id,
-          ...updates
-        }])
-      });
-    } else {
-      response = await nocoRequest(`${TABLE_IDS.PET}/records`, {
+      if (currentRecord?.Id) {
+        return nocoRequest(`${TABLE_IDS.PET}/records`, {
+          method: 'PATCH',
+          body: JSON.stringify([{
+            Id: currentRecord.Id,
+            ...nextUpdates
+          }])
+        }, retryCount);
+      }
+
+      return nocoRequest(`${TABLE_IDS.PET}/records`, {
         method: 'POST',
         body: JSON.stringify({
           Title: PET_RECORD_TITLE,
-          ...updates
+          ...nextUpdates
         })
-      });
+      }, retryCount);
+    };
+
+    let response;
+    try {
+      response = await saveUpdates(updates);
+    } catch (error) {
+      if (!Object.prototype.hasOwnProperty.call(updates, 'last_status_tick_at')) {
+        throw error;
+      }
+
+      const fallbackUpdates = { ...updates };
+      delete fallbackUpdates.last_status_tick_at;
+      shouldSkipLastStatusTickAt = true;
+      console.warn('⚠️ Pet status tick timestamp could not be saved. Retrying pet update without last_status_tick_at.', error);
+      response = Object.keys(fallbackUpdates).length > 0
+        ? await saveUpdates(fallbackUpdates)
+        : null;
     }
 
     clearCachedRequest(PET_CACHE_KEY);
