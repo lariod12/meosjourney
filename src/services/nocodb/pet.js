@@ -28,11 +28,12 @@ const normalizePetItem = (item) => {
   if (item && typeof item === 'object') {
     const name = typeof item.name === 'string' ? item.name.trim() : String(item.name || '').trim();
     const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
-    return name ? { name, icon } : null;
+    const desc = typeof item.desc === 'string' ? item.desc.trim() : '';
+    return name ? { name, icon, desc } : null;
   }
 
   const name = typeof item === 'string' ? item.trim() : String(item || '').trim();
-  return name ? { name, icon: '' } : null;
+  return name ? { name, icon: '', desc: '' } : null;
 };
 
 const normalizePetItems = (value) => (

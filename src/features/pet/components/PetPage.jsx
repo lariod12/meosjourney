@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuChevronLeft, LuChevronDown,
   LuUtensils, LuHeart, LuActivity, LuGauge,
@@ -165,7 +165,8 @@ const PET_ITEM_EFFECTS = {
   food: {
     label: 'Food',
     stats: {
-      hunger: 25
+      hunger: 25,
+      health: 8
     }
   },
   care: {
@@ -185,6 +186,26 @@ const PET_STAT_LABELS = {
   health: 'Health',
   hunger: 'Hunger',
   sanity: 'Sanity'
+};
+const PET_ITEM_DESCRIPTIONS = {
+  pudding: 'Mềm mịn ngọt ngào, pet ăn là vui bụng liền.',
+  meat: 'Một miếng chắc bụng cho ngày cần nhiều năng lượng.',
+  apple: 'Giòn giòn tươi mát, nhẹ bụng mà vẫn ngon.',
+  milk: 'Một ngụm béo thơm để bụng êm lại.',
+  fish: 'Mùi cá hấp dẫn, pet sẽ chạy tới ngay.',
+  cookie: 'Giòn rụm nhỏ xinh, thưởng một cái là tươi tỉnh.',
+  juice: 'Mát lạnh ngọt nhẹ, uống xong tỉnh táo hơn.',
+  berry: 'Chua ngọt tí hon, cắn một miếng là vui.',
+  biscuit: 'Bánh quy giòn tan cho lúc đói lưng chừng.',
+  shower: 'Tắm sạch bụi bặm, pet thơm tho lại ngay.',
+  towel: 'Lau khô ấm áp sau khi tắm xong.',
+  'nap mat': 'Một chỗ nằm mềm để nghỉ lại sức.',
+  brush: 'Chải lông gọn gàng, nhìn tỉnh táo hơn hẳn.',
+  soap: 'Bọt xà phòng nhỏ xíu làm pet sạch bong.',
+  bandage: 'Dán nhẹ một miếng để vết đau bớt nhăn nhó.',
+  comb: 'Chải một lượt là lông vào nếp đáng yêu.',
+  cushion: 'Gối êm để pet cuộn tròn nghỉ một chút.',
+  'care kit': 'Bộ chăm sóc nhỏ nhưng hồi phục rất ra gì.'
 };
 
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
@@ -207,6 +228,8 @@ const PET_THOUGHT_BUBBLE_OPTIONS = {
   playDurationSeconds: 7,
   replayDelaySeconds: 5
 };
+const PET_FOOD_EFFECT_DURATION_MS = 3000;
+const PET_CARE_EFFECT_DURATION_MS = 3000;
 
 const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
 
@@ -312,9 +335,31 @@ const normalizeMoodItems = (moods, fallbackItems = TAB_ITEMS.moods) => {
   });
 };
 
+const getStatusText = (value) => {
+  if (Array.isArray(value)) {
+    return getStatusText(value[0]);
+  }
+
+  if (value && typeof value === 'object') {
+    return typeof value.name === 'string' ? value.name.trim() : '';
+  }
+
+  return String(value || '').trim();
+};
+
 const DEFAULT_PET_ITEMS = {
-  food: TAB_ITEMS.food.map(({ name, shape }) => ({ name, icon: '', shape })),
-  care: TAB_ITEMS.care.map(({ name, shape }) => ({ name, icon: '', shape }))
+  food: TAB_ITEMS.food.map(({ name, shape }) => ({
+    name,
+    icon: '',
+    desc: PET_ITEM_DESCRIPTIONS[name.toLowerCase()] || '',
+    shape
+  })),
+  care: TAB_ITEMS.care.map(({ name, shape }) => ({
+    name,
+    icon: '',
+    desc: PET_ITEM_DESCRIPTIONS[name.toLowerCase()] || '',
+    shape
+  }))
 };
 
 const DEFAULT_PET_STATUS = PET_STATUS_ROWS.reduce((status, row) => ({
@@ -473,12 +518,12 @@ const getPetItemUsePreview = (category, status = {}) => {
   });
 
   const canUse = category === 'food'
-    ? currentStatus.hunger < 100
+    ? currentStatus.hunger < 100 || currentStatus.health < 100
     : currentStatus.health < 100 || currentStatus.sanity < 100;
 
   return {
     canUse,
-    reason: category === 'food' ? 'Hunger is already full.' : 'Health and sanity are already full.',
+    reason: category === 'food' ? 'Hunger and health are already full.' : 'Health and sanity are already full.',
     rows,
     nextStatus
   };
@@ -492,15 +537,21 @@ const normalizePetInventoryItems = (items, fallbackItems = []) => {
       if (!item) return null;
       const name = typeof item.name === 'string' ? item.name.trim() : String(item.name || '').trim();
       const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
+      const desc = typeof item.desc === 'string' ? item.desc.trim() : '';
       const shape = item.shape || DEFAULT_PET_SHAPES[name.toLowerCase()] || 'box';
-      return name ? { name, icon, shape } : null;
+      return name ? {
+        name,
+        icon,
+        desc: desc || PET_ITEM_DESCRIPTIONS[name.toLowerCase()] || '',
+        shape
+      } : null;
     })
     .filter(Boolean);
 };
 
 const serializePetItems = (items) => (
   normalizePetInventoryItems(items)
-    .map(({ name, icon }) => ({ name, icon }))
+    .map(({ name, icon, desc }) => ({ name, icon, desc }))
 );
 
 const upsertPetItem = (items, nextItem) => {
@@ -622,6 +673,59 @@ const PetStatusPanel = ({ rows }) => (
   </div>
 );
 
+const PetStageFoodEffect = ({ effect, onDone }) => {
+  const item = effect.item || {};
+  const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
+
+  return (
+    <div
+      className="pet-food-effect"
+      aria-hidden="true"
+      onAnimationEnd={(event) => {
+        if (event.animationName === 'pet-food-eat') {
+          onDone(effect.id);
+        }
+      }}
+    >
+      {item.icon ? (
+        <IconRenderer iconName={item.icon} size={54} className="pet-food-effect__icon" />
+      ) : (
+        <Icon className="pet-food-effect__icon" aria-hidden="true" />
+      )}
+    </div>
+  );
+};
+
+const PetStageCareEffect = ({ effect, onDone }) => {
+  const item = effect.item || {};
+  const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuHeart;
+
+  return (
+    <div
+      className="pet-care-effect"
+      aria-hidden="true"
+      onAnimationEnd={(event) => {
+        if (event.animationName === 'pet-care-heal') {
+          onDone(effect.id);
+        }
+      }}
+    >
+      <span className="pet-care-effect__ring" />
+      <span className="pet-care-effect__pulse" />
+      <span className="pet-care-effect__plus pet-care-effect__plus--one">+</span>
+      <span className="pet-care-effect__plus pet-care-effect__plus--two">+</span>
+      <span className="pet-care-effect__plus pet-care-effect__plus--three">+</span>
+      <span className="pet-care-effect__icon-wrap">
+        {item.icon ? (
+          <IconRenderer iconName={item.icon} size={48} className="pet-care-effect__icon" />
+        ) : (
+          <Icon className="pet-care-effect__icon" aria-hidden="true" />
+        )}
+      </span>
+    </div>
+  );
+};
+
 const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, onConfirm }) => {
   if (!isOpen || !item || !preview) {
     return null;
@@ -629,6 +733,7 @@ const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, 
 
   const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
   const actionLabel = category === 'care' ? 'Use Care' : 'Use Food';
+  const itemDescription = item.desc || PET_ITEM_DESCRIPTIONS[String(item.name || '').toLowerCase()] || '';
 
   return (
     <div className="pet-use-modal-overlay" role="presentation" onMouseDown={onClose}>
@@ -650,18 +755,17 @@ const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, 
           <div>
             <p className="pet-use-modal__eyebrow">{PET_ITEM_EFFECTS[category]?.label || 'Item'}</p>
             <h2 id="pet-use-modal-title">{item.name}</h2>
+            {itemDescription && (
+              <p className="pet-use-modal__desc">{itemDescription}</p>
+            )}
           </div>
         </div>
 
         <div className="pet-use-modal__preview" aria-label="Status preview">
-          {preview.rows.map(({ key, label, amount, before, after }) => (
+          {preview.rows.map(({ key, label, amount }) => (
             <div key={key} className="pet-use-modal__row">
               <span>{label}</span>
-              <strong>{before}%</strong>
-              <span aria-hidden="true">+</span>
-              <strong>{amount}</strong>
-              <span aria-hidden="true">=</span>
-              <strong>{after}%</strong>
+              <strong>+{amount}%</strong>
             </div>
           ))}
         </div>
@@ -707,6 +811,9 @@ const PetInfoDropdown = ({ expanded, onToggle, rows }) => (
 );
 
 const PetPage = ({ onBack }) => {
+  const petSaveQueueRef = useRef(Promise.resolve());
+  const foodEffectTimeoutsRef = useRef(new Set());
+  const careEffectTimeoutsRef = useRef(new Set());
   const [activeTab, setActiveTab] = useState('food');
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
@@ -715,6 +822,7 @@ const PetPage = ({ onBack }) => {
   const [moodItems, setMoodItems] = useState(() => normalizeMoodItems());
   const [currentActivityName, setCurrentActivityName] = useState('');
   const [currentMoodName, setCurrentMoodName] = useState('');
+  const [currentLocationName, setCurrentLocationName] = useState('Home');
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
   const [isAddMoodModalOpen, setIsAddMoodModalOpen] = useState(false);
   const [isChooseActivityModalOpen, setIsChooseActivityModalOpen] = useState(false);
@@ -741,6 +849,10 @@ const PetPage = ({ onBack }) => {
   const [, setLastStatusTickAt] = useState(null);
   const [petItemModalCategory, setPetItemModalCategory] = useState(null);
   const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
+  const [foodEffects, setFoodEffects] = useState([]);
+  const [isFoodUseAnimating, setIsFoodUseAnimating] = useState(false);
+  const [careEffects, setCareEffects] = useState([]);
+  const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
   const [isSavingPet, setIsSavingPet] = useState(false);
   const items = useMemo(() => (
     activeTab === 'activity'
@@ -790,8 +902,10 @@ const PetPage = ({ onBack }) => {
         if (!cancelled) {
           const activities = normalizeActivityItems(status?.doing);
           const moods = normalizeMoodItems(status?.mood);
+          const locationName = getStatusText(status?.location) || 'Home';
           setActivityItems(activities);
           setMoodItems(moods);
+          setCurrentLocationName(locationName);
           // Set current activity (first one in the list)
           if (activities.length > 0) {
             setCurrentActivityName(activities[0].name);
@@ -810,20 +924,9 @@ const PetPage = ({ onBack }) => {
           setLastStatusTickAt(decayResult.lastStatusTickAt);
 
           if (decayResult.shouldSave) {
-            setIsSavingPet(true);
-            savePet({
+            enqueuePetSave({
               status: decayResult.status,
               lastStatusTickAt: decayResult.lastStatusTickAt
-            }).then((result) => {
-              if (!result.success) {
-                console.warn('⚠️ Failed to save pet status tick:', result.message);
-              }
-            }).catch((error) => {
-              console.warn('⚠️ Failed to save pet status tick:', error);
-            }).finally(() => {
-              if (!cancelled) {
-                setIsSavingPet(false);
-              }
             });
           }
         }
@@ -834,6 +937,7 @@ const PetPage = ({ onBack }) => {
           setMoodItems(normalizeMoodItems());
           setCurrentActivityName('');
           setCurrentMoodName('');
+          setCurrentLocationName('Home');
           setPetItems({
             food: DEFAULT_PET_ITEMS.food,
             care: DEFAULT_PET_ITEMS.care
@@ -885,9 +989,34 @@ const PetPage = ({ onBack }) => {
     };
   }, []);
 
+  useEffect(() => () => {
+    foodEffectTimeoutsRef.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    foodEffectTimeoutsRef.current.clear();
+    careEffectTimeoutsRef.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    careEffectTimeoutsRef.current.clear();
+  }, []);
+
   const handleBack = () => {
     if (onBack) { onBack(); return; }
     window.history.back();
+  };
+
+  const enqueuePetSave = (updates) => {
+    petSaveQueueRef.current = petSaveQueueRef.current
+      .catch(() => {})
+      .then(async () => {
+        const result = await savePet(updates);
+        if (!result.success) {
+          console.warn('⚠️ Background pet sync failed:', result.message);
+        }
+      })
+      .catch((error) => {
+        console.warn('⚠️ Background pet sync failed:', error);
+      });
   };
 
   const handleAddPetItem = async (newItem) => {
@@ -922,6 +1051,8 @@ const PetPage = ({ onBack }) => {
 
   const handlePetItemClick = (item, category) => {
     if (isSavingPet) return;
+    if (category === 'food' && isFoodUseAnimating) return;
+    if (category === 'care' && isCareUseAnimating) return;
 
     const preview = getPetItemUsePreview(category, petStatus);
     if (!preview.canUse) return;
@@ -929,33 +1060,61 @@ const PetPage = ({ onBack }) => {
     setSelectedPetUseItem({ item, category });
   };
 
-  const handleConfirmUsePetItem = async () => {
-    if (!selectedPetUseItem || !selectedPetUsePreview?.canUse || isSavingPet) return;
+  const handleConfirmUsePetItem = () => {
+    if (!selectedPetUseItem || !selectedPetUsePreview?.canUse) return;
+    if (selectedPetUseItem.category === 'food' && isFoodUseAnimating) return;
+    if (selectedPetUseItem.category === 'care' && isCareUseAnimating) return;
 
     const nextStatus = selectedPetUsePreview.nextStatus;
     const nextTickAt = new Date().toISOString();
-    setIsSavingPet(true);
+    const usedPetItem = selectedPetUseItem;
 
-    try {
-      const result = await savePet({
-        status: nextStatus,
-        lastStatusTickAt: nextTickAt
-      });
+    setPetStatus(nextStatus);
+    setLastStatusTickAt(nextTickAt);
+    setSelectedPetUseItem(null);
 
-      if (result.success) {
-        setPetStatus(nextStatus);
-        setLastStatusTickAt(nextTickAt);
-        setSelectedPetUseItem(null);
-      } else {
-        console.error('Failed to use pet item:', result.message);
-        alert('Failed to use pet item. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error using pet item:', error);
-      alert('Failed to use pet item. Please try again.');
-    } finally {
-      setIsSavingPet(false);
+    if (usedPetItem.category === 'food') {
+      const effectId = `${Date.now()}-${Math.random()}`;
+      setIsFoodUseAnimating(true);
+      setFoodEffects([{
+        id: effectId,
+        item: usedPetItem.item
+      }]);
+      const timeoutId = window.setTimeout(() => {
+        handleFoodEffectDone(effectId);
+        foodEffectTimeoutsRef.current.delete(timeoutId);
+      }, PET_FOOD_EFFECT_DURATION_MS);
+      foodEffectTimeoutsRef.current.add(timeoutId);
     }
+
+    if (usedPetItem.category === 'care') {
+      const effectId = `${Date.now()}-${Math.random()}`;
+      setIsCareUseAnimating(true);
+      setCareEffects([{
+        id: effectId,
+        item: usedPetItem.item
+      }]);
+      const timeoutId = window.setTimeout(() => {
+        handleCareEffectDone(effectId);
+        careEffectTimeoutsRef.current.delete(timeoutId);
+      }, PET_CARE_EFFECT_DURATION_MS);
+      careEffectTimeoutsRef.current.add(timeoutId);
+    }
+
+    enqueuePetSave({
+      status: nextStatus,
+      lastStatusTickAt: nextTickAt
+    });
+  };
+
+  const handleFoodEffectDone = (effectId) => {
+    setFoodEffects(prev => prev.filter(effect => effect.id !== effectId));
+    setIsFoodUseAnimating(false);
+  };
+
+  const handleCareEffectDone = (effectId) => {
+    setCareEffects(prev => prev.filter(effect => effect.id !== effectId));
+    setIsCareUseAnimating(false);
   };
 
   const handleChooseActivityConfirm = async (activity) => {
@@ -1317,10 +1476,10 @@ const PetPage = ({ onBack }) => {
           <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
             <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
           </button>
-          <div className="pet-nameplate" aria-label="Méo, current location Home">
+          <div className="pet-nameplate" aria-label={`Méo, current location ${currentLocationName}`}>
             <span className="pet-nameplate__flip" aria-hidden="true">
               <span className="pet-nameplate__face pet-nameplate__face--front">Méo</span>
-              <span className="pet-nameplate__face pet-nameplate__face--back">Home</span>
+              <span className="pet-nameplate__face pet-nameplate__face--back">{currentLocationName}</span>
             </span>
           </div>
           <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} rows={petStatusRows} />
@@ -1341,6 +1500,26 @@ const PetPage = ({ onBack }) => {
                 )}
                 <span>{currentMoodItem?.name || PET_CURRENT_MOOD.label}</span>
               </div>
+            ))}
+          </div>
+
+          <div className="pet-food-effects" aria-hidden="true">
+            {foodEffects.map((effect) => (
+              <PetStageFoodEffect
+                key={effect.id}
+                effect={effect}
+                onDone={handleFoodEffectDone}
+              />
+            ))}
+          </div>
+
+          <div className="pet-care-effects" aria-hidden="true">
+            {careEffects.map((effect) => (
+              <PetStageCareEffect
+                key={effect.id}
+                effect={effect}
+                onDone={handleCareEffectDone}
+              />
             ))}
           </div>
 
@@ -1444,7 +1623,14 @@ const PetPage = ({ onBack }) => {
                   const petUsePreview = PET_ITEM_CATEGORIES.includes(activeTab)
                     ? getPetItemUsePreview(activeTab, petStatus)
                     : null;
-                  const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet));
+                  const isFoodLocked = activeTab === 'food' && isFoodUseAnimating;
+                  const isCareLocked = activeTab === 'care' && isCareUseAnimating;
+                  const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet || isFoodLocked || isCareLocked));
+                  const disabledReason = isFoodLocked
+                    ? 'Đợi món trước tan hết đã nha.'
+                    : isCareLocked
+                      ? 'Đợi chăm sóc xong rồi dùng món tiếp theo nha.'
+                      : petUsePreview?.reason;
 
                   return (
                     <PetItemCard
@@ -1457,7 +1643,7 @@ const PetPage = ({ onBack }) => {
                         || (activeTab === 'moods' && item.name === currentMoodName)
                       }
                       disabled={isPetItemDisabled}
-                      disabledReason={petUsePreview?.reason}
+                      disabledReason={disabledReason}
                       onClick={
                         activeTab === 'activity'
                           ? () => handleActivityCardClick(item)
@@ -1593,11 +1779,9 @@ const PetPage = ({ onBack }) => {
         category={selectedPetUseItem?.category}
         item={selectedPetUseItem?.item}
         preview={selectedPetUsePreview}
-        isLoading={isSavingPet}
+        isLoading={false}
         onClose={() => {
-          if (!isSavingPet) {
-            setSelectedPetUseItem(null);
-          }
+          setSelectedPetUseItem(null);
         }}
         onConfirm={handleConfirmUsePetItem}
       />
