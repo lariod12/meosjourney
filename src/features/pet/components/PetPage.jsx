@@ -1523,17 +1523,18 @@ const PetPage = ({ onBack }) => {
             ))}
           </div>
 
-          <div className={`pet-character pet-character--pet pet-character--${petReaction.level}`} role="img" aria-label="Meo pet placeholder">
-            <span className="pet-character__ear pet-character__ear--left" />
-            <span className="pet-character__ear pet-character__ear--right" />
-            <span className="pet-character__face">
+          <div className={`pet-character pet-character--pet pet-character--${petReaction.level}`} role="img" aria-label="Meo box-head character">
+            <span className="pet-character__head">
               <span className="pet-character__eye pet-character__eye--left" />
               <span className="pet-character__eye pet-character__eye--right" />
-              <span className="pet-character__nose" />
               <span className="pet-character__mouth" />
             </span>
+            <span className="pet-character__neck" />
             <span className="pet-character__body" />
-            <span className="pet-character__tail" />
+            <span className="pet-character__arm pet-character__arm--left" />
+            <span className="pet-character__arm pet-character__arm--right" />
+            <span className="pet-character__leg pet-character__leg--left" />
+            <span className="pet-character__leg pet-character__leg--right" />
             <span className="pet-character__shadow" />
           </div>
         </div>
