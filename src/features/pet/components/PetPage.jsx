@@ -796,25 +796,33 @@ const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, 
   );
 };
 
-const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
+const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
   const [animatingKeys, setAnimatingKeys] = useState(new Map());
   const prevValuesRef = useRef({});
   const [displayValues, setDisplayValues] = useState({});
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
+    // Initialize display values immediately when data is loaded
+    if (isDataLoaded && !isInitializedRef.current) {
+      const initialValues = {};
+      rows.forEach(({ key, value }) => {
+        if (PET_STATUS_KEYS.includes(key)) {
+          initialValues[key] = value;
+          prevValuesRef.current[key] = value;
+        }
+      });
+      setDisplayValues(initialValues);
+      isInitializedRef.current = true;
+      return;
+    }
+
     const newAnimatingKeys = new Map();
     const pendingValues = {};
     
     rows.forEach(({ key, value }) => {
       if (!PET_STATUS_KEYS.includes(key)) return;
       const currentDisplayValue = displayValues[key] ?? prevValuesRef.current[key];
-      
-      // Initialize display value on first render
-      if (currentDisplayValue === undefined) {
-        prevValuesRef.current[key] = value;
-        setDisplayValues(prev => ({ ...prev, [key]: value }));
-        return;
-      }
       
       if (value !== currentDisplayValue) {
         // Store animation type: 'increase' or 'decrease'
@@ -841,7 +849,7 @@ const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
 
       return () => clearTimeout(delayTimeout);
     }
-  }, [rows]);
+  }, [rows, isDataLoaded]);
 
   return (
     <div className="pet-info-dropdown">
@@ -855,7 +863,7 @@ const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
         <LuChevronDown className="pet-topbar-icon" aria-hidden="true" />
       </button>
       <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
-        {rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => {
+        {isDataLoaded && rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => {
           const animationType = animatingKeys.get(key);
           const isAnimating = animationType !== undefined;
           const isIncrease = animationType === 'increase';
@@ -889,8 +897,9 @@ const PetPage = ({ onBack }) => {
   const petSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
-  const [infoExpanded, setInfoExpanded] = useState(true);
+  const [infoExpanded, setInfoExpanded] = useState(false);
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
   const [thoughtBubbleVisible, setThoughtBubbleVisible] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
@@ -1024,13 +1033,32 @@ useEffect(() => {
           setLocationHistory(statusData.location);
         }
       }
+      
+      // Mark data as loaded
+      setIsDataLoaded(true);
     } catch (error) {
       console.error('❌ Error loading pet page data:', error);
+      // Even on error, mark as loaded to show UI
+      setIsDataLoaded(true);
     }
   };
 
   loadInitialData();
 }, []);
+
+// Auto-expand dropdown when data is loaded
+useEffect(() => {
+  if (isDataLoaded) {
+    // Use requestAnimationFrame to ensure data is rendered before expanding
+    const rafId = requestAnimationFrame(() => {
+      const expandTimeout = setTimeout(() => {
+        setInfoExpanded(true);
+      }, 50);
+      return () => clearTimeout(expandTimeout);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }
+}, [isDataLoaded]);
 
 // Page Visibility API - detect when user is viewing the page
   useEffect(() => {
@@ -1636,8 +1664,13 @@ useEffect(() => {
               <span className="pet-nameplate__face pet-nameplate__face--front">Méo</span>
               <span className="pet-nameplate__face pet-nameplate__face--back">{currentLocationName}</span>
             </span>
-          </button>
-          <PetInfoDropdown expanded={infoExpanded} onToggle={() => setInfoExpanded(v => !v)} rows={petStatusRows} />
+        </button>
+          <PetInfoDropdown 
+            expanded={infoExpanded} 
+            onToggle={() => setInfoExpanded(v => !v)} 
+            rows={petStatusRows} 
+            isDataLoaded={isDataLoaded}
+          />
         </div>
 
         <div className={`pet-stage pet-stage--${petReaction.level}`}>
