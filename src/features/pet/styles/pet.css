@@ -1494,21 +1494,8 @@
   }
 
   .pet-character {
-    width: 104px;
-    height: 122px;
-    bottom: 82px;
-  }
-
-  .pet-character__face {
-    left: 18px;
-    width: 70px;
-    height: 64px;
-  }
-
-  .pet-character__body {
-    left: 24px;
-    width: 58px;
-    height: 58px;
+    scale: 0.75;
+    bottom: 52px;
   }
 
   .pet-tabs {

@@ -414,14 +414,14 @@ const getPetReaction = (status = {}) => {
   const level = getPetStatusLevel(weakest.value);
   const label = PET_STAT_LABELS[weakest.key] || 'Status';
   const criticalMessages = {
-    health: 'Mình yếu quá. Chăm sóc một chút sẽ giúp mình hồi phục.',
-    hunger: 'Bụng mình trống rỗng rồi. Cho mình ăn với nha.',
-    sanity: 'Đầu mình hơi rối. Chăm sóc sẽ giúp mình bình tĩnh lại.'
+    health: 'Tui yếu quá. Chăm sóc một chút sẽ giúp tui hồi phục.',
+    hunger: 'Bụng tui trống rỗng rồi. Cho tui ăn với nha.',
+    sanity: 'Đầu tui hơi rối. Chăm sóc sẽ giúp tui bình tĩnh lại.'
   };
   const needsCareMessages = {
-    health: 'Mình vẫn ổn, nhưng được chăm sóc thêm thì sẽ khỏe hơn.',
-    hunger: 'Mình hơi đói rồi. Một món ăn nhẹ sẽ tuyệt lắm.',
-    sanity: 'Mình cần được dỗ dành một chút để tâm trạng tốt hơn.'
+    health: 'Tui vẫn ổn, nhưng được chăm sóc thêm thì sẽ khỏe hơn.',
+    hunger: 'Tui hơi đói rồi. Một món ăn nhẹ sẽ tuyệt lắm.',
+    sanity: 'Tui cần được dỗ dành một chút để tâm trạng tốt hơn.'
   };
 
   if (level === PET_REACTION_LEVELS.critical) {
@@ -443,7 +443,7 @@ const getPetReaction = (status = {}) => {
   return {
     level,
     weakest,
-    message: 'Hôm nay mình thấy ổn. Cứ giữ mình ấm áp và được yêu thương nha.'
+    message: 'Hôm nay tui thấy ổn. Cứ giữ tui ấm áp và được yêu thương nha.'
   };
 };
 
