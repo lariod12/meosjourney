@@ -796,28 +796,67 @@ const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, 
   );
 };
 
-const PetInfoDropdown = ({ expanded, onToggle, rows }) => (
-  <div className="pet-info-dropdown">
-    <button
-      type="button"
-      className={`pet-round-button ${expanded ? 'pet-round-button--flipped' : ''}`}
-      onClick={onToggle}
-      aria-label={expanded ? 'Collapse pet info' : 'Expand pet info'}
-      aria-expanded={expanded}
-    >
-      <LuChevronDown className="pet-topbar-icon" aria-hidden="true" />
-    </button>
-    <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
-      {rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => (
-        <div key={key} className="pet-info-item pet-info-item--stat" aria-label={`${label} ${value}%`}>
-          <Icon className="pet-info-item__icon" aria-hidden="true" />
-          <span className="pet-info-item__label">{value}%</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
+  const [animatingKeys, setAnimatingKeys] = useState(new Set());
+  const prevValuesRef = useRef({});
 
+  useEffect(() => {
+    const newAnimatingKeys = new Set();
+    
+    rows.forEach(({ key, value }) => {
+      if (!PET_STATUS_KEYS.includes(key)) return;
+      const prevValue = prevValuesRef.current[key];
+      if (prevValue !== undefined && value > prevValue) {
+        newAnimatingKeys.add(key);
+      }
+      prevValuesRef.current[key] = value;
+    });
+
+    if (newAnimatingKeys.size > 0) {
+      // Delay animation to wait for food/care effect to complete (3000ms)
+      const delayTimeout = setTimeout(() => {
+        setAnimatingKeys(newAnimatingKeys);
+        setTimeout(() => {
+          setAnimatingKeys(new Set());
+        }, 600);
+      }, 3000);
+
+      return () => clearTimeout(delayTimeout);
+    }
+  }, [rows]);
+
+  return (
+    <div className="pet-info-dropdown">
+      <button
+        type="button"
+        className={`pet-round-button ${expanded ? 'pet-round-button--flipped' : ''}`}
+        onClick={onToggle}
+        aria-label={expanded ? 'Collapse pet info' : 'Expand pet info'}
+        aria-expanded={expanded}
+      >
+        <LuChevronDown className="pet-topbar-icon" aria-hidden="true" />
+      </button>
+      <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
+        {rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => {
+          const isAnimating = animatingKeys.has(key);
+          return (
+            <div 
+              key={key} 
+              className={`pet-info-item pet-info-item--stat ${isAnimating ? 'pet-info-item--animating' : ''}`}
+              aria-label={`${label} ${value}%`}
+            >
+              <Icon className="pet-info-item__icon" aria-hidden="true" />
+              <span className="pet-info-item__label">{value}%</span>
+              {isAnimating && (
+                <span className="pet-info-item__sparkle" aria-hidden="true">+</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 const PetPage = ({ onBack }) => {
   const petSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
