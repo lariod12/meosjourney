@@ -797,27 +797,45 @@ const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, 
 };
 
 const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
-  const [animatingKeys, setAnimatingKeys] = useState(new Set());
+  const [animatingKeys, setAnimatingKeys] = useState(new Map());
   const prevValuesRef = useRef({});
+  const [displayValues, setDisplayValues] = useState({});
 
   useEffect(() => {
-    const newAnimatingKeys = new Set();
+    const newAnimatingKeys = new Map();
+    const pendingValues = {};
     
     rows.forEach(({ key, value }) => {
       if (!PET_STATUS_KEYS.includes(key)) return;
-      const prevValue = prevValuesRef.current[key];
-      if (prevValue !== undefined && value > prevValue) {
-        newAnimatingKeys.add(key);
+      const currentDisplayValue = displayValues[key] ?? prevValuesRef.current[key];
+      
+      // Initialize display value on first render
+      if (currentDisplayValue === undefined) {
+        prevValuesRef.current[key] = value;
+        setDisplayValues(prev => ({ ...prev, [key]: value }));
+        return;
       }
-      prevValuesRef.current[key] = value;
+      
+      if (value !== currentDisplayValue) {
+        // Store animation type: 'increase' or 'decrease'
+        newAnimatingKeys.set(key, value > currentDisplayValue ? 'increase' : 'decrease');
+        pendingValues[key] = value;
+      }
     });
 
     if (newAnimatingKeys.size > 0) {
       // Delay animation to wait for food/care effect to complete (3000ms)
       const delayTimeout = setTimeout(() => {
         setAnimatingKeys(newAnimatingKeys);
+        // Update display values at the same time animation starts
+        setDisplayValues(prev => ({ ...prev, ...pendingValues }));
+        Object.keys(pendingValues).forEach(key => {
+          prevValuesRef.current[key] = pendingValues[key];
+        });
+        
+        // Clear animation state after animation completes (600ms)
         setTimeout(() => {
-          setAnimatingKeys(new Set());
+          setAnimatingKeys(new Map());
         }, 600);
       }, 3000);
 
@@ -838,17 +856,27 @@ const PetInfoDropdown = ({ expanded, onToggle, rows }) => {
       </button>
       <div className={`pet-info-panel ${expanded ? 'pet-info-panel--open' : ''}`} aria-hidden={!expanded}>
         {rows.filter(({ key }) => PET_STATUS_KEYS.includes(key)).map(({ key, label, value, Icon }) => {
-          const isAnimating = animatingKeys.has(key);
+          const animationType = animatingKeys.get(key);
+          const isAnimating = animationType !== undefined;
+          const isIncrease = animationType === 'increase';
+          const isDecrease = animationType === 'decrease';
+          const displayValue = displayValues[key] ?? value;
           return (
             <div 
               key={key} 
-              className={`pet-info-item pet-info-item--stat ${isAnimating ? 'pet-info-item--animating' : ''}`}
-              aria-label={`${label} ${value}%`}
+              className={`pet-info-item pet-info-item--stat ${
+                isIncrease ? 'pet-info-item--animating-increase' : 
+                isDecrease ? 'pet-info-item--animating-decrease' : ''
+              }`}
+              aria-label={`${label} ${displayValue}%`}
             >
               <Icon className="pet-info-item__icon" aria-hidden="true" />
-              <span className="pet-info-item__label">{value}%</span>
-              {isAnimating && (
-                <span className="pet-info-item__sparkle" aria-hidden="true">+</span>
+              <span className="pet-info-item__label">{displayValue}%</span>
+              {isIncrease && (
+                <span className="pet-info-item__sparkle pet-info-item__sparkle--increase" aria-hidden="true">+</span>
+              )}
+              {isDecrease && (
+                <span className="pet-info-item__sparkle pet-info-item__sparkle--decrease" aria-hidden="true">-</span>
               )}
             </div>
           );
@@ -936,10 +964,75 @@ const PetPage = ({ onBack }) => {
     }))
   ), [moodFloatBatch]);
   const currentMoodItem = useMemo(() => (
-    moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
-  ), [currentMoodName, moodItems]);
+  moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
+), [currentMoodName, moodItems]);
 
-  // Page Visibility API - detect when user is viewing the page
+// Load initial data from NocoDB
+useEffect(() => {
+  const loadInitialData = async () => {
+    try {
+      // Fetch pet data (food, care inventory, and status)
+      const petData = await fetchPet();
+      if (petData) {
+        // Update pet items (food and care inventory)
+        if (petData.food || petData.care) {
+          setPetItems(prev => ({
+            food: petData.food && petData.food.length > 0 ? petData.food : prev.food,
+            care: petData.care && petData.care.length > 0 ? petData.care : prev.care
+          }));
+        }
+
+        // Update pet status (health, hunger, sanity)
+        if (petData.status) {
+          setPetStatus(prev => ({
+            health: petData.status.health ?? prev.health,
+            hunger: petData.status.hunger ?? prev.hunger,
+            sanity: petData.status.sanity ?? prev.sanity
+          }));
+        }
+
+        // Update last status tick timestamp
+        if (petData.lastStatusTickAt) {
+          setLastStatusTickAt(petData.lastStatusTickAt);
+        }
+      }
+
+      // Fetch status data (activities, moods, location)
+      const statusData = await fetchStatus();
+      if (statusData) {
+        // Update activities
+        if (statusData.doing && Array.isArray(statusData.doing)) {
+          setActivityItems(statusData.doing);
+          if (statusData.doing.length > 0) {
+            setCurrentActivityName(statusData.doing[0].name || '');
+          }
+        }
+
+        // Update moods
+        if (statusData.mood && Array.isArray(statusData.mood)) {
+          setMoodItems(statusData.mood);
+          if (statusData.mood.length > 0) {
+            setCurrentMoodName(statusData.mood[0].name || '');
+          }
+        }
+
+        // Update location
+        if (statusData.location && Array.isArray(statusData.location)) {
+          if (statusData.location.length > 0) {
+            setCurrentLocationName(statusData.location[0]);
+          }
+          setLocationHistory(statusData.location);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading pet page data:', error);
+    }
+  };
+
+  loadInitialData();
+}, []);
+
+// Page Visibility API - detect when user is viewing the page
   useEffect(() => {
     const handleVisibilityChange = () => {
       setIsPageVisible(!document.hidden);

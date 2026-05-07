@@ -1702,6 +1702,56 @@
     transform: translate(-50%, -18px) scale(0.5) rotate(270deg);
   }
 }
+
+@keyframes infoItemShake {
+  0% {
+    transform: scale(1) translateX(0);
+  }
+  20% {
+    transform: scale(0.95) translateX(-4px) rotate(-1deg);
+  }
+  40% {
+    transform: scale(0.92) translateX(4px) rotate(1deg);
+  }
+  60% {
+    transform: scale(0.95) translateX(-3px) rotate(-0.5deg);
+  }
+  80% {
+    transform: scale(0.98) translateX(2px) rotate(0.5deg);
+  }
+  100% {
+    transform: scale(1) translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes barDrainPulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(0.7);
+  }
+}
+
+@keyframes infoSparkleDown {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.5) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, 6px) scale(1.2) rotate(-90deg);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translate(-50%, 12px) scale(1) rotate(-180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 18px) scale(0.5) rotate(-270deg);
+  }
+}
+
   50% {
     opacity: 1;
     transform: translate(-50%, -8px) scale(1);
@@ -1716,12 +1766,20 @@
   position: relative;
 }
 
-.pet-info-item--animating {
+.pet-info-item--animating-increase {
   animation: infoItemPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.pet-info-item--animating .pet-info-item__label {
+.pet-info-item--animating-increase .pet-info-item__label {
   animation: barFillPulse 0.5s ease-in-out;
+}
+
+.pet-info-item--animating-decrease {
+  animation: infoItemShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.pet-info-item--animating-decrease .pet-info-item__label {
+  animation: barDrainPulse 0.5s ease-in-out;
 }
 
 .pet-info-item__sparkle {
@@ -1732,5 +1790,12 @@
   font-weight: bold;
   color: #000000;
   pointer-events: none;
+}
+
+.pet-info-item__sparkle--increase {
   animation: infoSparkle 0.7s ease-out forwards;
+}
+
+.pet-info-item__sparkle--decrease {
+  animation: infoSparkleDown 0.7s ease-out forwards;
 }
