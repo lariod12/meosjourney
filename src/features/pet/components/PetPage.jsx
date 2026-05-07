@@ -227,7 +227,14 @@ const PET_MOOD_FLOAT_OPTIONS = {
 
 const PET_THOUGHT_BUBBLE_OPTIONS = {
   playDurationSeconds: 7,
-  replayDelaySeconds: 5
+  // Smart timing based on pet status level
+  timing: {
+    critical: { minDelay: 15, maxDelay: 25, showChance: 0.9 },  // Show frequently when critical
+    'needs-care': { minDelay: 30, maxDelay: 50, showChance: 0.75 }, // Moderate frequency
+    stable: { minDelay: 60, maxDelay: 100, showChance: 0.7 }     // Less frequent when stable
+  },
+  initialDelaySeconds: 8, // Wait before first bubble
+  interactionCooldownSeconds: 12 // Cooldown after user interaction
 };
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
@@ -819,6 +826,9 @@ const PetPage = ({ onBack }) => {
   const [infoExpanded, setInfoExpanded] = useState(true);
   const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
   const [thoughtBubbleVisible, setThoughtBubbleVisible] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const bubbleTimerRef = useRef(null);
+  const lastInteractionRef = useRef(Date.now());
   const [activityItems, setActivityItems] = useState([]);
   const [moodItems, setMoodItems] = useState(() => normalizeMoodItems());
   const [currentActivityName, setCurrentActivityName] = useState('');
@@ -890,110 +900,79 @@ const PetPage = ({ onBack }) => {
     moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
   ), [currentMoodName, moodItems]);
 
+  // Page Visibility API - detect when user is viewing the page
   useEffect(() => {
-    let cancelled = false;
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
 
-    const loadPetPageData = async () => {
-      try {
-        const [status, pet] = await Promise.all([
-          fetchStatus(),
-          fetchPet().catch((error) => {
-            console.warn('⚠️ Failed to fetch pet table data:', error);
-            return null;
-          })
-        ]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
-        if (!cancelled) {
-          const activities = normalizeActivityItems(status?.doing);
-          const moods = normalizeMoodItems(status?.mood);
-          const locationName = getStatusText(status?.location) || 'Home';
-          const locations = Array.isArray(status?.location) ? status.location : [];
-          setActivityItems(activities);
-          setMoodItems(moods);
-          setCurrentLocationName(locationName);
-          setLocationHistory(locations);
-          // Set current activity (first one in the list)
-          if (activities.length > 0) {
-            setCurrentActivityName(activities[0].name);
-          }
-          if (moods.length > 0) {
-            setCurrentMoodName(moods[0].name);
-          }
+  // Smart thought bubble with status-based timing
+  useEffect(() => {
+    if (!isPageVisible) {
+      // Clear any pending timers when page is hidden
+      if (bubbleTimerRef.current) {
+        clearTimeout(bubbleTimerRef.current);
+        bubbleTimerRef.current = null;
+      }
+      setThoughtBubbleVisible(false);
+      return;
+    }
 
-          setPetItems({
-            food: normalizePetInventoryItems(pet?.food, DEFAULT_PET_ITEMS.food),
-            care: normalizePetInventoryItems(pet?.care, DEFAULT_PET_ITEMS.care)
-          });
+    let hideTimeoutId;
+    const playDurationMs = PET_THOUGHT_BUBBLE_OPTIONS.playDurationSeconds * 1000;
 
-          const decayResult = calculatePetStatusDecay(clampPetStatus(pet?.status), pet?.lastStatusTickAt);
-          setPetStatus(decayResult.status);
-          setLastStatusTickAt(decayResult.lastStatusTickAt);
+    const scheduleNextBubble = () => {
+      // Clear any existing timer
+      if (bubbleTimerRef.current) {
+        clearTimeout(bubbleTimerRef.current);
+      }
 
-          if (decayResult.shouldSave) {
-            enqueuePetSave({
-              status: decayResult.status,
-              lastStatusTickAt: decayResult.lastStatusTickAt
-            });
-          }
+      // Get timing config based on pet status level
+      const timing = PET_THOUGHT_BUBBLE_OPTIONS.timing[petReaction.level] || PET_THOUGHT_BUBBLE_OPTIONS.timing.stable;
+      
+      // Random delay within range
+      const delaySeconds = timing.minDelay + Math.random() * (timing.maxDelay - timing.minDelay);
+      const delayMs = delaySeconds * 1000;
+
+      // Check if enough time passed since last interaction
+      const timeSinceInteraction = Date.now() - lastInteractionRef.current;
+      const cooldownMs = PET_THOUGHT_BUBBLE_OPTIONS.interactionCooldownSeconds * 1000;
+      const additionalDelay = Math.max(0, cooldownMs - timeSinceInteraction);
+
+      bubbleTimerRef.current = setTimeout(() => {
+        // Random chance to show bubble (not always)
+        if (Math.random() < timing.showChance) {
+          setThoughtBubbleVisible(true);
+          hideTimeoutId = setTimeout(() => {
+            setThoughtBubbleVisible(false);
+            scheduleNextBubble(); // Schedule next bubble after hiding
+          }, playDurationMs);
+        } else {
+          // Skip this cycle, schedule next
+          scheduleNextBubble();
         }
-      } catch (error) {
-        console.warn('⚠️ Failed to fetch pet page data:', error);
-        if (!cancelled) {
-          setActivityItems([]);
-          setMoodItems(normalizeMoodItems());
-          setCurrentActivityName('');
-          setCurrentMoodName('');
-          setCurrentLocationName('Home');
-          setPetItems({
-            food: DEFAULT_PET_ITEMS.food,
-            care: DEFAULT_PET_ITEMS.care
-          });
-          setPetStatus({
-            health: DEFAULT_PET_STATUS.health,
-            hunger: DEFAULT_PET_STATUS.hunger,
-            sanity: DEFAULT_PET_STATUS.sanity
-          });
-          setLastStatusTickAt(null);
-        }
+      }, delayMs + additionalDelay);
+    };
+
+    // Initial delay before first bubble
+    const initialDelayMs = PET_THOUGHT_BUBBLE_OPTIONS.initialDelaySeconds * 1000;
+    bubbleTimerRef.current = setTimeout(() => {
+      scheduleNextBubble();
+    }, initialDelayMs);
+
+    return () => {
+      if (bubbleTimerRef.current) {
+        clearTimeout(bubbleTimerRef.current);
+      }
+      if (hideTimeoutId) {
+        clearTimeout(hideTimeoutId);
       }
     };
-
-    loadPetPageData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setMoodFloatBatch(createMoodFloatBatch());
-    }, PET_MOOD_FLOAT_OPTIONS.runIntervalSeconds * 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    let hideTimeoutId;
-    let replayTimeoutId;
-    const playDurationMs = PET_THOUGHT_BUBBLE_OPTIONS.playDurationSeconds * 1000;
-    const replayDelayMs = PET_THOUGHT_BUBBLE_OPTIONS.replayDelaySeconds * 1000;
-
-    const playThoughtBubble = () => {
-      setThoughtBubbleVisible(true);
-      hideTimeoutId = window.setTimeout(() => {
-        setThoughtBubbleVisible(false);
-        replayTimeoutId = window.setTimeout(playThoughtBubble, replayDelayMs);
-      }, playDurationMs);
-    };
-
-    playThoughtBubble();
-
-    return () => {
-      window.clearTimeout(hideTimeoutId);
-      window.clearTimeout(replayTimeoutId);
-    };
-  }, []);
+  }, [isPageVisible, petReaction.level]);
 
   useEffect(() => () => {
     foodEffectTimeoutsRef.current.forEach((timeoutId) => {
@@ -1066,7 +1045,8 @@ const PetPage = ({ onBack }) => {
     setSelectedPetUseItem({ item, category });
   };
 
-  const handleConfirmUsePetItem = () => {
+    const handleConfirmUsePetItem = () => {
+    lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     if (!selectedPetUseItem || !selectedPetUsePreview?.canUse) return;
     if (selectedPetUseItem.category === 'food' && isFoodUseAnimating) return;
     if (selectedPetUseItem.category === 'care' && isCareUseAnimating) return;
@@ -1123,7 +1103,8 @@ const PetPage = ({ onBack }) => {
     setIsCareUseAnimating(false);
   };
 
-  const handleChooseActivityConfirm = async (activity) => {
+    const handleChooseActivityConfirm = async (activity) => {
+    lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     setIsSavingActivity(true);
 
     try {
@@ -1251,7 +1232,8 @@ const PetPage = ({ onBack }) => {
     }
   };
 
-  const handleChooseMoodConfirm = async (mood) => {
+    const handleChooseMoodConfirm = async (mood) => {
+    lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     setIsSavingMood(true);
 
     try {
