@@ -675,7 +675,7 @@ const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()
   };
 };
 
-const getPetItemUsePreview = (category, status = {}) => {
+const getPetItemUsePreview = (category, status = {}, itemShape = null, itemName = null) => {
   const effect = PET_ITEM_EFFECTS[category];
   const currentStatus = clampPetStatus(status);
 
@@ -703,9 +703,11 @@ const getPetItemUsePreview = (category, status = {}) => {
     };
   });
 
-  const canUse = category === 'food'
+  // Bed item is always usable (for sleep animation)
+  const isBedItem = itemShape === 'bed' || itemShape === 'mat' || (itemName && itemName.toLowerCase() === 'bed');
+  const canUse = isBedItem || (category === 'food'
     ? currentStatus.hunger < 100 || currentStatus.health < 100
-    : currentStatus.health < 100 || currentStatus.sanity < 100;
+    : currentStatus.health < 100 || currentStatus.sanity < 100);
 
   return {
     canUse,
@@ -725,6 +727,7 @@ const normalizePetInventoryItems = (items, fallbackItems = []) => {
       const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
       const desc = typeof item.desc === 'string' ? item.desc.trim() : '';
       const shape = item.shape || DEFAULT_PET_SHAPES[name.toLowerCase()] || 'box';
+      console.log('🔧 Normalizing:', name, '→ shape:', shape, '(from item.shape:', item.shape, ', DEFAULT:', DEFAULT_PET_SHAPES[name.toLowerCase()], ')');
       return name ? {
         name,
         icon,
@@ -1117,6 +1120,8 @@ const PetPage = ({ onBack }) => {
   const [isSavingMood, setIsSavingMood] = useState(false);
   const [isUpdateLocationModalOpen, setIsUpdateLocationModalOpen] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const [isSleeping, setIsSleeping] = useState(false);
+  const sleepTimerRef = useRef(null);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -1154,7 +1159,7 @@ const PetPage = ({ onBack }) => {
   }, [petStatus, biologicalClock]);
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
-      ? getPetItemUsePreview(selectedPetUseItem.category, petStatus)
+      ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
       : null
   ), [selectedPetUseItem, petStatus]);
   const moodFloatStyles = useMemo(() => (
@@ -1539,6 +1544,9 @@ useEffect(() => {
       window.clearTimeout(timeoutId);
     });
     careEffectTimeoutsRef.current.clear();
+    if (sleepTimerRef.current) {
+      clearTimeout(sleepTimerRef.current);
+    }
   }, []);
 
   const handleBack = () => {
@@ -1595,7 +1603,7 @@ useEffect(() => {
     if (category === 'food' && isFoodUseAnimating) return;
     if (category === 'care' && isCareUseAnimating) return;
 
-    const preview = getPetItemUsePreview(category, petStatus);
+    const preview = getPetItemUsePreview(category, petStatus, item.shape, item.name);
     if (!preview.canUse) return;
 
     setSelectedPetUseItem({ item, category });
@@ -1606,6 +1614,8 @@ useEffect(() => {
     if (!selectedPetUseItem || !selectedPetUsePreview?.canUse) return;
     if (selectedPetUseItem.category === 'food' && isFoodUseAnimating) return;
     if (selectedPetUseItem.category === 'care' && isCareUseAnimating) return;
+
+    console.log('✅ Confirming use of:', selectedPetUseItem.item.name, 'shape:', selectedPetUseItem.item.shape);
 
     const nextStatus = selectedPetUsePreview.nextStatus;
     const nextTickAt = new Date().toISOString();
@@ -1635,19 +1645,39 @@ useEffect(() => {
     }
 
     // Check if resting during bedtime (using mat or bed items)
-    if (usedPetItem.category === 'care' && (usedPetItem.item.shape === 'mat' || usedPetItem.item.shape === 'bed') && biologicalClock.isSleepy) {
-      const updatedBiologicalClock = {
-        ...biologicalClock,
-        lastSleep: Date.now(),
-        isSleepy: false
-      };
+    const isBedItem = usedPetItem.item.shape === 'bed' || usedPetItem.item.shape === 'mat' ||
+                      (usedPetItem.item.name && usedPetItem.item.name.toLowerCase() === 'bed');
+    console.log('🔍 Used item:', usedPetItem.item.name, 'shape:', usedPetItem.item.shape);
+    console.log('🛏️ Is bed item?', isBedItem);
 
-      setBiologicalClock(updatedBiologicalClock);
+    if (usedPetItem.category === 'care' && isBedItem) {
+      console.log('🛏️ Starting sleep animation');
+      // Start sleeping animation
+      setIsSleeping(true);
 
-      // Save to NocoDB
-      saveStatus({
-        biologicalClock: updatedBiologicalClock
-      }).catch(err => console.error('Failed to save biological clock:', err));
+      // Auto wake up after 3 seconds
+      if (sleepTimerRef.current) {
+        clearTimeout(sleepTimerRef.current);
+      }
+      sleepTimerRef.current = setTimeout(() => {
+        console.log('⏰ Waking up');
+        setIsSleeping(false);
+      }, 3000);
+
+      if (biologicalClock.isSleepy) {
+        const updatedBiologicalClock = {
+          ...biologicalClock,
+          lastSleep: Date.now(),
+          isSleepy: false
+        };
+
+        setBiologicalClock(updatedBiologicalClock);
+
+        // Save to NocoDB
+        saveStatus({
+          biologicalClock: updatedBiologicalClock
+        }).catch(err => console.error('Failed to save biological clock:', err));
+      }
     }
 
     if (usedPetItem.category === 'food') {
@@ -2173,7 +2203,7 @@ useEffect(() => {
             ))}
           </div>
 
-          <div className={`pet-character pet-character--pet pet-character--${petReaction.level}`} role="img" aria-label="Meo box-head character">
+          <div className={`pet-character pet-character--pet pet-character--${petReaction.level} ${isSleeping ? 'pet-character--sleeping' : ''}`} role="img" aria-label="Meo box-head character">
             <span className="pet-character__head">
               <span className="pet-character__eye pet-character__eye--left" />
               <span className="pet-character__eye pet-character__eye--right" />
@@ -2186,6 +2216,15 @@ useEffect(() => {
             <span className="pet-character__leg pet-character__leg--left" />
             <span className="pet-character__leg pet-character__leg--right" />
             <span className="pet-character__shadow" />
+
+            {/* ZZZ particles when sleeping */}
+            {isSleeping && (
+              <div className="pet-sleep-zzz" aria-hidden="true">
+                <span className="pet-sleep-z pet-sleep-z--1">Z</span>
+                <span className="pet-sleep-z pet-sleep-z--2">Z</span>
+                <span className="pet-sleep-z pet-sleep-z--3">Z</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2271,9 +2310,11 @@ useEffect(() => {
                   </>
                 )}
                 {items.map((item, index) => {
+                  console.log('🔍 Item:', item.name, 'shape:', item.shape);
                   const petUsePreview = PET_ITEM_CATEGORIES.includes(activeTab)
-                    ? getPetItemUsePreview(activeTab, petStatus)
+                    ? getPetItemUsePreview(activeTab, petStatus, item.shape, item.name)
                     : null;
+                  console.log('📊 Preview for', item.name, ':', petUsePreview);
                   const isFoodLocked = activeTab === 'food' && isFoodUseAnimating;
                   const isCareLocked = activeTab === 'care' && isCareUseAnimating;
                   const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet || isFoodLocked || isCareLocked));

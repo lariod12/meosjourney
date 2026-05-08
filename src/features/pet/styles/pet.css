@@ -1595,6 +1595,86 @@
   animation: pet-happy-bounce 2s ease-in-out infinite;
 }
 
+/* Sleeping character - eyes closed and gentle breathing */
+.pet-character--sleeping {
+  animation: pet-sleep-breathe 2s ease-in-out infinite;
+}
+
+.pet-character--sleeping .pet-character__eye {
+  height: 2px;
+  border-radius: 0;
+  background: #000;
+  border: none;
+  top: 28px;
+}
+
+.pet-character--sleeping .pet-character__mouth {
+  opacity: 0.5;
+}
+
+@keyframes pet-sleep-breathe {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-3px) scale(1.01);
+  }
+}
+
+/* ZZZ particles */
+.pet-sleep-zzz {
+  position: absolute;
+  left: 50%;
+  top: -40px;
+  width: 60px;
+  height: 80px;
+  pointer-events: none;
+}
+
+.pet-sleep-z {
+  position: absolute;
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  color: #000;
+  opacity: 0;
+  animation: pet-zzz-float 2s ease-in-out infinite;
+}
+
+.pet-sleep-z--1 {
+  left: 10px;
+  animation-delay: 0s;
+}
+
+.pet-sleep-z--2 {
+  left: 25px;
+  font-size: 20px;
+  animation-delay: 0.6s;
+}
+
+.pet-sleep-z--3 {
+  left: 40px;
+  font-size: 16px;
+  animation-delay: 1.2s;
+}
+
+@keyframes pet-zzz-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.2);
+  }
+}
+
 @keyframes pet-nameplate-flip {
   0%,
   44% {
