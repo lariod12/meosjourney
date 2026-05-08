@@ -33,6 +33,27 @@ const getTimePeriod = () => {
   return 'midnight'; // 23-5h
 };
 
+// Check if current time is meal time
+const getMealTime = (hour, minute) => {
+  if (hour === 8 && minute === 0) return 'breakfast';
+  if (hour === 11 && minute === 0) return 'lunch';
+  if (hour === 18 && minute === 0) return 'dinner';
+  return null;
+};
+
+// Check if it's bedtime
+const isBedtime = (hour) => {
+  return hour >= 22 || hour < 5; // 10 PM to 5 AM
+};
+
+// Check if meal was eaten today
+const wasMealEatenToday = (lastMealTimestamp) => {
+  if (!lastMealTimestamp) return false;
+  const now = new Date();
+  const lastMeal = new Date(lastMealTimestamp);
+  return now.toDateString() === lastMeal.toDateString();
+};
+
 const ITEM_ICONS = {
   pudding: LuCake,
   meat: LuBeef,
@@ -258,6 +279,30 @@ const PET_THOUGHT_BUBBLE_OPTIONS = {
   initialDelaySeconds: 5, // Wait before first bubble (reduced for faster start)
   interactionCooldownSeconds: 8 // Cooldown after user interaction (reduced)
 };
+
+const BIOLOGICAL_CLOCK_MESSAGES = {
+  breakfast: [
+    "Tui đói rồi! Đến giờ ăn sáng rồi!",
+    "8 giờ sáng rồi, tui cần ăn sáng!",
+    "Bụng tui sôi ùng ục! Giờ ăn sáng đây!"
+  ],
+  lunch: [
+    "Tui đói bụng! Đến giờ ăn trưa rồi!",
+    "11 giờ rồi, tui cần ăn trưa!",
+    "Trưa rồi mà chưa ăn, tui đói quá!"
+  ],
+  dinner: [
+    "Tui đói lắm! Đến giờ ăn tối rồi!",
+    "6 giờ chiều rồi, tui cần ăn tối!",
+    "Tối rồi mà chưa ăn, tui sắp xỉu!"
+  ],
+  bedtime: [
+    "Tui buồn ngủ quá! Đến giờ ngủ rồi!",
+    "10 giờ tối rồi, tui cần nghỉ ngơi!",
+    "Tui mệt lắm, để tui ngủ đi!"
+  ]
+};
+
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
 
@@ -530,7 +575,29 @@ const PET_MESSAGES = {
 let recentMessages = [];
 const MAX_RECENT_MESSAGES = 5;
 
-const getPetReaction = (status = {}) => {
+const getPetReaction = (status = {}, biologicalClock = {}) => {
+  // Priority 1: Biological clock warnings (highest priority)
+  if (biologicalClock.isHungry && biologicalClock.currentMealTime) {
+    const messages = BIOLOGICAL_CLOCK_MESSAGES[biologicalClock.currentMealTime];
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    return {
+      level: 'critical',
+      weakest: { key: 'hunger', value: status.hunger || 0 },
+      message
+    };
+  }
+
+  if (biologicalClock.isSleepy) {
+    const messages = BIOLOGICAL_CLOCK_MESSAGES.bedtime;
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    return {
+      level: 'critical',
+      weakest: { key: 'sanity', value: status.sanity || 0 },
+      message
+    };
+  }
+
+  // Priority 2: Regular status-based messages
   const weakest = getWeakestPetStatus(status);
   const level = getPetStatusLevel(weakest.value);
   const messages = PET_MESSAGES[level]?.[weakest.key] || [];
@@ -1009,6 +1076,15 @@ const PetPage = ({ onBack }) => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
   const [timePeriod, setTimePeriod] = useState(getTimePeriod());
+  const [biologicalClock, setBiologicalClock] = useState({
+    lastBreakfast: null,
+    lastLunch: null,
+    lastDinner: null,
+    lastSleep: null,
+    isHungry: false,
+    isSleepy: false,
+    currentMealTime: null
+  });
   const [infoExpanded, setInfoExpanded] = useState(false);
   const [moodFloatBatch, setMoodFloatBatch] = useState([]);
   const [moodFloatVisible, setMoodFloatVisible] = useState(false);
@@ -1066,7 +1142,7 @@ const PetPage = ({ onBack }) => {
           : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
   ), [activeTab, activityItems, moodItems, petItems]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
-  const petReaction = useMemo(() => getPetReaction(petStatus), [petStatus]);
+  const petReaction = useMemo(() => getPetReaction(petStatus, biologicalClock), [petStatus, biologicalClock]);
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus)
@@ -1144,8 +1220,16 @@ useEffect(() => {
           }
           setLocationHistory(statusData.location);
         }
+
+        // Update biological clock
+        if (statusData.biologicalClock) {
+          setBiologicalClock(prev => ({
+            ...prev,
+            ...statusData.biologicalClock
+          }));
+        }
       }
-      
+
       // Mark data as loaded
       setIsDataLoaded(true);
     } catch (error) {
@@ -1314,6 +1398,91 @@ useEffect(() => {
     };
   }, [isPageVisible, currentMoodName]);
 
+  // Biological clock monitoring
+  useEffect(() => {
+    const checkBiologicalClock = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+
+      // Check meal times
+      const mealTime = getMealTime(hour, minute);
+      if (mealTime) {
+        const mealKey = `last${mealTime.charAt(0).toUpperCase() + mealTime.slice(1)}`;
+        const wasEaten = wasMealEatenToday(biologicalClock[mealKey]);
+
+        if (!wasEaten) {
+          setBiologicalClock(prev => ({
+            ...prev,
+            isHungry: true,
+            currentMealTime: mealTime
+          }));
+        }
+      }
+
+      // Check bedtime
+      if (isBedtime(hour)) {
+        const sleptTonight = wasMealEatenToday(biologicalClock.lastSleep);
+        if (!sleptTonight) {
+          setBiologicalClock(prev => ({
+            ...prev,
+            isSleepy: true
+          }));
+        }
+      } else {
+        // Reset sleepy state in the morning
+        if (hour >= 5 && biologicalClock.isSleepy) {
+          setBiologicalClock(prev => ({
+            ...prev,
+            isSleepy: false
+          }));
+        }
+      }
+    };
+
+    // Check every minute
+    const intervalId = setInterval(checkBiologicalClock, 60000);
+    checkBiologicalClock(); // Initial check
+
+    return () => clearInterval(intervalId);
+  }, [biologicalClock]);
+
+  // Status penalty system for biological clock
+  useEffect(() => {
+    let penaltyIntervalId;
+
+    if (biologicalClock.isHungry || biologicalClock.isSleepy) {
+      penaltyIntervalId = setInterval(() => {
+        setPetStatus(prev => {
+          const updates = {};
+
+          // Hunger penalty
+          if (biologicalClock.isHungry) {
+            updates.hunger = Math.max(0, prev.hunger - 1);
+          }
+
+          // Sanity penalty
+          if (biologicalClock.isSleepy) {
+            updates.sanity = Math.max(0, prev.sanity - 1);
+          }
+
+          // Save to NocoDB
+          if (Object.keys(updates).length > 0) {
+            enqueuePetSave(updates);
+          }
+
+          return { ...prev, ...updates };
+        });
+      }, 300000); // Every 5 minutes
+    }
+
+    return () => {
+      if (penaltyIntervalId) {
+        clearInterval(penaltyIntervalId);
+      }
+    };
+  }, [biologicalClock.isHungry, biologicalClock.isSleepy]);
+
   // Update time period every minute
   useEffect(() => {
     const updateTimePeriod = () => {
@@ -1410,6 +1579,41 @@ useEffect(() => {
     setPetStatus(nextStatus);
     setLastStatusTickAt(nextTickAt);
     setSelectedPetUseItem(null);
+
+    // Check if feeding during meal time
+    if (usedPetItem.category === 'food' && biologicalClock.isHungry && biologicalClock.currentMealTime) {
+      const mealKey = `last${biologicalClock.currentMealTime.charAt(0).toUpperCase() + biologicalClock.currentMealTime.slice(1)}`;
+
+      const updatedBiologicalClock = {
+        ...biologicalClock,
+        [mealKey]: Date.now(),
+        isHungry: false,
+        currentMealTime: null
+      };
+
+      setBiologicalClock(updatedBiologicalClock);
+
+      // Save to NocoDB
+      saveStatus({
+        biologicalClock: updatedBiologicalClock
+      }).catch(err => console.error('Failed to save biological clock:', err));
+    }
+
+    // Check if resting during bedtime
+    if (usedPetItem.category === 'care' && (usedPetItem.item.shape === 'nap mat' || usedPetItem.item.shape === 'bed') && biologicalClock.isSleepy) {
+      const updatedBiologicalClock = {
+        ...biologicalClock,
+        lastSleep: Date.now(),
+        isSleepy: false
+      };
+
+      setBiologicalClock(updatedBiologicalClock);
+
+      // Save to NocoDB
+      saveStatus({
+        biologicalClock: updatedBiologicalClock
+      }).catch(err => console.error('Failed to save biological clock:', err));
+    }
 
     if (usedPetItem.category === 'food') {
       const effectId = `${Date.now()}-${Math.random()}`;
