@@ -1626,7 +1626,7 @@ useEffect(() => {
 
   const handleBack = () => {
     if (onBack) { onBack(); return; }
-    window.history.back();
+    window.location.href = '/';
   };
 
   const enqueuePetSave = (updates) => {
