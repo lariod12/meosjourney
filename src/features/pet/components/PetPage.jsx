@@ -64,6 +64,7 @@ const ITEM_ICONS = {
   shower: LuShowerHead,
   towel: LuShirt,
   mat: LuBedSingle,
+  bed: LuBedSingle,
   brush: LuBrush,
   soap: LuBath,
   bandage: LuBandage,
@@ -151,12 +152,11 @@ const TAB_ITEMS = {
   care: [
     { name: 'Shower', count: 1, shape: 'shower' },
     { name: 'Towel', count: 2, shape: 'towel' },
-    { name: 'Nap Mat', count: 1, shape: 'mat' },
+    { name: 'Bed', count: 1, shape: 'bed' },
     { name: 'Brush', count: 1, shape: 'brush' },
     { name: 'Soap', count: 0, shape: 'soap' },
     { name: 'Bandage', count: 2, shape: 'bandage' },
     { name: 'Comb', count: 1, shape: 'brush' },
-    { name: 'Cushion', count: 0, shape: 'mat' },
     { name: 'Care Kit', count: 1, shape: 'bandage' }
   ],
   activity: [],
@@ -1193,7 +1193,9 @@ useEffect(() => {
         if (petData.food || petData.care) {
           setPetItems(prev => ({
             food: petData.food && petData.food.length > 0 ? petData.food : prev.food,
-            care: petData.care && petData.care.length > 0 ? petData.care : prev.care
+            care: petData.care && petData.care.length > 0
+              ? petData.care.filter(item => item.name !== 'Cushion' && item.name !== 'Nap Mat') // Filter out old items
+              : prev.care
           }));
         }
 
@@ -1632,8 +1634,8 @@ useEffect(() => {
       }).catch(err => console.error('Failed to save biological clock:', err));
     }
 
-    // Check if resting during bedtime
-    if (usedPetItem.category === 'care' && (usedPetItem.item.shape === 'nap mat' || usedPetItem.item.shape === 'bed') && biologicalClock.isSleepy) {
+    // Check if resting during bedtime (using mat or bed items)
+    if (usedPetItem.category === 'care' && (usedPetItem.item.shape === 'mat' || usedPetItem.item.shape === 'bed') && biologicalClock.isSleepy) {
       const updatedBiologicalClock = {
         ...biologicalClock,
         lastSleep: Date.now(),
