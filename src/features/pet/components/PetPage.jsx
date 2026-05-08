@@ -1161,8 +1161,34 @@ const PetPage = ({ onBack }) => {
       }
     }
 
+    // Move current activity to the top
+    if (activeTab === 'activity' && currentActivityName && Array.isArray(itemList)) {
+      const currentIndex = itemList.findIndex(item =>
+        item.name && item.name === currentActivityName
+      );
+      if (currentIndex > 0) {
+        const newList = [...itemList];
+        const [currentItem] = newList.splice(currentIndex, 1);
+        newList.unshift(currentItem);
+        return newList;
+      }
+    }
+
+    // Move current mood to the top
+    if (activeTab === 'moods' && currentMoodName && Array.isArray(itemList)) {
+      const currentIndex = itemList.findIndex(item =>
+        item.name && item.name === currentMoodName
+      );
+      if (currentIndex > 0) {
+        const newList = [...itemList];
+        const [currentItem] = newList.splice(currentIndex, 1);
+        newList.unshift(currentItem);
+        return newList;
+      }
+    }
+
     return itemList;
-  }, [activeTab, activityItems, moodItems, petItems, isSleeping]);
+  }, [activeTab, activityItems, moodItems, petItems, isSleeping, currentActivityName, currentMoodName]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
     const reaction = getPetReaction(petStatus, biologicalClock);
