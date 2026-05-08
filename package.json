@@ -12,14 +12,21 @@
     "build:staging": "vite build --mode staging",
     "preview": "vite preview",
     "preview:prod": "vite preview --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:android": "pnpm build && pnpm android:copy && pnpm android:sync",
+    "android:copy": "node scripts/copy-to-android.js",
+    "android:sync": "cd android-app && npx cap sync android",
+    "android:open": "cd android-app && npx cap open android"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.33.2+sha512.a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8",
   "devDependencies": {
+    "@capacitor/cli": "^8.3.2",
+    "@capacitor/core": "^8.3.2",
     "@vitejs/plugin-react": "^5.0.4",
+    "fs-extra": "^11.3.5",
     "html-minifier-terser": "^7.2.0",
     "javascript-obfuscator": "^4.1.1",
     "terser": "^5.44.0",
@@ -28,6 +35,9 @@
     "vite-plugin-javascript-obfuscator": "^3.1.0"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.2",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/splash-screen": "^8.0.1",
     "browser-image-compression": "^2.0.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

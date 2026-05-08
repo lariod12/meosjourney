@@ -1,0 +1,260 @@
+/* ===== MOBILE TOUCH TARGET OPTIMIZATIONS FOR ANDROID ===== */
+/* Applied when running in Capacitor Android or on mobile screens */
+
+/* === GLOBAL BUTTON STYLES === */
+.capacitor-android button,
+.mobile button,
+@media (max-width: 768px) {
+  button {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+}
+
+/* === ICON-ONLY BUTTONS === */
+.capacitor-android .icon-button,
+.capacitor-android button[class*="icon"],
+.mobile .icon-button,
+.mobile button[class*="icon"],
+@media (max-width: 768px) {
+  .icon-button,
+  button[class*="icon"] {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+  }
+}
+
+/* === FORM INPUTS === */
+.capacitor-android input,
+.capacitor-android textarea,
+.capacitor-android select,
+.mobile input,
+.mobile textarea,
+.mobile select,
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important; /* Prevent iOS zoom */
+  }
+}
+
+/* === MODAL CLOSE BUTTONS === */
+.capacitor-android .modal__close,
+.capacitor-android [class*="modal"]__close,
+.capacitor-android [class*="-modal__close"],
+.mobile .modal__close,
+.mobile [class*="modal"]__close,
+.mobile [class*="-modal__close"],
+@media (max-width: 768px) {
+  .modal__close,
+  [class*="modal"]__close,
+  [class*="-modal__close"] {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+    top: 8px !important;
+    right: 8px !important;
+  }
+}
+
+/* === CARD TOUCH TARGETS === */
+.capacitor-android .card,
+.capacitor-android [class*="card"],
+.mobile .card,
+.mobile [class*="card"],
+@media (max-width: 768px) {
+  .card,
+  [class*="card"] {
+    min-height: 56px !important;
+    padding: 12px 16px !important;
+  }
+}
+
+/* === TAB NAVIGATION === */
+.capacitor-android .tab-button,
+.capacitor-android .tab-btn,
+.capacitor-android [class*="tab-btn"],
+.mobile .tab-button,
+.mobile .tab-btn,
+.mobile [class*="tab-btn"],
+@media (max-width: 768px) {
+  .tab-button,
+  .tab-btn,
+  [class*="tab-btn"] {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+  }
+}
+
+/* === TOUCH FEEDBACK (REPLACE HOVER) === */
+.capacitor-android button:active,
+.mobile button:active {
+  transform: translateY(1px) !important;
+  box-shadow: 2px 2px 0 #999999 !important;
+}
+
+.capacitor-android .card:active,
+.mobile .card:active {
+  transform: translateY(1px) !important;
+}
+
+/* === INCREASE SPACING BETWEEN INTERACTIVE ELEMENTS === */
+.capacitor-android .button-group > *,
+.mobile .button-group > * {
+  margin: 8px !important;
+}
+
+/* === PET PAGE SPECIFIC === */
+@media (max-width: 768px) {
+  /* Activity cards */
+  .pet-page__activity-card {
+    min-height: 64px !important;
+    padding: 14px 16px !important;
+  }
+
+  .pet-page__activity-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .pet-page__add-card {
+    min-height: 64px !important;
+  }
+
+  /* Tab buttons */
+  .pet-page__tab-button {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+  }
+
+  /* Action buttons */
+  .pet-page__action-button {
+    min-height: 48px !important;
+    padding: 12px 24px !important;
+  }
+}
+
+/* === MODAL BUTTONS === */
+@media (max-width: 768px) {
+  [class*="-modal__button"],
+  [class*="modal-"]button {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+  }
+
+  [class*="-modal__footer"],
+  [class*="modal-"]footer {
+    gap: 12px !important;
+  }
+}
+
+/* === ICON PICKER === */
+@media (max-width: 768px) {
+  .icon-picker__item {
+    min-width: 56px !important;
+    min-height: 56px !important;
+    padding: 12px !important;
+  }
+
+  .icon-picker__icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .icon-picker__grid {
+    gap: 8px !important;
+  }
+}
+
+/* === USER PAGE FORMS === */
+@media (max-width: 768px) {
+  .user-page__input,
+  .user-page__textarea {
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+  }
+
+  .user-page__submit-button {
+    min-height: 48px !important;
+    padding: 12px 24px !important;
+  }
+}
+
+/* === HEADER NAVIGATION === */
+@media (max-width: 768px) {
+  .header__nav-button {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+  }
+
+  .header__icon-button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+  }
+}
+
+/* === QUEST/ACHIEVEMENT CARDS === */
+@media (max-width: 768px) {
+  .quest-card,
+  .quest-item {
+    min-height: 64px !important;
+    padding: 14px !important;
+  }
+
+  .quest-card__button {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+  }
+
+  .achievement-item {
+    min-height: 80px !important;
+    padding: 16px !important;
+  }
+}
+
+/* === PHOTO ALBUM === */
+@media (max-width: 768px) {
+  .photo-album__card {
+    min-height: 64px !important;
+    padding: 12px !important;
+  }
+
+  .photo-album__add-button {
+    min-height: 48px !important;
+    min-width: 48px !important;
+  }
+}
+
+/* === DISABLE HOVER EFFECTS ON TOUCH DEVICES === */
+@media (hover: none) and (pointer: coarse) {
+  button:hover,
+  .card:hover,
+  [class*="button"]:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+  }
+}
+
+/* === IMPROVE TOUCH SCROLLING === */
+.capacitor-android,
+.mobile {
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+}
+
+/* === PREVENT TEXT SELECTION ON BUTTONS === */
+.capacitor-android button,
+.mobile button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}

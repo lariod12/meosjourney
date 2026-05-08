@@ -1,0 +1,21 @@
+{
+  "name": "meosjourney-android",
+  "version": "1.0.0",
+  "description": "Meosjourney Android App",
+  "scripts": {
+    "sync": "cap sync android",
+    "open": "cap open android",
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "build:bundle": "cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.2",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.2",
+    "@capacitor/splash-screen": "^8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.2",
+    "typescript": "^6.0.3"
+  }
+}
