@@ -670,7 +670,7 @@
   left: 0;
   right: 0;
   height: 120px;
-  background: #8b7355;
+  background: #c4a57b;
   border-top: 4px solid #000;
   transition: background 2s ease;
   z-index: 2;
@@ -678,26 +678,26 @@
 
 /* Ground color changes with time */
 .pet-stage--dawn .stage-ground {
-  background: #a0826d;
+  background: #d4b896;
 }
 
 .pet-stage--morning .stage-ground,
 .pet-stage--noon .stage-ground,
 .pet-stage--afternoon .stage-ground {
-  background: #8b7355;
+  background: #c4a57b;
 }
 
 .pet-stage--dusk .stage-ground {
-  background: #6d5d4f;
+  background: #a89176;
 }
 
 .pet-stage--evening .stage-ground {
-  background: #5a4a3f;
+  background: #8d7a65;
 }
 
 .pet-stage--night .stage-ground,
 .pet-stage--midnight .stage-ground {
-  background: #4a3f35;
+  background: #7a6b5a;
 }
 
 .pet-mood-float {
