@@ -228,18 +228,11 @@
 }
 
 .pet-bubble {
-  --pet-bubble-shadow: 2px 2px 0 #cccccc;
-  --pet-bubble-dot-duration: 0.48s;
-  --pet-bubble-panel-duration: 0.62s;
-  --pet-bubble-text-duration: 0.46s;
-  --pet-bubble-idle-duration: 3.8s;
-  --pet-bubble-enter-panel-delay: 0.58s;
-  --pet-bubble-enter-large-dot-delay: 0.28s;
-  --pet-bubble-enter-text-delay: 0.94s;
-  --pet-bubble-out-dot-delay: 0.12s;
-  --pet-bubble-out-panel-delay: 0.28s;
-  --pet-bubble-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --pet-bubble-out-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --pet-bubble-shadow: 2px 2px 0 #e0e0e0;
+  --pet-bubble-enter-duration: 0.4s;
+  --pet-bubble-exit-duration: 0.5s;
+  --pet-bubble-enter-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pet-bubble-exit-ease: cubic-bezier(0.4, 0, 0.6, 1);
   position: absolute;
   z-index: 7;
   left: 34px;
@@ -247,30 +240,45 @@
   width: min(42%, 168px);
   min-height: 56px;
   border-radius: 26px;
-  background: transparent;
-  box-shadow: none;
+  background: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: var(--pet-bubble-shadow);
   padding: 9px 12px;
   font-size: 0.72rem;
   font-weight: 900;
   line-height: 1.18;
   transform-origin: 82% 100%;
-  transform: translateY(3px) rotate(-0.36deg) scale(0.965);
+  opacity: 0;
+  transform: translateY(8px) rotate(-0.18deg) scale(0.3);
   transition:
-    background var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay),
-    box-shadow var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay),
-    transform var(--pet-bubble-panel-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-panel-delay);
-  will-change: background, box-shadow, transform;
+    opacity var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease),
+    transform var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease);
+  will-change: opacity, transform;
+}
+
+/* Level-specific bubble styles - subtle shadows only */
+.pet-bubble--critical {
+  --pet-bubble-shadow: 2px 2px 0 #999999;
+}
+
+.pet-bubble--danger {
+  --pet-bubble-shadow: 2px 2px 0 #b3b3b3;
+}
+
+.pet-bubble--warning {
+  --pet-bubble-shadow: 2px 2px 0 #cccccc;
+}
+
+.pet-bubble--excellent {
+  --pet-bubble-shadow: 2px 2px 0 #e6e6e6;
 }
 
 .pet-bubble--visible {
-  background: #ffffff;
-  box-shadow: var(--pet-bubble-shadow);
+  opacity: 1;
   transform: translateY(0) rotate(-0.18deg) scale(1);
-  animation: pet-bubble-visible-idle var(--pet-bubble-idle-duration) ease-in-out 1.45s infinite;
   transition:
-    background var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay),
-    box-shadow var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay),
-    transform var(--pet-bubble-panel-duration) var(--pet-bubble-enter-ease) var(--pet-bubble-enter-panel-delay);
+    opacity var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease),
+    transform var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease);
 }
 
 .pet-bubble::before,
@@ -280,12 +288,14 @@
   display: block;
   border-radius: 50%;
   background: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: var(--pet-bubble-shadow);
   opacity: 0;
-  transform: translate(0, 2px) scale(0.28);
+  transform: translate(0, 4px) scale(0.3);
   transform-origin: center;
   transition:
-    opacity var(--pet-bubble-dot-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-dot-delay),
-    transform var(--pet-bubble-dot-duration) var(--pet-bubble-out-ease) var(--pet-bubble-out-dot-delay);
+    opacity var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease),
+    transform var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease);
   will-change: opacity, transform;
 }
 
@@ -294,7 +304,6 @@
   bottom: -8px;
   width: 18px;
   height: 18px;
-  box-shadow: var(--pet-bubble-shadow);
 }
 
 .pet-bubble::after {
@@ -302,14 +311,42 @@
   bottom: -14px;
   width: 9px;
   height: 9px;
-  box-shadow: var(--pet-bubble-shadow);
+}
+
+.pet-bubble--visible::before {
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease) 0.1s,
+    transform var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease) 0.1s;
 }
 
 .pet-bubble--visible::after {
   opacity: 1;
-  animation: pet-bubble-dot-visible-idle 3.2s ease-in-out 1.18s infinite;
   transform: translate(0, 0) scale(1);
   transition:
+    opacity var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease),
+    transform var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease);
+}
+
+.pet-bubble p {
+  margin: 0;
+  opacity: 0;
+  text-align: left;
+  transform: translateY(4px) scale(0.95);
+  transition:
+    opacity var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease),
+    transform var(--pet-bubble-exit-duration) var(--pet-bubble-exit-ease);
+  will-change: opacity, transform;
+}
+
+.pet-bubble--visible p {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease) 0.15s,
+    transform var(--pet-bubble-enter-duration) var(--pet-bubble-enter-ease) 0.15s;
+}
     opacity var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease),
     transform var(--pet-bubble-dot-duration) var(--pet-bubble-enter-ease);
 }
@@ -362,13 +399,18 @@
   padding: 6px 11px;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 2px 2px 0 #cccccc;
+  border: 3px solid #000000;
+  box-shadow: 2px 2px 0 #e0e0e0;
   font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
   opacity: 0;
   transform: translate(calc(-50% + var(--pet-mood-start-x)), 12px) scale(var(--pet-mood-start-scale)) rotate(var(--pet-mood-start-rotate));
   white-space: nowrap;
+  pointer-events: none;
+}
+
+.pet-mood-float--visible {
   animation: pet-mood-float var(--pet-mood-duration) ease-out var(--pet-mood-delay) both;
 }
 
@@ -1197,6 +1239,40 @@
   }
 }
 
+/* Critical character - dramatic shake */
+@keyframes pet-critical-shake {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) rotate(-2deg);
+  }
+  25% {
+    transform: translateX(-50%) translateY(-2px) rotate(2deg);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-4px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(-50%) translateY(-2px) rotate(2deg);
+  }
+}
+
+.pet-character--critical {
+  animation: pet-critical-shake 1.5s ease-in-out infinite;
+}
+
+/* Excellent character - happy bounce */
+@keyframes pet-happy-bounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-12px) scale(1.05);
+  }
+}
+
+.pet-character--excellent {
+  animation: pet-happy-bounce 2s ease-in-out infinite;
+}
+
 @keyframes pet-nameplate-flip {
   0%,
   44% {
@@ -1227,6 +1303,42 @@
   64% {
     transform: translateY(-1px) rotate(-0.08deg) scale(0.998);
   }
+}
+
+/* Critical bubble - subtle shake only, no flashing */
+@keyframes pet-bubble-shake {
+  0%, 100% {
+    transform: translateX(0) rotate(-0.18deg);
+  }
+  25% {
+    transform: translateX(-1px) rotate(-0.25deg);
+  }
+  75% {
+    transform: translateX(1px) rotate(0.25deg);
+  }
+}
+
+.pet-bubble--critical.pet-bubble--visible {
+  animation: pet-bubble-shake 0.8s ease-in-out infinite;
+}
+
+/* Danger bubble - no pulse, keep it subtle */
+.pet-bubble--danger.pet-bubble--visible {
+  /* No animation - just the shadow difference */
+}
+
+/* Excellent bubble - gentle float only */
+@keyframes pet-bubble-gentle-float {
+  0%, 100% {
+    transform: translateY(0) rotate(-0.18deg) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-0.18deg) scale(1);
+  }
+}
+
+.pet-bubble--excellent.pet-bubble--visible {
+  animation: pet-bubble-gentle-float 4s ease-in-out infinite;
 }
 
 @keyframes pet-bubble-dot-visible-idle {

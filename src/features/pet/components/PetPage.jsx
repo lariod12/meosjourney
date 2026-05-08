@@ -212,7 +212,6 @@ const PET_ITEM_DESCRIPTIONS = {
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
 const PET_MOOD_FLOAT_OPTIONS = {
   animationSeconds: 3,
-  runIntervalSeconds: 8,
   itemsPerRun: 3,
   itemDelaySeconds: 1.5,
   bubbleSizePx: 78,
@@ -222,19 +221,29 @@ const PET_MOOD_FLOAT_OPTIONS = {
   endOffsetRangePx: 44,
   rotateRangeDeg: 9,
   startScale: 0.58,
-  endScale: 1.12
+  endScale: 1.12,
+  // Timing configuration (similar to thought bubble)
+  timing: {
+    minDelay: 8,   // Show mood every 8-15 seconds
+    maxDelay: 15,
+    showChance: 0.90  // 90% chance to show
+  },
+  initialDelaySeconds: 6,  // Wait 6s before first mood float
+  interactionCooldownSeconds: 5  // Cooldown after user interaction
 };
 
 const PET_THOUGHT_BUBBLE_OPTIONS = {
   playDurationSeconds: 7,
-  // Smart timing based on pet status level
+  // Smart timing based on pet status level (5-20s range for active feel)
   timing: {
-    critical: { minDelay: 15, maxDelay: 25, showChance: 0.9 },  // Show frequently when critical
-    'needs-care': { minDelay: 30, maxDelay: 50, showChance: 0.75 }, // Moderate frequency
-    stable: { minDelay: 60, maxDelay: 100, showChance: 0.7 }     // Less frequent when stable
+    critical: { minDelay: 5, maxDelay: 8, showChance: 0.95 },   // Most urgent - very frequent
+    danger: { minDelay: 8, maxDelay: 12, showChance: 0.90 },    // High urgency
+    warning: { minDelay: 12, maxDelay: 16, showChance: 0.85 },  // Medium urgency
+    normal: { minDelay: 16, maxDelay: 20, showChance: 0.80 },   // Active feel
+    excellent: { minDelay: 18, maxDelay: 25, showChance: 0.75 } // Still active, slightly relaxed
   },
-  initialDelaySeconds: 8, // Wait before first bubble
-  interactionCooldownSeconds: 12 // Cooldown after user interaction
+  initialDelaySeconds: 5, // Wait before first bubble (reduced for faster start)
+  interactionCooldownSeconds: 8 // Cooldown after user interaction (reduced)
 };
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
@@ -396,15 +405,11 @@ const clampPetStatus = (status = {}) => ({
 });
 
 const getPetStatusLevel = (value) => {
-  if (value < 30) {
-    return PET_REACTION_LEVELS.critical;
-  }
-
-  if (value < 70) {
-    return PET_REACTION_LEVELS.needsCare;
-  }
-
-  return PET_REACTION_LEVELS.stable;
+  if (value <= 20) return 'critical';
+  if (value <= 40) return 'danger';
+  if (value <= 60) return 'warning';
+  if (value <= 80) return 'normal';
+  return 'excellent';
 };
 
 const getWeakestPetStatus = (status = {}) => (
@@ -416,41 +421,132 @@ const getWeakestPetStatus = (status = {}) => (
     })
 );
 
+// Expanded message library with 60+ messages using "tui" pronoun
+const PET_MESSAGES = {
+  critical: {
+    health: [
+      'Tui yếu quá rồi... Cần chăm sóc gấp!',
+      'Sức khỏe tui đang rất tệ. Giúp tui với!',
+      'Tui không còn sức nữa... Chăm sóc tui đi...',
+      'Đau quá... Tui cần được chữa trị ngay!'
+    ],
+    hunger: [
+      'Bụng tui đói cồn cào! Cho tui ăn gấp!',
+      'Tui đói đến mức chóng mặt rồi...',
+      'Không có gì ăn à? Tui sắp ngất đói!',
+      'Đói quá... Tui cần thức ăn ngay bây giờ!'
+    ],
+    sanity: [
+      'Đầu óc tui rối loạn quá... Giúp tui!',
+      'Tui không thể suy nghĩ được nữa...',
+      'Stress quá! Tui cần được dỗ dành ngay!',
+      'Tâm trạng tui tệ lắm... Chăm sóc tui đi...'
+    ]
+  },
+  danger: {
+    health: [
+      'Tui đang không khỏe lắm... Chăm sóc tui nhé.',
+      'Sức khỏe tui đang yếu dần. Cần giúp đỡ!',
+      'Tui cảm thấy mệt mỏi... Giúp tui hồi phục nhé.'
+    ],
+    hunger: [
+      'Bụng tui đói rồi! Cho tui ăn với.',
+      'Tui cần thức ăn ngay! Đói quá!',
+      'Lâu rồi không ăn gì... Cho tui ăn đi.'
+    ],
+    sanity: [
+      'Tui đang stress... Dỗ dành tui một chút.',
+      'Tâm trạng tui không tốt. Chăm sóc tui nhé.',
+      'Đầu óc tui hơi rối... Giúp tui bình tĩnh lại.'
+    ]
+  },
+  warning: {
+    health: [
+      'Tui hơi mệt... Chăm sóc thêm sẽ tốt hơn.',
+      'Sức khỏe tui cần được cải thiện một chút.',
+      'Tui vẫn ổn, nhưng cần chăm sóc thêm.'
+    ],
+    hunger: [
+      'Tui hơi đói rồi. Một món ăn nhẹ nhé?',
+      'Bụng tui bắt đầu đói... Cho tui ăn nhé.',
+      'Tui muốn ăn gì đó... Có gì không?'
+    ],
+    sanity: [
+      'Tui cần được dỗ dành một chút.',
+      'Tâm trạng tui cần cải thiện thêm.',
+      'Chăm sóc tui một chút sẽ tốt hơn.'
+    ]
+  },
+  normal: {
+    health: [
+      'Tui đang khỏe! Nhưng chăm sóc thêm càng tốt.',
+      'Sức khỏe tui ổn định. Cảm ơn đã chăm sóc!',
+      'Tui cảm thấy khá tốt hôm nay!'
+    ],
+    hunger: [
+      'Tui no rồi, nhưng món gì ngon thì tui vẫn ăn!',
+      'Bụng tui đầy đủ. Cảm ơn đã cho ăn!',
+      'Tui đã no, nhưng snack thì luôn được!'
+    ],
+    sanity: [
+      'Tâm trạng tui tốt! Cảm ơn đã quan tâm.',
+      'Tui đang vui vẻ! Mọi thứ đều ổn.',
+      'Tui cảm thấy bình yên và hạnh phúc!'
+    ]
+  },
+  excellent: {
+    health: [
+      'Tui khỏe như vâm! Năng lượng tràn đầy!',
+      'Sức khỏe tui tuyệt vời! Tui có thể làm mọi thứ!',
+      'Tui cảm thấy mạnh mẽ và tràn đầy sức sống!'
+    ],
+    hunger: [
+      'Tui no căng bụng! Ngon lắm!',
+      'Bụng tui đầy ắp! Cảm ơn đã cho ăn ngon!',
+      'Tui no nê rồi! Hạnh phúc quá!'
+    ],
+    sanity: [
+      'Tui vui như Tết! Mọi thứ đều tuyệt vời!',
+      'Tâm trạng tui tuyệt đỉnh! Yêu đời quá!',
+      'Tui hạnh phúc lắm! Cảm ơn đã yêu thương tui!'
+    ]
+  }
+};
+
+// Track recent messages to avoid repeats
+let recentMessages = [];
+const MAX_RECENT_MESSAGES = 5;
+
 const getPetReaction = (status = {}) => {
   const weakest = getWeakestPetStatus(status);
   const level = getPetStatusLevel(weakest.value);
-  const label = PET_STAT_LABELS[weakest.key] || 'Status';
-  const criticalMessages = {
-    health: 'Tui yếu quá. Chăm sóc một chút sẽ giúp tui hồi phục.',
-    hunger: 'Bụng tui trống rỗng rồi. Cho tui ăn với nha.',
-    sanity: 'Đầu tui hơi rối. Chăm sóc sẽ giúp tui bình tĩnh lại.'
-  };
-  const needsCareMessages = {
-    health: 'Tui vẫn ổn, nhưng được chăm sóc thêm thì sẽ khỏe hơn.',
-    hunger: 'Tui hơi đói rồi. Một món ăn nhẹ sẽ tuyệt lắm.',
-    sanity: 'Tui cần được dỗ dành một chút để tâm trạng tốt hơn.'
-  };
+  const messages = PET_MESSAGES[level]?.[weakest.key] || [];
 
-  if (level === PET_REACTION_LEVELS.critical) {
+  if (messages.length === 0) {
     return {
       level,
       weakest,
-      message: criticalMessages[weakest.key] || `${label} is critical.`
+      message: 'Tui đang ở đây nè!'
     };
   }
 
-  if (level === PET_REACTION_LEVELS.needsCare) {
-    return {
-      level,
-      weakest,
-      message: needsCareMessages[weakest.key] || `${label} needs attention.`
-    };
+  // Filter out recent messages to avoid repeats
+  const availableMessages = messages.filter(msg => !recentMessages.includes(msg));
+  const messagePool = availableMessages.length > 0 ? availableMessages : messages;
+
+  // Pick random message
+  const message = messagePool[Math.floor(Math.random() * messagePool.length)];
+
+  // Update recent messages
+  recentMessages.push(message);
+  if (recentMessages.length > MAX_RECENT_MESSAGES) {
+    recentMessages.shift();
   }
 
   return {
     level,
     weakest,
-    message: 'Hôm nay tui thấy ổn. Cứ giữ tui ấm áp và được yêu thương nha.'
+    message
   };
 };
 
@@ -900,7 +996,9 @@ const PetPage = ({ onBack }) => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
   const [infoExpanded, setInfoExpanded] = useState(false);
-  const [moodFloatBatch, setMoodFloatBatch] = useState(() => createMoodFloatBatch());
+  const [moodFloatBatch, setMoodFloatBatch] = useState([]);
+  const [moodFloatVisible, setMoodFloatVisible] = useState(false);
+  const moodFloatTimerRef = useRef(null);
   const [thoughtBubbleVisible, setThoughtBubbleVisible] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const bubbleTimerRef = useRef(null);
@@ -1133,6 +1231,74 @@ useEffect(() => {
       }
     };
   }, [isPageVisible, petReaction.level]);
+
+  // Smart mood float with timing (similar to thought bubble)
+  useEffect(() => {
+    if (!isPageVisible || !currentMoodName) {
+      // Clear any pending timers when page is hidden or no mood set
+      if (moodFloatTimerRef.current) {
+        clearTimeout(moodFloatTimerRef.current);
+        moodFloatTimerRef.current = null;
+      }
+      setMoodFloatVisible(false);
+      return;
+    }
+
+    let hideTimeoutId;
+    const playDurationMs = PET_MOOD_FLOAT_OPTIONS.animationSeconds * 1000;
+    const totalBatchDuration = playDurationMs + (PET_MOOD_FLOAT_OPTIONS.itemsPerRun - 1) * PET_MOOD_FLOAT_OPTIONS.itemDelaySeconds * 1000;
+
+    const scheduleNextMoodFloat = () => {
+      // Clear any existing timer
+      if (moodFloatTimerRef.current) {
+        clearTimeout(moodFloatTimerRef.current);
+      }
+
+      // Get timing config
+      const timing = PET_MOOD_FLOAT_OPTIONS.timing;
+
+      // Random delay within range
+      const delaySeconds = timing.minDelay + Math.random() * (timing.maxDelay - timing.minDelay);
+      const delayMs = delaySeconds * 1000;
+
+      // Check if enough time passed since last interaction
+      const timeSinceInteraction = Date.now() - lastInteractionRef.current;
+      const cooldownMs = PET_MOOD_FLOAT_OPTIONS.interactionCooldownSeconds * 1000;
+      const additionalDelay = Math.max(0, cooldownMs - timeSinceInteraction);
+
+      moodFloatTimerRef.current = setTimeout(() => {
+        // Random chance to show mood float (not always)
+        if (Math.random() < timing.showChance) {
+          // Create new batch
+          setMoodFloatBatch(createMoodFloatBatch());
+          setMoodFloatVisible(true);
+
+          hideTimeoutId = setTimeout(() => {
+            setMoodFloatVisible(false);
+            scheduleNextMoodFloat(); // Schedule next mood float after hiding
+          }, totalBatchDuration);
+        } else {
+          // Skip this cycle, schedule next
+          scheduleNextMoodFloat();
+        }
+      }, delayMs + additionalDelay);
+    };
+
+    // Initial delay before first mood float
+    const initialDelayMs = PET_MOOD_FLOAT_OPTIONS.initialDelaySeconds * 1000;
+    moodFloatTimerRef.current = setTimeout(() => {
+      scheduleNextMoodFloat();
+    }, initialDelayMs);
+
+    return () => {
+      if (moodFloatTimerRef.current) {
+        clearTimeout(moodFloatTimerRef.current);
+      }
+      if (hideTimeoutId) {
+        clearTimeout(hideTimeoutId);
+      }
+    };
+  }, [isPageVisible, currentMoodName]);
 
   useEffect(() => () => {
     foodEffectTimeoutsRef.current.forEach((timeoutId) => {
@@ -1674,13 +1840,13 @@ useEffect(() => {
         </div>
 
         <div className={`pet-stage pet-stage--${petReaction.level}`}>
-          <div className={`pet-bubble ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
+          <div className={`pet-bubble pet-bubble--${petReaction.level} ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
             <p>{petReaction.message}</p>
           </div>
 
           <div className="pet-stage-indicators" aria-label="Pet context">
-            {moodFloatBatch.map((moodFloatItem, index) => (
-              <div key={moodFloatItem.id} className="pet-mood-float" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
+            {moodFloatVisible && moodFloatBatch.map((moodFloatItem, index) => (
+              <div key={moodFloatItem.id} className="pet-mood-float pet-mood-float--visible" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
                 {currentMoodItem?.icon ? (
                   <IconRenderer iconName={currentMoodItem.icon} size={18} className="pet-mood-float__icon" />
                 ) : (
