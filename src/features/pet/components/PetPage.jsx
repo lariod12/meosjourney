@@ -20,6 +20,19 @@ import ConfirmActivityModal from './ConfirmActivityModal';
 import UpdateLocationModal from './UpdateLocationModal';
 import '../styles/pet.css';
 
+// Get time period based on current hour
+const getTimePeriod = () => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 7) return 'dawn';
+  if (hour >= 7 && hour < 11) return 'morning';
+  if (hour >= 11 && hour < 14) return 'noon';
+  if (hour >= 14 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 19) return 'dusk';
+  if (hour >= 19 && hour < 21) return 'evening';
+  if (hour >= 21 && hour < 23) return 'night';
+  return 'midnight'; // 23-5h
+};
+
 const ITEM_ICONS = {
   pudding: LuCake,
   meat: LuBeef,
@@ -995,6 +1008,7 @@ const PetPage = ({ onBack }) => {
   const careEffectTimeoutsRef = useRef(new Set());
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
+  const [timePeriod, setTimePeriod] = useState(getTimePeriod());
   const [infoExpanded, setInfoExpanded] = useState(false);
   const [moodFloatBatch, setMoodFloatBatch] = useState([]);
   const [moodFloatVisible, setMoodFloatVisible] = useState(false);
@@ -1299,6 +1313,18 @@ useEffect(() => {
       }
     };
   }, [isPageVisible, currentMoodName]);
+
+  // Update time period every minute
+  useEffect(() => {
+    const updateTimePeriod = () => {
+      setTimePeriod(getTimePeriod());
+    };
+
+    // Update every minute
+    const intervalId = setInterval(updateTimePeriod, 60000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => () => {
     foodEffectTimeoutsRef.current.forEach((timeoutId) => {
@@ -1839,7 +1865,38 @@ useEffect(() => {
           />
         </div>
 
-        <div className={`pet-stage pet-stage--${petReaction.level}`}>
+        <div className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}`}>
+          {/* Sun */}
+          <div className="stage-sun" aria-hidden="true"></div>
+
+          {/* Moon with craters */}
+          <div className="stage-moon" aria-hidden="true">
+            <div className="stage-moon-craters">
+              <div className="stage-moon-crater stage-moon-crater--1"></div>
+              <div className="stage-moon-crater stage-moon-crater--2"></div>
+              <div className="stage-moon-crater stage-moon-crater--3"></div>
+              <div className="stage-moon-crater stage-moon-crater--4"></div>
+            </div>
+          </div>
+
+          {/* Stars */}
+          <div className="stage-stars" aria-hidden="true">
+            {Array.from({ length: 30 }, (_, i) => (
+              <div
+                key={i}
+                className="stage-star"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 60}%`,
+                  animationDelay: `${Math.random() * 3}s`
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Ground line */}
+          <div className="stage-ground" aria-hidden="true"></div>
+
           <div className={`pet-bubble pet-bubble--${petReaction.level} ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
             <p>{petReaction.message}</p>
           </div>

@@ -29,6 +29,73 @@
   border-bottom: 4px solid #000000;
   overflow: hidden;
   isolation: isolate;
+  transition: background 2s ease;
+}
+
+/* Time-based backgrounds */
+.pet-stage--dawn {
+  background: linear-gradient(to bottom,
+    #ffd89b 0%,
+    #ffb88c 50%,
+    #ffa07a 100%
+  );
+}
+
+.pet-stage--morning {
+  background: linear-gradient(to bottom,
+    #87ceeb 0%,
+    #b0e0e6 50%,
+    #e0f6ff 100%
+  );
+}
+
+.pet-stage--noon {
+  background: linear-gradient(to bottom,
+    #4a90e2 0%,
+    #87ceeb 50%,
+    #b0e0e6 100%
+  );
+}
+
+.pet-stage--afternoon {
+  background: linear-gradient(to bottom,
+    #ffb347 0%,
+    #ffcc99 50%,
+    #ffe4b5 100%
+  );
+}
+
+.pet-stage--dusk {
+  background: linear-gradient(to bottom,
+    #ff6b6b 0%,
+    #ff8c69 30%,
+    #ffa07a 60%,
+    #4a5568 100%
+  );
+}
+
+.pet-stage--evening {
+  background: linear-gradient(to bottom,
+    #2c3e50 0%,
+    #34495e 50%,
+    #4a5568 100%
+  );
+}
+
+.pet-stage--night {
+  background: linear-gradient(to bottom,
+    #0f2027 0%,
+    #203a43 50%,
+    #2c5364 100%
+  );
+}
+
+.pet-stage--midnight {
+  background: linear-gradient(to bottom,
+    #000000 0%,
+    #1a1a2e 50%,
+    #16213e 100%
+  );
 }
 
 .pet-stage--needs-care {
@@ -384,6 +451,253 @@
   inset: 0;
   z-index: 6;
   pointer-events: none;
+}
+
+/* Sun */
+.stage-sun {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #ffd700;
+  border: 3px solid #000;
+  box-shadow:
+    0 0 15px rgba(255, 215, 0, 0.4),
+    2px 2px 0 #000;
+  transition: all 2s ease;
+  z-index: 0;
+}
+
+/* Sun positions */
+.pet-stage--dawn .stage-sun {
+  left: 10%;
+  bottom: 15%;
+  opacity: 1;
+}
+
+.pet-stage--morning .stage-sun {
+  left: 25%;
+  bottom: 60%;
+  opacity: 1;
+}
+
+.pet-stage--noon .stage-sun {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 75%;
+  opacity: 1;
+}
+
+.pet-stage--afternoon .stage-sun {
+  right: 25%;
+  bottom: 60%;
+  opacity: 1;
+}
+
+.pet-stage--dusk .stage-sun {
+  right: 10%;
+  bottom: 15%;
+  background: #ff6347;
+  box-shadow:
+    0 0 20px rgba(255, 99, 71, 0.5),
+    2px 2px 0 #000;
+  opacity: 1;
+}
+
+.pet-stage--evening .stage-sun,
+.pet-stage--night .stage-sun,
+.pet-stage--midnight .stage-sun {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Moon */
+.stage-moon {
+  position: absolute;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  border: 3px solid #000;
+  box-shadow:
+    0 0 15px rgba(240, 240, 240, 0.3),
+    2px 2px 0 #000;
+  transition: all 2s ease;
+  opacity: 0;
+  z-index: 0;
+}
+
+/* Large crater - top left */
+.stage-moon::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #d3d3d3;
+  border: 2px solid #000;
+  top: 6px;
+  left: 10px;
+}
+
+/* Medium crater - bottom right */
+.stage-moon::after {
+  content: '';
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #d3d3d3;
+  border: 2px solid #000;
+  bottom: 10px;
+  right: 8px;
+}
+
+/* Additional craters container */
+.stage-moon-craters {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.stage-moon-crater {
+  position: absolute;
+  border-radius: 50%;
+  background: #d3d3d3;
+  border: 2px solid #000;
+}
+
+.stage-moon-crater--1 {
+  width: 8px;
+  height: 8px;
+  top: 20px;
+  right: 12px;
+}
+
+.stage-moon-crater--2 {
+  width: 6px;
+  height: 6px;
+  top: 28px;
+  left: 6px;
+}
+
+.stage-moon-crater--3 {
+  width: 5px;
+  height: 5px;
+  bottom: 16px;
+  left: 16px;
+}
+
+.stage-moon-crater--4 {
+  width: 6px;
+  height: 6px;
+  top: 12px;
+  right: 6px;
+}
+
+/* Moon positions */
+.pet-stage--dawn .stage-moon,
+.pet-stage--morning .stage-moon,
+.pet-stage--noon .stage-moon,
+.pet-stage--afternoon .stage-moon {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pet-stage--dusk .stage-moon {
+  opacity: 0.3;
+  right: 15%;
+  bottom: 65%;
+}
+
+.pet-stage--evening .stage-moon {
+  opacity: 0.8;
+  right: 30%;
+  bottom: 70%;
+}
+
+.pet-stage--night .stage-moon {
+  opacity: 1;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 75%;
+}
+
+.pet-stage--midnight .stage-moon {
+  opacity: 1;
+  left: 30%;
+  bottom: 65%;
+}
+
+/* Stars */
+.stage-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 2s ease;
+  z-index: 0;
+}
+
+.pet-stage--evening .stage-stars {
+  opacity: 0.3;
+}
+
+.pet-stage--night .stage-stars,
+.pet-stage--midnight .stage-stars {
+  opacity: 1;
+}
+
+.stage-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 2px #fff;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Ground line - creates depth */
+.stage-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: #8b7355;
+  border-top: 4px solid #000;
+  transition: background 2s ease;
+  z-index: 2;
+}
+
+/* Ground color changes with time */
+.pet-stage--dawn .stage-ground {
+  background: #a0826d;
+}
+
+.pet-stage--morning .stage-ground,
+.pet-stage--noon .stage-ground,
+.pet-stage--afternoon .stage-ground {
+  background: #8b7355;
+}
+
+.pet-stage--dusk .stage-ground {
+  background: #6d5d4f;
+}
+
+.pet-stage--evening .stage-ground {
+  background: #5a4a3f;
+}
+
+.pet-stage--night .stage-ground,
+.pet-stage--midnight .stage-ground {
+  background: #4a3f35;
 }
 
 .pet-mood-float {
