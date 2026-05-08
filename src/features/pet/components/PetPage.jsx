@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LuChevronLeft, LuChevronDown,
   LuUtensils, LuHeart, LuActivity, LuGauge,
@@ -1075,6 +1076,7 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
   );
 };
 const PetPage = ({ onBack }) => {
+  const navigate = useNavigate();
   const petSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
@@ -1624,9 +1626,30 @@ useEffect(() => {
     return () => clearInterval(intervalId);
   }, [isSleeping]);
 
+  // Auto sleep when activity is "Đi ngủ"
+  useEffect(() => {
+    if (currentActivityName && currentActivityName.toLowerCase().includes('ngủ')) {
+      if (!isSleeping) {
+        console.log('💤 Activity is sleep-related, auto sleeping');
+        setIsSleeping(true);
+      }
+    }
+  }, [currentActivityName, isSleeping]);
+
   const handleBack = () => {
-    if (onBack) { onBack(); return; }
-    window.location.href = '/';
+    console.log('🔙 Back button clicked');
+    if (onBack) {
+      console.log('🔙 Using onBack callback');
+      onBack();
+      return;
+    }
+    try {
+      console.log('🔙 Navigating to /');
+      navigate('/');
+    } catch (err) {
+      console.error('🔙 Navigate failed, using window.location:', err);
+      window.location.replace('/');
+    }
   };
 
   const enqueuePetSave = (updates) => {

@@ -215,6 +215,44 @@ body {
     box-sizing: border-box;
 }
 
+.pet-home-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--black);
+    border-radius: 8px;
+    background: var(--white);
+    box-shadow: 3px 3px 0 #999999;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.pet-home-button:hover,
+.pet-home-button:focus-visible {
+    outline: 3px solid #666666;
+    outline-offset: 3px;
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #999999;
+}
+
+.pet-home-button:active {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 #999999;
+}
+
+.pet-home-button svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5;
+}
+
 .avatar-frame {
     position: relative;
     width: 100%;

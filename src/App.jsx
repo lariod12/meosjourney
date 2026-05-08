@@ -17,6 +17,21 @@ const withPageLoader = (element) => (
   </Suspense>
 );
 
+const PetPageWrapper = () => {
+  const navigate = useNavigate();
+  return <PetPage onBack={() => navigate('/')} />;
+};
+
+const UserPageWrapper = () => {
+  const navigate = useNavigate();
+  return <UserPage onBack={() => navigate('/')} />;
+};
+
+const AdminPageWrapper = () => {
+  const navigate = useNavigate();
+  return <AdminPage onBack={() => navigate('/')} />;
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
   const { data, loading, refetch } = useCharacterData(characterData);
@@ -55,9 +70,9 @@ const App = () => {
     <Router basename={basename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/pet" element={withPageLoader(<PetPage onBack={() => window.history.back()} />)} />
-        <Route path="/user/meos05" element={withPageLoader(<UserPage onBack={() => window.history.back()} />)} />
-        <Route path="/admin/meos05" element={withPageLoader(<AdminPage onBack={() => window.history.back()} />)} />
+        <Route path="/pet" element={withPageLoader(<PetPageWrapper />)} />
+        <Route path="/user/meos05" element={withPageLoader(<UserPageWrapper />)} />
+        <Route path="/admin/meos05" element={withPageLoader(<AdminPageWrapper />)} />
       </Routes>
     </Router>
   );

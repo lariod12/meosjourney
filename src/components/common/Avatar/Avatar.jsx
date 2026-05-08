@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LuHouse } from 'react-icons/lu';
 import { useCharacter } from '../../../contexts';
 
 const Avatar = () => {
+  const navigate = useNavigate();
   const data = useCharacter();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -31,6 +34,14 @@ const Avatar = () => {
 
   return (
     <div className="avatar-container">
+      <button
+        className="pet-home-button"
+        onClick={() => navigate('/pet')}
+        aria-label="Go to Pet page"
+        title="Pet"
+      >
+        <LuHouse />
+      </button>
       <div className="avatar-frame">
         {showLoading && (
           <div className="avatar-loading" aria-label="Loading avatar">
