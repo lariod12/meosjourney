@@ -1139,15 +1139,30 @@ const PetPage = ({ onBack }) => {
   const [careEffects, setCareEffects] = useState([]);
   const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
   const [isSavingPet, setIsSavingPet] = useState(false);
-  const items = useMemo(() => (
-    activeTab === 'activity'
+  const items = useMemo(() => {
+    let itemList = activeTab === 'activity'
       ? activityItems
       : activeTab === 'moods'
         ? moodItems
         : PET_ITEM_CATEGORIES.includes(activeTab)
           ? petItems[activeTab]
-          : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
-  ), [activeTab, activityItems, moodItems, petItems]);
+          : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food);
+
+    // When sleeping, move Bed item to the top of Care tab
+    if (isSleeping && activeTab === 'care' && Array.isArray(itemList)) {
+      const bedIndex = itemList.findIndex(item =>
+        item.name && item.name.toLowerCase() === 'bed'
+      );
+      if (bedIndex > 0) {
+        const newList = [...itemList];
+        const [bedItem] = newList.splice(bedIndex, 1);
+        newList.unshift(bedItem);
+        return newList;
+      }
+    }
+
+    return itemList;
+  }, [activeTab, activityItems, moodItems, petItems, isSleeping]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
     const reaction = getPetReaction(petStatus, biologicalClock);
@@ -1298,6 +1313,16 @@ useEffect(() => {
 
   // Smart thought bubble with status-based timing
   useEffect(() => {
+    // Don't show bubble when sleeping
+    if (isSleeping) {
+      if (bubbleTimerRef.current) {
+        clearTimeout(bubbleTimerRef.current);
+        bubbleTimerRef.current = null;
+      }
+      setThoughtBubbleVisible(false);
+      return;
+    }
+
     if (!isPageVisible) {
       // Clear any pending timers when page is hidden
       if (bubbleTimerRef.current) {
@@ -1358,7 +1383,7 @@ useEffect(() => {
         clearTimeout(hideTimeoutId);
       }
     };
-  }, [isPageVisible, petReaction.level]);
+  }, [isPageVisible, petReaction.level, isSleeping]);
 
   // Smart mood float with timing (similar to thought bubble)
   useEffect(() => {
@@ -1549,6 +1574,30 @@ useEffect(() => {
     }
   }, []);
 
+  // Auto wake up at 5 AM
+  useEffect(() => {
+    if (!isSleeping) return;
+
+    const checkWakeTime = () => {
+      const now = new Date();
+      const hour = now.getHours();
+
+      // Wake up at 5 AM
+      if (hour >= 5 && hour < 22) {
+        console.log('☀️ Morning! Waking up at', hour, ':00');
+        setIsSleeping(false);
+      }
+    };
+
+    // Check immediately
+    checkWakeTime();
+
+    // Check every minute
+    const intervalId = setInterval(checkWakeTime, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [isSleeping]);
+
   const handleBack = () => {
     if (onBack) { onBack(); return; }
     window.history.back();
@@ -1651,18 +1700,22 @@ useEffect(() => {
     console.log('🛏️ Is bed item?', isBedItem);
 
     if (usedPetItem.category === 'care' && isBedItem) {
-      console.log('🛏️ Starting sleep animation');
-      // Start sleeping animation
+      console.log('🛏️ Starting sleep - will wake at 5 AM');
+      // Start sleeping animation (will wake at 5 AM automatically)
       setIsSleeping(true);
 
-      // Auto wake up after 3 seconds
-      if (sleepTimerRef.current) {
-        clearTimeout(sleepTimerRef.current);
+      // Auto-set activity to "Đi ngủ" if exists
+      const sleepActivity = activityItems.find(item =>
+        item.name && item.name.toLowerCase().includes('ngủ')
+      );
+      if (sleepActivity) {
+        console.log('💤 Setting activity to:', sleepActivity.name);
+        setCurrentActivityName(sleepActivity.name);
+        // Save to NocoDB
+        saveStatus({
+          doing: sleepActivity.name
+        }).catch(err => console.error('Failed to save sleep activity:', err));
       }
-      sleepTimerRef.current = setTimeout(() => {
-        console.log('⏰ Waking up');
-        setIsSleeping(false);
-      }, 3000);
 
       if (biologicalClock.isSleepy) {
         const updatedBiologicalClock = {
@@ -2315,14 +2368,16 @@ useEffect(() => {
                     ? getPetItemUsePreview(activeTab, petStatus, item.shape, item.name)
                     : null;
                   console.log('📊 Preview for', item.name, ':', petUsePreview);
-                  const isFoodLocked = activeTab === 'food' && isFoodUseAnimating;
-                  const isCareLocked = activeTab === 'care' && isCareUseAnimating;
+                  const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || isSleeping);
+                  const isCareLocked = activeTab === 'care' && (isCareUseAnimating || isSleeping);
                   const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet || isFoodLocked || isCareLocked));
-                  const disabledReason = isFoodLocked
-                    ? 'Đợi món trước tan hết đã nha.'
-                    : isCareLocked
-                      ? 'Đợi chăm sóc xong rồi dùng món tiếp theo nha.'
-                      : petUsePreview?.reason;
+                  const disabledReason = isSleeping
+                    ? 'Pet đang ngủ, đợi sáng mai nhé! 💤'
+                    : isFoodLocked
+                      ? 'Đợi món trước tan hết đã nha.'
+                      : isCareLocked
+                        ? 'Đợi chăm sóc xong rồi dùng món tiếp theo nha.'
+                        : petUsePreview?.reason;
 
                   return (
                     <PetItemCard

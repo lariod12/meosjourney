@@ -1601,15 +1601,32 @@
 }
 
 .pet-character--sleeping .pet-character__eye {
-  height: 2px;
+  width: 12px;
+  height: 3px;
   border-radius: 0;
   background: #000;
   border: none;
   top: 28px;
+  animation: none !important; /* Disable blink animation */
+}
+
+.pet-character--sleeping .pet-character__eye--left {
+  left: 18px;
+}
+
+.pet-character--sleeping .pet-character__eye--right {
+  right: 18px;
 }
 
 .pet-character--sleeping .pet-character__mouth {
-  opacity: 0.5;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  background: transparent;
+  top: 38px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 @keyframes pet-sleep-breathe {
