@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuHouse } from 'react-icons/lu';
+import { LuHouse, LuArrowLeft } from 'react-icons/lu';
 import { useCharacter } from '../../../contexts';
 
 const Avatar = () => {
@@ -9,6 +9,10 @@ const Avatar = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const imgRef = useRef(null);
   const showLoading = data.avatarLoading || (avatarSrc && !imageLoaded && !hasError);
   const showPlaceholder = !showLoading && (!avatarSrc || hasError);
@@ -32,47 +36,101 @@ const Avatar = () => {
 
   const xpPercentage = (data.currentXP / data.maxXP) * 100;
 
+  const handleMyHomeClick = () => {
+    setShowPasswordModal(true);
+    setPassword('');
+    setPasswordError('');
+  };
+
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (password === '0929') {
+      setShowPasswordModal(false);
+      setIsFlipped(false);
+      navigate('/pet');
+    } else {
+      setPasswordError('Wrong password!');
+      setPassword('');
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    setPassword('');
+    setPasswordError('');
+  };
+
   return (
     <div className="avatar-container">
-      <button
-        className="pet-home-button"
-        onClick={() => navigate('/pet')}
-        aria-label="Go to Pet page"
-        title="Pet"
-      >
-        <LuHouse />
-      </button>
-      <div className="avatar-frame">
-        {showLoading && (
-          <div className="avatar-loading" aria-label="Loading avatar">
-            <div className="loading-spinner"></div>
-            <div className="avatar-loading-text">Loading</div>
+      <div className={`avatar-flip-card ${isFlipped ? 'avatar-flip-card--flipped' : ''}`}>
+        {/* Front side - Avatar */}
+        <div className="avatar-flip-card__side avatar-flip-card__side--front">
+          <div
+            className="avatar-frame avatar-frame--clickable"
+            onClick={() => setIsFlipped(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && setIsFlipped(true)}
+            aria-label="Click to show navigation options"
+          >
+            {showLoading && (
+              <div className="avatar-loading" aria-label="Loading avatar">
+                <div className="loading-spinner"></div>
+                <div className="avatar-loading-text">Loading</div>
+              </div>
+            )}
+            {showPlaceholder && (
+              <div className="avatar-placeholder" aria-label="Avatar unavailable">
+                <span>?</span>
+              </div>
+            )}
+            {avatarSrc && !hasError && (
+              <img
+                ref={imgRef}
+                src={avatarSrc}
+                alt="Character Avatar"
+                className="avatar-img"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+                width="300"
+                height="300"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  setHasError(true);
+                  setImageLoaded(false);
+                }}
+                style={{ opacity: imageLoaded ? 1 : 0 }}
+              />
+            )}
           </div>
-        )}
-        {showPlaceholder && (
-          <div className="avatar-placeholder" aria-label="Avatar unavailable">
-            <span>?</span>
+        </div>
+
+        {/* Back side - Navigation */}
+        <div className="avatar-flip-card__side avatar-flip-card__side--back">
+          <div className="avatar-nav">
+            <div className="avatar-nav__icon">
+              <LuHouse />
+            </div>
+            <div className="avatar-nav__buttons">
+              <button
+                type="button"
+                className="avatar-nav__button avatar-nav__button--primary"
+                onClick={handleMyHomeClick}
+              >
+                My Home
+              </button>
+              <button
+                type="button"
+                className="avatar-nav__button"
+                onClick={() => setIsFlipped(false)}
+              >
+                <LuArrowLeft />
+                Back
+              </button>
+            </div>
           </div>
-        )}
-        {avatarSrc && !hasError && (
-          <img 
-            ref={imgRef}
-            src={avatarSrc}
-            alt="Character Avatar" 
-            className="avatar-img"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            width="300"
-            height="300"
-            onLoad={() => setImageLoaded(true)}
-            onError={() => {
-              setHasError(true);
-              setImageLoaded(false);
-            }}
-            style={{ opacity: imageLoaded ? 1 : 0 }}
-          />
-        )}
+        </div>
       </div>
 
       <div className="character-name">{data.name}</div>
@@ -88,6 +146,44 @@ const Avatar = () => {
           <div className="xp-max">{data.maxXP.toLocaleString()}</div>
         </div>
       </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="password-modal-overlay" onClick={handlePasswordCancel}>
+          <div className="password-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="password-modal__title">Enter Password</h3>
+            <form onSubmit={handlePasswordSubmit}>
+              <input
+                type="password"
+                className="password-modal__input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password..."
+                autoFocus
+                autoComplete="off"
+              />
+              {passwordError && (
+                <p className="password-modal__error">{passwordError}</p>
+              )}
+              <div className="password-modal__buttons">
+                <button
+                  type="button"
+                  className="password-modal__button"
+                  onClick={handlePasswordCancel}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="password-modal__button password-modal__button--primary"
+                >
+                  Enter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
