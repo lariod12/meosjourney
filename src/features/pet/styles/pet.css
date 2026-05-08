@@ -98,12 +98,23 @@
   );
 }
 
-.pet-stage--needs-care {
-  background: repeating-linear-gradient(135deg, #ffffff 0 18px, #f2f2f2 18px 30px);
+/* Status-based overlay patterns (using ::before to not override time backgrounds) */
+.pet-stage--needs-care::before,
+.pet-stage--critical::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
 }
 
-.pet-stage--critical {
-  background: repeating-linear-gradient(135deg, #ffffff 0 12px, #e5e5e5 12px 22px);
+.pet-stage--needs-care::before {
+  background: repeating-linear-gradient(135deg, #ffffff 0 18px, transparent 18px 30px);
+}
+
+.pet-stage--critical::before {
+  background: repeating-linear-gradient(135deg, #ffffff 0 12px, transparent 12px 22px);
 }
 
 .pet-topbar {
@@ -670,34 +681,22 @@
   left: 0;
   right: 0;
   height: 120px;
-  background: #c4a57b;
+  background: #ffffff;
   border-top: 4px solid #000;
   transition: background 2s ease;
   z-index: 2;
 }
 
-/* Ground color changes with time */
-.pet-stage--dawn .stage-ground {
-  background: #d4b896;
-}
-
+/* Ground color - always white */
+.pet-stage--dawn .stage-ground,
 .pet-stage--morning .stage-ground,
 .pet-stage--noon .stage-ground,
-.pet-stage--afternoon .stage-ground {
-  background: #c4a57b;
-}
-
-.pet-stage--dusk .stage-ground {
-  background: #a89176;
-}
-
-.pet-stage--evening .stage-ground {
-  background: #ffffff;
-}
-
+.pet-stage--afternoon .stage-ground,
+.pet-stage--dusk .stage-ground,
+.pet-stage--evening .stage-ground,
 .pet-stage--night .stage-ground,
 .pet-stage--midnight .stage-ground {
-  background: #7a6b5a;
+  background: #ffffff;
 }
 
 .pet-mood-float {
@@ -952,6 +951,15 @@
   border-bottom: 3px solid #000000;
   border-radius: 0 0 24px 24px;
   transform: translateX(-50%);
+}
+
+/* Trạng thái excellent - miệng cười */
+.pet-character--excellent .pet-character__mouth {
+  width: 28px;
+  height: 12px;
+  border-bottom: 3px solid #000000;
+  border-radius: 0 0 28px 28px;
+  top: 56px;
 }
 
 /* Cổ */

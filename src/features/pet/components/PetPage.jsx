@@ -466,7 +466,7 @@ const getPetStatusLevel = (value) => {
   if (value <= 20) return 'critical';
   if (value <= 40) return 'danger';
   if (value <= 60) return 'warning';
-  if (value <= 80) return 'normal';
+  if (value < 80) return 'normal';
   return 'excellent';
 };
 
@@ -576,13 +576,17 @@ let recentMessages = [];
 const MAX_RECENT_MESSAGES = 5;
 
 const getPetReaction = (status = {}, biologicalClock = {}) => {
-  // Priority 1: Biological clock warnings (highest priority)
+  // Calculate regular status first
+  const weakest = getWeakestPetStatus(status);
+  const level = getPetStatusLevel(weakest.value);
+
+  // Priority 1: Biological clock warnings (only for messages, not for visual state)
   if (biologicalClock.isHungry && biologicalClock.currentMealTime) {
     const messages = BIOLOGICAL_CLOCK_MESSAGES[biologicalClock.currentMealTime];
     const message = messages[Math.floor(Math.random() * messages.length)];
     return {
-      level: 'critical',
-      weakest: { key: 'hunger', value: status.hunger || 0 },
+      level,  // Use actual status level, not forced 'critical'
+      weakest,
       message
     };
   }
@@ -591,15 +595,13 @@ const getPetReaction = (status = {}, biologicalClock = {}) => {
     const messages = BIOLOGICAL_CLOCK_MESSAGES.bedtime;
     const message = messages[Math.floor(Math.random() * messages.length)];
     return {
-      level: 'critical',
-      weakest: { key: 'sanity', value: status.sanity || 0 },
+      level,  // Use actual status level, not forced 'critical'
+      weakest,
       message
     };
   }
 
   // Priority 2: Regular status-based messages
-  const weakest = getWeakestPetStatus(status);
-  const level = getPetStatusLevel(weakest.value);
   const messages = PET_MESSAGES[level]?.[weakest.key] || [];
 
   if (messages.length === 0) {
@@ -1142,7 +1144,14 @@ const PetPage = ({ onBack }) => {
           : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food)
   ), [activeTab, activityItems, moodItems, petItems]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
-  const petReaction = useMemo(() => getPetReaction(petStatus, biologicalClock), [petStatus, biologicalClock]);
+  const petReaction = useMemo(() => {
+    const reaction = getPetReaction(petStatus, biologicalClock);
+    console.log('🐱 Pet Status:', petStatus);
+    console.log('🐱 Biological Clock:', biologicalClock);
+    console.log('🐱 Pet Reaction Level:', reaction.level);
+    console.log('🐱 Weakest Stat:', reaction.weakest);
+    return reaction;
+  }, [petStatus, biologicalClock]);
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus)
@@ -1163,6 +1172,15 @@ const PetPage = ({ onBack }) => {
   const currentMoodItem = useMemo(() => (
   moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
 ), [currentMoodName, moodItems]);
+
+  // Generate fixed star positions (only once)
+  const starPositions = useMemo(() => (
+    Array.from({ length: 30 }, () => ({
+      left: Math.random() * 100,
+      top: Math.random() * 60,
+      delay: Math.random() * 3
+    }))
+  ), []);
 
 // Load initial data from NocoDB
 useEffect(() => {
@@ -1245,14 +1263,19 @@ useEffect(() => {
 // Auto-expand dropdown when data is loaded
 useEffect(() => {
   if (isDataLoaded) {
+    let expandTimeout;
     // Use requestAnimationFrame to ensure data is rendered before expanding
     const rafId = requestAnimationFrame(() => {
-      const expandTimeout = setTimeout(() => {
+      expandTimeout = setTimeout(() => {
         setInfoExpanded(true);
       }, 50);
-      return () => clearTimeout(expandTimeout);
     });
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (expandTimeout) {
+        clearTimeout(expandTimeout);
+      }
+    };
   }
 }, [isDataLoaded]);
 
@@ -1409,33 +1432,43 @@ useEffect(() => {
       const mealTime = getMealTime(hour, minute);
       if (mealTime) {
         const mealKey = `last${mealTime.charAt(0).toUpperCase() + mealTime.slice(1)}`;
-        const wasEaten = wasMealEatenToday(biologicalClock[mealKey]);
-
-        if (!wasEaten) {
-          setBiologicalClock(prev => ({
-            ...prev,
-            isHungry: true,
-            currentMealTime: mealTime
-          }));
-        }
+        setBiologicalClock(prev => {
+          const wasEaten = wasMealEatenToday(prev[mealKey]);
+          if (!wasEaten) {
+            return {
+              ...prev,
+              isHungry: true,
+              currentMealTime: mealTime
+            };
+          }
+          return prev;
+        });
       }
 
       // Check bedtime
       if (isBedtime(hour)) {
-        const sleptTonight = wasMealEatenToday(biologicalClock.lastSleep);
-        if (!sleptTonight) {
-          setBiologicalClock(prev => ({
-            ...prev,
-            isSleepy: true
-          }));
-        }
+        setBiologicalClock(prev => {
+          const sleptTonight = wasMealEatenToday(prev.lastSleep);
+          if (!sleptTonight) {
+            return {
+              ...prev,
+              isSleepy: true
+            };
+          }
+          return prev;
+        });
       } else {
         // Reset sleepy state in the morning
-        if (hour >= 5 && biologicalClock.isSleepy) {
-          setBiologicalClock(prev => ({
-            ...prev,
-            isSleepy: false
-          }));
+        if (hour >= 5) {
+          setBiologicalClock(prev => {
+            if (prev.isSleepy) {
+              return {
+                ...prev,
+                isSleepy: false
+              };
+            }
+            return prev;
+          });
         }
       }
     };
@@ -1445,7 +1478,7 @@ useEffect(() => {
     checkBiologicalClock(); // Initial check
 
     return () => clearInterval(intervalId);
-  }, [biologicalClock]);
+  }, []); // Empty dependency array - only runs once on mount
 
   // Status penalty system for biological clock
   useEffect(() => {
@@ -2085,14 +2118,14 @@ useEffect(() => {
 
           {/* Stars */}
           <div className="stage-stars" aria-hidden="true">
-            {Array.from({ length: 30 }, (_, i) => (
+            {starPositions.map((star, i) => (
               <div
                 key={i}
                 className="stage-star"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 60}%`,
-                  animationDelay: `${Math.random() * 3}s`
+                  left: `${star.left}%`,
+                  top: `${star.top}%`,
+                  animationDelay: `${star.delay}s`
                 }}
               />
             ))}
