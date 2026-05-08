@@ -1650,10 +1650,16 @@
 
 .pet-sleep-z {
   position: absolute;
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 900;
   font-style: italic;
-  color: #000;
+  color: #fff;
+  text-shadow:
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    2px 2px 0 #000,
+    0 0 8px rgba(255, 255, 255, 0.8);
   opacity: 0;
   animation: pet-zzz-float 2s ease-in-out infinite;
 }
@@ -1665,13 +1671,13 @@
 
 .pet-sleep-z--2 {
   left: 25px;
-  font-size: 20px;
+  font-size: 28px;
   animation-delay: 0.6s;
 }
 
 .pet-sleep-z--3 {
   left: 40px;
-  font-size: 16px;
+  font-size: 24px;
   animation-delay: 1.2s;
 }
 
