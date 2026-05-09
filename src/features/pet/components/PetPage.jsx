@@ -14,6 +14,7 @@ import {
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
+import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
@@ -1123,6 +1124,8 @@ const PetPage = ({ onBack }) => {
   const [isUpdateLocationModalOpen, setIsUpdateLocationModalOpen] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [isSleeping, setIsSleeping] = useState(false);
+  const [isAwakening, setIsAwakening] = useState(false);
+  const [isPetReady, setIsPetReady] = useState(false);
   const sleepTimerRef = useRef(null);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
@@ -1269,7 +1272,23 @@ useEffect(() => {
         if (statusData.doing && Array.isArray(statusData.doing)) {
           setActivityItems(statusData.doing);
           if (statusData.doing.length > 0) {
-            setCurrentActivityName(statusData.doing[0].name || '');
+            const currentActivity = statusData.doing[0].name || '';
+            setCurrentActivityName(currentActivity);
+
+            // Check if current activity is sleep-related
+            if (currentActivity.toLowerCase().includes('ngủ')) {
+              const now = new Date();
+              const hour = now.getHours();
+
+              // If it's sleep time (22:00-5:00), set sleeping state
+              if (hour >= 22 || hour < 5) {
+                setIsSleeping(true);
+              } else if (hour >= 5 && hour < 22) {
+                // If it's wake time but activity is still sleep, show awakening
+                setIsSleeping(true);
+                setIsAwakening(true);
+              }
+            }
           }
         }
 
@@ -1300,10 +1319,16 @@ useEffect(() => {
 
       // Mark data as loaded
       setIsDataLoaded(true);
+
+      // Wait a bit for state to settle, then show pet
+      setTimeout(() => {
+        setIsPetReady(true);
+      }, 100);
     } catch (error) {
       console.error('❌ Error loading pet page data:', error);
       // Even on error, mark as loaded to show UI
       setIsDataLoaded(true);
+      setIsPetReady(true);
     }
   };
 
@@ -1341,8 +1366,8 @@ useEffect(() => {
 
   // Smart thought bubble with status-based timing
   useEffect(() => {
-    // Don't show bubble when sleeping
-    if (isSleeping) {
+    // Don't show bubble when sleeping or awakening
+    if (isSleeping || isAwakening) {
       if (bubbleTimerRef.current) {
         clearTimeout(bubbleTimerRef.current);
         bubbleTimerRef.current = null;
@@ -1411,7 +1436,7 @@ useEffect(() => {
         clearTimeout(hideTimeoutId);
       }
     };
-  }, [isPageVisible, petReaction.level, isSleeping]);
+  }, [isPageVisible, petReaction.level, isSleeping, isAwakening]);
 
   // Smart mood float with timing (similar to thought bubble)
   useEffect(() => {
@@ -1602,7 +1627,7 @@ useEffect(() => {
     }
   }, []);
 
-  // Auto wake up at 5 AM
+  // Auto wake up at 5 AM - show awakening effect
   useEffect(() => {
     if (!isSleeping) return;
 
@@ -1610,10 +1635,11 @@ useEffect(() => {
       const now = new Date();
       const hour = now.getHours();
 
-      // Wake up at 5 AM
+      // Show awakening effect at 5 AM
       if (hour >= 5 && hour < 22) {
-        console.log('☀️ Morning! Waking up at', hour, ':00');
-        setIsSleeping(false);
+        console.log('☀️ Morning! Time to wake up at', hour, ':00');
+        setIsAwakening(true);
+        // Don't auto-wake, wait for user tap
       }
     };
 
@@ -1629,12 +1655,19 @@ useEffect(() => {
   // Auto sleep when activity is "Đi ngủ"
   useEffect(() => {
     if (currentActivityName && currentActivityName.toLowerCase().includes('ngủ')) {
-      if (!isSleeping) {
+      if (!isSleeping && !isAwakening) {
         console.log('💤 Activity is sleep-related, auto sleeping');
         setIsSleeping(true);
       }
+    } else {
+      // If activity changed to non-sleep and was awakening, complete wake up
+      if (isAwakening) {
+        console.log('✨ Activity changed, completing wake up');
+        setIsSleeping(false);
+        setIsAwakening(false);
+      }
     }
-  }, [currentActivityName, isSleeping]);
+  }, [currentActivityName, isSleeping, isAwakening]);
 
   const handleBack = () => {
     console.log('🔙 Back button clicked');
@@ -2210,9 +2243,38 @@ useEffect(() => {
     }
   };
 
+  const handleWakeUpTap = () => {
+    if (!isAwakening) return;
+
+    console.log('👆 User tapped to wake up pet');
+    setIsSleeping(false);
+    setIsAwakening(false);
+
+    // Clear sleep activity if exists
+    const sleepActivity = activityItems.find(item =>
+      item.name && item.name.toLowerCase().includes('ngủ')
+    );
+    if (sleepActivity && currentActivityName === sleepActivity.name) {
+      // Find first non-sleep activity or clear current activity
+      const nonSleepActivity = activityItems.find(item =>
+        item.name && !item.name.toLowerCase().includes('ngủ')
+      );
+      if (nonSleepActivity) {
+        setCurrentActivityName(nonSleepActivity.name);
+        saveStatus({
+          doing: nonSleepActivity.name
+        }).catch(err => console.error('Failed to save wake activity:', err));
+      }
+    }
+  };
+
   return (
     <main className="pet-page">
-      <section className="pet-phone" aria-label="Virtual pet preview">
+      {!isPetReady ? (
+        <LoadingDialog />
+      ) : (
+        <>
+        <section className="pet-phone" aria-label="Virtual pet preview">
         <div className="pet-topbar">
           <button type="button" className="pet-round-button" onClick={handleBack} aria-label="Back">
             <LuChevronLeft className="pet-topbar-icon" aria-hidden="true" />
@@ -2268,6 +2330,32 @@ useEffect(() => {
           {/* Ground line */}
           <div className="stage-ground" aria-hidden="true"></div>
 
+          {/* Awakening overlay - tap to wake */}
+          {isAwakening && (
+            <div
+              className="pet-awakening-overlay"
+              onClick={handleWakeUpTap}
+              role="button"
+              tabIndex={0}
+              aria-label="Tap to wake up pet"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleWakeUpTap();
+                }
+              }}
+            >
+              <div className="pet-awakening-prompt">
+                <div className="pet-awakening-zzz" aria-hidden="true">
+                  <span className="pet-awakening-z pet-awakening-z--1">Z</span>
+                  <span className="pet-awakening-z pet-awakening-z--2">Z</span>
+                  <span className="pet-awakening-z pet-awakening-z--3">Z</span>
+                </div>
+                <p className="pet-awakening-text">Tap để đánh thức Méo dậy!</p>
+              </div>
+            </div>
+          )}
+
           <div className={`pet-bubble pet-bubble--${petReaction.level} ${thoughtBubbleVisible ? 'pet-bubble--visible' : ''}`} aria-hidden={!thoughtBubbleVisible}>
             <p>{petReaction.message}</p>
           </div>
@@ -2319,8 +2407,8 @@ useEffect(() => {
             <span className="pet-character__leg pet-character__leg--right" />
             <span className="pet-character__shadow" />
 
-            {/* ZZZ particles when sleeping */}
-            {isSleeping && (
+            {/* ZZZ particles when sleeping (hide when awakening overlay is shown) */}
+            {isSleeping && !isAwakening && (
               <div className="pet-sleep-zzz" aria-hidden="true">
                 <span className="pet-sleep-z pet-sleep-z--1">Z</span>
                 <span className="pet-sleep-z pet-sleep-z--2">Z</span>
@@ -2590,6 +2678,8 @@ useEffect(() => {
         locationHistory={locationHistory}
         isLoading={isSavingLocation}
       />
+        </>
+      )}
     </main>
   );
 };
