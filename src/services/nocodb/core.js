@@ -50,18 +50,18 @@ const TABLE_IDS_DEVELOPE = {
 };
 
 const TABLE_IDS_STAGING = {
-  STATUS: 'ms8en1op7vwznus',
-  PROFILE: 'mntx3zoatts0mqs',
-  CONFIG: 'mfknw80a7z9yq4k',
-  HISTORY: 'm6gg7iz2652psmg',
-  JOURNALS: 'm2vhvjmajhe57m1',
-  QUESTS: 'm5zdtosf0at9r5e',
-  QUESTS_CONFIRM: 'm9mcryxflb74irn',
-  ACHIEVEMENTS: 'mn5q6w7t05bamhd',
-  ACHIEVEMENTS_CONFIRM: 'mlayyfujdqnghzb',
-  ATTACHMENTS_GALLERY: 'mc8mv7di4aadfz1',
-  ATTACHMENTS_ALBUM: 'mi5yptema60aqcq',
-  PET: 'mjpwruy1wibuf7l'
+  STATUS: 'mpnyea1dn0pdbyl',
+  PROFILE: 'mfqn6tun0b0bh07',
+  CONFIG: 'mgegwuopt08ziat',
+  HISTORY: 'mb3dealyqblvhid',
+  JOURNALS: 'm5dh31fsmzq3svd',
+  QUESTS: 'm1smuszyt9d6x1q',
+  QUESTS_CONFIRM: 'mur9rkelyydftj5',
+  ACHIEVEMENTS: 'm1xr374x2prkhmy',
+  ACHIEVEMENTS_CONFIRM: 'mhnkt1bvw6mnihs',
+  ATTACHMENTS_GALLERY: 'mxqkll1rnp0br3r',
+  ATTACHMENTS_ALBUM: 'm1fu2odaxm7zj11',
+  PET: 'mubxl2iof13o7de'
 };
 
 // Use appropriate table IDs based on environment

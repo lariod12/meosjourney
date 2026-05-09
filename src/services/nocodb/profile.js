@@ -183,13 +183,20 @@ export const fetchProfile = async (options = {}) => {
           let attachmentsData;
 
           // Development mode: different schema (no profile_id field, use signedPath)
-          if (!isProductionMode()) {
+          if (import.meta.env.MODE === 'development') {
             // Debug: Log development mode query (development only)
             if (!isProductionMode()) {
               console.log('🛠️ Development mode: using simplified query');
             }
             attachmentsData = await nocoRequest(
               `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
+              { method: 'GET' }
+            );
+          } else if (import.meta.env.MODE === 'staging') {
+            // Staging uses production-style signed URLs, but its profile avatar
+            // attachment is identified by title instead of profile_id.
+            attachmentsData = await nocoRequest(
+              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw&where=(title,eq,profile)&limit=1`,
               { method: 'GET' }
             );
           } else {
@@ -223,8 +230,8 @@ export const fetchProfile = async (options = {}) => {
               if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
                 const imgBw = imgBwArray[0];
 
-                // Development mode: use signedPath, Production mode: use signedUrl
-                if (!isProductionMode()) {
+                // Development mode: use signedPath, Production/Staging mode: use signedUrl
+                if (import.meta.env.MODE === 'development') {
                   // Debug: Log development mode URL handling (development only)
                   if (!isProductionMode()) {
                     console.log('🛠️ Development mode: using signedPath');

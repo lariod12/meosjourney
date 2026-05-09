@@ -99,7 +99,7 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
     });
 
     // Step 4: Link to profile via foreign key in production (profile_id)
-    if (profileId && isProductionMode()) {
+    if (profileId && import.meta.env.MODE === 'production') {
       const linkPayload = [{
         Id: attachmentId,
         profile_id: profileId
@@ -291,7 +291,7 @@ export const fetchProfileGallery = async (profileId) => {
       let response;
 
       if (import.meta.env.MODE !== 'production') {
-        // Development: schema may not have profile_id, so just fetch recent records
+        // Development/Staging: schema may not have profile_id, so just fetch recent records
         response = await nocoRequest(
           `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=20&sort=-CreatedAt`,
           { method: 'GET' }
@@ -326,7 +326,7 @@ export const fetchProfileGallery = async (profileId) => {
           if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
             const imgObj = imgBwArray[0];
 
-            if (import.meta.env.MODE !== 'production') {
+            if (import.meta.env.MODE === 'development') {
               imgUrl = imgObj.signedPath || imgObj.path || null;
               if (imgUrl) {
                 imgUrl = `${NOCODB_BASE_URL}/${imgUrl}`;
