@@ -13,8 +13,9 @@ import {
   LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
-import { fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
+import { CHARACTER_ID, clearNocoDBCache, fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
+import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
 import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
@@ -1792,11 +1793,21 @@ useEffect(() => {
       );
       if (sleepActivity) {
         console.log('💤 Setting activity to:', sleepActivity.name);
+        const oldActivityName = currentActivityName;
         setCurrentActivityName(sleepActivity.name);
         // Save to NocoDB
         saveStatus({
           doing: sleepActivity.name
-        }).catch(err => console.error('Failed to save sleep activity:', err));
+        })
+          .then((result) => {
+            if (result.success) {
+              return savePetStatusChangesJournal([
+                { fieldType: 'doing', oldValue: oldActivityName, newValue: sleepActivity.name }
+              ]).then(refreshStatusConsumers);
+            }
+            return null;
+          })
+          .catch(err => console.error('Failed to save sleep activity:', err));
       }
 
       if (biologicalClock.isSleepy) {
@@ -1859,11 +1870,35 @@ useEffect(() => {
     setIsCareUseAnimating(false);
   };
 
-    const handleChooseActivityConfirm = async (activity) => {
+  const refreshStatusConsumers = () => {
+    try { clearNocoDBCache(); } catch { }
+    try { window.dispatchEvent(new Event('meo:refresh')); } catch { }
+  };
+
+  const savePetStatusChangesJournal = async (changes) => {
+    const changedFields = changes.filter(({ oldValue, newValue }) => {
+      const oldText = String(oldValue || '').trim();
+      const newText = String(newValue || '').trim();
+      return oldText !== newText;
+    });
+
+    if (changedFields.length === 0) {
+      return;
+    }
+
+    try {
+      await saveStatusChangesJournal(changedFields, CHARACTER_ID);
+    } catch (error) {
+      console.warn('⚠️ Failed to save pet status changes journal:', error);
+    }
+  };
+
+  const handleChooseActivityConfirm = async (activity) => {
     lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     setIsSavingActivity(true);
 
     try {
+      const oldActivityName = currentActivityName;
       const result = await saveStatus({
         doing: {
           name: activity.name,
@@ -1873,6 +1908,10 @@ useEffect(() => {
 
       if (result.success) {
         setCurrentActivityName(activity.name);
+        await savePetStatusChangesJournal([
+          { fieldType: 'doing', oldValue: oldActivityName, newValue: activity.name }
+        ]);
+        refreshStatusConsumers();
         setActivityItems(prev => {
           const filtered = prev.filter(item => item.name !== activity.name);
           return [activity, ...filtered];
@@ -1909,6 +1948,9 @@ useEffect(() => {
       });
 
       if (result.success) {
+        if (updatedActivity.name === currentActivityName) {
+          refreshStatusConsumers();
+        }
         // Update activity in list
         setActivityItems(prev => {
           const filtered = prev.filter(item => item.name !== updatedActivity.name);
@@ -1934,6 +1976,7 @@ useEffect(() => {
   setIsSavingActivity(true);
 
   try {
+    const oldActivityName = currentActivityName;
     // Check if activity already exists
     const existingActivity = activityItems.find(
       item => item.name.toLowerCase() === newActivity.name.toLowerCase()
@@ -1973,6 +2016,10 @@ useEffect(() => {
       // Set as current activity if requested
       if (setAsCurrent) {
           setCurrentActivityName(newActivity.name);
+          await savePetStatusChangesJournal([
+            { fieldType: 'doing', oldValue: oldActivityName, newValue: newActivity.name }
+          ]);
+          refreshStatusConsumers();
         }
 
         setIsAddActivityModalOpen(false);
@@ -1988,11 +2035,12 @@ useEffect(() => {
     }
   };
 
-    const handleChooseMoodConfirm = async (mood) => {
+  const handleChooseMoodConfirm = async (mood) => {
     lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     setIsSavingMood(true);
 
     try {
+      const oldMoodName = currentMoodName;
       const result = await saveStatus({
         mood: {
           name: mood.name,
@@ -2002,6 +2050,10 @@ useEffect(() => {
 
       if (result.success) {
         setCurrentMoodName(mood.name);
+        await savePetStatusChangesJournal([
+          { fieldType: 'mood', oldValue: oldMoodName, newValue: mood.name }
+        ]);
+        refreshStatusConsumers();
         setMoodItems(prev => {
           const filtered = prev.filter(item => item.name !== mood.name);
           return [mood, ...filtered];
@@ -2037,6 +2089,9 @@ useEffect(() => {
       });
 
       if (result.success) {
+        if (updatedMood.name === currentMoodName) {
+          refreshStatusConsumers();
+        }
         setMoodItems(prev => {
           const filtered = prev.filter(item => item.name !== updatedMood.name);
           return [{ ...updatedMood, shape: getMoodShape(updatedMood.name) }, ...filtered];
@@ -2064,6 +2119,7 @@ useEffect(() => {
     setIsSavingMood(true);
 
     try {
+      const oldMoodName = currentMoodName;
       const existingMood = moodItems.find(
         item => item.name.toLowerCase() === moodName.toLowerCase()
       );
@@ -2095,6 +2151,10 @@ useEffect(() => {
 
         if (setAsCurrent) {
           setCurrentMoodName(moodName);
+          await savePetStatusChangesJournal([
+            { fieldType: 'mood', oldValue: oldMoodName, newValue: moodName }
+          ]);
+          refreshStatusConsumers();
         }
 
         setIsAddMoodModalOpen(false);
@@ -2122,6 +2182,7 @@ useEffect(() => {
 
     try {
       const iconToSave = newIcon !== undefined ? newIcon : selectedMood.icon;
+      const oldMoodName = currentMoodName;
       const result = await saveStatus({
         mood: {
           name: selectedMood.name,
@@ -2138,6 +2199,12 @@ useEffect(() => {
 
         if (!updateIconOnly) {
           setCurrentMoodName(selectedMood.name);
+          await savePetStatusChangesJournal([
+            { fieldType: 'mood', oldValue: oldMoodName, newValue: selectedMood.name }
+          ]);
+          refreshStatusConsumers();
+        } else if (selectedMood.name === currentMoodName) {
+          refreshStatusConsumers();
         }
 
         setMoodItems(prev => {
@@ -2172,6 +2239,7 @@ useEffect(() => {
     try {
       // Use new icon if provided, otherwise keep existing
       const iconToSave = newIcon !== undefined ? newIcon : selectedActivity.icon;
+      const oldActivityName = currentActivityName;
 
       // Save to NocoDB to update the order (move to first position)
       const result = await saveStatus({
@@ -2191,6 +2259,12 @@ useEffect(() => {
         // Update current activity (unless it's icon-only update)
         if (!updateIconOnly) {
           setCurrentActivityName(selectedActivity.name);
+          await savePetStatusChangesJournal([
+            { fieldType: 'doing', oldValue: oldActivityName, newValue: selectedActivity.name }
+          ]);
+          refreshStatusConsumers();
+        } else if (selectedActivity.name === currentActivityName) {
+          refreshStatusConsumers();
         }
 
         // Reorder activities list to move selected to first
@@ -2219,12 +2293,17 @@ useEffect(() => {
     setIsSavingLocation(true);
 
     try {
+      const oldLocationName = currentLocationName;
       const result = await saveStatus({
         location: newLocation
       });
 
       if (result.success) {
         setCurrentLocationName(newLocation);
+        await savePetStatusChangesJournal([
+          { fieldType: 'location', oldValue: oldLocationName, newValue: newLocation }
+        ]);
+        refreshStatusConsumers();
         // Update location history by prepending new location
         setLocationHistory(prev => {
           const filtered = prev.filter(loc => loc.toLowerCase() !== newLocation.toLowerCase());
@@ -2260,10 +2339,20 @@ useEffect(() => {
         item.name && !item.name.toLowerCase().includes('ngủ')
       );
       if (nonSleepActivity) {
+        const oldActivityName = currentActivityName;
         setCurrentActivityName(nonSleepActivity.name);
         saveStatus({
           doing: nonSleepActivity.name
-        }).catch(err => console.error('Failed to save wake activity:', err));
+        })
+          .then((result) => {
+            if (result.success) {
+              return savePetStatusChangesJournal([
+                { fieldType: 'doing', oldValue: oldActivityName, newValue: nonSleepActivity.name }
+              ]).then(refreshStatusConsumers);
+            }
+            return null;
+          })
+          .catch(err => console.error('Failed to save wake activity:', err));
       }
     }
   };
