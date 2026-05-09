@@ -49,6 +49,22 @@ const isBedtime = (hour) => {
   return hour >= 22 || hour < 5; // 10 PM to 5 AM
 };
 
+const getVietnameseTimeLabel = (date = new Date()) => {
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  const displayHour = hour % 12 || 12;
+  const dayPart = hour < 11
+    ? 'sáng'
+    : hour < 13
+      ? 'trưa'
+      : hour < 18
+        ? 'chiều'
+        : 'tối';
+  const minuteLabel = minute > 0 ? ` ${String(minute).padStart(2, '0')}` : '';
+
+  return `${displayHour} giờ${minuteLabel} ${dayPart}`;
+};
+
 // Check if meal was eaten today
 const wasMealEatenToday = (lastMealTimestamp) => {
   if (!lastMealTimestamp) return false;
@@ -271,13 +287,13 @@ const PET_MOOD_FLOAT_OPTIONS = {
 
 const PET_THOUGHT_BUBBLE_OPTIONS = {
   playDurationSeconds: 7,
-  // Smart timing based on pet status level (5-20s range for active feel)
+  // Smart timing based on pet status level (5-15s boundary for active feel)
   timing: {
-    critical: { minDelay: 5, maxDelay: 8, showChance: 0.95 },   // Most urgent - very frequent
-    danger: { minDelay: 8, maxDelay: 12, showChance: 0.90 },    // High urgency
-    warning: { minDelay: 12, maxDelay: 16, showChance: 0.85 },  // Medium urgency
-    normal: { minDelay: 16, maxDelay: 20, showChance: 0.80 },   // Active feel
-    excellent: { minDelay: 18, maxDelay: 25, showChance: 0.75 } // Still active, slightly relaxed
+    critical: { minDelay: 5, maxDelay: 7, showChance: 0.95 },   // Most urgent - very frequent
+    danger: { minDelay: 5, maxDelay: 9, showChance: 0.90 },     // High urgency
+    warning: { minDelay: 5, maxDelay: 11, showChance: 0.85 },   // Medium urgency
+    normal: { minDelay: 5, maxDelay: 13, showChance: 0.80 },    // Active feel
+    excellent: { minDelay: 5, maxDelay: 15, showChance: 0.75 }  // Still active, slightly relaxed
   },
   initialDelaySeconds: 5, // Wait before first bubble (reduced for faster start)
   interactionCooldownSeconds: 8 // Cooldown after user interaction (reduced)
@@ -286,22 +302,22 @@ const PET_THOUGHT_BUBBLE_OPTIONS = {
 const BIOLOGICAL_CLOCK_MESSAGES = {
   breakfast: [
     "Tui đói rồi! Đến giờ ăn sáng rồi!",
-    "8 giờ sáng rồi, tui cần ăn sáng!",
+    ({ timeLabel }) => `${timeLabel} rồi, tui cần ăn sáng!`,
     "Bụng tui sôi ùng ục! Giờ ăn sáng đây!"
   ],
   lunch: [
     "Tui đói bụng! Đến giờ ăn trưa rồi!",
-    "11 giờ rồi, tui cần ăn trưa!",
+    ({ timeLabel }) => `${timeLabel} rồi, tui cần ăn trưa!`,
     "Trưa rồi mà chưa ăn, tui đói quá!"
   ],
   dinner: [
     "Tui đói lắm! Đến giờ ăn tối rồi!",
-    "6 giờ chiều rồi, tui cần ăn tối!",
+    ({ timeLabel }) => `${timeLabel} rồi, tui cần ăn tối!`,
     "Tối rồi mà chưa ăn, tui sắp xỉu!"
   ],
   bedtime: [
     "Tui buồn ngủ quá! Đến giờ ngủ rồi!",
-    "10 giờ tối rồi, tui cần nghỉ ngơi!",
+    ({ timeLabel }) => `${timeLabel} rồi, tui cần nghỉ ngơi!`,
     "Tui mệt lắm, để tui ngủ đi!"
   ]
 };
@@ -582,11 +598,16 @@ const getPetReaction = (status = {}, biologicalClock = {}) => {
   // Calculate regular status first
   const weakest = getWeakestPetStatus(status);
   const level = getPetStatusLevel(weakest.value);
+  const timeLabel = getVietnameseTimeLabel();
+  const pickBiologicalClockMessage = (messages = []) => {
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    return typeof message === 'function' ? message({ timeLabel }) : message;
+  };
 
   // Priority 1: Biological clock warnings (only for messages, not for visual state)
   if (biologicalClock.isHungry && biologicalClock.currentMealTime) {
     const messages = BIOLOGICAL_CLOCK_MESSAGES[biologicalClock.currentMealTime];
-    const message = messages[Math.floor(Math.random() * messages.length)];
+    const message = pickBiologicalClockMessage(messages);
     return {
       level,  // Use actual status level, not forced 'critical'
       weakest,
@@ -596,7 +617,7 @@ const getPetReaction = (status = {}, biologicalClock = {}) => {
 
   if (biologicalClock.isSleepy) {
     const messages = BIOLOGICAL_CLOCK_MESSAGES.bedtime;
-    const message = messages[Math.floor(Math.random() * messages.length)];
+    const message = pickBiologicalClockMessage(messages);
     return {
       level,  // Use actual status level, not forced 'critical'
       weakest,
