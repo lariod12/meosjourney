@@ -51,7 +51,7 @@ const HomePage = () => {
   }, [refetch]);
 
   return loading ? (
-    <LoadingDialog />
+    <LoadingDialog/>
   ) : (
     <CharacterProvider data={data}>
       <div className="bg-pattern"></div>
