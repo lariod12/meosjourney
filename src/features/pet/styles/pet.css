@@ -650,9 +650,9 @@
   left: 0;
   right: 0;
   height: 120px;
-  background: #ffffff;
+  background-color: #ffffff !important;
+  background-image: none !important;
   border-top: 4px solid #000;
-  transition: background 2s ease;
   z-index: 2;
 }
 
@@ -665,7 +665,8 @@
 .pet-stage--evening .stage-ground,
 .pet-stage--night .stage-ground,
 .pet-stage--midnight .stage-ground {
-  background: #ffffff;
+  background-color: #ffffff !important;
+  background-image: none !important;
 }
 
 .pet-mood-float {
