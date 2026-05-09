@@ -10,8 +10,11 @@ export function useUserPageHeader(noteDate) {
   }, [noteDate]);
 
   const goHome = () => {
-    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-    window.location.href = base || '/';
+    const base = window.location.hostname.endsWith('github.io')
+      && window.location.pathname.startsWith('/meosjourney')
+      ? '/meosjourney/'
+      : '/';
+    window.location.href = base;
   };
 
   return {

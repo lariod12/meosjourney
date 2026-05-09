@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
   <script>
-    // GitHub Pages SPA redirect trick
+    var base = location.hostname.endsWith('github.io') ? '/meosjourney/' : '/';
     sessionStorage.redirect = location.href;
+    location.replace(base);
   </script>
-  <meta http-equiv="refresh" content="0;URL='/'">
 </head>
 <body>
   Redirecting...

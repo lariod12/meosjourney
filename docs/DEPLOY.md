@@ -2,13 +2,19 @@
 
 ## Overview
 
-Meo's Journey deploys through GitHub Actions to GitHub Pages. The current production URL is the GitHub Pages project URL:
+Meo's Journey deploys through GitHub Actions to GitHub Pages. The primary production URL is the custom domain:
+
+```text
+https://meosjourney.info/
+```
+
+The GitHub Pages project URL also remains compatible:
 
 ```text
 https://lariod12.github.io/meosjourney/
 ```
 
-The app uses Vite with production `base: '/meosjourney/'`, so built assets are resolved under the repository subpath.
+The app uses Vite with production `base: './'`, so built assets resolve relative to either the custom domain root or the repository subpath. React Router chooses its basename at runtime based on the current host.
 
 ## Current Deploy Flow
 
@@ -100,13 +106,13 @@ Check the commit message. Push-triggered deploys require `public:` at the start,
 
 ### Blank Page Or 404 Assets
 
-For the GitHub Pages project URL, `base` should stay `/meosjourney/`.
+For compatibility with both the custom domain and the GitHub Pages project URL, production `base` should stay relative.
 
 ```js
-base: mode === 'production' ? '/meosjourney/' : '/',
+base: mode === 'production' ? './' : '/',
 ```
 
-If deploying to a custom root domain, update `base` back to `/`, make sure the custom domain is configured in GitHub Pages, and rebuild.
+If deploying only to a custom root domain, `base: '/'` is also valid. If deploying only to a GitHub Pages subpath, `base: '/meosjourney/'` is valid. Do not mix those fixed bases when both URLs need to work.
 
 ### NocoDB Requests Fail In Production
 

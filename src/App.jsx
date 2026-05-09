@@ -63,8 +63,10 @@ const HomePage = () => {
 };
 
 const App = () => {
-  // Use Vite's BASE_URL to keep router base in sync with build base (handles GH Pages subpath)
-  const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  const basename = window.location.hostname.endsWith('github.io')
+    && window.location.pathname.startsWith('/meosjourney')
+    ? '/meosjourney'
+    : '';
 
   return (
     <Router basename={basename}>
