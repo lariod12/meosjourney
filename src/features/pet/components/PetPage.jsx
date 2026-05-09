@@ -193,11 +193,11 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
-const PET_STATUS_DECAY_CHUNK_MS = 6 * 60 * 60 * 1000;
+const PET_STATUS_DECAY_CHUNK_MS = 60 * 60 * 1000;
 const PET_STATUS_DECAY = {
-  hunger: 8,
-  sanity: 4,
-  health: 3
+  hunger: 2,
+  sanity: 1,
+  health: 1
 };
 const PET_ITEM_EFFECTS = {
   food: {
@@ -1251,18 +1251,19 @@ useEffect(() => {
           }));
         }
 
-        // Update pet status (health, hunger, sanity)
+        // Apply elapsed-time decay before showing pet status.
         if (petData.status) {
-          setPetStatus(prev => ({
-            health: petData.status.health ?? prev.health,
-            hunger: petData.status.hunger ?? prev.hunger,
-            sanity: petData.status.sanity ?? prev.sanity
-          }));
-        }
+          const decayedPet = calculatePetStatusDecay(petData.status, petData.lastStatusTickAt);
 
-        // Update last status tick timestamp
-        if (petData.lastStatusTickAt) {
-          setLastStatusTickAt(petData.lastStatusTickAt);
+          setPetStatus(decayedPet.status);
+          setLastStatusTickAt(decayedPet.lastStatusTickAt);
+
+          if (decayedPet.shouldSave) {
+            enqueuePetSave({
+              status: decayedPet.status,
+              lastStatusTickAt: decayedPet.lastStatusTickAt
+            });
+          }
         }
       }
 
@@ -1587,7 +1588,7 @@ useEffect(() => {
 
           // Save to NocoDB
           if (Object.keys(updates).length > 0) {
-            enqueuePetSave(updates);
+            enqueuePetSave({ status: updates });
           }
 
           return { ...prev, ...updates };
