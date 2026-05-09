@@ -656,6 +656,163 @@ const getPetReaction = (status = {}, biologicalClock = {}) => {
   };
 };
 
+const PET_CHARACTER_STATES = {
+  stable: 'stable',
+  needsCare: 'needs-care',
+  critical: 'critical',
+  excellent: 'excellent',
+  sleeping: 'sleeping'
+};
+
+const PET_CHARACTER_EFFECTS = {
+  idle: 'idle',
+  wobble: 'wobble',
+  hop: 'hop',
+  wave: 'wave',
+  squash: 'squash'
+};
+
+const PET_CHARACTER_EFFECT_DURATIONS = {
+  idle: 'default',
+  wobble: '1.15s',
+  hop: '0.95s',
+  wave: '1.2s',
+  squash: '1.25s',
+  sleepBreathe: '2s',
+  needsCareTilt: '3.3s'
+};
+
+const PET_CHARACTER_DEBUG_PRESETS = [
+  {
+    label: 'Stable idle',
+    state: PET_CHARACTER_STATES.stable,
+    effect: PET_CHARACTER_EFFECTS.idle,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.idle
+  },
+  {
+    label: 'Stable wave',
+    state: PET_CHARACTER_STATES.stable,
+    effect: PET_CHARACTER_EFFECTS.wave,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.wave
+  },
+  {
+    label: 'Stable hop',
+    state: PET_CHARACTER_STATES.stable,
+    effect: PET_CHARACTER_EFFECTS.hop,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.hop
+  },
+  {
+    label: 'Needs care idle',
+    state: PET_CHARACTER_STATES.needsCare,
+    effect: PET_CHARACTER_EFFECTS.idle,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.needsCareTilt
+  },
+  {
+    label: 'Critical wobble',
+    state: PET_CHARACTER_STATES.critical,
+    effect: PET_CHARACTER_EFFECTS.wobble,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.wobble
+  },
+  {
+    label: 'Excellent hop',
+    state: PET_CHARACTER_STATES.excellent,
+    effect: PET_CHARACTER_EFFECTS.hop,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.hop
+  },
+  {
+    label: 'Meal squash',
+    state: PET_CHARACTER_STATES.stable,
+    effect: PET_CHARACTER_EFFECTS.squash,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.squash
+  },
+  {
+    label: 'Sleeping idle',
+    state: PET_CHARACTER_STATES.sleeping,
+    effect: PET_CHARACTER_EFFECTS.idle,
+    speed: PET_CHARACTER_EFFECT_DURATIONS.sleepBreathe
+  }
+];
+
+const getBasePetCharacterState = (reactionLevel) => {
+  if (reactionLevel === 'critical') return PET_CHARACTER_STATES.critical;
+  if (reactionLevel === 'danger' || reactionLevel === 'warning') return PET_CHARACTER_STATES.needsCare;
+  if (reactionLevel === 'excellent') return PET_CHARACTER_STATES.excellent;
+  return PET_CHARACTER_STATES.stable;
+};
+
+const getPetCharacterPresentation = ({
+  reactionLevel,
+  biologicalClock = {},
+  isSleeping,
+  isAwakening,
+  hasItemFeedback,
+  thoughtBubbleVisible,
+  entryWaveActive
+}) => {
+  const baseState = getBasePetCharacterState(reactionLevel);
+
+  if (isSleeping) {
+    return {
+      state: PET_CHARACTER_STATES.sleeping,
+      effect: PET_CHARACTER_EFFECTS.idle
+    };
+  }
+
+  if (isAwakening) {
+    return {
+      state: PET_CHARACTER_STATES.stable,
+      effect: PET_CHARACTER_EFFECTS.idle
+    };
+  }
+
+  if (hasItemFeedback) {
+    return {
+      state: PET_CHARACTER_STATES.stable,
+      effect: PET_CHARACTER_EFFECTS.hop
+    };
+  }
+
+  if (reactionLevel === 'critical') {
+    return {
+      state: PET_CHARACTER_STATES.critical,
+      effect: PET_CHARACTER_EFFECTS.wobble
+    };
+  }
+
+  if (biologicalClock.isSleepy) {
+    return {
+      state: baseState,
+      effect: PET_CHARACTER_EFFECTS.wave
+    };
+  }
+
+  if (biologicalClock.isHungry && biologicalClock.currentMealTime) {
+    return {
+      state: baseState,
+      effect: PET_CHARACTER_EFFECTS.squash
+    };
+  }
+
+  if (reactionLevel === 'excellent') {
+    return {
+      state: PET_CHARACTER_STATES.excellent,
+      effect: PET_CHARACTER_EFFECTS.hop
+    };
+  }
+
+  if (baseState === PET_CHARACTER_STATES.stable && (thoughtBubbleVisible || entryWaveActive)) {
+    return {
+      state: PET_CHARACTER_STATES.stable,
+      effect: PET_CHARACTER_EFFECTS.wave
+    };
+  }
+
+  return {
+    state: baseState,
+    effect: PET_CHARACTER_EFFECTS.idle
+  };
+};
+
 const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()) => {
   const nextStatus = clampPetStatus(status);
   const nextTickAt = now.toISOString();
@@ -1150,6 +1307,10 @@ const PetPage = ({ onBack }) => {
   const [isAwakening, setIsAwakening] = useState(false);
   const [isPetReady, setIsPetReady] = useState(false);
   const sleepTimerRef = useRef(null);
+  const entryWaveStartedRef = useRef(false);
+  const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
+  const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
+  const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -1226,6 +1387,36 @@ const PetPage = ({ onBack }) => {
     console.log('🐱 Weakest Stat:', reaction.weakest);
     return reaction;
   }, [petStatus, biologicalClock]);
+  const hasPetItemFeedback = foodEffects.length > 0 || careEffects.length > 0 || isFoodUseAnimating || isCareUseAnimating;
+  const petCharacterPresentation = useMemo(() => getPetCharacterPresentation({
+    reactionLevel: petReaction.level,
+    biologicalClock,
+    isSleeping,
+    isAwakening,
+    hasItemFeedback: hasPetItemFeedback,
+    thoughtBubbleVisible,
+    entryWaveActive: petEntryWaveActive
+  }), [
+    biologicalClock,
+    hasPetItemFeedback,
+    isAwakening,
+    isSleeping,
+    petEntryWaveActive,
+    petReaction.level,
+    thoughtBubbleVisible
+  ]);
+  const activePetCharacterPresentation = debugCharacterPresentation || petCharacterPresentation;
+  const activePetCharacterSpeed = debugCharacterPresentation?.speed
+    || PET_CHARACTER_EFFECT_DURATIONS[activePetCharacterPresentation.effect]
+    || PET_CHARACTER_EFFECT_DURATIONS.idle;
+  const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production'
+    || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+  const petCharacterClassName = [
+    'pet-character',
+    'pet-character--pet',
+    `pet-character--${activePetCharacterPresentation.state}`,
+    `pet-character--effect-${activePetCharacterPresentation.effect}`
+  ].join(' ');
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -1255,6 +1446,23 @@ const PetPage = ({ onBack }) => {
       delay: Math.random() * 3
     }))
   ), []);
+
+useEffect(() => {
+  if (!isPetReady || entryWaveStartedRef.current || isSleeping || isAwakening) return undefined;
+
+  entryWaveStartedRef.current = true;
+  const shouldWaveOnEntry = Math.random() < 0.65;
+  if (!shouldWaveOnEntry) return undefined;
+
+  setPetEntryWaveActive(true);
+  const timeoutId = window.setTimeout(() => {
+    setPetEntryWaveActive(false);
+  }, 2600);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
+}, [isAwakening, isPetReady, isSleeping]);
 
 // Load initial data from NocoDB
 useEffect(() => {
@@ -2313,6 +2521,52 @@ useEffect(() => {
           {/* Ground line */}
           <div className="stage-ground" aria-hidden="true"></div>
 
+          {isPetCharacterDebugEnabled && (
+            <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
+              <button
+                type="button"
+                className="pet-character-debug__toggle"
+                onClick={() => setIsCharacterDebugOpen(value => !value)}
+                aria-expanded={isCharacterDebugOpen}
+                aria-controls="pet-character-debug-panel"
+              >
+                Debug
+              </button>
+              {isCharacterDebugOpen && (
+                <div id="pet-character-debug-panel" className="pet-character-debug__panel">
+                  <div className="pet-character-debug__current">
+                    <span>State: {activePetCharacterPresentation.state}</span>
+                    <span>Effect: {activePetCharacterPresentation.effect}</span>
+                    <span>Speed: {activePetCharacterSpeed}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`pet-character-debug__option ${!debugCharacterPresentation ? 'pet-character-debug__option--active' : ''}`}
+                    onClick={() => setDebugCharacterPresentation(null)}
+                  >
+                    <span>Live priority</span>
+                    <small>{petCharacterPresentation.state} + {petCharacterPresentation.effect}</small>
+                  </button>
+                  {PET_CHARACTER_DEBUG_PRESETS.map((preset) => {
+                    const isActive = debugCharacterPresentation?.label === preset.label;
+
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        className={`pet-character-debug__option ${isActive ? 'pet-character-debug__option--active' : ''}`}
+                        onClick={() => setDebugCharacterPresentation(preset)}
+                      >
+                        <span>{preset.label}</span>
+                        <small>{preset.state} + {preset.effect} - {preset.speed}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Awakening overlay - tap to wake */}
           {isAwakening && (
             <div
@@ -2376,7 +2630,7 @@ useEffect(() => {
             ))}
           </div>
 
-          <div className={`pet-character pet-character--pet pet-character--${petReaction.level} ${isSleeping ? 'pet-character--sleeping' : ''}`} role="img" aria-label="Meo box-head character">
+          <div className={petCharacterClassName} role="img" aria-label="Meo box-head character">
             <span className="pet-character__head">
               <span className="pet-character__eye pet-character__eye--left" />
               <span className="pet-character__eye pet-character__eye--right" />

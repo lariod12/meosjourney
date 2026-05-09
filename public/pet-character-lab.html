@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pet Character Lab</title>
+  <style>
+    :root {
+      --ink: #000000;
+      --paper: #ffffff;
+      --gray-100: #f5f5f5;
+      --gray-200: #e0e0e0;
+      --gray-500: #999999;
+      --shadow: 5px 5px 0 var(--ink);
+      --anim-speed: 1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+        linear-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+        var(--paper);
+      background-size: 28px 28px;
+      font-family: "Patrick Hand", "Kalam", "Architects Daughter", system-ui, sans-serif;
+    }
+
+    .lab-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) 1fr;
+    }
+
+    .lab-panel {
+      border-right: 4px solid var(--ink);
+      background: var(--paper);
+      padding: 18px;
+    }
+
+    .lab-title {
+      margin: 0 0 4px;
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .lab-subtitle {
+      margin: 0 0 20px;
+      color: #333333;
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    .lab-section {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .lab-section h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .lab-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .lab-button {
+      min-height: 44px;
+      border: 3px solid var(--ink);
+      border-radius: 6px;
+      background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 900;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .lab-button:hover,
+    .lab-button:focus-visible,
+    .lab-button.is-active {
+      background: var(--ink);
+      color: var(--paper);
+      outline: none;
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--ink);
+    }
+
+    .lab-control {
+      display: grid;
+      gap: 8px;
+      font-weight: 900;
+    }
+
+    .lab-control input {
+      width: 100%;
+      accent-color: var(--ink);
+    }
+
+    .lab-stage-wrap {
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .pet-lab-stage {
+      position: relative;
+      width: min(86vw, 660px);
+      min-height: 520px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: linear-gradient(#ffffff 0 72%, #f0f0f0 72% 100%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .pet-lab-stage::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 136px;
+      border-top: 3px dashed #bdbdbd;
+    }
+
+    .pet-lab-note {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      max-width: 220px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 3px solid var(--ink);
+      border-radius: 6px;
+      background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 0.98rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .pet-character {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      bottom: 76px;
+      width: 140px;
+      height: 180px;
+      transform: translateX(-50%);
+      animation: none;
+    }
+
+    .pet-character__head {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 90px;
+      height: 90px;
+      transform: translateX(-50%);
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 4px 4px 0 var(--ink);
+      z-index: 5;
+    }
+
+    .pet-character__eye {
+      position: absolute;
+      top: 28px;
+      width: 16px;
+      height: 16px;
+      border: 3px solid var(--ink);
+      border-radius: 50%;
+      background: var(--paper);
+      animation: pet-blink calc(4s / var(--anim-speed)) infinite;
+    }
+
+    .pet-character__eye::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ink);
+      transform: translate(-50%, -50%);
+    }
+
+    .pet-character__eye--left {
+      left: 18px;
+    }
+
+    .pet-character__eye--right {
+      right: 18px;
+    }
+
+    .pet-character__mouth {
+      position: absolute;
+      left: 50%;
+      top: 58px;
+      width: 24px;
+      height: 10px;
+      border-bottom: 3px solid var(--ink);
+      border-radius: 0 0 24px 24px;
+      transform: translateX(-50%);
+    }
+
+    .pet-character__neck {
+      position: absolute;
+      left: 50%;
+      top: 86px;
+      width: 20px;
+      height: 16px;
+      transform: translateX(-50%);
+      border-left: 4px solid var(--ink);
+      border-right: 4px solid var(--ink);
+      background: var(--paper);
+      z-index: 3;
+    }
+
+    .pet-character__body {
+      position: absolute;
+      left: 50%;
+      top: 98px;
+      width: 60px;
+      height: 50px;
+      transform: translateX(-50%);
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: var(--gray-200);
+      box-shadow: 3px 3px 0 var(--ink);
+      z-index: 2;
+    }
+
+    .pet-character__body::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      width: 30px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--ink);
+      transform: translateX(-50%);
+    }
+
+    .pet-character__arm,
+    .pet-character__leg {
+      position: absolute;
+      background: var(--ink);
+      border-radius: 999px;
+    }
+
+    .pet-character__arm {
+      width: 4px;
+      height: 40px;
+      top: 100px;
+      z-index: 3;
+    }
+
+    .pet-character__arm::after,
+    .pet-character__leg::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      border-radius: 50%;
+      background: var(--ink);
+      transform: translateX(-50%);
+    }
+
+    .pet-character__arm::after {
+      bottom: -5px;
+      width: 11px;
+      height: 11px;
+    }
+
+    .pet-character__arm--left {
+      left: 40px;
+      transform: rotate(25deg);
+      transform-origin: top center;
+      animation: pet-arm-swing-left calc(3s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character__arm--right {
+      right: 40px;
+      transform: rotate(-25deg);
+      transform-origin: top center;
+      animation: pet-arm-swing-right calc(3s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character__leg {
+      width: 4px;
+      height: 38px;
+      top: 144px;
+      z-index: 1;
+    }
+
+    .pet-character__leg::after {
+      bottom: -4px;
+      width: 12px;
+      height: 12px;
+    }
+
+    .pet-character__leg--left {
+      left: 54px;
+      transform: rotate(-3deg);
+    }
+
+    .pet-character__leg--right {
+      right: 54px;
+      transform: rotate(3deg);
+    }
+
+    .pet-ground-shadow {
+      position: absolute;
+      left: 50%;
+      bottom: 58px;
+      width: 80px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gray-500);
+      opacity: 0.32;
+      transform: translateX(-50%);
+      z-index: 4;
+      transform-origin: center;
+      transition:
+        width 0.24s ease,
+        height 0.24s ease,
+        opacity 0.24s ease;
+    }
+
+    .pet-lab-stage:has(.pet-character.fx-hop) .pet-ground-shadow {
+      animation: lab-shadow-hop calc(1s / var(--anim-speed)) cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+
+    .pet-lab-stage:has(.pet-character.fx-squash) .pet-ground-shadow {
+      width: 92px;
+      height: 14px;
+      opacity: 0.38;
+    }
+
+    .pet-lab-stage:has(.pet-character--sleeping) .pet-ground-shadow {
+      width: 88px;
+      height: 10px;
+      opacity: 0.28;
+    }
+
+    .pet-character--needs-care .pet-character__head {
+      animation: pet-head-tilt calc(3.3s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character--critical .pet-character__mouth {
+      width: 20px;
+      height: 10px;
+      border-bottom-width: 0;
+      border-top: 3px solid var(--ink);
+      border-radius: 20px 20px 0 0;
+      top: 60px;
+    }
+
+    .pet-character--critical {
+      animation: pet-critical-shake calc(1.5s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character--excellent {
+      animation: pet-happy-bounce calc(2s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character--excellent .pet-character__mouth {
+      width: 28px;
+      height: 12px;
+      border-bottom: 3px solid var(--ink);
+      border-radius: 0 0 28px 28px;
+      top: 56px;
+    }
+
+    .pet-character--sleeping {
+      animation: pet-sleep-breathe calc(2s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character--sleeping .pet-character__eye {
+      width: 12px;
+      height: 3px;
+      border-radius: 0;
+      background: var(--ink);
+      border: none;
+      top: 28px;
+      animation: none;
+    }
+
+    .pet-character--sleeping .pet-character__mouth {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--ink);
+      background: transparent;
+      top: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .pet-sleep-zzz {
+      position: absolute;
+      left: 50%;
+      top: -40px;
+      width: 60px;
+      height: 80px;
+      display: none;
+      pointer-events: none;
+    }
+
+    .pet-character--sleeping .pet-sleep-zzz {
+      display: block;
+    }
+
+    .pet-sleep-z {
+      position: absolute;
+      font-size: 32px;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--paper);
+      text-shadow:
+        -2px -2px 0 var(--ink),
+        2px -2px 0 var(--ink),
+        -2px 2px 0 var(--ink),
+        2px 2px 0 var(--ink);
+      opacity: 0;
+      animation: pet-zzz-float calc(2s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-sleep-z--1 {
+      left: 10px;
+      animation-delay: 0s;
+    }
+
+    .pet-sleep-z--2 {
+      left: 25px;
+      font-size: 28px;
+      animation-delay: 0.6s;
+    }
+
+    .pet-sleep-z--3 {
+      left: 40px;
+      font-size: 24px;
+      animation-delay: 1.2s;
+    }
+
+    .pet-character.fx-wobble {
+      animation: lab-wobble calc(1.2s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character.fx-hop {
+      animation: lab-hop calc(1s / var(--anim-speed)) cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+
+    .pet-character.fx-wave .pet-character__arm--right {
+      animation: lab-wave calc(0.9s / var(--anim-speed)) ease-in-out infinite;
+    }
+
+    .pet-character.fx-squash {
+      animation: lab-squash calc(1.4s / var(--anim-speed)) ease-in-out infinite;
+      transform-origin: 50% 100%;
+    }
+
+    @keyframes pet-idle {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) rotate(-0.4deg);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-7px) rotate(0.4deg);
+      }
+    }
+
+    @keyframes pet-blink {
+      0%, 92%, 100% {
+        transform: scaleY(1);
+      }
+      95% {
+        transform: scaleY(0.15);
+      }
+    }
+
+    @keyframes pet-arm-swing-left {
+      0%, 100% {
+        transform: rotate(25deg);
+      }
+      50% {
+        transform: rotate(15deg);
+      }
+    }
+
+    @keyframes pet-arm-swing-right {
+      0%, 100% {
+        transform: rotate(-25deg);
+      }
+      50% {
+        transform: rotate(-15deg);
+      }
+    }
+
+    @keyframes pet-head-tilt {
+      0%, 100% {
+        transform: translateX(-50%) rotate(1deg);
+      }
+      25% {
+        transform: translateX(-50%) rotate(-7deg);
+      }
+      50% {
+        transform: translateX(-50%) rotate(5deg);
+      }
+      75% {
+        transform: translateX(-50%) rotate(-4deg);
+      }
+    }
+
+    @keyframes pet-critical-shake {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) rotate(-2deg);
+      }
+      25% {
+        transform: translateX(-50%) translateY(-2px) rotate(2deg);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-4px) rotate(-2deg);
+      }
+      75% {
+        transform: translateX(-50%) translateY(-2px) rotate(2deg);
+      }
+    }
+
+    @keyframes pet-happy-bounce {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-12px) scale(1.05);
+      }
+    }
+
+    @keyframes pet-sleep-breathe {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-3px) scale(1.01);
+      }
+    }
+
+    @keyframes pet-zzz-float {
+      0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.8);
+      }
+      20%, 80% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-60px) scale(1.2);
+      }
+    }
+
+    @keyframes lab-wobble {
+      0%, 100% {
+        transform: translateX(-50%) rotate(-3deg);
+      }
+      50% {
+        transform: translateX(-50%) rotate(3deg);
+      }
+    }
+
+    @keyframes lab-hop {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) scale(1, 1);
+      }
+      40% {
+        transform: translateX(-50%) translateY(-28px) scale(0.98, 1.04);
+      }
+      70% {
+        transform: translateX(-50%) translateY(2px) scale(1.04, 0.96);
+      }
+    }
+
+    @keyframes lab-shadow-hop {
+      0%, 100% {
+        width: 86px;
+        opacity: 0.36;
+        transform: translateX(-50%) scaleX(1);
+      }
+      40% {
+        width: 58px;
+        opacity: 0.18;
+        transform: translateX(-50%) scaleX(0.84);
+      }
+      70% {
+        width: 94px;
+        opacity: 0.4;
+        transform: translateX(-50%) scaleX(1.08);
+      }
+    }
+
+    @keyframes lab-wave {
+      0%, 100% {
+        transform: rotate(-28deg);
+      }
+      50% {
+        transform: rotate(-74deg);
+      }
+    }
+
+    @keyframes lab-squash {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) scale(1, 1);
+      }
+      45% {
+        transform: translateX(-50%) translateY(4px) scale(1.08, 0.92);
+      }
+      70% {
+        transform: translateX(-50%) translateY(-8px) scale(0.96, 1.06);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .lab-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .lab-panel {
+        border-right: 0;
+        border-bottom: 4px solid var(--ink);
+      }
+
+      .pet-lab-stage {
+        min-height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="lab-shell">
+    <aside class="lab-panel">
+      <h1 class="lab-title">Pet Character Lab</h1>
+      <p class="lab-subtitle">Standalone sandbox for testing character states and animation ideas.</p>
+
+      <section class="lab-section" aria-label="Character state">
+        <h2>State</h2>
+        <div class="lab-buttons" data-group="state">
+          <button class="lab-button is-active" type="button" data-state="stable">Stable</button>
+          <button class="lab-button" type="button" data-state="needs-care">Needs care</button>
+          <button class="lab-button" type="button" data-state="critical">Critical</button>
+          <button class="lab-button" type="button" data-state="excellent">Excellent</button>
+          <button class="lab-button" type="button" data-state="sleeping">Sleeping</button>
+        </div>
+      </section>
+
+      <section class="lab-section" aria-label="Animation effect">
+        <h2>Effect</h2>
+        <div class="lab-buttons" data-group="effect">
+          <button class="lab-button is-active" type="button" data-effect="">Idle</button>
+          <button class="lab-button" type="button" data-effect="fx-wobble">Wobble</button>
+          <button class="lab-button" type="button" data-effect="fx-hop">Hop</button>
+          <button class="lab-button" type="button" data-effect="fx-wave">Wave</button>
+          <button class="lab-button" type="button" data-effect="fx-squash">Squash</button>
+        </div>
+      </section>
+
+      <section class="lab-section" aria-label="Animation speed">
+        <h2>Speed</h2>
+        <label class="lab-control">
+          <span id="speedLabel">1.0x</span>
+          <input id="speedInput" type="range" min="0.4" max="2.4" value="1" step="0.1">
+        </label>
+      </section>
+    </aside>
+
+    <section class="lab-stage-wrap">
+      <div class="pet-lab-stage">
+        <p class="pet-lab-note">Use this page to test movement before copying animation back into React/CSS.</p>
+        <span class="pet-ground-shadow" aria-hidden="true"></span>
+
+        <div id="petCharacter" class="pet-character pet-character--pet pet-character--stable" role="img" aria-label="Meo box-head character">
+          <span class="pet-character__head">
+            <span class="pet-character__eye pet-character__eye--left"></span>
+            <span class="pet-character__eye pet-character__eye--right"></span>
+            <span class="pet-character__mouth"></span>
+          </span>
+          <span class="pet-character__neck"></span>
+          <span class="pet-character__body"></span>
+          <span class="pet-character__arm pet-character__arm--left"></span>
+          <span class="pet-character__arm pet-character__arm--right"></span>
+          <span class="pet-character__leg pet-character__leg--left"></span>
+          <span class="pet-character__leg pet-character__leg--right"></span>
+          <span class="pet-sleep-zzz" aria-hidden="true">
+            <span class="pet-sleep-z pet-sleep-z--1">Z</span>
+            <span class="pet-sleep-z pet-sleep-z--2">Z</span>
+            <span class="pet-sleep-z pet-sleep-z--3">Z</span>
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const pet = document.querySelector('#petCharacter');
+    const stateButtons = document.querySelectorAll('[data-state]');
+    const effectButtons = document.querySelectorAll('[data-effect]');
+    const speedInput = document.querySelector('#speedInput');
+    const speedLabel = document.querySelector('#speedLabel');
+
+    const stateClasses = [
+      'pet-character--stable',
+      'pet-character--needs-care',
+      'pet-character--critical',
+      'pet-character--excellent',
+      'pet-character--sleeping'
+    ];
+    const effectClasses = ['fx-wobble', 'fx-hop', 'fx-wave', 'fx-squash'];
+
+    const setActiveButton = (buttons, activeButton) => {
+      buttons.forEach((button) => button.classList.toggle('is-active', button === activeButton));
+    };
+
+    stateButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        pet.classList.remove(...stateClasses);
+        pet.classList.add(`pet-character--${button.dataset.state}`);
+        setActiveButton(stateButtons, button);
+      });
+    });
+
+    effectButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        pet.classList.remove(...effectClasses);
+        if (button.dataset.effect) {
+          pet.classList.add(button.dataset.effect);
+        }
+        setActiveButton(effectButtons, button);
+      });
+    });
+
+    speedInput.addEventListener('input', () => {
+      const speed = Number(speedInput.value).toFixed(1);
+      document.documentElement.style.setProperty('--anim-speed', speed);
+      speedLabel.textContent = `${speed}x`;
+    });
+  </script>
+</body>
+</html>
