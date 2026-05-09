@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
 
 export default defineConfig(({ mode }) => ({
-  // Use root base for custom domain (https://meosjourney.info)
-  base: '/',
+  // GitHub Pages project site path (https://lariod12.github.io/meosjourney/)
+  base: mode === 'production' ? '/meosjourney/' : '/',
   plugins: [
     react(),
     // Temporarily disabled obfuscator to test build
