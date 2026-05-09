@@ -31,7 +31,7 @@ const TABLE_IDS_PRODUCTION = {
   ACHIEVEMENTS_CONFIRM: 'mcynwxx2hpgcolt',
   ATTACHMENTS_GALLERY: 'mirssuqhjx529p5',
   ATTACHMENTS_ALBUM: 'mc6wu0v542g2bnr',
-  PET: null
+  PET: 'm5o1zjxu784d955'
 };
 
 const TABLE_IDS_DEVELOPE = {
