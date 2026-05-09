@@ -1080,6 +1080,7 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
 const PetPage = ({ onBack }) => {
   const navigate = useNavigate();
   const petSaveQueueRef = useRef(Promise.resolve());
+  const statusSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -1120,10 +1121,10 @@ const PetPage = ({ onBack }) => {
   const [isConfirmMoodModalOpen, setIsConfirmMoodModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
-  const [isSavingActivity, setIsSavingActivity] = useState(false);
-  const [isSavingMood, setIsSavingMood] = useState(false);
+  const isSavingActivity = false;
+  const isSavingMood = false;
   const [isUpdateLocationModalOpen, setIsUpdateLocationModalOpen] = useState(false);
-  const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const isSavingLocation = false;
   const [isSleeping, setIsSleeping] = useState(false);
   const [isAwakening, setIsAwakening] = useState(false);
   const [isPetReady, setIsPetReady] = useState(false);
@@ -1796,19 +1797,17 @@ useEffect(() => {
         console.log('💤 Setting activity to:', sleepActivity.name);
         const oldActivityName = currentActivityName;
         setCurrentActivityName(sleepActivity.name);
-        // Save to NocoDB
-        saveStatus({
-          doing: sleepActivity.name
-        })
-          .then((result) => {
-            if (result.success) {
-              return savePetStatusChangesJournal([
-                { fieldType: 'doing', oldValue: oldActivityName, newValue: sleepActivity.name }
-              ]).then(refreshStatusConsumers);
-            }
-            return null;
-          })
-          .catch(err => console.error('Failed to save sleep activity:', err));
+        enqueueStatusSave({
+          doing: {
+            name: sleepActivity.name,
+            icon: sleepActivity.icon
+          }
+        }, {
+          label: 'sleep activity',
+          changes: [
+            { fieldType: 'doing', oldValue: oldActivityName, newValue: sleepActivity.name }
+          ]
+        });
       }
 
       if (biologicalClock.isSleepy) {
@@ -1894,40 +1893,48 @@ useEffect(() => {
     }
   };
 
-  const handleChooseActivityConfirm = async (activity) => {
-    lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
-    setIsSavingActivity(true);
+  const enqueueStatusSave = (statusData, options = {}) => {
+    const { changes = [], label = 'status' } = options;
 
-    try {
-      const oldActivityName = currentActivityName;
-      const result = await saveStatus({
-        doing: {
-          name: activity.name,
-          icon: activity.icon
+    statusSaveQueueRef.current = statusSaveQueueRef.current
+      .catch(() => {})
+      .then(async () => {
+        const result = await saveStatus(statusData);
+        if (!result.success) {
+          console.warn(`⚠️ Background ${label} sync failed:`, result.message);
+          return;
         }
-      });
 
-      if (result.success) {
-        setCurrentActivityName(activity.name);
-        await savePetStatusChangesJournal([
-          { fieldType: 'doing', oldValue: oldActivityName, newValue: activity.name }
-        ]);
+        await savePetStatusChangesJournal(changes);
         refreshStatusConsumers();
-        setActivityItems(prev => {
-          const filtered = prev.filter(item => item.name !== activity.name);
-          return [activity, ...filtered];
-        });
-        setIsChooseActivityModalOpen(false);
-      } else {
-        console.error('Failed to set activity:', result.message);
-        alert('Failed to set activity. Please try again.');
+      })
+      .catch((error) => {
+        console.warn(`⚠️ Background ${label} sync failed:`, error);
+      });
+  };
+
+  const handleChooseActivityConfirm = (activity) => {
+    lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
+    const oldActivityName = currentActivityName;
+
+    setCurrentActivityName(activity.name);
+    setActivityItems(prev => {
+      const filtered = prev.filter(item => item.name !== activity.name);
+      return [activity, ...filtered];
+    });
+    setIsChooseActivityModalOpen(false);
+
+    enqueueStatusSave({
+      doing: {
+        name: activity.name,
+        icon: activity.icon
       }
-    } catch (error) {
-      console.error('Error setting activity:', error);
-      alert('Failed to set activity. Please try again.');
-    } finally {
-      setIsSavingActivity(false);
-    }
+    }, {
+      label: 'activity',
+      changes: [
+        { fieldType: 'doing', oldValue: oldActivityName, newValue: activity.name }
+      ]
+    });
   };
 
   const handleChooseActivityUpdate = (activity) => {
@@ -1937,139 +1944,87 @@ useEffect(() => {
     setIsUpdateIconModalOpen(true);
   };
 
-  const handleUpdateIcon = async (updatedActivity) => {
-    setIsSavingActivity(true);
+  const handleUpdateIcon = (updatedActivity) => {
+    setActivityItems(prev => {
+      const filtered = prev.filter(item => item.name !== updatedActivity.name);
+      return [updatedActivity, ...filtered];
+    });
+    setIsUpdateIconModalOpen(false);
+    setActivityToUpdate(null);
 
-    try {
-      const result = await saveStatus({
-        doing: {
-          name: updatedActivity.name,
-          icon: updatedActivity.icon
-        }
-      });
-
-      if (result.success) {
-        if (updatedActivity.name === currentActivityName) {
-          refreshStatusConsumers();
-        }
-        // Update activity in list
-        setActivityItems(prev => {
-          const filtered = prev.filter(item => item.name !== updatedActivity.name);
-          return [updatedActivity, ...filtered];
-        });
-        setIsUpdateIconModalOpen(false);
-        setActivityToUpdate(null);
-      } else {
-        console.error('Failed to update icon:', result.message);
-        alert('Failed to update icon. Please try again.');
+    enqueueStatusSave({
+      doing: {
+        name: updatedActivity.name,
+        icon: updatedActivity.icon
       }
-    } catch (error) {
-      console.error('Error updating icon:', error);
-      alert('Failed to update icon. Please try again.');
-    } finally {
-      setIsSavingActivity(false);
-    }
+    }, {
+      label: 'activity icon'
+    });
   };
 
-  const handleAddActivity = async (newActivity, setAsCurrent) => {
-  if (isSavingActivity) return;
-
-  setIsSavingActivity(true);
-
-  try {
+  const handleAddActivity = (newActivity, setAsCurrent) => {
     const oldActivityName = currentActivityName;
-    // Check if activity already exists
     const existingActivity = activityItems.find(
       item => item.name.toLowerCase() === newActivity.name.toLowerCase()
     );
+    const normalizedActivity = {
+      name: newActivity.name,
+      icon: newActivity.icon,
+      shape: getActivityShape(newActivity.name)
+    };
 
-    // Save to NocoDB
-    const result = await saveStatus({
+    if (existingActivity) {
+      setActivityItems(prev => {
+        const filtered = prev.filter(
+          item => item.name.toLowerCase() !== newActivity.name.toLowerCase()
+        );
+        return [normalizedActivity, ...filtered];
+      });
+    } else {
+      setActivityItems(prev => [normalizedActivity, ...prev]);
+    }
+
+    if (setAsCurrent) {
+      setCurrentActivityName(newActivity.name);
+    }
+
+    setIsAddActivityModalOpen(false);
+
+    enqueueStatusSave({
       doing: {
         name: newActivity.name,
         icon: newActivity.icon
       }
+    }, {
+      label: 'activity',
+      changes: setAsCurrent
+        ? [{ fieldType: 'doing', oldValue: oldActivityName, newValue: newActivity.name }]
+        : []
     });
-
-    if (result.success) {
-      if (existingActivity) {
-        // Update existing activity (icon change or reorder)
-        setActivityItems(prev => {
-          const filtered = prev.filter(
-            item => item.name.toLowerCase() !== newActivity.name.toLowerCase()
-          );
-          return [{
-            name: newActivity.name,
-            icon: newActivity.icon,
-            shape: getActivityShape(newActivity.name)
-          }, ...filtered];
-        });
-      } else {
-        // Add new activity
-        const normalizedActivity = {
-          name: newActivity.name,
-          icon: newActivity.icon,
-          shape: getActivityShape(newActivity.name)
-        };
-        setActivityItems(prev => [normalizedActivity, ...prev]);
-      }
-
-      // Set as current activity if requested
-      if (setAsCurrent) {
-          setCurrentActivityName(newActivity.name);
-          await savePetStatusChangesJournal([
-            { fieldType: 'doing', oldValue: oldActivityName, newValue: newActivity.name }
-          ]);
-          refreshStatusConsumers();
-        }
-
-        setIsAddActivityModalOpen(false);
-      } else {
-        console.error('Failed to save activity:', result.message);
-        alert('Failed to save activity. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error saving activity:', error);
-      alert('Failed to save activity. Please try again.');
-    } finally {
-      setIsSavingActivity(false);
-    }
   };
 
-  const handleChooseMoodConfirm = async (mood) => {
+  const handleChooseMoodConfirm = (mood) => {
     lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
-    setIsSavingMood(true);
+    const oldMoodName = currentMoodName;
 
-    try {
-      const oldMoodName = currentMoodName;
-      const result = await saveStatus({
-        mood: {
-          name: mood.name,
-          icon: mood.icon
-        }
-      });
+    setCurrentMoodName(mood.name);
+    setMoodItems(prev => {
+      const filtered = prev.filter(item => item.name !== mood.name);
+      return [mood, ...filtered];
+    });
+    setIsChooseMoodModalOpen(false);
 
-      if (result.success) {
-        setCurrentMoodName(mood.name);
-        await savePetStatusChangesJournal([
-          { fieldType: 'mood', oldValue: oldMoodName, newValue: mood.name }
-        ]);
-        refreshStatusConsumers();
-        setMoodItems(prev => {
-          const filtered = prev.filter(item => item.name !== mood.name);
-          return [mood, ...filtered];
-        });
-        setIsChooseMoodModalOpen(false);
-      } else {
-        console.error('Failed to set mood:', result.message);
-        alert('Failed to set mood. Please try again.');
+    enqueueStatusSave({
+      mood: {
+        name: mood.name,
+        icon: mood.icon
       }
-    } catch (error) {
-      console.error('Error setting mood:', error);
-      alert('Failed to set mood. Please try again.');
-    } finally {
-      setIsSavingMood(false);
-    }
+    }, {
+      label: 'mood',
+      changes: [
+        { fieldType: 'mood', oldValue: oldMoodName, newValue: mood.name }
+      ]
+    });
   };
 
   const handleChooseMoodUpdate = (mood) => {
@@ -2078,97 +2033,66 @@ useEffect(() => {
     setIsUpdateMoodIconModalOpen(true);
   };
 
-  const handleUpdateMoodIcon = async (updatedMood) => {
-    setIsSavingMood(true);
+  const handleUpdateMoodIcon = (updatedMood) => {
+    setMoodItems(prev => {
+      const filtered = prev.filter(item => item.name !== updatedMood.name);
+      return [{ ...updatedMood, shape: getMoodShape(updatedMood.name) }, ...filtered];
+    });
+    setIsUpdateMoodIconModalOpen(false);
+    setMoodToUpdate(null);
 
-    try {
-      const result = await saveStatus({
-        mood: {
-          name: updatedMood.name,
-          icon: updatedMood.icon
-        }
-      });
-
-      if (result.success) {
-        if (updatedMood.name === currentMoodName) {
-          refreshStatusConsumers();
-        }
-        setMoodItems(prev => {
-          const filtered = prev.filter(item => item.name !== updatedMood.name);
-          return [{ ...updatedMood, shape: getMoodShape(updatedMood.name) }, ...filtered];
-        });
-        setIsUpdateMoodIconModalOpen(false);
-        setMoodToUpdate(null);
-      } else {
-        console.error('Failed to update mood icon:', result.message);
-        alert('Failed to update mood icon. Please try again.');
+    enqueueStatusSave({
+      mood: {
+        name: updatedMood.name,
+        icon: updatedMood.icon
       }
-    } catch (error) {
-      console.error('Error updating mood icon:', error);
-      alert('Failed to update mood icon. Please try again.');
-    } finally {
-      setIsSavingMood(false);
-    }
+    }, {
+      label: 'mood icon'
+    });
   };
 
-  const handleAddMood = async (newMood, setAsCurrent) => {
-    if (isSavingMood) return;
-
+  const handleAddMood = (newMood, setAsCurrent) => {
     const moodName = String(newMood?.name || '').trim();
     if (!moodName) return;
 
-    setIsSavingMood(true);
+    const oldMoodName = currentMoodName;
+    const existingMood = moodItems.find(
+      item => item.name.toLowerCase() === moodName.toLowerCase()
+    );
+    const normalizedMood = {
+      name: moodName,
+      icon: newMood.icon || '',
+      shape: getMoodShape(moodName)
+    };
 
-    try {
-      const oldMoodName = currentMoodName;
-      const existingMood = moodItems.find(
-        item => item.name.toLowerCase() === moodName.toLowerCase()
-      );
-
-      const result = await saveStatus({
-        mood: {
-          name: moodName,
-          icon: newMood.icon || ''
-        }
+    if (existingMood) {
+      setMoodItems(prev => {
+        const filtered = prev.filter(
+          item => item.name.toLowerCase() !== moodName.toLowerCase()
+        );
+        return [normalizedMood, ...filtered];
       });
-
-      if (result.success) {
-        const normalizedMood = {
-          name: moodName,
-          icon: newMood.icon || '',
-          shape: getMoodShape(moodName)
-        };
-
-        if (existingMood) {
-          setMoodItems(prev => {
-            const filtered = prev.filter(
-              item => item.name.toLowerCase() !== moodName.toLowerCase()
-            );
-            return [normalizedMood, ...filtered];
-          });
-        } else {
-          setMoodItems(prev => [normalizedMood, ...prev]);
-        }
-
-        if (setAsCurrent) {
-          setCurrentMoodName(moodName);
-          await savePetStatusChangesJournal([
-            { fieldType: 'mood', oldValue: oldMoodName, newValue: moodName }
-          ]);
-          refreshStatusConsumers();
-        }
-
-        setIsAddMoodModalOpen(false);
-      } else {
-        console.error('Failed to save mood:', result.message);
-        alert('Failed to save mood. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error saving mood:', error);
-      alert('Failed to save mood. Please try again.');
-    } finally {
-      setIsSavingMood(false);
+    } else {
+      setMoodItems(prev => [normalizedMood, ...prev]);
     }
+
+    if (setAsCurrent) {
+      setCurrentMoodName(moodName);
+    }
+
+    setIsAddMoodModalOpen(false);
+
+    enqueueStatusSave({
+      mood: {
+        name: moodName,
+        icon: newMood.icon || ''
+      }
+    }, {
+      label: 'mood',
+      changes: setAsCurrent
+        ? [{ fieldType: 'mood', oldValue: oldMoodName, newValue: moodName }]
+        : []
+    });
   };
 
   const handleMoodCardClick = (mood) => {
@@ -2176,55 +2100,40 @@ useEffect(() => {
     setIsConfirmMoodModalOpen(true);
   };
 
-  const handleConfirmSetCurrentMood = async (newIcon, updateIconOnly = false) => {
-    if (!selectedMood || isSavingMood) return;
+  const handleConfirmSetCurrentMood = (newIcon, updateIconOnly = false) => {
+    if (!selectedMood) return;
 
-    setIsSavingMood(true);
+    const iconToSave = newIcon !== undefined ? newIcon : selectedMood.icon;
+    const oldMoodName = currentMoodName;
+    const updatedMood = {
+      ...selectedMood,
+      icon: iconToSave,
+      shape: getMoodShape(selectedMood.name)
+    };
 
-    try {
-      const iconToSave = newIcon !== undefined ? newIcon : selectedMood.icon;
-      const oldMoodName = currentMoodName;
-      const result = await saveStatus({
-        mood: {
-          name: selectedMood.name,
-          icon: iconToSave
-        }
-      });
-
-      if (result.success) {
-        const updatedMood = {
-          ...selectedMood,
-          icon: iconToSave,
-          shape: getMoodShape(selectedMood.name)
-        };
-
-        if (!updateIconOnly) {
-          setCurrentMoodName(selectedMood.name);
-          await savePetStatusChangesJournal([
-            { fieldType: 'mood', oldValue: oldMoodName, newValue: selectedMood.name }
-          ]);
-          refreshStatusConsumers();
-        } else if (selectedMood.name === currentMoodName) {
-          refreshStatusConsumers();
-        }
-
-        setMoodItems(prev => {
-          const filtered = prev.filter(item => item.name !== selectedMood.name);
-          return [updatedMood, ...filtered];
-        });
-
-        setIsConfirmMoodModalOpen(false);
-        setSelectedMood(null);
-      } else {
-        console.error('Failed to set current mood:', result.message);
-        alert('Failed to set current mood. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error setting current mood:', error);
-      alert('Failed to set current mood. Please try again.');
-    } finally {
-      setIsSavingMood(false);
+    if (!updateIconOnly) {
+      setCurrentMoodName(selectedMood.name);
     }
+
+    setMoodItems(prev => {
+      const filtered = prev.filter(item => item.name !== selectedMood.name);
+      return [updatedMood, ...filtered];
+    });
+
+    setIsConfirmMoodModalOpen(false);
+    setSelectedMood(null);
+
+    enqueueStatusSave({
+      mood: {
+        name: selectedMood.name,
+        icon: iconToSave
+      }
+    }, {
+      label: 'mood',
+      changes: !updateIconOnly
+        ? [{ fieldType: 'mood', oldValue: oldMoodName, newValue: selectedMood.name }]
+        : []
+    });
   };
 
   const handleActivityCardClick = (activity) => {
@@ -2232,95 +2141,59 @@ useEffect(() => {
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmSetCurrent = async (newIcon, updateIconOnly = false) => {
-    if (!selectedActivity || isSavingActivity) return;
+  const handleConfirmSetCurrent = (newIcon, updateIconOnly = false) => {
+    if (!selectedActivity) return;
 
-    setIsSavingActivity(true);
+    const iconToSave = newIcon !== undefined ? newIcon : selectedActivity.icon;
+    const oldActivityName = currentActivityName;
+    const updatedActivity = {
+      ...selectedActivity,
+      icon: iconToSave
+    };
 
-    try {
-      // Use new icon if provided, otherwise keep existing
-      const iconToSave = newIcon !== undefined ? newIcon : selectedActivity.icon;
-      const oldActivityName = currentActivityName;
-
-      // Save to NocoDB to update the order (move to first position)
-      const result = await saveStatus({
-        doing: {
-          name: selectedActivity.name,
-          icon: iconToSave
-        }
-      });
-
-      if (result.success) {
-        // Update activity in list with new icon
-        const updatedActivity = {
-          ...selectedActivity,
-          icon: iconToSave
-        };
-
-        // Update current activity (unless it's icon-only update)
-        if (!updateIconOnly) {
-          setCurrentActivityName(selectedActivity.name);
-          await savePetStatusChangesJournal([
-            { fieldType: 'doing', oldValue: oldActivityName, newValue: selectedActivity.name }
-          ]);
-          refreshStatusConsumers();
-        } else if (selectedActivity.name === currentActivityName) {
-          refreshStatusConsumers();
-        }
-
-        // Reorder activities list to move selected to first
-        setActivityItems(prev => {
-          const filtered = prev.filter(item => item.name !== selectedActivity.name);
-          return [updatedActivity, ...filtered];
-        });
-
-        setIsConfirmModalOpen(false);
-        setSelectedActivity(null);
-      } else {
-        console.error('Failed to set current activity:', result.message);
-        alert('Failed to set current activity. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error setting current activity:', error);
-      alert('Failed to set current activity. Please try again.');
-    } finally {
-      setIsSavingActivity(false);
+    if (!updateIconOnly) {
+      setCurrentActivityName(selectedActivity.name);
     }
+
+    setActivityItems(prev => {
+      const filtered = prev.filter(item => item.name !== selectedActivity.name);
+      return [updatedActivity, ...filtered];
+    });
+
+    setIsConfirmModalOpen(false);
+    setSelectedActivity(null);
+
+    enqueueStatusSave({
+      doing: {
+        name: selectedActivity.name,
+        icon: iconToSave
+      }
+    }, {
+      label: 'activity',
+      changes: !updateIconOnly
+        ? [{ fieldType: 'doing', oldValue: oldActivityName, newValue: selectedActivity.name }]
+        : []
+    });
   };
 
-  const handleUpdateLocation = async (newLocation) => {
-    if (isSavingLocation) return;
+  const handleUpdateLocation = (newLocation) => {
+    const oldLocationName = currentLocationName;
 
-    setIsSavingLocation(true);
+    setCurrentLocationName(newLocation);
+    setLocationHistory(prev => {
+      const filtered = prev.filter(loc => loc.toLowerCase() !== newLocation.toLowerCase());
+      return [newLocation, ...filtered];
+    });
+    setIsUpdateLocationModalOpen(false);
 
-    try {
-      const oldLocationName = currentLocationName;
-      const result = await saveStatus({
-        location: newLocation
-      });
-
-      if (result.success) {
-        setCurrentLocationName(newLocation);
-        await savePetStatusChangesJournal([
-          { fieldType: 'location', oldValue: oldLocationName, newValue: newLocation }
-        ]);
-        refreshStatusConsumers();
-        // Update location history by prepending new location
-        setLocationHistory(prev => {
-          const filtered = prev.filter(loc => loc.toLowerCase() !== newLocation.toLowerCase());
-          return [newLocation, ...filtered];
-        });
-        setIsUpdateLocationModalOpen(false);
-      } else {
-        console.error('Failed to update location:', result.message);
-        alert('Failed to update location. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error updating location:', error);
-      alert('Failed to update location. Please try again.');
-    } finally {
-      setIsSavingLocation(false);
-    }
+    enqueueStatusSave({
+      location: newLocation
+    }, {
+      label: 'location',
+      changes: [
+        { fieldType: 'location', oldValue: oldLocationName, newValue: newLocation }
+      ]
+    });
   };
 
   const handleWakeUpTap = () => {
@@ -2342,18 +2215,17 @@ useEffect(() => {
       if (nonSleepActivity) {
         const oldActivityName = currentActivityName;
         setCurrentActivityName(nonSleepActivity.name);
-        saveStatus({
-          doing: nonSleepActivity.name
-        })
-          .then((result) => {
-            if (result.success) {
-              return savePetStatusChangesJournal([
-                { fieldType: 'doing', oldValue: oldActivityName, newValue: nonSleepActivity.name }
-              ]).then(refreshStatusConsumers);
-            }
-            return null;
-          })
-          .catch(err => console.error('Failed to save wake activity:', err));
+        enqueueStatusSave({
+          doing: {
+            name: nonSleepActivity.name,
+            icon: nonSleepActivity.icon
+          }
+        }, {
+          label: 'wake activity',
+          changes: [
+            { fieldType: 'doing', oldValue: oldActivityName, newValue: nonSleepActivity.name }
+          ]
+        });
       }
     }
   };
