@@ -335,9 +335,9 @@
   transition:
     opacity 240ms ease,
     transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease;
+    box-shadow 240ms ease,
+    background-color 260ms ease,
+    color 260ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -346,6 +346,14 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0) rotate(-10deg) scale(1);
+}
+
+.pet-stage-camera-button--visible.pet-stage-camera-button--active,
+.pet-stage-camera-button--visible.pet-stage-camera-button--ready {
+  transform: translateY(0) rotate(0deg) scale(1);
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 6px 6px 0 #000000;
 }
 
 .pet-stage-camera-button:hover,
@@ -370,7 +378,7 @@
 }
 
 .pet-stage-camera-button--active {
-  animation: pet-camera-button-pop 400ms ease-out both;
+  animation: none;
 }
 
 .pet-stage-camera-button--ready {
@@ -393,6 +401,11 @@
 
 .pet-stage-camera-button--visible .pet-stage-camera-button__icon {
   opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pet-stage-camera-button--visible.pet-stage-camera-button--active .pet-stage-camera-button__icon,
+.pet-stage-camera-button--visible.pet-stage-camera-button--ready .pet-stage-camera-button__icon {
   transform: translateY(0) scale(1);
 }
 
@@ -2545,22 +2558,6 @@
   }
   72% {
     transform: rotate(-62deg);
-  }
-}
-
-@keyframes pet-camera-button-pop {
-  0%,
-  100% {
-    transform: rotate(-10deg) scale(1);
-    box-shadow: 5px 5px 0 #000000;
-  }
-  16% {
-    transform: rotate(-17deg) scale(0.92);
-    box-shadow: 3px 3px 0 #000000;
-  }
-  32% {
-    transform: rotate(-4deg) scale(1.08);
-    box-shadow: 6px 6px 0 #000000;
   }
 }
 
