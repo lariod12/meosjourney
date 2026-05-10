@@ -80,6 +80,13 @@ const getVietnameseTimeLabel = (date = new Date()) => {
   return `${displayHour} giờ${minuteLabel} ${dayPart}`;
 };
 
+const VIETNAM_TIMEZONE_OFFSET_MINUTES = 7 * 60;
+
+const formatVietnamTimestamp = (date = new Date()) => {
+  const vietnamDate = new Date(date.getTime() + VIETNAM_TIMEZONE_OFFSET_MINUTES * 60 * 1000);
+  return `${vietnamDate.toISOString().replace('Z', '')}+07:00`;
+};
+
 // Check if meal was eaten today
 const wasMealEatenToday = (lastMealTimestamp) => {
   if (!lastMealTimestamp) return false;
@@ -842,7 +849,7 @@ const getPetCharacterPresentation = ({
 
 const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()) => {
   const nextStatus = clampPetStatus(status);
-  const nextTickAt = now.toISOString();
+  const nextTickAt = formatVietnamTimestamp(now);
   const lastTickDate = lastStatusTickAt ? new Date(lastStatusTickAt) : null;
 
   if (!lastTickDate || Number.isNaN(lastTickDate.getTime())) {
@@ -2262,7 +2269,7 @@ useEffect(() => {
     console.log('✅ Confirming use of:', selectedPetUseItem.item.name, 'shape:', selectedPetUseItem.item.shape);
 
     const nextStatus = selectedPetUsePreview.nextStatus;
-    const nextTickAt = new Date().toISOString();
+    const nextTickAt = formatVietnamTimestamp();
     const usedPetItem = selectedPetUseItem;
 
     petStatusRef.current = nextStatus;
