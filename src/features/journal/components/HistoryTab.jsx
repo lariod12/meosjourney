@@ -44,6 +44,52 @@ const HistoryTab = ({ isActive = true }) => {
     }
   }, [data.journal]);
 
+  // If today's journal list is empty, History still needs to fetch older entries.
+  useEffect(() => {
+    if (!isActive || !data.journal || loadedJournals.length > 0 || loadingRef.current || !hasMore) return undefined;
+
+    let cancelled = false;
+
+    const loadInitialHistory = async () => {
+      loadingRef.current = true;
+      setIsAutoLoadingMore(true);
+
+      try {
+        const initialJournals = await fetchJournals(LOAD_MORE_BATCH, 0, { source: 'history' });
+        if (cancelled) return;
+
+        if (initialJournals.length > 0) {
+          setLoadedJournals(initialJournals);
+          setCurrentOffset(initialJournals.length);
+
+          if (initialJournals.length < LOAD_MORE_BATCH) {
+            setHasMore(false);
+          }
+        } else {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('❌ Error loading initial history journals:', error);
+        if (!cancelled) {
+          setHasMore(false);
+        }
+      } finally {
+        if (!cancelled) {
+          loadingRef.current = false;
+          setIsAutoLoadingMore(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(loadInitialHistory, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      loadingRef.current = false;
+    };
+  }, [isActive, data.journal, loadedJournals.length, hasMore]);
+
   // Group journal entries by date (Vietnam timezone)
   const historyData = useMemo(() => {
     if (loadedJournals.length === 0) return [];
@@ -285,6 +331,14 @@ const HistoryTab = ({ isActive = true }) => {
 
   // Handle empty state
   if (displayDays.length === 0) {
+    if (isAutoLoadingMore || (data.journal && hasMore)) {
+      return (
+        <div className="history-list">
+          <div className="empty-message history-empty-message">{t('history.loading')}</div>
+        </div>
+      );
+    }
+
     return (
       <div className="history-list">
         <div className="empty-message history-empty-message">{t('history.empty')}</div>
