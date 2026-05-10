@@ -229,6 +229,7 @@ const PET_STATUS_ROWS = [
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
 const PET_STATUS_DECAY_CHUNK_MS = 60 * 60 * 1000;
+const PET_STATUS_SYNC_MIN_MS = 10 * 1000;
 const PET_STATUS_DECAY = {
   hunger: 5,  // -5%/giờ (Ultra Hardcore: thay vì -2%)
   sanity: 4,  // -4%/giờ (Ultra Hardcore: thay vì -1%)
@@ -490,19 +491,21 @@ const DEFAULT_PET_SHAPES = [...DEFAULT_PET_ITEMS.food, ...DEFAULT_PET_ITEMS.care
   return shapes;
 }, {});
 
-const clampPetStatusValue = (value) => {
+const clampPetStatusValue = (value, options = {}) => {
+  const { round = true } = options;
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue)) {
     return 0;
   }
 
-  return Math.min(100, Math.max(0, Math.round(numberValue)));
+  const clampedValue = Math.min(100, Math.max(0, numberValue));
+  return round ? Math.round(clampedValue) : Number(clampedValue.toFixed(2));
 };
 
 const clampPetStatus = (status = {}) => ({
-  health: clampPetStatusValue(status.health ?? DEFAULT_PET_STATUS.health),
-  hunger: clampPetStatusValue(status.hunger ?? DEFAULT_PET_STATUS.hunger),
-  sanity: clampPetStatusValue(status.sanity ?? DEFAULT_PET_STATUS.sanity)
+  health: clampPetStatusValue(status.health ?? DEFAULT_PET_STATUS.health, { round: false }),
+  hunger: clampPetStatusValue(status.hunger ?? DEFAULT_PET_STATUS.hunger, { round: false }),
+  sanity: clampPetStatusValue(status.sanity ?? DEFAULT_PET_STATUS.sanity, { round: false })
 });
 
 const getPetStatusLevel = (value) => {
@@ -852,9 +855,9 @@ const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()
   }
 
   const elapsedMs = now.getTime() - lastTickDate.getTime();
-  const chunks = Math.max(0, Math.floor(elapsedMs / PET_STATUS_DECAY_CHUNK_MS));
+  const chunks = Math.max(0, elapsedMs / PET_STATUS_DECAY_CHUNK_MS);
 
-  if (chunks === 0) {
+  if (elapsedMs <= 0) {
     return {
       status: nextStatus,
       lastStatusTickAt,
@@ -863,20 +866,27 @@ const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()
     };
   }
 
-  for (let index = 0; index < chunks; index += 1) {
-    nextStatus.hunger = clampPetStatusValue(nextStatus.hunger - PET_STATUS_DECAY.hunger);
-    nextStatus.sanity = clampPetStatusValue(nextStatus.sanity - PET_STATUS_DECAY.sanity);
+  nextStatus.hunger = clampPetStatusValue(
+    nextStatus.hunger - (PET_STATUS_DECAY.hunger * chunks),
+    { round: false }
+  );
+  nextStatus.sanity = clampPetStatusValue(
+    nextStatus.sanity - (PET_STATUS_DECAY.sanity * chunks),
+    { round: false }
+  );
 
-    if (nextStatus.hunger < 30 || nextStatus.sanity < 30) {
-      nextStatus.health = clampPetStatusValue(nextStatus.health - PET_STATUS_DECAY.health);
-    }
+  if (nextStatus.hunger < 30 || nextStatus.sanity < 30) {
+    nextStatus.health = clampPetStatusValue(
+      nextStatus.health - (PET_STATUS_DECAY.health * chunks),
+      { round: false }
+    );
   }
 
   return {
     status: nextStatus,
     lastStatusTickAt: nextTickAt,
     chunks,
-    shouldSave: true
+    shouldSave: elapsedMs >= PET_STATUS_SYNC_MIN_MS
   };
 };
 
@@ -1481,7 +1491,9 @@ const PetPage = ({ onBack }) => {
     hunger: DEFAULT_PET_STATUS.hunger,
     sanity: DEFAULT_PET_STATUS.sanity
   }));
-  const [, setLastStatusTickAt] = useState(null);
+  const [lastStatusTickAt, setLastStatusTickAt] = useState(null);
+  const petStatusRef = useRef(petStatus);
+  const lastStatusTickAtRef = useRef(lastStatusTickAt);
   const [petItemModalCategory, setPetItemModalCategory] = useState(null);
   const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
   const [foodEffects, setFoodEffects] = useState([]);
@@ -1629,6 +1641,15 @@ const PetPage = ({ onBack }) => {
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
       : null
   ), [selectedPetUseItem, petStatus]);
+
+  useEffect(() => {
+    petStatusRef.current = petStatus;
+  }, [petStatus]);
+
+  useEffect(() => {
+    lastStatusTickAtRef.current = lastStatusTickAt;
+  }, [lastStatusTickAt]);
+
   const moodFloatStyles = useMemo(() => (
     moodFloatBatch.map((moodFloatItem) => ({
       ...moodFloatStyle,
@@ -1692,6 +1713,8 @@ useEffect(() => {
         if (petData.status) {
           const decayedPet = calculatePetStatusDecay(petData.status, petData.lastStatusTickAt);
 
+          petStatusRef.current = decayedPet.status;
+          lastStatusTickAtRef.current = decayedPet.lastStatusTickAt;
           setPetStatus(decayedPet.status);
           setLastStatusTickAt(decayedPet.lastStatusTickAt);
 
@@ -1795,12 +1818,46 @@ useEffect(() => {
 
 // Page Visibility API - detect when user is viewing the page
   useEffect(() => {
+    const syncElapsedPetStatus = () => {
+      const decayedPet = calculatePetStatusDecay(
+        petStatusRef.current,
+        lastStatusTickAtRef.current
+      );
+
+      petStatusRef.current = decayedPet.status;
+      lastStatusTickAtRef.current = decayedPet.lastStatusTickAt;
+      setPetStatus(decayedPet.status);
+      setLastStatusTickAt(decayedPet.lastStatusTickAt);
+
+      if (decayedPet.shouldSave) {
+        savePet({
+          status: decayedPet.status,
+          lastStatusTickAt: decayedPet.lastStatusTickAt
+        }).catch((error) => {
+          console.warn('⚠️ Pet status exit sync failed:', error);
+        });
+      }
+    };
+
     const handleVisibilityChange = () => {
+      if (document.hidden) {
+        syncElapsedPetStatus();
+      }
+
       setIsPageVisible(!document.hidden);
     };
 
+    const handlePageHide = () => {
+      syncElapsedPetStatus();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
   }, []);
 
   // Smart thought bubble with status-based timing
@@ -2203,6 +2260,8 @@ useEffect(() => {
     const nextTickAt = new Date().toISOString();
     const usedPetItem = selectedPetUseItem;
 
+    petStatusRef.current = nextStatus;
+    lastStatusTickAtRef.current = nextTickAt;
     setPetStatus(nextStatus);
     setLastStatusTickAt(nextTickAt);
     setSelectedPetUseItem(null);
