@@ -230,9 +230,9 @@ const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
 const PET_STATUS_DECAY_CHUNK_MS = 60 * 60 * 1000;
 const PET_STATUS_DECAY = {
-  hunger: 2,
-  sanity: 1,
-  health: 1
+  hunger: 5,  // -5%/giờ (Ultra Hardcore: thay vì -2%)
+  sanity: 4,  // -4%/giờ (Ultra Hardcore: thay vì -1%)
+  health: 3   // -3%/giờ khi neglect (Ultra Hardcore: thay vì -1%)
 };
 const PET_ITEM_EFFECTS = {
   food: {
