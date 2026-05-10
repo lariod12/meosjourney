@@ -21,6 +21,27 @@ const generateProfileGalleryTitle = () => {
   return `journal_${year}-${month}-${day}_${hours}-${minutes}-${random}`;
 };
 
+const generateGalleryRecordTitle = (customTitle = '') => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  const safeTitle = String(customTitle || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  const titlePart = safeTitle ? `${safeTitle}-` : '';
+
+  return `gallery-${titlePart}${year}-${month}-${day}-${hours}${minutes}${seconds}-${randomDigits}`;
+};
+
 /**
  * Upload a single profile gallery image to attachments_gallery and link to profile
  * Uses img_bw column and profile_id foreign key (production)
@@ -131,8 +152,9 @@ export const uploadProfileGalleryImage = async (imageFile, profileId) => {
  * @param {string} profileId - Profile ID to link images to (production)
  * @param {File[]} imageFiles - Array of image files
  * @param {string} description - Gallery description
+ * @param {string} customTitle - Optional user-facing title seed. Stored title still includes "gallery" for gallery discovery.
  */
-export const uploadProfileGalleryImages = async (profileId, imageFiles, description = '') => {
+export const uploadProfileGalleryImages = async (profileId, imageFiles, description = '', customTitle = '') => {
   if (!imageFiles || imageFiles.length === 0) {
     return { success: false, message: 'No images to upload', uploadedCount: 0, totalCount: 0 };
   }
@@ -199,16 +221,7 @@ export const uploadProfileGalleryImages = async (profileId, imageFiles, descript
     }
 
     // Step 2: Create single gallery record with all images
-    // Generate title: gallery-YYYY-MM-DD-HHMMSS-XXX (XXX = 3-digit random + timestamp for uniqueness)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-    const galleryTitle = `gallery-${year}-${month}-${day}-${hours}${minutes}${seconds}-${randomDigits}`;
+    const galleryTitle = generateGalleryRecordTitle(customTitle || description);
 
     const payload = {
       title: galleryTitle,

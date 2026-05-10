@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '0.0.0.0', // Expose to network
     port: 5555,
+    allowedHosts: [
+      '.trycloudflare.com'
+    ],
     hmr: {
       protocol: 'ws'
     }

@@ -82,7 +82,24 @@ const GalleryTab = ({ isActive = true }) => {
     loadGallery();
   }, [isActive, hasLoadedOnce]);
 
+  // Refresh after camera/gallery uploads from other tabs.
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (import.meta.env.MODE !== 'production') {
+        console.log('🖼️ GalleryTab: Refreshing gallery after upload...');
+      }
+      loadGallery();
+    };
+
+    window.addEventListener('gallery:refresh', handleRefresh);
+
+    return () => {
+      window.removeEventListener('gallery:refresh', handleRefresh);
+    };
+  }, []);
+
   const loadGallery = async () => {
+    setLoading(true);
     try {
       const data = await fetchHomePageGallery();
 

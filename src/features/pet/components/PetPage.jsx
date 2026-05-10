@@ -11,11 +11,20 @@ import {
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
   LuClapperboard, LuMusic, LuShoppingBag, LuScissors, LuWashingMachine, LuDumbbell, LuPaintbrush,
   LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera,
-  LuImage, LuGalleryHorizontal
+  LuImage, LuGalleryHorizontal, LuX, LuCheck
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { LanguageProvider } from '../../../contexts';
-import { CHARACTER_ID, clearNocoDBCache, fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
+import {
+  CHARACTER_ID,
+  clearNocoDBCache,
+  fetchPet,
+  fetchStatus,
+  savePet,
+  saveStatus,
+  savePhotoAlbum,
+  uploadProfileGalleryImages
+} from '../../../services';
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
 import { PhotoAlbumTab, GalleryTab } from '../../photoalbum/components';
@@ -1264,6 +1273,128 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
     </div>
   );
 };
+
+const PET_CAMERA_SAVE_TARGETS = [
+  {
+    key: 'gallery',
+    label: 'Gallery',
+    description: 'Show this pet photo in the gallery tab.',
+    Icon: LuGalleryHorizontal
+  },
+  {
+    key: 'album',
+    label: 'Album',
+    description: 'Save this pet photo as a photo album entry.',
+    Icon: LuImage
+  }
+];
+
+const createPetCameraDefaultTitle = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+
+  return `Pet photo ${day}/${month} ${hours}:${minutes}`;
+};
+
+const PetCameraSaveModal = ({
+  isOpen,
+  photo,
+  title,
+  target,
+  isSaving,
+  error,
+  onTitleChange,
+  onTargetChange,
+  onClose,
+  onSave
+}) => {
+  if (!isOpen || !photo) return null;
+
+  return (
+    <div className="pet-camera-modal" role="presentation" onMouseDown={onClose}>
+      <div
+        className="pet-camera-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pet-camera-modal-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="pet-camera-modal__close"
+          onClick={onClose}
+          disabled={isSaving}
+          aria-label="Close pet photo save modal"
+        >
+          <LuX aria-hidden="true" />
+        </button>
+
+        <div className="pet-camera-modal__preview">
+          <img src={photo.preview} alt="Captured pet preview" />
+        </div>
+
+        <form className="pet-camera-modal__form" onSubmit={onSave}>
+          <h2 id="pet-camera-modal-title" className="pet-camera-modal__title">Save Pet Photo</h2>
+
+          <label className="pet-camera-modal__field">
+            <span>Title</span>
+            <input
+              type="text"
+              value={title}
+              onChange={(event) => onTitleChange(event.target.value)}
+              placeholder="Pet photo title"
+              disabled={isSaving}
+              maxLength={120}
+              autoFocus
+            />
+          </label>
+
+          <div className="pet-camera-modal__targets" role="radiogroup" aria-label="Save destination">
+            {PET_CAMERA_SAVE_TARGETS.map(({ key, label, description, Icon }) => {
+              const isSelected = target === key;
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`pet-camera-modal__target ${isSelected ? 'pet-camera-modal__target--selected' : ''}`}
+                  onClick={() => onTargetChange(key)}
+                  role="radio"
+                  aria-checked={isSelected}
+                  disabled={isSaving}
+                >
+                  <Icon className="pet-camera-modal__target-icon" aria-hidden="true" />
+                  <span className="pet-camera-modal__target-copy">
+                    <strong>{label}</strong>
+                    <small>{description}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {error && (
+            <p className="pet-camera-modal__error" role="alert">{error}</p>
+          )}
+
+          <div className="pet-camera-modal__actions">
+            <button type="button" className="pet-camera-modal__secondary" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </button>
+            <button type="submit" className="pet-camera-modal__primary" disabled={isSaving || !title.trim()}>
+              <LuCheck aria-hidden="true" />
+              <span>{isSaving ? 'Saving...' : 'Save'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const PetPage = ({ onBack }) => {
   const navigate = useNavigate();
   const petSaveQueueRef = useRef(Promise.resolve());
@@ -1322,9 +1453,16 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const cameraPoseTimerRef = useRef(null);
+  const cameraPickerFallbackTimerRef = useRef(null);
   const cameraInputRef = useRef(null);
   const [isCameraPoseActive, setIsCameraPoseActive] = useState(false);
   const [cameraPhase, setCameraPhase] = useState('idle'); // 'idle', 'raising', 'capturing', 'flash', 'lowering'
+  const [capturedPetPhoto, setCapturedPetPhoto] = useState(null);
+  const [petPhotoTitle, setPetPhotoTitle] = useState('');
+  const [petPhotoTarget, setPetPhotoTarget] = useState('gallery');
+  const [isPetPhotoModalOpen, setIsPetPhotoModalOpen] = useState(false);
+  const [isSavingPetPhoto, setIsSavingPetPhoto] = useState(false);
+  const [petPhotoSaveError, setPetPhotoSaveError] = useState('');
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -1920,7 +2058,16 @@ useEffect(() => {
     if (cameraPoseTimerRef.current) {
       window.clearTimeout(cameraPoseTimerRef.current);
     }
+    if (cameraPickerFallbackTimerRef.current) {
+      window.clearTimeout(cameraPickerFallbackTimerRef.current);
+    }
   }, []);
+
+  useEffect(() => () => {
+    if (capturedPetPhoto?.preview) {
+      URL.revokeObjectURL(capturedPetPhoto.preview);
+    }
+  }, [capturedPetPhoto]);
 
   // Auto wake up at 5 AM - show awakening effect
   useEffect(() => {
@@ -2522,28 +2669,121 @@ useEffect(() => {
     }
   };
 
-  const handleCameraPose = () => {
-    if (isSleeping || isAwakening || cameraPhase !== 'idle') return;
+  const resetCameraInput = () => {
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+  };
+
+  const handleClosePetPhotoModal = () => {
+    if (isSavingPetPhoto) return;
+
+    setIsPetPhotoModalOpen(false);
+    setCapturedPetPhoto(null);
+    setPetPhotoTitle('');
+    setPetPhotoTarget('gallery');
+    setPetPhotoSaveError('');
+    resetCameraInput();
+  };
+
+  const handleSavePetPhoto = async (event) => {
+    event.preventDefault();
+
+    if (!capturedPetPhoto?.file || isSavingPetPhoto) return;
+
+    const title = petPhotoTitle.trim();
+    if (!title) {
+      setPetPhotoSaveError('Please enter a title before saving.');
+      return;
+    }
+
+    setIsSavingPetPhoto(true);
+    setPetPhotoSaveError('');
+
+    try {
+      const result = petPhotoTarget === 'album'
+        ? await savePhotoAlbum({
+          description: title,
+          imageFiles: [capturedPetPhoto.file]
+        })
+        : await uploadProfileGalleryImages(null, [capturedPetPhoto.file], title, title);
+
+      if (!result.success) {
+        setPetPhotoSaveError(result.message || 'Could not save this pet photo. Please try again.');
+        return;
+      }
+
+      try { clearNocoDBCache(); } catch { }
+
+      if (petPhotoTarget === 'album') {
+        try { window.dispatchEvent(new Event('photoalbum:refresh')); } catch { }
+        setActiveTab('album');
+      } else {
+        try { window.dispatchEvent(new Event('gallery:refresh')); } catch { }
+        setActiveTab('gallery');
+      }
+
+      setIsPetPhotoModalOpen(false);
+      setCapturedPetPhoto(null);
+      setPetPhotoTitle('');
+      setPetPhotoTarget('gallery');
+      resetCameraInput();
+    } catch (error) {
+      console.error('❌ Error saving pet camera photo:', error);
+      setPetPhotoSaveError(error.message || 'Could not save this pet photo. Please try again.');
+    } finally {
+      setIsSavingPetPhoto(false);
+    }
+  };
+
+  const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
+  const isPetCameraBusy = cameraPhase !== 'idle';
+  const isPetCameraDisabled = isPetCameraBaseDisabled || isPetCameraBusy;
+
+  const handleCameraPose = (event) => {
+    if (isPetCameraBaseDisabled || isPetCameraBusy) {
+      event?.preventDefault();
+      return;
+    }
 
     if (cameraPoseTimerRef.current) {
       window.clearTimeout(cameraPoseTimerRef.current);
+      cameraPoseTimerRef.current = null;
     }
 
-    // Phase 1: Raise camera
+    resetCameraInput();
     setCameraPhase('raising');
     setIsCameraPoseActive(true);
 
-    // After raising, trigger mobile camera
     cameraPoseTimerRef.current = window.setTimeout(() => {
       setCameraPhase('capturing');
-      // Trigger camera input
-      if (cameraInputRef.current) {
-        cameraInputRef.current.click();
-      }
     }, PET_CAMERA_RAISE_DURATION_MS);
+
+    cameraPickerFallbackTimerRef.current = window.setTimeout(() => {
+      if (!cameraInputRef.current?.files?.length) {
+        setCameraPhase('idle');
+        setIsCameraPoseActive(false);
+        cameraPickerFallbackTimerRef.current = null;
+      }
+    }, PET_CAMERA_RAISE_DURATION_MS + 2500);
+  };
+
+  const handleCameraKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    handleCameraPose(event);
+
+    if (!isPetCameraDisabled && cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
   };
 
   const handleCameraCapture = (event) => {
+    if (cameraPickerFallbackTimerRef.current) {
+      window.clearTimeout(cameraPickerFallbackTimerRef.current);
+      cameraPickerFallbackTimerRef.current = null;
+    }
+
     const file = event.target.files?.[0];
     if (!file) {
       // User cancelled, reset to idle
@@ -2553,6 +2793,7 @@ useEffect(() => {
         window.clearTimeout(cameraPoseTimerRef.current);
         cameraPoseTimerRef.current = null;
       }
+      resetCameraInput();
       return;
     }
 
@@ -2570,11 +2811,16 @@ useEffect(() => {
         cameraPoseTimerRef.current = null;
 
         // Reset input for next capture
-        if (cameraInputRef.current) {
-          cameraInputRef.current.value = '';
-        }
-
-        // TODO: Handle the captured photo (upload to gallery, etc.)
+        resetCameraInput();
+        setCapturedPetPhoto({
+          id: Date.now() + Math.random(),
+          file,
+          preview: URL.createObjectURL(file)
+        });
+        setPetPhotoTitle(createPetCameraDefaultTitle());
+        setPetPhotoTarget('gallery');
+        setPetPhotoSaveError('');
+        setIsPetPhotoModalOpen(true);
         console.log('📸 Photo captured:', file.name);
       }, PET_CAMERA_LOWER_DURATION_MS);
     }, PET_CAMERA_FLASH_DURATION_MS + PET_CAMERA_POST_FLASH_HOLD_MS);
@@ -2646,27 +2892,29 @@ useEffect(() => {
             aria-hidden="true"
           />
 
-          {/* Hidden camera input for mobile */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleCameraCapture}
-            style={{ display: 'none' }}
-            aria-hidden="true"
-          />
-
-          <button
-            type="button"
-            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''}`}
+          <label
+            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
             onClick={handleCameraPose}
-            disabled={isSleeping || isAwakening || cameraPhase !== 'idle'}
+            onKeyDown={handleCameraKeyDown}
             aria-label="Take a pet photo"
+            aria-disabled={isPetCameraDisabled}
             aria-pressed={isCameraPoseActive}
+            role="button"
+            tabIndex={isPetCameraDisabled ? -1 : 0}
           >
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleCameraCapture}
+              disabled={isPetCameraBaseDisabled}
+              className="pet-stage-camera-button__input"
+              aria-hidden="true"
+              tabIndex={-1}
+            />
             <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
-          </button>
+          </label>
 
           {isPetCharacterDebugEnabled && (
             <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
@@ -3098,6 +3346,19 @@ useEffect(() => {
           setSelectedPetUseItem(null);
         }}
         onConfirm={handleConfirmUsePetItem}
+      />
+
+      <PetCameraSaveModal
+        isOpen={isPetPhotoModalOpen}
+        photo={capturedPetPhoto}
+        title={petPhotoTitle}
+        target={petPhotoTarget}
+        isSaving={isSavingPetPhoto}
+        error={petPhotoSaveError}
+        onTitleChange={setPetPhotoTitle}
+        onTargetChange={setPetPhotoTarget}
+        onClose={handleClosePetPhotoModal}
+        onSave={handleSavePetPhoto}
       />
 
       <UpdateLocationModal
