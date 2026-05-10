@@ -2815,8 +2815,15 @@
   }
 
   .pet-character {
+    left: calc(50% - 12px);
     scale: 0.75;
     bottom: 52px;
+  }
+
+  .pet-character__shadow {
+    bottom: 65px;
+    width: 60px;
+    height: 9px;
   }
 
   .pet-tabs {
