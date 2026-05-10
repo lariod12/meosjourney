@@ -329,6 +329,10 @@ const BIOLOGICAL_CLOCK_MESSAGES = {
 
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
+const PET_CAMERA_RAISE_DURATION_MS = 1000;
+const PET_CAMERA_FLASH_DURATION_MS = 500;
+const PET_CAMERA_POST_FLASH_HOLD_MS = 500;
+const PET_CAMERA_LOWER_DURATION_MS = 1000;
 
 const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
 
@@ -1318,7 +1322,9 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const cameraPoseTimerRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const [isCameraPoseActive, setIsCameraPoseActive] = useState(false);
+  const [cameraPhase, setCameraPhase] = useState('idle'); // 'idle', 'raising', 'capturing', 'flash', 'lowering'
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -1460,7 +1466,11 @@ const PetPage = ({ onBack }) => {
     'pet-character--pet',
     `pet-character--${activePetCharacterPresentation.state}`,
     `pet-character--effect-${activePetCharacterPresentation.effect}`,
-    isCameraPoseActive ? 'pet-character--camera-active' : ''
+    isCameraPoseActive ? 'pet-character--camera-active' : '',
+    cameraPhase === 'raising' ? 'pet-character--camera-raising' : '',
+    cameraPhase === 'capturing' ? 'pet-character--camera-capturing' : '',
+    cameraPhase === 'flash' ? 'pet-character--camera-flash' : '',
+    cameraPhase === 'lowering' ? 'pet-character--camera-lowering' : ''
   ].filter(Boolean).join(' ');
   const petCharacterShadowClassName = [
     'pet-character__shadow',
@@ -2513,17 +2523,61 @@ useEffect(() => {
   };
 
   const handleCameraPose = () => {
-    if (isSleeping || isAwakening) return;
+    if (isSleeping || isAwakening || cameraPhase !== 'idle') return;
 
     if (cameraPoseTimerRef.current) {
       window.clearTimeout(cameraPoseTimerRef.current);
     }
 
+    // Phase 1: Raise camera
+    setCameraPhase('raising');
     setIsCameraPoseActive(true);
+
+    // After raising, trigger mobile camera
     cameraPoseTimerRef.current = window.setTimeout(() => {
+      setCameraPhase('capturing');
+      // Trigger camera input
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click();
+      }
+    }, PET_CAMERA_RAISE_DURATION_MS);
+  };
+
+  const handleCameraCapture = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      // User cancelled, reset to idle
+      setCameraPhase('idle');
       setIsCameraPoseActive(false);
-      cameraPoseTimerRef.current = null;
-    }, 2400);
+      if (cameraPoseTimerRef.current) {
+        window.clearTimeout(cameraPoseTimerRef.current);
+        cameraPoseTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Phase 3: Flash effect immediately
+    setCameraPhase('flash');
+
+    // Let flash finish, hold 1s, then lower camera
+    cameraPoseTimerRef.current = window.setTimeout(() => {
+      setCameraPhase('lowering');
+
+      // Lower camera animation
+      cameraPoseTimerRef.current = window.setTimeout(() => {
+        setCameraPhase('idle');
+        setIsCameraPoseActive(false);
+        cameraPoseTimerRef.current = null;
+
+        // Reset input for next capture
+        if (cameraInputRef.current) {
+          cameraInputRef.current.value = '';
+        }
+
+        // TODO: Handle the captured photo (upload to gallery, etc.)
+        console.log('📸 Photo captured:', file.name);
+      }, PET_CAMERA_LOWER_DURATION_MS);
+    }, PET_CAMERA_FLASH_DURATION_MS + PET_CAMERA_POST_FLASH_HOLD_MS);
   };
 
   return (
@@ -2588,7 +2642,18 @@ useEffect(() => {
           {/* Ground line */}
           <div className="stage-ground" aria-hidden="true"></div>
           <span
-            className={`pet-stage-camera-flash-screen ${isCameraPoseActive ? 'pet-stage-camera-flash-screen--active' : ''}`}
+            className={`pet-stage-camera-flash-screen ${cameraPhase === 'flash' ? 'pet-stage-camera-flash-screen--active' : ''}`}
+            aria-hidden="true"
+          />
+
+          {/* Hidden camera input for mobile */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleCameraCapture}
+            style={{ display: 'none' }}
             aria-hidden="true"
           />
 
@@ -2596,7 +2661,7 @@ useEffect(() => {
             type="button"
             className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''}`}
             onClick={handleCameraPose}
-            disabled={isSleeping || isAwakening}
+            disabled={isSleeping || isAwakening || cameraPhase !== 'idle'}
             aria-label="Take a pet photo"
             aria-pressed={isCameraPoseActive}
           >
