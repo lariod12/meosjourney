@@ -281,13 +281,20 @@
   z-index: 34;
   height: var(--pet-camera-overlay-height);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 220ms ease;
+  transition:
+    opacity 220ms ease,
+    visibility 0s linear 220ms;
 }
 
 .pet-camera-action-overlay--visible {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+  transition:
+    opacity 220ms ease,
+    visibility 0s linear 0s;
 }
 
 .pet-camera-action-overlay__backdrop {
