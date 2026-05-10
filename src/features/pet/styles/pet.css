@@ -23,6 +23,9 @@
 }
 
 .pet-stage {
+  --pet-character-bottom: 68px;
+  --pet-character-scale: 1;
+  --pet-shadow-gap: 10px;
   position: relative;
   min-height: 0;
   background: #ffffff;
@@ -998,11 +1001,10 @@
 }
 
 .pet-character {
-  --pet-character-scale: 1;
   position: absolute;
   z-index: 5;
   left: 50%;
-  bottom: 68px;
+  bottom: var(--pet-character-bottom);
   width: 140px;
   height: 180px;
   transform: translateX(-50%) scale(var(--pet-character-scale));
@@ -1341,7 +1343,7 @@
 .pet-character__shadow {
   position: absolute;
   left: 50%;
-  bottom: 55px;
+  bottom: calc(var(--pet-character-bottom) - var(--pet-shadow-gap));
   width: 80px;
   height: 12px;
   border-radius: 50%;
@@ -2775,9 +2777,8 @@
 
 @media (max-width: 430px) {
   .pet-stage {
-    --pet-mobile-character-bottom: 80px;
-    --pet-mobile-shadow-bottom: 70px;
-    --pet-mobile-character-scale: 0.75;
+    --pet-character-bottom: 80px;
+    --pet-character-scale: 0.75;
   }
 
   .pet-phone {
@@ -2823,13 +2824,10 @@
 
   .pet-character {
     left: 50%;
-    --pet-character-scale: var(--pet-mobile-character-scale);
-    bottom: var(--pet-mobile-character-bottom);
   }
 
   .pet-character__shadow {
     left: 50%;
-    bottom: var(--pet-mobile-shadow-bottom);
     width: 60px;
     height: 9px;
   }
