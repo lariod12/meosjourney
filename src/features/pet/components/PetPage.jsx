@@ -342,6 +342,7 @@ const PET_CAMERA_RAISE_DURATION_MS = 1000;
 const PET_CAMERA_FLASH_DURATION_MS = 500;
 const PET_CAMERA_POST_FLASH_HOLD_MS = 500;
 const PET_CAMERA_LOWER_DURATION_MS = 1000;
+const PET_CAMERA_READY_TIMEOUT_MS = 10000;
 
 const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
 
@@ -2675,6 +2676,32 @@ useEffect(() => {
     }
   };
 
+  const lowerPetCameraPose = () => {
+    if (cameraPoseTimerRef.current) {
+      window.clearTimeout(cameraPoseTimerRef.current);
+      cameraPoseTimerRef.current = null;
+    }
+    if (cameraPickerFallbackTimerRef.current) {
+      window.clearTimeout(cameraPickerFallbackTimerRef.current);
+      cameraPickerFallbackTimerRef.current = null;
+    }
+
+    if (!isCameraPoseActive && cameraPhase === 'idle') {
+      resetCameraInput();
+      return;
+    }
+
+    setCameraPhase('lowering');
+    setIsCameraPoseActive(true);
+
+    cameraPoseTimerRef.current = window.setTimeout(() => {
+      setCameraPhase('idle');
+      setIsCameraPoseActive(false);
+      cameraPoseTimerRef.current = null;
+      resetCameraInput();
+    }, PET_CAMERA_LOWER_DURATION_MS);
+  };
+
   const handleClosePetPhotoModal = () => {
     if (isSavingPetPhoto) return;
 
@@ -2683,7 +2710,7 @@ useEffect(() => {
     setPetPhotoTitle('');
     setPetPhotoTarget('gallery');
     setPetPhotoSaveError('');
-    resetCameraInput();
+    lowerPetCameraPose();
   };
 
   const handleSavePetPhoto = async (event) => {
@@ -2727,7 +2754,7 @@ useEffect(() => {
       setCapturedPetPhoto(null);
       setPetPhotoTitle('');
       setPetPhotoTarget('gallery');
-      resetCameraInput();
+      lowerPetCameraPose();
     } catch (error) {
       console.error('❌ Error saving pet camera photo:', error);
       setPetPhotoSaveError(error.message || 'Could not save this pet photo. Please try again.');
@@ -2737,10 +2764,14 @@ useEffect(() => {
   };
 
   const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
+  const isPetCameraReady = cameraPhase === 'capturing';
   const isPetCameraBusy = cameraPhase !== 'idle';
-  const isPetCameraDisabled = isPetCameraBaseDisabled || isPetCameraBusy;
+  const isPetCameraControlDisabled = isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
+  const isPetCameraInputDisabled = isPetCameraBaseDisabled || !isPetCameraReady;
 
   const handleCameraPose = (event) => {
+    if (event?.target === cameraInputRef.current) return;
+
     if (isPetCameraBaseDisabled || isPetCameraBusy) {
       event?.preventDefault();
       return;
@@ -2765,17 +2796,23 @@ useEffect(() => {
         setIsCameraPoseActive(false);
         cameraPickerFallbackTimerRef.current = null;
       }
-    }, PET_CAMERA_RAISE_DURATION_MS + 2500);
+    }, PET_CAMERA_RAISE_DURATION_MS + PET_CAMERA_READY_TIMEOUT_MS);
   };
 
   const handleCameraKeyDown = (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    handleCameraPose(event);
 
-    if (!isPetCameraDisabled && cameraInputRef.current) {
+    if (isPetCameraReady && cameraInputRef.current) {
       cameraInputRef.current.click();
+      return;
     }
+
+    handleCameraPose(event);
+  };
+
+  const handleCancelPetCamera = () => {
+    lowerPetCameraPose();
   };
 
   const handleCameraCapture = (event) => {
@@ -2786,43 +2823,28 @@ useEffect(() => {
 
     const file = event.target.files?.[0];
     if (!file) {
-      // User cancelled, reset to idle
-      setCameraPhase('idle');
-      setIsCameraPoseActive(false);
-      if (cameraPoseTimerRef.current) {
-        window.clearTimeout(cameraPoseTimerRef.current);
-        cameraPoseTimerRef.current = null;
-      }
-      resetCameraInput();
+      lowerPetCameraPose();
       return;
     }
 
     // Phase 3: Flash effect immediately
     setCameraPhase('flash');
 
-    // Let flash finish, hold 1s, then lower camera
+    // Let flash finish, then keep the camera raised while the save modal is open.
     cameraPoseTimerRef.current = window.setTimeout(() => {
-      setCameraPhase('lowering');
-
-      // Lower camera animation
-      cameraPoseTimerRef.current = window.setTimeout(() => {
-        setCameraPhase('idle');
-        setIsCameraPoseActive(false);
-        cameraPoseTimerRef.current = null;
-
-        // Reset input for next capture
-        resetCameraInput();
-        setCapturedPetPhoto({
-          id: Date.now() + Math.random(),
-          file,
-          preview: URL.createObjectURL(file)
-        });
-        setPetPhotoTitle(createPetCameraDefaultTitle());
-        setPetPhotoTarget('gallery');
-        setPetPhotoSaveError('');
-        setIsPetPhotoModalOpen(true);
-        console.log('📸 Photo captured:', file.name);
-      }, PET_CAMERA_LOWER_DURATION_MS);
+      setCameraPhase('capturing');
+      cameraPoseTimerRef.current = null;
+      resetCameraInput();
+      setCapturedPetPhoto({
+        id: Date.now() + Math.random(),
+        file,
+        preview: URL.createObjectURL(file)
+      });
+      setPetPhotoTitle(createPetCameraDefaultTitle());
+      setPetPhotoTarget('gallery');
+      setPetPhotoSaveError('');
+      setIsPetPhotoModalOpen(true);
+      console.log('📸 Photo captured:', file.name);
     }, PET_CAMERA_FLASH_DURATION_MS + PET_CAMERA_POST_FLASH_HOLD_MS);
   };
 
@@ -2893,14 +2915,14 @@ useEffect(() => {
           />
 
           <label
-            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
+            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraReady ? 'pet-stage-camera-button--ready' : ''} ${isPetCameraControlDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
             onClick={handleCameraPose}
             onKeyDown={handleCameraKeyDown}
-            aria-label="Take a pet photo"
-            aria-disabled={isPetCameraDisabled}
+            aria-label={isPetCameraReady ? 'Open camera to take a pet photo' : 'Raise pet camera'}
+            aria-disabled={isPetCameraControlDisabled}
             aria-pressed={isCameraPoseActive}
             role="button"
-            tabIndex={isPetCameraDisabled ? -1 : 0}
+            tabIndex={isPetCameraControlDisabled ? -1 : 0}
           >
             <input
               ref={cameraInputRef}
@@ -2908,13 +2930,24 @@ useEffect(() => {
               accept="image/*"
               capture="environment"
               onChange={handleCameraCapture}
-              disabled={isPetCameraBaseDisabled}
+              disabled={isPetCameraInputDisabled}
               className="pet-stage-camera-button__input"
               aria-hidden="true"
               tabIndex={-1}
             />
             <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
           </label>
+
+          {isPetCameraReady && !isPetPhotoModalOpen && (
+            <button
+              type="button"
+              className="pet-stage-camera-cancel-button"
+              onClick={handleCancelPetCamera}
+              aria-label="Cancel pet camera"
+            >
+              <LuX aria-hidden="true" />
+            </button>
+          )}
 
           {isPetCharacterDebugEnabled && (
             <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
