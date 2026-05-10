@@ -303,7 +303,7 @@
 }
 
 .pet-stage-camera-button--active {
-  animation: pet-camera-button-pop 2.4s ease-out both;
+  animation: pet-camera-button-pop 400ms ease-out both;
 }
 
 .pet-stage-camera-button--ready {
@@ -2476,18 +2476,18 @@
   }
 }
 
-/* Phase 1: Raising camera (0-1s) */
+/* Phase 1: Raising camera */
 .pet-character--camera-raising {
-  animation: pet-camera-raise-body 1s ease-out both !important;
+  animation: pet-camera-raise-body 400ms ease-out both !important;
 }
 
 .pet-character--camera-raising .pet-character__arm--left {
-  animation: pet-camera-raise-arm-left 1s ease-out both !important;
+  animation: pet-camera-raise-arm-left 400ms ease-out both !important;
   transform-origin: top center;
 }
 
 .pet-character--camera-raising .pet-character__arm--right {
-  animation: pet-camera-raise-arm-right 1s ease-out both !important;
+  animation: pet-camera-raise-arm-right 400ms ease-out both !important;
   transform-origin: top center;
 }
 
@@ -2496,19 +2496,19 @@
 }
 
 .pet-character--camera-raising .pet-character__camera {
-  animation: pet-camera-raise-lift 1s ease-out both;
+  animation: pet-camera-raise-lift 400ms ease-out both;
 }
 
 .pet-character--camera-raising .pet-character__camera-hold-arm {
-  animation: pet-camera-raise-curved-arm 1s ease-out both;
+  animation: pet-camera-raise-curved-arm 400ms ease-out both;
 }
 
 .pet-character--camera-raising .pet-character__eye {
-  animation: pet-camera-raise-focus-eyes 1s ease-out both;
+  animation: pet-camera-raise-focus-eyes 400ms ease-out both;
 }
 
 .pet-character--camera-raising .pet-character__mouth {
-  animation: pet-camera-raise-smile 1s ease-out both;
+  animation: pet-camera-raise-smile 400ms ease-out both;
 }
 
 /* Phase 2: Capturing (hold position) */
@@ -2571,18 +2571,18 @@
   width: 18px;
 }
 
-/* Phase 4: Lowering camera (1.4s) */
+/* Phase 4: Lowering camera */
 .pet-character--camera-lowering {
-  animation: pet-camera-lower-body 1.4s ease-out both !important;
+  animation: pet-camera-lower-body 400ms ease-out both !important;
 }
 
 .pet-character--camera-lowering .pet-character__arm--left {
-  animation: pet-camera-lower-arm-left 1.4s ease-out both !important;
+  animation: pet-camera-lower-arm-left 400ms ease-out both !important;
   transform-origin: top center;
 }
 
 .pet-character--camera-lowering .pet-character__arm--right {
-  animation: pet-camera-lower-arm-right 1.4s ease-out both !important;
+  animation: pet-camera-lower-arm-right 400ms ease-out both !important;
   transform-origin: top center;
 }
 
@@ -2591,19 +2591,19 @@
 }
 
 .pet-character--camera-lowering .pet-character__camera {
-  animation: pet-camera-lower-lift 1.4s ease-out both;
+  animation: pet-camera-lower-lift 400ms ease-out both;
 }
 
 .pet-character--camera-lowering .pet-character__camera-hold-arm {
-  animation: pet-camera-lower-curved-arm 1.4s ease-out both;
+  animation: pet-camera-lower-curved-arm 400ms ease-out both;
 }
 
 .pet-character--camera-lowering .pet-character__eye {
-  animation: pet-camera-lower-eyes 1.4s ease-out both;
+  animation: pet-camera-lower-eyes 400ms ease-out both;
 }
 
 .pet-character--camera-lowering .pet-character__mouth {
-  animation: pet-camera-lower-smile 1.4s ease-out both;
+  animation: pet-camera-lower-smile 400ms ease-out both;
 }
 
 /* Raise animations */
