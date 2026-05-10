@@ -14,7 +14,9 @@ import {
   LuImage, LuGalleryHorizontal, LuX, LuCheck
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
-import { LanguageProvider } from '../../../contexts';
+import { LanguageProvider, CharacterProvider } from '../../../contexts';
+import { characterData } from '../../../data/characterData';
+import { useCharacterData } from '../../../hooks/useCharacterData';
 import {
   CHARACTER_ID,
   clearNocoDBCache,
@@ -28,6 +30,7 @@ import {
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
 import { PhotoAlbumTab, GalleryTab } from '../../photoalbum/components';
+import { JournalTab, HistoryTab } from '../../journal/components';
 import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
@@ -211,6 +214,8 @@ const TABS = [
   { key: 'moods', label: 'Moods', Icon: LuSmile },
   { key: 'album', label: 'Album', Icon: LuImage },
   { key: 'gallery', label: 'Gallery', Icon: LuGalleryHorizontal },
+  { key: 'journal', label: 'Journal', Icon: LuFootprints },
+  { key: 'history', label: 'History', Icon: LuBookOpen },
   { key: 'status', label: 'Status', Icon: LuGauge }
 ];
 
@@ -1398,6 +1403,7 @@ const PetCameraSaveModal = ({
 
 const PetPage = ({ onBack }) => {
   const navigate = useNavigate();
+  const { data: characterDataState, loading: characterLoading } = useCharacterData(characterData);
   const petSaveQueueRef = useRef(Promise.resolve());
   const statusSaveQueueRef = useRef(Promise.resolve());
   const petPhotoSaveQueueRef = useRef(Promise.resolve());
@@ -3207,6 +3213,22 @@ useEffect(() => {
                 <LanguageProvider initialLang="VI">
                   <GalleryTab isActive={activeTab === 'gallery'} />
                 </LanguageProvider>
+              </div>
+            ) : activeTab === 'journal' ? (
+              <div className="pet-media-panel pet-media-panel--journal">
+                <CharacterProvider data={characterDataState}>
+                  <LanguageProvider initialLang="VI">
+                    <JournalTab isActive={activeTab === 'journal'} />
+                  </LanguageProvider>
+                </CharacterProvider>
+              </div>
+            ) : activeTab === 'history' ? (
+              <div className="pet-media-panel pet-media-panel--history">
+                <CharacterProvider data={characterDataState}>
+                  <LanguageProvider initialLang="VI">
+                    <HistoryTab isActive={activeTab === 'history'} />
+                  </LanguageProvider>
+                </CharacterProvider>
               </div>
             ) : (
               <div className="pet-item-grid">
