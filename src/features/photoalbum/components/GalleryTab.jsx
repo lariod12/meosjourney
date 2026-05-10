@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { fetchHomePageGallery } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
 import './GalleryTab.css';
@@ -240,7 +241,7 @@ const GalleryTab = ({ isActive = true }) => {
       </div>
 
       {/* Modal for viewing full gallery */}
-      {selectedGallery && (
+      {selectedGallery && typeof document !== 'undefined' && createPortal((
         <div className="gallery-modal" onClick={() => setSelectedGallery(null)}>
           <div className="gallery-modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
             <button
@@ -327,7 +328,7 @@ const GalleryTab = ({ isActive = true }) => {
             )}
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 };

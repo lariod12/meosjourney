@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { fetchPhotoAlbums } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
 import './PhotoAlbumTab.css';
@@ -246,7 +247,7 @@ const PhotoAlbumTab = ({ isActive = true }) => {
       </div>
 
       {/* Modal for viewing full album*/}
-      {selectedAlbum && (
+      {selectedAlbum && typeof document !== 'undefined' && createPortal((
         <div className="photoalbum-modal" onClick={() => setSelectedAlbum(null)}>
           <div className="photoalbum-modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
             <button
@@ -340,7 +341,7 @@ const PhotoAlbumTab = ({ isActive = true }) => {
             )}
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 };
