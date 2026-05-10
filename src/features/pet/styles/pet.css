@@ -13,7 +13,7 @@
 .pet-phone {
   --pet-tab-height: 66px;
   --pet-camera-overlay-height: min(48dvh, 460px);
-  --pet-camera-backdrop-lift: 64px;
+  --pet-camera-backdrop-lift: 30px;
   --pet-camera-backdrop-top: calc(max(480px, 58dvh) + var(--pet-camera-overlay-height) - 100dvh - 26px);
   position: relative;
   width: min(100vw, 520px);
@@ -305,7 +305,7 @@
 
 .pet-camera-action-overlay__controls {
   position: absolute;
-  top: 100px;
+  top: 150px;
   left: 50%;
   width: 166px;
   height: 122px;
