@@ -269,24 +269,79 @@
   transition: transform 0.25s ease;
 }
 
-.pet-stage-camera-button {
+.pet-camera-action-overlay {
   position: absolute;
-  right: 16px;
-  bottom: 132px;
-  z-index: 14;
-  width: 52px;
-  height: 52px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 34;
+  height: min(48dvh, 460px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.pet-camera-action-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pet-camera-action-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0 14px, rgba(242, 242, 242, 0.62) 14px 28px),
+    rgba(255, 255, 255, 0.74);
+  border-top: 4px solid #000000;
+  pointer-events: auto;
+}
+
+.pet-camera-action-overlay__controls {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: min(260px, calc(100% - 72px));
+  height: 132px;
+  transform: translateX(-50%) rotate(-1deg);
   border: 3px solid #000000;
-  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 5px 5px 0 #000000;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.pet-stage-camera-button {
+  position: relative;
+  z-index: 2;
+  width: 92px;
+  height: 92px;
+  border: 3px solid #000000;
+  border-radius: 18px;
   background: #ffffff;
   color: #000000;
-  box-shadow: 3px 3px 0 #000000;
+  box-shadow: 5px 5px 0 #000000;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transform: rotate(1deg);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(16px, 18px) rotate(-20deg) scale(0.62);
+  transform-origin: 50% 70%;
+  transition:
+    opacity 220ms ease,
+    transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1.2),
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+.pet-stage-camera-button--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: rotate(-10deg) scale(1);
 }
 
 .pet-stage-camera-button:hover,
@@ -298,8 +353,16 @@
 .pet-stage-camera-button:disabled,
 .pet-stage-camera-button--disabled {
   cursor: not-allowed;
-  opacity: 0.42;
   box-shadow: 2px 2px 0 #666666;
+}
+
+.pet-stage-camera-button--disabled:not(.pet-stage-camera-button--visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pet-stage-camera-button--visible.pet-stage-camera-button--disabled {
+  opacity: 1;
 }
 
 .pet-stage-camera-button--active {
@@ -309,13 +372,13 @@
 .pet-stage-camera-button--ready {
   background: #000000;
   color: #ffffff;
-  box-shadow: 4px 4px 0 #000000;
+  box-shadow: 6px 6px 0 #000000;
 }
 
 .pet-stage-camera-button__icon {
-  width: 24px;
-  height: 24px;
-  stroke-width: 2.7;
+  width: 42px;
+  height: 42px;
+  stroke-width: 2.5;
   pointer-events: none;
 }
 
@@ -335,20 +398,21 @@
 
 .pet-stage-camera-cancel-button {
   position: absolute;
-  right: 8px;
-  bottom: 188px;
-  z-index: 15;
-  width: 38px;
-  height: 38px;
+  right: -16px;
+  top: -18px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
   border: 3px solid #000000;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
   color: #000000;
   box-shadow: 3px 3px 0 #000000;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transform: rotate(-2deg);
+  transform: rotate(6deg);
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -360,8 +424,8 @@
 }
 
 .pet-stage-camera-cancel-button svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   stroke-width: 3;
 }
 
@@ -1269,6 +1333,15 @@
   transform-origin: 50% 100%;
   animation: none;
   will-change: transform;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.pet-character:focus-visible {
+  outline: 3px solid #666666;
+  outline-offset: 8px;
+  border-radius: 16px;
 }
 
 /* Đầu vuông đơn giản */
@@ -2452,16 +2525,16 @@
 @keyframes pet-camera-button-pop {
   0%,
   100% {
-    transform: rotate(1deg) scale(1);
-    box-shadow: 3px 3px 0 #000000;
+    transform: rotate(-10deg) scale(1);
+    box-shadow: 5px 5px 0 #000000;
   }
   16% {
-    transform: rotate(-4deg) scale(0.92);
-    box-shadow: 2px 2px 0 #000000;
+    transform: rotate(-17deg) scale(0.92);
+    box-shadow: 3px 3px 0 #000000;
   }
   32% {
-    transform: rotate(3deg) scale(1.08);
-    box-shadow: 4px 4px 0 #000000;
+    transform: rotate(-4deg) scale(1.08);
+    box-shadow: 6px 6px 0 #000000;
   }
 }
 

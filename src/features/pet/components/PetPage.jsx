@@ -1458,6 +1458,7 @@ const PetPage = ({ onBack }) => {
   const cameraPickerFallbackTimerRef = useRef(null);
   const cameraInputRef = useRef(null);
   const [isCameraPoseActive, setIsCameraPoseActive] = useState(false);
+  const [isPetCameraControlVisible, setIsPetCameraControlVisible] = useState(false);
   const [cameraPhase, setCameraPhase] = useState('idle'); // 'idle', 'raising', 'capturing', 'flash', 'lowering'
   const [capturedPetPhoto, setCapturedPetPhoto] = useState(null);
   const [petPhotoTitle, setPetPhotoTitle] = useState('');
@@ -2678,6 +2679,8 @@ useEffect(() => {
   };
 
   const lowerPetCameraPose = () => {
+    setIsPetCameraControlVisible(false);
+
     if (cameraPoseTimerRef.current) {
       window.clearTimeout(cameraPoseTimerRef.current);
       cameraPoseTimerRef.current = null;
@@ -2787,13 +2790,34 @@ useEffect(() => {
   const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
   const isPetCameraReady = cameraPhase === 'capturing';
   const isPetCameraBusy = cameraPhase !== 'idle';
-  const isPetCameraControlDisabled = isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
-  const isPetCameraInputDisabled = isPetCameraBaseDisabled || !isPetCameraReady;
+  const isPetCameraControlDisabled = !isPetCameraControlVisible || isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
+  const isPetCameraInputDisabled = !isPetCameraControlVisible || isPetCameraBaseDisabled || !isPetCameraReady;
+
+  const handlePetCharacterCameraToggle = () => {
+    lastInteractionRef.current = Date.now();
+
+    if (cameraPhase === 'flash' || isPetPhotoModalOpen || isSavingPetPhoto) return;
+
+    if (isPetCameraControlVisible || isCameraPoseActive || cameraPhase !== 'idle') {
+      lowerPetCameraPose();
+      return;
+    }
+
+    if (isSleeping || isAwakening) return;
+
+    setIsPetCameraControlVisible(true);
+  };
+
+  const handlePetCharacterCameraKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    handlePetCharacterCameraToggle();
+  };
 
   const handleCameraPose = (event) => {
     if (event?.target === cameraInputRef.current) return;
 
-    if (isPetCameraBaseDisabled || isPetCameraBusy) {
+    if (!isPetCameraControlVisible || isPetCameraBaseDisabled || isPetCameraBusy) {
       event?.preventDefault();
       return;
     }
@@ -2804,6 +2828,7 @@ useEffect(() => {
     }
 
     resetCameraInput();
+    setIsPetCameraControlVisible(true);
     setCameraPhase('raising');
     setIsCameraPoseActive(true);
 
@@ -2815,6 +2840,7 @@ useEffect(() => {
       if (!cameraInputRef.current?.files?.length) {
         setCameraPhase('idle');
         setIsCameraPoseActive(false);
+        setIsPetCameraControlVisible(false);
         cameraPickerFallbackTimerRef.current = null;
       }
     }, PET_CAMERA_RAISE_DURATION_MS + PET_CAMERA_READY_TIMEOUT_MS);
@@ -2830,10 +2856,6 @@ useEffect(() => {
     }
 
     handleCameraPose(event);
-  };
-
-  const handleCancelPetCamera = () => {
-    lowerPetCameraPose();
   };
 
   const handleCameraCapture = (event) => {
@@ -2934,41 +2956,6 @@ useEffect(() => {
             className={`pet-stage-camera-flash-screen ${cameraPhase === 'flash' ? 'pet-stage-camera-flash-screen--active' : ''}`}
             aria-hidden="true"
           />
-
-          <label
-            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraReady ? 'pet-stage-camera-button--ready' : ''} ${isPetCameraControlDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
-            onClick={handleCameraPose}
-            onKeyDown={handleCameraKeyDown}
-            aria-label={isPetCameraReady ? 'Open camera to take a pet photo' : 'Raise pet camera'}
-            aria-disabled={isPetCameraControlDisabled}
-            aria-pressed={isCameraPoseActive}
-            role="button"
-            tabIndex={isPetCameraControlDisabled ? -1 : 0}
-          >
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleCameraCapture}
-              disabled={isPetCameraInputDisabled}
-              className="pet-stage-camera-button__input"
-              aria-hidden="true"
-              tabIndex={-1}
-            />
-            <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
-          </label>
-
-          {isPetCameraReady && !isPetPhotoModalOpen && (
-            <button
-              type="button"
-              className="pet-stage-camera-cancel-button"
-              onClick={handleCancelPetCamera}
-              aria-label="Cancel pet camera"
-            >
-              <LuX aria-hidden="true" />
-            </button>
-          )}
 
           {isPetCharacterDebugEnabled && (
             <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
@@ -3081,7 +3068,15 @@ useEffect(() => {
 
           <span className={petCharacterShadowClassName} aria-hidden="true" />
 
-          <div className={petCharacterClassName} role="img" aria-label="Meo box-head character">
+          <div
+            className={petCharacterClassName}
+            role="button"
+            tabIndex={isSleeping || isAwakening || isPetPhotoModalOpen ? -1 : 0}
+            aria-label={isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control'}
+            aria-pressed={isPetCameraControlVisible || isCameraPoseActive}
+            onClick={handlePetCharacterCameraToggle}
+            onKeyDown={handlePetCharacterCameraKeyDown}
+          >
             <span className="pet-character__head">
               <span className="pet-character__eye pet-character__eye--left" />
               <span className="pet-character__eye pet-character__eye--right" />
@@ -3110,6 +3105,48 @@ useEffect(() => {
                 <span className="pet-sleep-z pet-sleep-z--3">Z</span>
               </div>
             )}
+          </div>
+        </div>
+
+        <div
+          className={`pet-camera-action-overlay ${isPetCameraControlVisible ? 'pet-camera-action-overlay--visible' : ''}`}
+          aria-hidden={!isPetCameraControlVisible}
+        >
+          <div className="pet-camera-action-overlay__backdrop" aria-hidden="true" />
+          <div className="pet-camera-action-overlay__controls">
+            <label
+              className={`pet-stage-camera-button ${isPetCameraControlVisible ? 'pet-stage-camera-button--visible' : ''} ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraReady ? 'pet-stage-camera-button--ready' : ''} ${isPetCameraControlDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
+              onClick={handleCameraPose}
+              onKeyDown={handleCameraKeyDown}
+              aria-label={isPetCameraReady ? 'Open camera to take a pet photo' : 'Raise pet camera'}
+              aria-disabled={isPetCameraControlDisabled}
+              aria-hidden={!isPetCameraControlVisible}
+              aria-pressed={isCameraPoseActive}
+              role="button"
+              tabIndex={isPetCameraControlDisabled ? -1 : 0}
+            >
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleCameraCapture}
+                disabled={isPetCameraInputDisabled}
+                className="pet-stage-camera-button__input"
+                aria-hidden="true"
+                tabIndex={-1}
+              />
+              <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
+            </label>
+            <button
+              type="button"
+              className="pet-stage-camera-cancel-button"
+              onClick={lowerPetCameraPose}
+              aria-label="Close camera controls"
+              tabIndex={isPetCameraControlVisible ? 0 : -1}
+            >
+              <LuX aria-hidden="true" />
+            </button>
           </div>
         </div>
 
