@@ -266,6 +266,61 @@
   transition: transform 0.25s ease;
 }
 
+.pet-stage-camera-button {
+  position: absolute;
+  right: 16px;
+  bottom: 132px;
+  z-index: 14;
+  width: 52px;
+  height: 52px;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 3px 3px 0 #000000;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transform: rotate(1deg);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.pet-stage-camera-button:hover,
+.pet-stage-camera-button:focus-visible {
+  outline: 3px solid #666666;
+  outline-offset: 3px;
+}
+
+.pet-stage-camera-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  box-shadow: 2px 2px 0 #666666;
+}
+
+.pet-stage-camera-button--active {
+  animation: pet-camera-button-pop 2.4s ease-out both;
+}
+
+.pet-stage-camera-button__icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.7;
+}
+
+.pet-stage-camera-flash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pet-stage-camera-flash-screen--active {
+  animation: pet-camera-screen-flash 2.4s ease-out both;
+}
+
 .pet-info-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -1152,6 +1207,134 @@
   transform: rotate(3deg);
 }
 
+.pet-character__camera {
+  position: absolute;
+  left: 50%;
+  top: 68px;
+  z-index: 8;
+  width: 54px;
+  height: 36px;
+  border: 3px solid #000000;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #000000;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 18px) scale(0.74) rotate(-5deg);
+  transform-origin: 50% 80%;
+}
+
+.pet-character__camera::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: -9px;
+  width: 18px;
+  height: 8px;
+  border: 3px solid #000000;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: #ffffff;
+}
+
+.pet-character__camera-lens {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transform: translate(-50%, -50%);
+}
+
+.pet-character__camera-lens::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #000000;
+  transform: translate(-50%, -50%);
+}
+
+.pet-character__camera-hold-arm {
+  position: absolute;
+  top: 22px;
+  width: 17px;
+  height: 43px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.pet-character__camera-hold-arm--left {
+  --pet-camera-arm-curve-rotate: 5deg;
+  left: -12px;
+  border-left: 4px solid #000000;
+  border-bottom: 4px solid #000000;
+  border-radius: 0 0 0 16px;
+  transform: rotate(5deg);
+  transform-origin: 100% 0;
+}
+
+.pet-character__camera-hold-arm--right {
+  --pet-camera-arm-curve-rotate: -5deg;
+  right: -12px;
+  border-right: 4px solid #000000;
+  border-bottom: 4px solid #000000;
+  border-radius: 0 0 16px 0;
+  transform: rotate(-5deg);
+  transform-origin: 0 0;
+}
+
+.pet-character__camera-grip {
+  position: absolute;
+  top: 18px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #000000;
+}
+
+.pet-character__camera-grip--left {
+  left: -7px;
+}
+
+.pet-character__camera-grip--right {
+  right: -7px;
+}
+
+.pet-character__camera-flash {
+  position: absolute;
+  right: -24px;
+  top: -24px;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  transform: scale(0.4) rotate(12deg);
+}
+
+.pet-character__camera-flash::before,
+.pet-character__camera-flash::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 5px;
+  border-radius: 999px;
+  background: #000000;
+  transform: translate(-50%, -50%);
+}
+
+.pet-character__camera-flash::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
 /* Bóng */
 .pet-character__shadow {
   position: absolute;
@@ -1171,6 +1354,12 @@
 
 .pet-character__shadow--effect-hop {
   animation: pet-effect-hop-shadow 0.95s ease-in-out infinite;
+}
+
+.pet-character__shadow--camera-active {
+  animation: none;
+  opacity: 0.32;
+  transform: translateX(-50%) scale(1);
 }
 
 /* Trạng thái needs-care */
@@ -1792,6 +1981,45 @@
   animation: pet-sleep-breathe 2s ease-in-out infinite;
 }
 
+.pet-character--camera-active {
+  animation: pet-camera-body-pose 2.4s ease-out both !important;
+  transform-origin: 50% 100%;
+}
+
+.pet-character--camera-active .pet-character__arm--left {
+  animation: pet-camera-arm-left 2.4s ease-out both !important;
+  transform-origin: top center;
+}
+
+.pet-character--camera-active .pet-character__arm--right {
+  animation: pet-camera-arm-right 2.4s ease-out both !important;
+  transform-origin: top center;
+}
+
+.pet-character--camera-active .pet-character__arm {
+  opacity: 0;
+}
+
+.pet-character--camera-active .pet-character__camera {
+  animation: pet-camera-lift 2.4s ease-out both;
+}
+
+.pet-character--camera-active .pet-character__camera-hold-arm {
+  animation: pet-camera-curved-arm 2.4s ease-out both;
+}
+
+.pet-character--camera-active .pet-character__camera-flash {
+  animation: pet-camera-flash 2.4s ease-out both;
+}
+
+.pet-character--camera-active .pet-character__eye {
+  animation: pet-camera-focus-eyes 2.4s ease-out both;
+}
+
+.pet-character--camera-active .pet-character__mouth {
+  animation: pet-camera-smile 2.4s ease-out both;
+}
+
 @keyframes pet-effect-wobble {
   0%,
   100% {
@@ -1863,6 +2091,154 @@
   }
   72% {
     transform: rotate(-62deg);
+  }
+}
+
+@keyframes pet-camera-button-pop {
+  0%,
+  100% {
+    transform: rotate(1deg) scale(1);
+    box-shadow: 3px 3px 0 #000000;
+  }
+  16% {
+    transform: rotate(-4deg) scale(0.92);
+    box-shadow: 2px 2px 0 #000000;
+  }
+  32% {
+    transform: rotate(3deg) scale(1.08);
+    box-shadow: 4px 4px 0 #000000;
+  }
+}
+
+@keyframes pet-camera-screen-flash {
+  0%,
+  24%,
+  72%,
+  100% {
+    opacity: 0;
+  }
+  34% {
+    opacity: 0.92;
+  }
+  56% {
+    opacity: 0.58;
+  }
+}
+
+@keyframes pet-camera-body-pose {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
+  }
+  18%,
+  78% {
+    transform: translateX(-50%) translateY(-4px) rotate(-1deg) scale(1.01);
+  }
+}
+
+@keyframes pet-camera-arm-left {
+  0%,
+  100% {
+    opacity: 1;
+    transform: rotate(25deg);
+  }
+  12%,
+  78% {
+    opacity: 0;
+    transform: translate(16px, -38px) rotate(-72deg);
+  }
+}
+
+@keyframes pet-camera-arm-right {
+  0%,
+  100% {
+    opacity: 1;
+    transform: rotate(-25deg);
+  }
+  12%,
+  78% {
+    opacity: 0;
+    transform: translate(-16px, -38px) rotate(72deg);
+  }
+}
+
+@keyframes pet-camera-curved-arm {
+  0% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.78) rotate(var(--pet-camera-arm-curve-rotate));
+  }
+  16% {
+    opacity: 1;
+    transform: translateY(6px) scale(0.94) rotate(var(--pet-camera-arm-curve-rotate));
+  }
+  32%,
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(var(--pet-camera-arm-curve-rotate));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.82) rotate(var(--pet-camera-arm-curve-rotate));
+  }
+}
+
+@keyframes pet-camera-lift {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.72) rotate(-8deg);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -18px) scale(1.04) rotate(3deg);
+  }
+  32%,
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -28px) scale(1) rotate(-2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.8) rotate(6deg);
+  }
+}
+
+@keyframes pet-camera-flash {
+  0%,
+  30%,
+  62%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(12deg);
+  }
+  38% {
+    opacity: 1;
+    transform: scale(1.32) rotate(12deg);
+  }
+  50% {
+    opacity: 0.82;
+    transform: scale(1.02) rotate(12deg);
+  }
+}
+
+@keyframes pet-camera-focus-eyes {
+  0%,
+  100% {
+    transform: none;
+  }
+  24%,
+  78% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes pet-camera-smile {
+  0%,
+  100% {
+    width: 24px;
+  }
+  24%,
+  78% {
+    width: 18px;
   }
 }
 
@@ -2228,7 +2604,11 @@
   .pet-care-effect,
   .pet-care-effect__pulse,
   .pet-care-effect__icon-wrap,
-  .pet-care-effect__plus {
+  .pet-care-effect__plus,
+  .pet-stage-camera-button,
+  .pet-stage-camera-flash-screen,
+  .pet-character__camera,
+  .pet-character__camera-flash {
     animation: none;
     transition: none;
   }

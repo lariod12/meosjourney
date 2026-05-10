@@ -10,7 +10,7 @@ import {
   LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain,
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
   LuClapperboard, LuMusic, LuShoppingBag, LuScissors, LuWashingMachine, LuDumbbell, LuPaintbrush,
-  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch
+  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
 import { CHARACTER_ID, clearNocoDBCache, fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
@@ -1311,6 +1311,8 @@ const PetPage = ({ onBack }) => {
   const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
+  const cameraPoseTimerRef = useRef(null);
+  const [isCameraPoseActive, setIsCameraPoseActive] = useState(false);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -1415,12 +1417,14 @@ const PetPage = ({ onBack }) => {
     'pet-character',
     'pet-character--pet',
     `pet-character--${activePetCharacterPresentation.state}`,
-    `pet-character--effect-${activePetCharacterPresentation.effect}`
-  ].join(' ');
+    `pet-character--effect-${activePetCharacterPresentation.effect}`,
+    isCameraPoseActive ? 'pet-character--camera-active' : ''
+  ].filter(Boolean).join(' ');
   const petCharacterShadowClassName = [
     'pet-character__shadow',
-    `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`
-  ].join(' ');
+    `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
+    isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
+  ].filter(Boolean).join(' ');
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -1860,6 +1864,9 @@ useEffect(() => {
     careEffectTimeoutsRef.current.clear();
     if (sleepTimerRef.current) {
       clearTimeout(sleepTimerRef.current);
+    }
+    if (cameraPoseTimerRef.current) {
+      window.clearTimeout(cameraPoseTimerRef.current);
     }
   }, []);
 
@@ -2463,6 +2470,20 @@ useEffect(() => {
     }
   };
 
+  const handleCameraPose = () => {
+    if (isSleeping || isAwakening) return;
+
+    if (cameraPoseTimerRef.current) {
+      window.clearTimeout(cameraPoseTimerRef.current);
+    }
+
+    setIsCameraPoseActive(true);
+    cameraPoseTimerRef.current = window.setTimeout(() => {
+      setIsCameraPoseActive(false);
+      cameraPoseTimerRef.current = null;
+    }, 2400);
+  };
+
   return (
     <main className="pet-page">
       {!isPetReady ? (
@@ -2524,6 +2545,21 @@ useEffect(() => {
 
           {/* Ground line */}
           <div className="stage-ground" aria-hidden="true"></div>
+          <span
+            className={`pet-stage-camera-flash-screen ${isCameraPoseActive ? 'pet-stage-camera-flash-screen--active' : ''}`}
+            aria-hidden="true"
+          />
+
+          <button
+            type="button"
+            className={`pet-stage-camera-button ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''}`}
+            onClick={handleCameraPose}
+            disabled={isSleeping || isAwakening}
+            aria-label="Take a pet photo"
+            aria-pressed={isCameraPoseActive}
+          >
+            <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
+          </button>
 
           {isPetCharacterDebugEnabled && (
             <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
@@ -2648,6 +2684,14 @@ useEffect(() => {
             <span className="pet-character__arm pet-character__arm--right" />
             <span className="pet-character__leg pet-character__leg--left" />
             <span className="pet-character__leg pet-character__leg--right" />
+            <span className="pet-character__camera" aria-hidden="true">
+              <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--left" />
+              <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--right" />
+              <span className="pet-character__camera-grip pet-character__camera-grip--left" />
+              <span className="pet-character__camera-grip pet-character__camera-grip--right" />
+              <span className="pet-character__camera-lens" />
+              <span className="pet-character__camera-flash" />
+            </span>
 
             {/* ZZZ particles when sleeping (hide when awakening overlay is shown) */}
             {isSleeping && !isAwakening && (
