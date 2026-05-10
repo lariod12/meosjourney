@@ -1156,14 +1156,21 @@
 .pet-character__shadow {
   position: absolute;
   left: 50%;
-  bottom: -18px;
+  bottom: 50px;
   width: 80px;
   height: 12px;
   border-radius: 50%;
   background: #999999;
   opacity: 0.32;
   transform: translateX(-50%);
-  z-index: 0;
+  transform-origin: 50% 50%;
+  z-index: 4;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.pet-character__shadow--effect-hop {
+  animation: pet-effect-hop-shadow 0.95s ease-in-out infinite;
 }
 
 /* Trạng thái needs-care */
@@ -1811,6 +1818,22 @@
   }
   58% {
     transform: translateX(-50%) translateY(0) scale(1.05, 0.96);
+  }
+}
+
+@keyframes pet-effect-hop-shadow {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translateX(-50%) scale(1);
+  }
+  38% {
+    opacity: 0.2;
+    transform: translateX(-50%) scale(0.64, 0.82);
+  }
+  58% {
+    opacity: 0.36;
+    transform: translateX(-50%) scale(1.08, 0.92);
   }
 }
 

@@ -1417,6 +1417,10 @@ const PetPage = ({ onBack }) => {
     `pet-character--${activePetCharacterPresentation.state}`,
     `pet-character--effect-${activePetCharacterPresentation.effect}`
   ].join(' ');
+  const petCharacterShadowClassName = [
+    'pet-character__shadow',
+    `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`
+  ].join(' ');
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -2630,6 +2634,8 @@ useEffect(() => {
             ))}
           </div>
 
+          <span className={petCharacterShadowClassName} aria-hidden="true" />
+
           <div className={petCharacterClassName} role="img" aria-label="Meo box-head character">
             <span className="pet-character__head">
               <span className="pet-character__eye pet-character__eye--left" />
@@ -2642,7 +2648,6 @@ useEffect(() => {
             <span className="pet-character__arm pet-character__arm--right" />
             <span className="pet-character__leg pet-character__leg--left" />
             <span className="pet-character__leg pet-character__leg--right" />
-            <span className="pet-character__shadow" />
 
             {/* ZZZ particles when sleeping (hide when awakening overlay is shown) */}
             {isSleeping && !isAwakening && (
