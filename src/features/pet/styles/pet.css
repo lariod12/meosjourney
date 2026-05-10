@@ -11,6 +11,10 @@
 }
 
 .pet-phone {
+  --pet-tab-height: 66px;
+  --pet-camera-overlay-height: min(48dvh, 460px);
+  --pet-camera-backdrop-lift: 64px;
+  --pet-camera-backdrop-top: calc(max(480px, 58dvh) + var(--pet-camera-overlay-height) - 100dvh - 26px);
   position: relative;
   width: min(100vw, 520px);
   height: 100dvh;
@@ -275,7 +279,7 @@
   right: 0;
   bottom: 0;
   z-index: 34;
-  height: min(48dvh, 460px);
+  height: var(--pet-camera-overlay-height);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -288,7 +292,10 @@
 
 .pet-camera-action-overlay__backdrop {
   position: absolute;
-  inset: 0;
+  top: max(0px, calc(var(--pet-camera-backdrop-top) - var(--pet-camera-backdrop-lift)));
+  left: 0;
+  right: 0;
+  bottom: 0;
   background:
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0 14px, rgba(242, 242, 242, 0.62) 14px 28px),
     rgba(255, 255, 255, 0.74);
@@ -298,14 +305,11 @@
 
 .pet-camera-action-overlay__controls {
   position: absolute;
-  top: 28px;
+  top: 100px;
   left: 50%;
-  width: min(260px, calc(100% - 72px));
-  height: 132px;
-  transform: translateX(-50%) rotate(-1deg);
-  border: 3px solid #000000;
-  background: #ffffff;
-  box-shadow: 5px 5px 0 #000000;
+  width: 166px;
+  height: 122px;
+  transform: translateX(-50%);
   display: grid;
   place-items: center;
   pointer-events: auto;
@@ -314,8 +318,8 @@
 .pet-stage-camera-button {
   position: relative;
   z-index: 2;
-  width: 92px;
-  height: 92px;
+  width: 104px;
+  height: 104px;
   border: 3px solid #000000;
   border-radius: 18px;
   background: #ffffff;
@@ -326,11 +330,11 @@
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transform: translate(16px, 18px) rotate(-20deg) scale(0.62);
+  transform: translate(16px, 96px) rotate(-20deg) scale(0.62);
   transform-origin: 50% 70%;
   transition:
-    opacity 220ms ease,
-    transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1.2),
+    opacity 240ms ease,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 180ms ease,
     background-color 180ms ease,
     color 180ms ease;
@@ -341,7 +345,7 @@
 .pet-stage-camera-button--visible {
   opacity: 1;
   pointer-events: auto;
-  transform: rotate(-10deg) scale(1);
+  transform: translateY(0) rotate(-10deg) scale(1);
 }
 
 .pet-stage-camera-button:hover,
@@ -376,10 +380,20 @@
 }
 
 .pet-stage-camera-button__icon {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   stroke-width: 2.5;
   pointer-events: none;
+  opacity: 0;
+  transform: translateY(18px) scale(0.82);
+  transition:
+    opacity 220ms ease 90ms,
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1) 90ms;
+}
+
+.pet-stage-camera-button--visible .pet-stage-camera-button__icon {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .pet-stage-camera-button__input {
@@ -398,8 +412,8 @@
 
 .pet-stage-camera-cancel-button {
   position: absolute;
-  right: -16px;
-  top: -18px;
+  right: 0;
+  top: -6px;
   z-index: 3;
   width: 44px;
   height: 44px;
@@ -1338,6 +1352,18 @@
   touch-action: manipulation;
 }
 
+.pet-character::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 196px;
+  height: 228px;
+  transform: translateX(-50%);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.001);
+}
+
 .pet-character:focus-visible {
   outline: 3px solid #666666;
   outline-offset: 8px;
@@ -1844,12 +1870,12 @@
 }
 
 .pet-tab-placeholder {
-  min-height: 66px;
+  min-height: var(--pet-tab-height);
   pointer-events: none;
 }
 
 .pet-tab {
-  min-height: 66px;
+  min-height: var(--pet-tab-height);
   border: 4px solid #000000;
   border-bottom-width: 6px;
   border-radius: 14px 14px 0 0;
@@ -3296,6 +3322,7 @@
   }
 
   .pet-phone {
+    --pet-tab-height: 60px;
     border-inline: 0;
     grid-template-rows: minmax(460px, 58dvh) minmax(0, 1fr);
   }
@@ -3364,11 +3391,11 @@
   }
 
   .pet-tab-placeholder {
-    min-height: 60px;
+    min-height: var(--pet-tab-height);
   }
 
   .pet-tab {
-    min-height: 60px;
+    min-height: var(--pet-tab-height);
     border-width: 3px;
     border-bottom-width: 5px;
     font-size: 0.64rem;
