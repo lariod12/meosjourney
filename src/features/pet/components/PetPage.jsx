@@ -882,11 +882,16 @@ const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()
     );
   }
 
+  const roundedCurrentStatus = clampPetStatus(status);
+  const roundedStatusChanged = PET_STATUS_KEYS.some((key) => (
+    clampPetStatusValue(roundedCurrentStatus[key]) !== clampPetStatusValue(nextStatus[key])
+  ));
+
   return {
     status: nextStatus,
     lastStatusTickAt: nextTickAt,
     chunks,
-    shouldSave: elapsedMs >= PET_STATUS_SYNC_MIN_MS
+    shouldSave: elapsedMs >= PET_STATUS_SYNC_MIN_MS && roundedStatusChanged
   };
 };
 

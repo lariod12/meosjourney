@@ -55,11 +55,9 @@ const normalizeTimestamp = (value) => {
 const setNumberUpdate = (updates, fieldName, value) => {
   const numberValue = Number(value);
   if (Number.isFinite(numberValue)) {
-    updates[fieldName] = numberValue;
+    updates[fieldName] = Math.min(100, Math.max(0, Math.round(numberValue)));
   }
 };
-
-let shouldSkipLastStatusTickAt = false;
 
 const getPetRecord = async () => {
   if (!TABLE_IDS.PET) {
@@ -91,7 +89,7 @@ const toPetData = (record) => {
       hunger: normalizeStatusNumber(record.status_hunger),
       sanity: normalizeStatusNumber(record.status_sanity)
     },
-    lastStatusTickAt: normalizeTimestamp(record.last_status_tick_at),
+    lastStatusTickAt: normalizeTimestamp(record.last_status_tick_at) || normalizeTimestamp(record.UpdatedAt),
     createdAt: record.CreatedAt,
     updatedAt: record.UpdatedAt
   };
@@ -140,7 +138,7 @@ export const savePet = async (petUpdates = {}) => {
     }
 
     const lastStatusTickAt = petUpdates.lastStatusTickAt ?? petUpdates.last_status_tick_at;
-    if (lastStatusTickAt !== undefined && !shouldSkipLastStatusTickAt) {
+    if (lastStatusTickAt !== undefined) {
       updates.last_status_tick_at = normalizeTimestamp(lastStatusTickAt);
     }
 
@@ -181,7 +179,6 @@ export const savePet = async (petUpdates = {}) => {
 
       const fallbackUpdates = { ...updates };
       delete fallbackUpdates.last_status_tick_at;
-      shouldSkipLastStatusTickAt = true;
       console.warn('⚠️ Pet status tick timestamp could not be saved. Retrying pet update without last_status_tick_at.', error);
       response = Object.keys(fallbackUpdates).length > 0
         ? await saveUpdates(fallbackUpdates)
