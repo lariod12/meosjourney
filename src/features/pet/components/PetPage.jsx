@@ -10,12 +10,15 @@ import {
   LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain,
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
   LuClapperboard, LuMusic, LuShoppingBag, LuScissors, LuWashingMachine, LuDumbbell, LuPaintbrush,
-  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera
+  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera,
+  LuImage, LuGalleryHorizontal
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
+import { LanguageProvider } from '../../../contexts';
 import { CHARACTER_ID, clearNocoDBCache, fetchPet, fetchStatus, savePet, saveStatus } from '../../../services';
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
+import { PhotoAlbumTab, GalleryTab } from '../../photoalbum/components';
 import AddActivityModal from './AddActivityModal';
 import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
@@ -197,6 +200,8 @@ const TABS = [
   { key: 'care', label: 'Care', Icon: LuHeart },
   { key: 'activity', label: 'Activity', Icon: LuActivity },
   { key: 'moods', label: 'Moods', Icon: LuSmile },
+  { key: 'album', label: 'Album', Icon: LuImage },
+  { key: 'gallery', label: 'Gallery', Icon: LuGalleryHorizontal },
   { key: 'status', label: 'Status', Icon: LuGauge }
 ];
 
@@ -1263,6 +1268,7 @@ const PetPage = ({ onBack }) => {
   const careEffectTimeoutsRef = useRef(new Set());
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
+  const [tabPage, setTabPage] = useState(0);
   const [timePeriod, setTimePeriod] = useState(getTimePeriod());
   const [biologicalClock, setBiologicalClock] = useState({
     lastBreakfast: null,
@@ -1413,6 +1419,42 @@ const PetPage = ({ onBack }) => {
     || PET_CHARACTER_EFFECT_DURATIONS.idle;
   const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production'
     || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+
+  const TABS_PER_PAGE = 4;
+  const totalPages = Math.ceil(TABS.length / TABS_PER_PAGE);
+  const startIndex = tabPage * TABS_PER_PAGE;
+  const endIndex = startIndex + TABS_PER_PAGE;
+  const visibleTabs = TABS.slice(startIndex, endIndex);
+  const hiddenTabSlots = Math.max(0, TABS_PER_PAGE - visibleTabs.length);
+  const canGoPrev = tabPage > 0;
+  const canGoNext = tabPage < totalPages - 1;
+
+  useEffect(() => {
+    const activeTabIndex = TABS.findIndex(tab => tab.key === activeTab);
+    if (activeTabIndex !== -1) {
+      const activeTabPage = Math.floor(activeTabIndex / TABS_PER_PAGE);
+      if (activeTabPage !== tabPage) {
+        setTabPage(activeTabPage);
+      }
+    }
+  }, [activeTab, tabPage]);
+
+  const handlePrevPage = () => {
+    if (canGoPrev) {
+      const nextPage = tabPage - 1;
+      setTabPage(nextPage);
+      setActiveTab(TABS[nextPage * TABS_PER_PAGE]?.key || TABS[0].key);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (canGoNext) {
+      const nextPage = tabPage + 1;
+      setTabPage(nextPage);
+      setActiveTab(TABS[nextPage * TABS_PER_PAGE]?.key || TABS[TABS.length - 1].key);
+    }
+  };
+
   const petCharacterClassName = [
     'pet-character',
     'pet-character--pet',
@@ -2706,7 +2748,16 @@ useEffect(() => {
 
         <section className="pet-bottom-sheet" aria-label="Pet item inventory preview">
           <nav className="pet-tabs" aria-label="Pet inventory categories">
-            {TABS.map(({ key, label, Icon }) => (
+            <button
+              type="button"
+              className="pet-tab-nav pet-tab-nav--prev"
+              onClick={handlePrevPage}
+              disabled={!canGoPrev}
+              aria-label="Previous tabs"
+            >
+              <LuChevronLeft className="pet-tab-nav-icon" aria-hidden="true" />
+            </button>
+            {visibleTabs.map(({ key, label, Icon }) => (
               <button
                 key={key}
                 type="button"
@@ -2718,6 +2769,22 @@ useEffect(() => {
                 <span>{label}</span>
               </button>
             ))}
+            {Array.from({ length: hiddenTabSlots }).map((_, index) => (
+              <span
+                key={`pet-tab-placeholder-${index}`}
+                className="pet-tab-placeholder"
+                aria-hidden="true"
+              />
+            ))}
+            <button
+              type="button"
+              className="pet-tab-nav pet-tab-nav--next"
+              onClick={handleNextPage}
+              disabled={!canGoNext}
+              aria-label="Next tabs"
+            >
+              <LuChevronLeft className="pet-tab-nav-icon pet-tab-nav-icon--next" aria-hidden="true" />
+            </button>
           </nav>
 
           <div className="pet-sheet-scroll">
@@ -2725,6 +2792,18 @@ useEffect(() => {
               <PetStatusPanel
                 rows={petStatusRows}
               />
+            ) : activeTab === 'album' ? (
+              <div className="pet-media-panel pet-media-panel--album">
+                <LanguageProvider initialLang="VI">
+                  <PhotoAlbumTab isActive={activeTab === 'album'} />
+                </LanguageProvider>
+              </div>
+            ) : activeTab === 'gallery' ? (
+              <div className="pet-media-panel pet-media-panel--gallery">
+                <LanguageProvider initialLang="VI">
+                  <GalleryTab isActive={activeTab === 'gallery'} />
+                </LanguageProvider>
+              </div>
             ) : (
               <div className="pet-item-grid">
                 {PET_ITEM_CATEGORIES.includes(activeTab) && (

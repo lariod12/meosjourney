@@ -1418,10 +1418,11 @@
   z-index: 10;
   isolation: isolate;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   transform: translateY(-34px);
   flex: 0 0 auto;
+  padding-inline: 24px;
 }
 
 .pet-sheet-scroll {
@@ -1445,6 +1446,73 @@
   background: #ffffff;
 }
 
+.pet-tab-nav {
+  position: absolute;
+  top: 2px;
+  z-index: 3;
+  width: 34px;
+  min-height: 46px;
+  border: 3px solid #000000;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000000;
+  transform: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font: inherit;
+}
+
+.pet-tab-nav--prev {
+  left: 0;
+}
+
+.pet-tab-nav--next {
+  right: 0;
+}
+
+.pet-tab-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  background: #f0f0f0;
+}
+
+.pet-tab-nav:hover:not(:disabled),
+.pet-tab-nav:focus-visible:not(:disabled) {
+  outline: 3px solid #666666;
+  outline-offset: 3px;
+}
+
+.pet-tab-nav:active:not(:disabled) {
+  transform: none !important;
+  background: #f7f7f7;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+.capacitor-android .pet-tab-nav:active:not(:disabled),
+.mobile .pet-tab-nav:active:not(:disabled) {
+  transform: none !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+}
+
+.pet-tab-nav-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+
+.pet-tab-nav-icon--next {
+  transform: rotate(180deg);
+}
+
+.pet-tab-placeholder {
+  min-height: 66px;
+  pointer-events: none;
+}
+
 .pet-tab {
   min-height: 66px;
   border: 4px solid #000000;
@@ -1462,6 +1530,14 @@
   box-shadow: 2px -2px 0 #000000;
   overflow: hidden;
   text-align: center;
+  min-width: 0;
+  padding-inline: 4px;
+}
+
+.pet-tab span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1;
 }
 
 .pet-tab-icon {
@@ -1476,10 +1552,58 @@
   transform: translateY(-8px);
 }
 
+.pet-tab:active {
+  transform: none !important;
+  box-shadow: 2px -2px 0 #000000 !important;
+}
+
+.pet-tab.pet-tab--active:active {
+  transform: translateY(-8px) !important;
+}
+
+.capacitor-android .pet-tab:active,
+.mobile .pet-tab:active {
+  transform: none !important;
+  box-shadow: 2px -2px 0 #000000 !important;
+}
+
+.capacitor-android .pet-tab.pet-tab--active:active,
+.mobile .pet-tab.pet-tab--active:active {
+  transform: translateY(-8px) !important;
+}
+
 .pet-item-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.pet-media-panel {
+  min-height: 100%;
+  padding: 4px 2px 18px;
+}
+
+.pet-media-panel .photoalbum-content,
+.pet-media-panel .gallery-content {
+  margin-top: 0;
+  padding: 4px 0 0;
+}
+
+.pet-media-panel .photoalbum-grid,
+.pet-media-panel .gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  row-gap: 24px;
+}
+
+.pet-media-panel .photoalbum-card-image,
+.pet-media-panel .gallery-card-image {
+  height: 180px;
+}
+
+.pet-media-panel .photoalbum-empty,
+.pet-media-panel .gallery-empty {
+  padding: 42px 14px;
 }
 
 .pet-status-list {
@@ -2688,7 +2812,24 @@
   }
 
   .pet-tabs {
-    gap: 3px;
+    gap: 4px;
+    padding-inline: 20px;
+  }
+
+  .pet-tab-nav {
+    top: 1px;
+    width: 30px;
+    min-height: 42px;
+    border-width: 3px;
+  }
+
+  .pet-tab-nav-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .pet-tab-placeholder {
+    min-height: 60px;
   }
 
   .pet-tab {
