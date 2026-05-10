@@ -28,10 +28,9 @@ export default defineConfig(({ mode }) => ({
     }
   },
   server: {
-  host: 'localhost',
-  port: 5555,
+    host: '0.0.0.0', // Expose to network
+    port: 5555,
     hmr: {
-      host: 'localhost',
       protocol: 'ws'
     }
   }
