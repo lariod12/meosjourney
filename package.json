@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "RPG Character Sheet - React + Vite",
   "homepage": "https://meosjourney.info/",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "vite --mode development",
-    "staging": "vite --mode staging",
+    "staging": "node scripts/staging-with-tunnel.js",
+    "staging:local": "vite --mode staging",
     "prod": "vite --mode production",
     "build": "vite build --mode production",
     "build:staging": "vite build --mode staging",
