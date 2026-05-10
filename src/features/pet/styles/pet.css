@@ -998,13 +998,15 @@
 }
 
 .pet-character {
+  --pet-character-scale: 1;
   position: absolute;
   z-index: 5;
   left: 50%;
   bottom: 68px;
   width: 140px;
   height: 180px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--pet-character-scale));
+  transform-origin: 50% 100%;
   animation: none;
   will-change: transform;
 }
@@ -1928,10 +1930,10 @@
 @keyframes pet-idle {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0) rotate(-0.4deg);
+    transform: translateX(-50%) translateY(0) rotate(-0.4deg) scale(var(--pet-character-scale));
   }
   50% {
-    transform: translateX(-50%) translateY(-7px) rotate(0.4deg);
+    transform: translateX(-50%) translateY(-7px) rotate(0.4deg) scale(var(--pet-character-scale));
   }
 }
 
@@ -1947,27 +1949,27 @@
 @keyframes pet-critical-idle {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0) rotate(-1deg);
+    transform: translateX(-50%) translateY(0) rotate(-1deg) scale(var(--pet-character-scale));
   }
 
   50% {
-    transform: translateX(-50%) translateY(-4px) rotate(1deg);
+    transform: translateX(-50%) translateY(-4px) rotate(1deg) scale(var(--pet-character-scale));
   }
 }
 
 /* Critical character - dramatic shake */
 @keyframes pet-critical-shake {
   0%, 100% {
-    transform: translateX(-50%) translateY(0) rotate(-2deg);
+    transform: translateX(-50%) translateY(0) rotate(-2deg) scale(var(--pet-character-scale));
   }
   25% {
-    transform: translateX(-50%) translateY(-2px) rotate(2deg);
+    transform: translateX(-50%) translateY(-2px) rotate(2deg) scale(var(--pet-character-scale));
   }
   50% {
-    transform: translateX(-50%) translateY(-4px) rotate(-2deg);
+    transform: translateX(-50%) translateY(-4px) rotate(-2deg) scale(var(--pet-character-scale));
   }
   75% {
-    transform: translateX(-50%) translateY(-2px) rotate(2deg);
+    transform: translateX(-50%) translateY(-2px) rotate(2deg) scale(var(--pet-character-scale));
   }
 }
 
@@ -1978,10 +1980,10 @@
 /* Excellent character - happy bounce */
 @keyframes pet-happy-bounce {
   0%, 100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(var(--pet-character-scale));
   }
   50% {
-    transform: translateX(-50%) translateY(-12px) scale(1.05);
+    transform: translateX(-50%) translateY(-12px) scale(calc(var(--pet-character-scale) * 1.05));
   }
 }
 
@@ -2025,10 +2027,10 @@
 
 @keyframes pet-sleep-breathe {
   0%, 100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(var(--pet-character-scale));
   }
   50% {
-    transform: translateX(-50%) translateY(-3px) scale(1.01);
+    transform: translateX(-50%) translateY(-3px) scale(calc(var(--pet-character-scale) * 1.01));
   }
 }
 
@@ -2115,7 +2117,6 @@
 
 .pet-character--camera-active {
   animation: pet-camera-body-pose 2.4s ease-out both !important;
-  transform-origin: 50% 100%;
 }
 
 .pet-character--camera-active .pet-character__arm--left {
@@ -2155,29 +2156,29 @@
 @keyframes pet-effect-wobble {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0) rotate(-2deg);
+    transform: translateX(-50%) translateY(0) rotate(-2deg) scale(var(--pet-character-scale));
   }
   22% {
-    transform: translateX(-50%) translateY(-2px) rotate(3deg);
+    transform: translateX(-50%) translateY(-2px) rotate(3deg) scale(var(--pet-character-scale));
   }
   48% {
-    transform: translateX(-50%) translateY(1px) rotate(-3deg);
+    transform: translateX(-50%) translateY(1px) rotate(-3deg) scale(var(--pet-character-scale));
   }
   74% {
-    transform: translateX(-50%) translateY(-1px) rotate(2deg);
+    transform: translateX(-50%) translateY(-1px) rotate(2deg) scale(var(--pet-character-scale));
   }
 }
 
 @keyframes pet-effect-hop {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(var(--pet-character-scale));
   }
   38% {
-    transform: translateX(-50%) translateY(-18px) scale(1.03);
+    transform: translateX(-50%) translateY(-18px) scale(calc(var(--pet-character-scale) * 1.03));
   }
   58% {
-    transform: translateX(-50%) translateY(0) scale(1.05, 0.96);
+    transform: translateX(-50%) translateY(0) scale(calc(var(--pet-character-scale) * 1.05), calc(var(--pet-character-scale) * 0.96));
   }
 }
 
@@ -2200,13 +2201,13 @@
 @keyframes pet-effect-squash {
   0%,
   100% {
-    transform: translateX(-50%) scale(1);
+    transform: translateX(-50%) scale(var(--pet-character-scale));
   }
   35% {
-    transform: translateX(-50%) translateY(4px) scale(1.08, 0.92);
+    transform: translateX(-50%) translateY(4px) scale(calc(var(--pet-character-scale) * 1.08), calc(var(--pet-character-scale) * 0.92));
   }
   62% {
-    transform: translateX(-50%) translateY(-3px) scale(0.96, 1.04);
+    transform: translateX(-50%) translateY(-3px) scale(calc(var(--pet-character-scale) * 0.96), calc(var(--pet-character-scale) * 1.04));
   }
 }
 
@@ -2260,11 +2261,11 @@
 @keyframes pet-camera-body-pose {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
+    transform: translateX(-50%) translateY(0) rotate(0deg) scale(var(--pet-character-scale));
   }
   18%,
   78% {
-    transform: translateX(-50%) translateY(-4px) rotate(-1deg) scale(1.01);
+    transform: translateX(-50%) translateY(-4px) rotate(-1deg) scale(calc(var(--pet-character-scale) * 1.01));
   }
 }
 
@@ -2815,13 +2816,14 @@
   }
 
   .pet-character {
-    left: calc(50% - 12px);
-    scale: 0.75;
+    left: 50%;
+    --pet-character-scale: 0.75;
     bottom: 52px;
   }
 
   .pet-character__shadow {
-    bottom: 65px;
+    left: 50%;
+    bottom: 40px;
     width: 60px;
     height: 9px;
   }
