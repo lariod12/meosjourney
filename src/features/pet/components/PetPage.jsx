@@ -1400,6 +1400,7 @@ const PetPage = ({ onBack }) => {
   const navigate = useNavigate();
   const petSaveQueueRef = useRef(Promise.resolve());
   const statusSaveQueueRef = useRef(Promise.resolve());
+  const petPhotoSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -2713,6 +2714,42 @@ useEffect(() => {
     lowerPetCameraPose();
   };
 
+  const dispatchPetPhotoOptimisticEvent = (eventName, detail) => {
+    try {
+      window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    } catch { }
+  };
+
+  const enqueuePetPhotoSave = ({ target, title, file, optimisticId }) => {
+    petPhotoSaveQueueRef.current = petPhotoSaveQueueRef.current
+      .catch(() => {})
+      .then(async () => {
+        const result = target === 'album'
+          ? await savePhotoAlbum({
+            description: title,
+            imageFiles: [file]
+          })
+          : await uploadProfileGalleryImages(null, [file], title, title);
+
+        if (!result.success) {
+          throw new Error(result.message || 'Could not save this pet photo.');
+        }
+
+        try { clearNocoDBCache(); } catch { }
+        dispatchPetPhotoOptimisticEvent('pet-photo:optimistic-complete', { target, optimisticId });
+        try {
+          window.dispatchEvent(new CustomEvent(target === 'album' ? 'photoalbum:refresh' : 'gallery:refresh', {
+            detail: { optimisticId }
+          }));
+        } catch { }
+      })
+      .catch((error) => {
+        console.error('❌ Background pet camera photo save failed:', error);
+        dispatchPetPhotoOptimisticEvent('pet-photo:optimistic-failed', { target, optimisticId });
+        window.alert?.('Could not save this pet photo. Please try again.');
+      });
+  };
+
   const handleSavePetPhoto = async (event) => {
     event.preventDefault();
 
@@ -2724,43 +2761,27 @@ useEffect(() => {
       return;
     }
 
-    setIsSavingPetPhoto(true);
+    const savePayload = {
+      target: petPhotoTarget,
+      title,
+      file: capturedPetPhoto.file,
+      optimisticId: `pet-photo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      optimisticPreviewUrl: URL.createObjectURL(capturedPetPhoto.file),
+      createdAt: new Date().toISOString()
+    };
+
     setPetPhotoSaveError('');
+    setIsPetPhotoModalOpen(false);
+    setCapturedPetPhoto(null);
+    setPetPhotoTitle('');
+    setPetPhotoTarget('gallery');
+    setActiveTab(savePayload.target === 'album' ? 'album' : 'gallery');
+    lowerPetCameraPose();
 
-    try {
-      const result = petPhotoTarget === 'album'
-        ? await savePhotoAlbum({
-          description: title,
-          imageFiles: [capturedPetPhoto.file]
-        })
-        : await uploadProfileGalleryImages(null, [capturedPetPhoto.file], title, title);
-
-      if (!result.success) {
-        setPetPhotoSaveError(result.message || 'Could not save this pet photo. Please try again.');
-        return;
-      }
-
-      try { clearNocoDBCache(); } catch { }
-
-      if (petPhotoTarget === 'album') {
-        try { window.dispatchEvent(new Event('photoalbum:refresh')); } catch { }
-        setActiveTab('album');
-      } else {
-        try { window.dispatchEvent(new Event('gallery:refresh')); } catch { }
-        setActiveTab('gallery');
-      }
-
-      setIsPetPhotoModalOpen(false);
-      setCapturedPetPhoto(null);
-      setPetPhotoTitle('');
-      setPetPhotoTarget('gallery');
-      lowerPetCameraPose();
-    } catch (error) {
-      console.error('❌ Error saving pet camera photo:', error);
-      setPetPhotoSaveError(error.message || 'Could not save this pet photo. Please try again.');
-    } finally {
-      setIsSavingPetPhoto(false);
-    }
+    window.setTimeout(() => {
+      dispatchPetPhotoOptimisticEvent('pet-photo:optimistic', savePayload);
+    }, 0);
+    enqueuePetPhotoSave(savePayload);
   };
 
   const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;

@@ -20,6 +20,38 @@ const PhotoAlbumTab = ({ isActive = true }) => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
   const modalContentRef = useRef(null);
+  const albumsRef = useRef([]);
+  const optimisticAlbumsRef = useRef(new Map());
+  const completedOptimisticIdsRef = useRef(new Set());
+
+  const revokeOptimisticAlbum = (album) => {
+    const previewUrl = album?.img?.[0]?.url;
+    if (album?.__optimistic && previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+  };
+
+  const mergeOptimisticAlbums = (records = []) => {
+    const realRecords = records.filter((record) => !record.__optimistic);
+    return [...optimisticAlbumsRef.current.values(), ...realRecords];
+  };
+
+  const createOptimisticAlbum = (detail) => ({
+    Id: detail.optimisticId,
+    title: detail.title,
+    desc: detail.title,
+    created_time: detail.createdAt,
+    CreatedAt: detail.createdAt,
+    __optimistic: true,
+    img: [{
+      url: detail.optimisticPreviewUrl,
+      signedUrl: detail.optimisticPreviewUrl
+    }]
+  });
+
+  useEffect(() => {
+    albumsRef.current = albums;
+  }, [albums]);
 
   // Reset UI-only state when leaving the tab (keep loaded data)
   useEffect(() => {
@@ -139,11 +171,11 @@ const PhotoAlbumTab = ({ isActive = true }) => {
 
   // Listen for photo album refresh events
   useEffect(() => {
-    const handleRefresh = () => {
+    const handleRefresh = (event) => {
       if (import.meta.env.MODE !== 'production') {
         console.log('📸 PhotoAlbumTab: Refreshing albums after upload...');
       }
-      loadAlbums();
+      loadAlbums({ completedOptimisticId: event.detail?.optimisticId });
     };
     
     window.addEventListener('photoalbum:refresh', handleRefresh);
@@ -153,12 +185,77 @@ const PhotoAlbumTab = ({ isActive = true }) => {
     };
   }, []);
 
-  const loadAlbums = async () => {
-    setLoading(true);
+  useEffect(() => {
+    const handleOptimisticPhoto = (event) => {
+      const detail = event.detail;
+      if (detail?.target !== 'album' || !detail.optimisticId || !detail.optimisticPreviewUrl) return;
+
+      const optimisticAlbum = createOptimisticAlbum(detail);
+      optimisticAlbumsRef.current.set(detail.optimisticId, optimisticAlbum);
+
+      const nextAlbums = mergeOptimisticAlbums(albumsRef.current);
+      albumsRef.current = nextAlbums;
+      setAlbums(nextAlbums);
+      setLoading(false);
+      setHasLoadedOnce(true);
+    };
+
+    const handleOptimisticComplete = (event) => {
+      const detail = event.detail;
+      if (detail?.target !== 'album' || !detail.optimisticId) return;
+
+      completedOptimisticIdsRef.current.add(detail.optimisticId);
+    };
+
+    const handleOptimisticFailed = (event) => {
+      const detail = event.detail;
+      if (detail?.target !== 'album' || !detail.optimisticId) return;
+
+      const optimisticAlbum = optimisticAlbumsRef.current.get(detail.optimisticId);
+      revokeOptimisticAlbum(optimisticAlbum);
+      optimisticAlbumsRef.current.delete(detail.optimisticId);
+      completedOptimisticIdsRef.current.delete(detail.optimisticId);
+
+      const nextAlbums = mergeOptimisticAlbums(
+        albumsRef.current.filter((album) => album.Id !== detail.optimisticId)
+      );
+      albumsRef.current = nextAlbums;
+      setAlbums(nextAlbums);
+      setSelectedAlbum((current) => current?.Id === detail.optimisticId ? null : current);
+    };
+
+    window.addEventListener('pet-photo:optimistic', handleOptimisticPhoto);
+    window.addEventListener('pet-photo:optimistic-complete', handleOptimisticComplete);
+    window.addEventListener('pet-photo:optimistic-failed', handleOptimisticFailed);
+
+    return () => {
+      window.removeEventListener('pet-photo:optimistic', handleOptimisticPhoto);
+      window.removeEventListener('pet-photo:optimistic-complete', handleOptimisticComplete);
+      window.removeEventListener('pet-photo:optimistic-failed', handleOptimisticFailed);
+      optimisticAlbumsRef.current.forEach(revokeOptimisticAlbum);
+      optimisticAlbumsRef.current.clear();
+      completedOptimisticIdsRef.current.clear();
+    };
+  }, []);
+
+  const loadAlbums = async ({ completedOptimisticId = null } = {}) => {
+    if (albumsRef.current.length === 0 && optimisticAlbumsRef.current.size === 0) {
+      setLoading(true);
+    }
+
     try {  
       const data = await fetchPhotoAlbums();
+      if (completedOptimisticId && completedOptimisticIdsRef.current.has(completedOptimisticId)) {
+        const optimisticAlbum = optimisticAlbumsRef.current.get(completedOptimisticId);
+        revokeOptimisticAlbum(optimisticAlbum);
+        optimisticAlbumsRef.current.delete(completedOptimisticId);
+        completedOptimisticIdsRef.current.delete(completedOptimisticId);
+      }
+
+      const nextAlbums = mergeOptimisticAlbums(data);
       
-      setAlbums(data);
+      albumsRef.current = nextAlbums;
+      setAlbums(nextAlbums);
     } catch (error) {
       console.error('Error loading photo albums:', error);
     } finally {
@@ -166,7 +263,7 @@ const PhotoAlbumTab = ({ isActive = true }) => {
     }
   };
 
-  if (loading) {
+  if (loading && albums.length === 0) {
     return (
       <div className="photoalbum-content">
         <div className="photoalbum-empty">{t('photoalbum.loading')}</div>
