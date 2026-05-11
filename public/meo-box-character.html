@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meo Box Character</title>
+    <style>
+      :root {
+        --paper: #ffffff;
+        --ink: #000000;
+        --soft: #eeeeee;
+        --shade: #a8a8a8;
+        --shade-dark: #747474;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100dvh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: radial-gradient(
+          circle at 50% 46%,
+          #ffffff 0 32%,
+          #f7f7f7 52%,
+          #eeeeee 100%
+        );
+        color: var(--ink);
+        overflow: hidden;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .character-stage {
+        width: clamp(320px, 44vw, 620px);
+        max-width: calc(100vw - 48px);
+        max-height: calc(100dvh - 48px);
+        display: grid;
+        place-items: center;
+      }
+
+      .character-svg {
+        width: min(100%, 66dvh);
+        max-height: 82dvh;
+        height: auto;
+        display: block;
+        overflow: visible;
+        filter: drop-shadow(10px 14px 0 rgba(0, 0, 0, 0.08));
+      }
+
+      .character {
+        transform-origin: 450px 610px;
+        animation: meo-breathe 3.8s ease-in-out infinite;
+      }
+
+      .ink-line {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 17;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .ink-line-heavy {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 21;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .box-fill,
+      .eye-fill {
+        fill: var(--paper);
+      }
+
+      .eye-line {
+        fill: var(--paper);
+        stroke: var(--ink);
+        stroke-width: 12;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .mouth-line {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 17;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .body-fill {
+        fill: url(#bodyShade);
+      }
+
+      .pants-fill {
+        fill: url(#pantsShade);
+      }
+
+      .pants-seam {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 12;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .whisker {
+        fill: none;
+        stroke: #808080;
+        stroke-width: 9;
+        stroke-linecap: round;
+      }
+
+      .pupil {
+        fill: var(--ink);
+      }
+
+      .eye {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: meo-eye-blink 7.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        will-change: transform;
+      }
+
+      .eye-right {
+        animation-delay: 12ms;
+      }
+
+      .left-arm,
+      .right-arm,
+      .left-leg,
+      .right-leg {
+        transform-box: fill-box;
+      }
+
+      .left-arm {
+        transform-origin: 327px 545px;
+        animation: left-arm-drift 4.4s ease-in-out infinite;
+      }
+
+      .right-arm {
+        transform-origin: 573px 545px;
+        animation: right-arm-drift 4.4s ease-in-out infinite;
+      }
+
+      .debug-toggle {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 20;
+        min-width: 88px;
+        min-height: 44px;
+        border: 3px solid var(--ink);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: 4px 4px 0 var(--ink);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .debug-toggle:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ink);
+      }
+
+      .debug-panel {
+        position: fixed;
+        right: 24px;
+        bottom: 78px;
+        z-index: 19;
+        width: min(320px, calc(100vw - 48px));
+        max-height: calc(100dvh - 104px);
+        padding: 16px;
+        overflow-y: auto;
+        border: 3px solid var(--ink);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .debug-panel[hidden] {
+        display: none;
+      }
+
+      .debug-panel-title {
+        margin: 0 0 10px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .debug-control {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .debug-control-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .debug-control-number {
+        width: 74px;
+        min-height: 36px;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
+        background: var(--paper);
+        color: var(--ink);
+        text-align: right;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .debug-control input[type="range"] {
+        width: 100%;
+        accent-color: var(--ink);
+      }
+
+      .debug-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 4px;
+      }
+
+      .debug-save,
+      .debug-reset {
+        min-height: 44px;
+        padding: 0 14px;
+        border: 2px solid var(--ink);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .debug-save {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .debug-save:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      .debug-save-status {
+        min-height: 16px;
+        margin: 8px 0 0;
+        color: #404040;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      @keyframes meo-breathe {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-0.25deg);
+        }
+
+        50% {
+          transform: translateY(-5px) rotate(0.3deg);
+        }
+      }
+
+      @keyframes meo-eye-blink {
+        0%,
+        10.5%,
+        13.5%,
+        56%,
+        58.5%,
+        61.5%,
+        64%,
+        100% {
+          transform: scaleY(1);
+        }
+
+        12%,
+        57.2%,
+        62.8% {
+          transform: scaleY(0.08);
+        }
+      }
+
+      @keyframes left-arm-drift {
+        0%,
+        100% {
+          transform: rotate(1deg);
+        }
+
+        50% {
+          transform: rotate(-2deg);
+        }
+      }
+
+      @keyframes right-arm-drift {
+        0%,
+        100% {
+          transform: rotate(-1deg);
+        }
+
+        50% {
+          transform: rotate(2deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .character,
+        .eye,
+        .left-arm,
+        .right-arm {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main
+      class="character-stage"
+      aria-label="A black and white sketch character with a box-shaped head"
+    >
+      <svg
+        class="character-svg"
+        viewBox="0 0 900 1120"
+        role="img"
+        aria-labelledby="characterTitle characterDesc"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <title id="characterTitle">Meo box character</title>
+        <desc id="characterDesc">
+          A hand-drawn black and white character with a square box head,
+          triangle ears, round eyes, a small number-three mouth, whiskers, gray
+          body, thin arms, and stick legs.
+        </desc>
+
+        <defs>
+          <linearGradient
+            id="bodyShade"
+            x1="315"
+            y1="510"
+            x2="585"
+            y2="780"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="#d4d4d4" />
+            <stop offset="0.6" stop-color="#bababa" />
+            <stop offset="1" stop-color="#979797" />
+          </linearGradient>
+
+          <linearGradient
+            id="pantsShade"
+            x1="310"
+            y1="750"
+            x2="590"
+            y2="850"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="#8e8e8e" />
+            <stop offset="1" stop-color="#686868" />
+          </linearGradient>
+
+          <filter id="roughen">
+            <feTurbulence
+              baseFrequency="0.012"
+              numOctaves="2"
+              seed="7"
+              type="fractalNoise"
+            />
+            <feDisplacementMap in="SourceGraphic" scale="1.8" />
+          </filter>
+        </defs>
+
+        <g class="character">
+          <g class="ears" data-head-part filter="url(#roughen)">
+            <path
+              class="ink-line-heavy"
+              d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365"
+            />
+            <path class="ink-line" d="M254 249 L211 257 L264 327" />
+            <path
+              class="ink-line-heavy"
+              d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365"
+            />
+            <path class="ink-line" d="M646 249 L689 257 L636 327" />
+          </g>
+
+          <g class="legs" filter="url(#roughen)">
+            <path
+              class="left-leg ink-line-heavy"
+              d="M374 829 L374 1004 Q370 1030 351 1032"
+            />
+            <path
+              class="right-leg ink-line-heavy"
+              d="M526 829 L526 1004 Q530 1030 549 1032"
+            />
+          </g>
+
+          <g class="body" filter="url(#roughen)">
+            <path
+              class="body-fill ink-line-heavy"
+              d="M377 528 L523 528 L566 786 Q526 810 455 811 Q383 812 334 786 Z"
+            />
+            <path
+              class="pants-fill ink-line-heavy"
+              d="M334 786 Q392 816 450 816 Q508 817 566 786 L587 867 Q526 888 458 878 Q444 876 430 878 Q365 888 313 867 Z"
+            />
+            <path class="ink-line" d="M336 789 Q412 823 564 789" />
+            <path class="pants-seam" d="M450 818 Q451 846 450 872" />
+          </g>
+
+          <g class="arms" filter="url(#roughen)">
+            <path
+              class="left-arm ink-line-heavy"
+              d="M362 544 C335 633 318 706 301 795"
+            />
+            <circle class="pupil" cx="298" cy="815" r="23" />
+            <path
+              class="right-arm ink-line-heavy"
+              d="M538 544 C565 633 582 706 599 795"
+            />
+            <circle class="pupil" cx="602" cy="815" r="23" />
+          </g>
+
+          <g class="head" data-head-part filter="url(#roughen)">
+            <path
+              class="box-fill ink-line-heavy"
+              d="M250 214 H650 L640 518 Q640 538 620 539 H280 Q260 538 260 518 Z"
+            />
+            <path
+              class="box-fill ink-line-heavy"
+              d="M250 214 L315 158 H585 L650 214 Z"
+            />
+            <path class="ink-line-heavy" d="M250 214 H650" />
+          </g>
+
+          <g class="face" data-head-part>
+            <g class="eye eye-left">
+              <ellipse
+                class="eye-line"
+                data-eye-line
+                cx="369"
+                cy="335"
+                rx="44"
+                ry="58"
+              />
+              <circle class="pupil" cx="379" cy="340" r="15" />
+            </g>
+
+            <g class="eye eye-right">
+              <ellipse
+                class="eye-line"
+                data-eye-line
+                cx="531"
+                cy="335"
+                rx="44"
+                ry="58"
+              />
+              <circle class="pupil" cx="521" cy="340" r="15" />
+            </g>
+
+            <g class="mouth" data-mouth-group>
+              <path
+                class="mouth-line"
+                data-mouth-line
+                d="M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453"
+              />
+            </g>
+            <path class="whisker" d="M556 412 Q575 407 589 405" />
+            <path class="whisker" d="M558 432 Q580 436 593 445" />
+          </g>
+        </g>
+      </svg>
+    </main>
+
+    <script id="characterConfig" type="application/json" data-character-config>
+      {
+        "eyeRx": 44,
+        "eyeRy": 58,
+        "eyeX": 0,
+        "eyeY": 0,
+        "eyeSpacing": 0,
+        "eyeStroke": 12,
+        "mouthStroke": 17,
+        "mouthScale": 1,
+        "mouthX": 0,
+        "mouthY": 0,
+        "headScaleX": 1,
+        "headScaleY": 1
+      }
+    </script>
+
+    <button
+      class="debug-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="debugPanel"
+      data-debug-toggle
+    >
+      Debug
+    </button>
+
+    <aside class="debug-panel" id="debugPanel" hidden data-debug-panel>
+      <p class="debug-panel-title">Character Debug</p>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye radius X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="44"
+            aria-label="Eye radius X value"
+            data-number="eyeRx"
+          />
+        </span>
+        <input
+          type="range"
+          min="32"
+          max="62"
+          step="1"
+          value="44"
+          data-control="eyeRx"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye radius Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="58"
+            aria-label="Eye radius Y value"
+            data-number="eyeRy"
+          />
+        </span>
+        <input
+          type="range"
+          min="32"
+          max="68"
+          step="1"
+          value="58"
+          data-control="eyeRy"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Eye X value"
+            data-number="eyeX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-35"
+          max="35"
+          step="1"
+          value="0"
+          data-control="eyeX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Eye Y value"
+            data-number="eyeY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-35"
+          max="35"
+          step="1"
+          value="0"
+          data-control="eyeY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye spacing</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Eye spacing value"
+            data-number="eyeSpacing"
+          />
+        </span>
+        <input
+          type="range"
+          min="-35"
+          max="35"
+          step="1"
+          value="0"
+          data-control="eyeSpacing"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Eye line</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="12"
+            aria-label="Eye line value"
+            data-number="eyeStroke"
+          />
+        </span>
+        <input
+          type="range"
+          min="6"
+          max="18"
+          step="1"
+          value="12"
+          data-control="eyeStroke"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Mouth line</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="17"
+            aria-label="Mouth line value"
+            data-number="mouthStroke"
+          />
+        </span>
+        <input
+          type="range"
+          min="8"
+          max="26"
+          step="1"
+          value="17"
+          data-control="mouthStroke"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Mouth size</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="decimal"
+            value="1"
+            aria-label="Mouth size value"
+            data-number="mouthScale"
+          />
+        </span>
+        <input
+          type="range"
+          min="0.65"
+          max="1.45"
+          step="0.01"
+          value="1"
+          data-control="mouthScale"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Mouth X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Mouth X value"
+            data-number="mouthX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-45"
+          max="45"
+          step="1"
+          value="0"
+          data-control="mouthX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Mouth Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Mouth Y value"
+            data-number="mouthY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-45"
+          max="45"
+          step="1"
+          value="0"
+          data-control="mouthY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Head width</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="decimal"
+            value="1"
+            aria-label="Head width value"
+            data-number="headScaleX"
+          />
+        </span>
+        <input
+          type="range"
+          min="0.85"
+          max="1.35"
+          step="0.01"
+          value="1"
+          data-control="headScaleX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Head height</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="decimal"
+            value="1"
+            aria-label="Head height value"
+            data-number="headScaleY"
+          />
+        </span>
+        <input
+          type="range"
+          min="0.85"
+          max="1.35"
+          step="0.01"
+          value="1"
+          data-control="headScaleY"
+        />
+      </label>
+
+      <div class="debug-actions">
+        <button class="debug-save" type="button" data-debug-save>Save</button>
+        <button class="debug-reset" type="button" data-debug-reset>
+          Reset
+        </button>
+      </div>
+      <p
+        class="debug-save-status"
+        aria-live="polite"
+        data-debug-save-status
+      ></p>
+    </aside>
+
+    <script>
+      const fallbackDebugDefaults = {
+        eyeRx: 44,
+        eyeRy: 58,
+        eyeX: 0,
+        eyeY: 0,
+        eyeSpacing: 0,
+        eyeStroke: 12,
+        mouthStroke: 17,
+        mouthScale: 1,
+        mouthX: 0,
+        mouthY: 0,
+        headScaleX: 1,
+        headScaleY: 1,
+      };
+
+      const debugStorageKey = "meo-box-character-debug";
+      const configNode = document.querySelector("[data-character-config]");
+      const debugPanel = document.querySelector("[data-debug-panel]");
+      const debugToggle = document.querySelector("[data-debug-toggle]");
+      const debugSave = document.querySelector("[data-debug-save]");
+      const debugSaveStatus = document.querySelector(
+        "[data-debug-save-status]",
+      );
+      const debugReset = document.querySelector("[data-debug-reset]");
+      const controls = [...document.querySelectorAll("[data-control]")];
+      const numberInputs = [...document.querySelectorAll("[data-number]")];
+      const eyeParts = {
+        left: {
+          line: document.querySelector(".eye-left [data-eye-line]"),
+          pupil: document.querySelector(".eye-left .pupil"),
+          lineCx: 369,
+          lineCy: 335,
+          pupilCx: 379,
+          pupilCy: 340,
+          direction: -1,
+        },
+        right: {
+          line: document.querySelector(".eye-right [data-eye-line]"),
+          pupil: document.querySelector(".eye-right .pupil"),
+          lineCx: 531,
+          lineCy: 335,
+          pupilCx: 521,
+          pupilCy: 340,
+          direction: 1,
+        },
+      };
+      const mouthLine = document.querySelector("[data-mouth-line]");
+      const mouthGroup = document.querySelector("[data-mouth-group]");
+      const headParts = [...document.querySelectorAll("[data-head-part]")];
+      const controlLimits = Object.fromEntries(
+        controls.map((control) => [
+          control.dataset.control,
+          { min: Number(control.min), max: Number(control.max) },
+        ]),
+      );
+
+      const readEmbeddedConfig = () => {
+        try {
+          return {
+            ...fallbackDebugDefaults,
+            ...JSON.parse(configNode.textContent),
+          };
+        } catch {
+          return { ...fallbackDebugDefaults };
+        }
+      };
+
+      const debugDefaults = readEmbeddedConfig();
+      const debugKeys = Object.keys(fallbackDebugDefaults);
+      const decimalDebugKeys = new Set([
+        "mouthScale",
+        "headScaleX",
+        "headScaleY",
+      ]);
+
+      const readDebugState = () => {
+        try {
+          return {
+            ...debugDefaults,
+            ...JSON.parse(localStorage.getItem(debugStorageKey)),
+          };
+        } catch {
+          return { ...debugDefaults };
+        }
+      };
+
+      let debugState = readDebugState();
+
+      const coerceDebugValue = (key, value, fallback = debugDefaults[key]) => {
+        const limits = controlLimits[key];
+        const numericValue = Number(value);
+
+        if (!Number.isFinite(numericValue)) {
+          return fallback;
+        }
+
+        const clampedValue = Math.min(
+          limits.max,
+          Math.max(limits.min, numericValue),
+        );
+
+        return decimalDebugKeys.has(key)
+          ? Number(clampedValue.toFixed(2))
+          : Math.round(clampedValue);
+      };
+
+      const formatValue = (key, value) =>
+        decimalDebugKeys.has(key)
+          ? Number(value).toFixed(2)
+          : Math.round(value);
+
+      const normalizeDebugState = (state) =>
+        debugKeys.reduce(
+          (normalizedState, key) => ({
+            ...normalizedState,
+            [key]: coerceDebugValue(key, state[key], debugDefaults[key]),
+          }),
+          {},
+        );
+
+      const applyDebugState = () => {
+        debugState = normalizeDebugState(debugState);
+
+        Object.values(eyeParts).forEach((eyePart) => {
+          const eyeOffset =
+            debugState.eyeX + debugState.eyeSpacing * eyePart.direction;
+
+          eyePart.line.setAttribute("cx", eyePart.lineCx + eyeOffset);
+          eyePart.line.setAttribute("cy", eyePart.lineCy + debugState.eyeY);
+          eyePart.line.setAttribute("rx", debugState.eyeRx);
+          eyePart.line.setAttribute("ry", debugState.eyeRy);
+          eyePart.line.style.strokeWidth = debugState.eyeStroke;
+          eyePart.pupil.setAttribute("cx", eyePart.pupilCx + eyeOffset);
+          eyePart.pupil.setAttribute("cy", eyePart.pupilCy + debugState.eyeY);
+        });
+
+        mouthLine.style.strokeWidth = debugState.mouthStroke;
+        mouthGroup.setAttribute(
+          "transform",
+          [
+            `translate(${debugState.mouthX} ${debugState.mouthY})`,
+            "translate(462 430)",
+            `scale(${debugState.mouthScale})`,
+            "translate(-462 -430)",
+          ].join(" "),
+        );
+
+        const headTransform = [
+          "translate(450 350)",
+          `scale(${debugState.headScaleX} ${debugState.headScaleY})`,
+          "translate(-450 -350)",
+        ].join(" ");
+
+        headParts.forEach((part) => {
+          part.setAttribute("transform", headTransform);
+        });
+
+        controls.forEach((control) => {
+          const key = control.dataset.control;
+          control.value = debugState[key];
+          document.querySelector(`[data-number="${key}"]`).value = formatValue(
+            key,
+            debugState[key],
+          );
+        });
+
+        localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
+      };
+
+      const setSaveStatus = (message) => {
+        debugSaveStatus.textContent = message;
+      };
+
+      const getCurrentHtmlSource = async () => {
+        try {
+          const response = await fetch(window.location.href, {
+            cache: "no-store",
+          });
+
+          if (response.ok) {
+            return response.text();
+          }
+        } catch {
+          // Fall back to the current DOM when the page is opened from a file.
+        }
+
+        return `<!doctype html>\n${document.documentElement.outerHTML}`;
+      };
+
+      const serializeConfigForHtml = (state) =>
+        JSON.stringify(normalizeDebugState(state), null, 2).replace(
+          /^/gm,
+          "      ",
+        );
+
+      const buildSavedHtml = async () => {
+        const htmlSource = await getCurrentHtmlSource();
+        const savedConfig = serializeConfigForHtml(debugState);
+        const configBlock = [
+          '    <script id="characterConfig" type="application/json" data-character-config>',
+          savedConfig,
+          "    </scr" + "ipt>",
+        ].join("\n");
+        const configPattern =
+          /<script id="characterConfig" type="application\/json" data-character-config>[\s\S]*?<\/script>/;
+
+        if (configPattern.test(htmlSource)) {
+          return htmlSource.replace(configPattern, configBlock);
+        }
+
+        return htmlSource.replace("</body>", `${configBlock}\n  </body>`);
+      };
+
+      const downloadSavedHtml = (htmlSource) => {
+        const blob = new Blob([htmlSource], { type: "text/html" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+
+        downloadLink.href = downloadUrl;
+        downloadLink.download = "meo-box-character.html";
+        downloadLink.click();
+        URL.revokeObjectURL(downloadUrl);
+      };
+
+      const writeSavedHtmlFile = async (htmlSource) => {
+        if (!("showSaveFilePicker" in window) || !window.isSecureContext) {
+          downloadSavedHtml(htmlSource);
+          setSaveStatus("Downloaded saved HTML");
+          return;
+        }
+
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: "meo-box-character.html",
+          types: [
+            {
+              description: "HTML file",
+              accept: { "text/html": [".html"] },
+            },
+          ],
+        });
+        const writableFile = await fileHandle.createWritable();
+
+        await writableFile.write(htmlSource);
+        await writableFile.close();
+        setSaveStatus("Saved to HTML");
+      };
+
+      const saveDebugConfig = async () => {
+        debugSave.disabled = true;
+        setSaveStatus("Saving...");
+
+        try {
+          const htmlSource = await buildSavedHtml();
+
+          await writeSavedHtmlFile(htmlSource);
+        } catch (error) {
+          if (error.name === "AbortError") {
+            setSaveStatus("Save canceled");
+            return;
+          }
+
+          console.error("Unable to save character HTML", error);
+          setSaveStatus("Save failed");
+        } finally {
+          debugSave.disabled = false;
+        }
+      };
+
+      controls.forEach((control) => {
+        control.addEventListener("input", () => {
+          debugState = {
+            ...debugState,
+            [control.dataset.control]: coerceDebugValue(
+              control.dataset.control,
+              control.value,
+              debugState[control.dataset.control],
+            ),
+          };
+          applyDebugState();
+        });
+      });
+
+      numberInputs.forEach((numberInput) => {
+        numberInput.addEventListener("input", () => {
+          if (numberInput.value === "") {
+            return;
+          }
+
+          debugState = {
+            ...debugState,
+            [numberInput.dataset.number]: coerceDebugValue(
+              numberInput.dataset.number,
+              numberInput.value,
+              debugState[numberInput.dataset.number],
+            ),
+          };
+          applyDebugState();
+        });
+      });
+
+      debugToggle.addEventListener("click", () => {
+        const isOpen = debugPanel.hidden;
+        debugPanel.hidden = !isOpen;
+        debugToggle.setAttribute("aria-expanded", String(isOpen));
+
+        if (isOpen) {
+          controls[0].focus();
+        }
+      });
+
+      debugSave.addEventListener("click", saveDebugConfig);
+
+      debugReset.addEventListener("click", () => {
+        debugState = { ...debugDefaults };
+        setSaveStatus("");
+        applyDebugState();
+      });
+
+      applyDebugState();
+    </script>
+  </body>
+</html>
