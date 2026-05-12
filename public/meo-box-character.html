@@ -1885,6 +1885,10 @@
           const savedConfig = serializeConfigForHtml(debugState);
           configNode.textContent = "\n" + savedConfig + "\n    ";
 
+          // Save to HTML file
+          const htmlSource = await buildSavedHtml();
+          await writeSavedHtmlFile(htmlSource);
+
           setSaveStatus("Saved successfully!");
 
           // Clear status after 2 seconds
