@@ -767,6 +767,27 @@ const PET_CHARACTER_DEBUG_PRESETS = [
   }
 ];
 
+const PET_CHARACTER_POSITION_STORAGE_KEY = 'meo-pet-character-position-debug';
+const PET_CHARACTER_POSITION_DEFAULTS = {
+  bottom: 44,
+  shadowGap: -12
+};
+const PET_CHARACTER_POSITION_LIMITS = {
+  bottom: { min: 20, max: 120 },
+  shadowGap: { min: -28, max: 24 }
+};
+
+const clampCharacterPositionValue = (key, value) => {
+  const limits = PET_CHARACTER_POSITION_LIMITS[key];
+  const numericValue = Number(value);
+
+  if (!limits || !Number.isFinite(numericValue)) {
+    return PET_CHARACTER_POSITION_DEFAULTS[key];
+  }
+
+  return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
+};
+
 const getBasePetCharacterState = (reactionLevel) => {
   if (reactionLevel === 'critical') return PET_CHARACTER_STATES.critical;
   if (reactionLevel === 'danger' || reactionLevel === 'warning') return PET_CHARACTER_STATES.needsCare;
@@ -1302,6 +1323,276 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
   );
 };
 
+const MEO_BOX_CHARACTER_CONFIG = {
+  eyeRx: 46,
+  eyeRy: 61,
+  eyeX: 3,
+  eyeY: 0,
+  eyeSpacing: 1,
+  eyeStroke: 6,
+  mouthStroke: 8,
+  mouthScale: 1,
+  mouthX: 10,
+  mouthY: 13,
+  headScaleX: 1.16,
+  headScaleY: 1.06,
+  headStroke: 12,
+  earStroke: 12,
+  pantsHeight: 34,
+  seamY: 39,
+  seamLength: 40,
+  leftShoulderX: 0,
+  leftShoulderY: 0,
+  rightShoulderX: 0,
+  rightShoulderY: 0,
+  leftHandX: -9,
+  leftHandY: -32,
+  rightHandX: 8,
+  rightHandY: -34,
+  leftArmCurve1X: 0,
+  leftArmCurve1Y: 0,
+  leftArmCurve2X: 5,
+  leftArmCurve2Y: -76,
+  rightArmCurve1X: -3,
+  rightArmCurve1Y: -23,
+  rightArmCurve2X: -1,
+  rightArmCurve2Y: -55,
+  leftEarScale: 0.96,
+  leftEarY: 0,
+  rightEarScale: 0.88,
+  rightEarY: -4
+};
+
+const MeoBoxPetCharacter = () => {
+  const config = MEO_BOX_CHARACTER_CONFIG;
+  const headTransform = [
+    'translate(450 350)',
+    `scale(${config.headScaleX} ${config.headScaleY})`,
+    'translate(-450 -350)'
+  ].join(' ');
+  const mouthTransform = [
+    `translate(${config.mouthX} ${config.mouthY})`,
+    'translate(462 430)',
+    `scale(${config.mouthScale})`,
+    'translate(-462 -430)'
+  ].join(' ');
+  const pantsHeightOffset = config.pantsHeight;
+  const pantsPath = `M334 786 Q392 816 450 816 Q508 817 566 786 L${587} ${867 + pantsHeightOffset} Q526 ${888 + pantsHeightOffset} 458 ${878 + pantsHeightOffset} Q444 ${876 + pantsHeightOffset} 430 ${878 + pantsHeightOffset} Q365 ${888 + pantsHeightOffset} 313 ${867 + pantsHeightOffset} Z`;
+  const seamStartY = 818 + config.seamY;
+  const seamMidY = seamStartY + (config.seamLength / 2);
+  const seamEndY = seamStartY + config.seamLength;
+  const seamPath = `M450 ${seamStartY} Q451 ${seamMidY} 450 ${seamEndY}`;
+  const leftShoulderX = 362 + config.leftShoulderX;
+  const leftShoulderY = 544 + config.leftShoulderY;
+  const leftHandX = 301 + config.leftHandX;
+  const leftHandY = 795 + config.leftHandY;
+  const leftCurve1X = 335 + config.leftArmCurve1X;
+  const leftCurve1Y = 633 + config.leftArmCurve1Y;
+  const leftCurve2X = 318 + config.leftArmCurve2X;
+  const leftCurve2Y = 706 + config.leftArmCurve2Y;
+  const rightShoulderX = 538 + config.rightShoulderX;
+  const rightShoulderY = 544 + config.rightShoulderY;
+  const rightHandX = 599 + config.rightHandX;
+  const rightHandY = 795 + config.rightHandY;
+  const rightCurve1X = 565 + config.rightArmCurve1X;
+  const rightCurve1Y = 633 + config.rightArmCurve1Y;
+  const rightCurve2X = 582 + config.rightArmCurve2X;
+  const rightCurve2Y = 706 + config.rightArmCurve2Y;
+  const leftEarTransform = [
+    'translate(254 285)',
+    `scale(${config.leftEarScale})`,
+    'translate(-254 -285)',
+    `translate(0 ${config.leftEarY})`
+  ].join(' ');
+  const rightEarTransform = [
+    'translate(646 285)',
+    `scale(${config.rightEarScale})`,
+    'translate(-646 -285)',
+    `translate(0 ${config.rightEarY})`
+  ].join(' ');
+  const leftEyeOffset = config.eyeX - config.eyeSpacing;
+  const rightEyeOffset = config.eyeX + config.eyeSpacing;
+
+  return (
+    <svg
+      className="pet-box-character"
+      viewBox="0 0 900 1120"
+      role="img"
+      aria-hidden="true"
+      focusable="false"
+    >
+    <defs>
+      <linearGradient
+        id="petBoxBodyShade"
+        x1="315"
+        y1="510"
+        x2="585"
+        y2="780"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#d4d4d4" />
+        <stop offset="0.6" stopColor="#bababa" />
+        <stop offset="1" stopColor="#979797" />
+      </linearGradient>
+      <linearGradient
+        id="petBoxPantsShade"
+        x1="310"
+        y1="750"
+        x2="590"
+        y2="850"
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0" stopColor="#8e8e8e" />
+        <stop offset="1" stopColor="#686868" />
+      </linearGradient>
+      <filter id="petBoxRoughen">
+        <feTurbulence
+          baseFrequency="0.012"
+          numOctaves="2"
+          seed="7"
+          type="fractalNoise"
+        />
+        <feDisplacementMap in="SourceGraphic" scale="1.8" />
+      </filter>
+    </defs>
+
+    <g className="pet-box-character__figure">
+      <g className="pet-box-character__legs" filter="url(#petBoxRoughen)">
+        <path
+          className="pet-box-character__line-heavy"
+          d="M374 829 L374 1004 Q370 1030 351 1032"
+        />
+        <path
+          className="pet-box-character__line-heavy"
+          d="M526 829 L526 1004 Q530 1030 549 1032"
+        />
+      </g>
+
+      <g className="pet-box-character__body" filter="url(#petBoxRoughen)">
+        <path
+          className="pet-box-character__body-fill pet-box-character__line-heavy"
+          d="M377 528 L523 528 L566 786 Q526 810 455 811 Q383 812 334 786 Z"
+        />
+        <path
+          className="pet-box-character__pants-fill pet-box-character__line-heavy"
+          d={pantsPath}
+        />
+        <path className="pet-box-character__line" d="M336 789 Q412 823 564 789" />
+        <path className="pet-box-character__pants-seam" d={seamPath} />
+      </g>
+
+      <g className="pet-box-character__arms" filter="url(#petBoxRoughen)">
+        <g className="pet-box-character__arm-wrap pet-box-character__arm-wrap--left">
+          <path
+            className="pet-box-character__line-heavy"
+            d={`M${leftShoulderX} ${leftShoulderY} C${leftCurve1X} ${leftCurve1Y} ${leftCurve2X} ${leftCurve2Y} ${leftHandX} ${leftHandY}`}
+          />
+          <circle className="pet-box-character__fill-ink" cx={leftHandX - 3} cy={leftHandY + 20} r="23" />
+        </g>
+        <g className="pet-box-character__arm-wrap pet-box-character__arm-wrap--right">
+          <path
+            className="pet-box-character__line-heavy"
+            d={`M${rightShoulderX} ${rightShoulderY} C${rightCurve1X} ${rightCurve1Y} ${rightCurve2X} ${rightCurve2Y} ${rightHandX} ${rightHandY}`}
+          />
+          <circle className="pet-box-character__fill-ink" cx={rightHandX + 3} cy={rightHandY + 20} r="23" />
+        </g>
+      </g>
+
+      <g className="pet-box-character__head-parts">
+        <g className="pet-box-character__ears" filter="url(#petBoxRoughen)" transform={headTransform}>
+          <g transform={leftEarTransform}>
+            <path
+              className="pet-box-character__ear-fill"
+              d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365 Z"
+            />
+            <path
+              className="pet-box-character__head-line"
+              d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365"
+              style={{ strokeWidth: config.earStroke }}
+            />
+            <path className="pet-box-character__line" d="M254 249 L211 257 L264 327" />
+          </g>
+          <g transform={rightEarTransform}>
+            <path
+              className="pet-box-character__ear-fill"
+              d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365 Z"
+            />
+            <path
+              className="pet-box-character__head-line"
+              d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365"
+              style={{ strokeWidth: config.earStroke }}
+            />
+            <path className="pet-box-character__line" d="M646 249 L689 257 L636 327" />
+          </g>
+        </g>
+
+        <g className="pet-box-character__head" filter="url(#petBoxRoughen)" transform={headTransform}>
+          <path
+            className="pet-box-character__box-fill pet-box-character__head-line"
+            d="M250 214 H650 L640 518 Q640 538 620 539 H280 Q260 538 260 518 Z"
+            style={{ strokeWidth: config.headStroke }}
+          />
+          <path
+            className="pet-box-character__box-fill pet-box-character__head-line"
+            d="M250 214 L315 158 H585 L650 214 Z"
+            style={{ strokeWidth: config.headStroke }}
+          />
+          <path
+            className="pet-box-character__head-line"
+            d="M250 214 H650"
+            style={{ strokeWidth: config.headStroke }}
+          />
+        </g>
+
+        <g className="pet-box-character__face" transform={headTransform}>
+          <g className="pet-box-character__eye-group pet-box-character__eye-group--left">
+            <ellipse
+              className="pet-box-character__eye-line"
+              cx={369 + leftEyeOffset}
+              cy={335 + config.eyeY}
+              rx={config.eyeRx}
+              ry={config.eyeRy}
+              style={{ strokeWidth: config.eyeStroke }}
+            />
+            <circle
+              className="pet-box-character__fill-ink"
+              cx={379 + leftEyeOffset}
+              cy={340 + config.eyeY}
+              r="15"
+            />
+          </g>
+          <g className="pet-box-character__eye-group pet-box-character__eye-group--right">
+            <ellipse
+              className="pet-box-character__eye-line"
+              cx={531 + rightEyeOffset}
+              cy={335 + config.eyeY}
+              rx={config.eyeRx}
+              ry={config.eyeRy}
+              style={{ strokeWidth: config.eyeStroke }}
+            />
+            <circle
+              className="pet-box-character__fill-ink"
+              cx={521 + rightEyeOffset}
+              cy={340 + config.eyeY}
+              r="15"
+            />
+          </g>
+          <g className="pet-box-character__mouth" transform={mouthTransform}>
+            <path
+              className="pet-box-character__mouth-line"
+              d="M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453"
+              style={{ strokeWidth: config.mouthStroke }}
+            />
+          </g>
+          <path className="pet-box-character__whisker" d="M556 412 Q575 407 589 405" />
+          <path className="pet-box-character__whisker" d="M558 432 Q580 436 593 445" />
+        </g>
+      </g>
+    </g>
+    </svg>
+  );
+};
+
 const PET_CAMERA_SAVE_TARGETS = [
   {
     key: 'gallery',
@@ -1482,6 +1773,18 @@ const PetPage = ({ onBack }) => {
   const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
+  const [debugCharacterPosition, setDebugCharacterPosition] = useState(() => {
+    try {
+      const savedPosition = JSON.parse(localStorage.getItem(PET_CHARACTER_POSITION_STORAGE_KEY));
+
+      return {
+        bottom: clampCharacterPositionValue('bottom', savedPosition?.bottom),
+        shadowGap: clampCharacterPositionValue('shadowGap', savedPosition?.shadowGap)
+      };
+    } catch {
+      return { ...PET_CHARACTER_POSITION_DEFAULTS };
+    }
+  });
   const cameraPoseTimerRef = useRef(null);
   const cameraPickerFallbackTimerRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -1565,12 +1868,7 @@ const PetPage = ({ onBack }) => {
   }, [activeTab, activityItems, moodItems, petItems, isSleeping, currentActivityName, currentMoodName]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
-    const reaction = getPetReaction(petStatus, biologicalClock);
-    console.log('🐱 Pet Status:', petStatus);
-    console.log('🐱 Biological Clock:', biologicalClock);
-    console.log('🐱 Pet Reaction Level:', reaction.level);
-    console.log('🐱 Weakest Stat:', reaction.weakest);
-    return reaction;
+    return getPetReaction(petStatus, biologicalClock);
   }, [petStatus, biologicalClock]);
   const hasPetItemFeedback = foodEffects.length > 0 || careEffects.length > 0 || isFoodUseAnimating || isCareUseAnimating;
   const petCharacterPresentation = useMemo(() => getPetCharacterPresentation({
@@ -1648,6 +1946,35 @@ const PetPage = ({ onBack }) => {
     `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
     isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
   ].filter(Boolean).join(' ');
+  const petStageStyle = isPetCharacterDebugEnabled
+    ? {
+      '--pet-character-bottom': `${debugCharacterPosition.bottom}px`,
+      '--pet-shadow-gap': `${debugCharacterPosition.shadowGap}px`
+    }
+    : undefined;
+
+  const updateDebugCharacterPosition = (key, value) => {
+    setDebugCharacterPosition((currentPosition) => {
+      const nextPosition = {
+        ...currentPosition,
+        [key]: clampCharacterPositionValue(key, value)
+      };
+
+      try {
+        localStorage.setItem(PET_CHARACTER_POSITION_STORAGE_KEY, JSON.stringify(nextPosition));
+      } catch { }
+
+      return nextPosition;
+    });
+  };
+
+  const resetDebugCharacterPosition = () => {
+    setDebugCharacterPosition({ ...PET_CHARACTER_POSITION_DEFAULTS });
+
+    try {
+      localStorage.removeItem(PET_CHARACTER_POSITION_STORAGE_KEY);
+    } catch { }
+  };
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -2998,7 +3325,10 @@ useEffect(() => {
           />
         </div>
 
-        <div className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}`}>
+        <div
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}`}
+          style={petStageStyle}
+        >
           {/* Sun */}
           <div className="stage-sun" aria-hidden="true"></div>
 
@@ -3051,6 +3381,39 @@ useEffect(() => {
                     <span>State: {activePetCharacterPresentation.state}</span>
                     <span>Effect: {activePetCharacterPresentation.effect}</span>
                     <span>Speed: {activePetCharacterSpeed}</span>
+                    <span>Bottom: {debugCharacterPosition.bottom}px</span>
+                    <span>Shadow gap: {debugCharacterPosition.shadowGap}px</span>
+                  </div>
+                  <div className="pet-character-debug__controls" aria-label="Character position controls">
+                    <label className="pet-character-debug__control">
+                      <span>Pet bottom</span>
+                      <input
+                        type="range"
+                        min={PET_CHARACTER_POSITION_LIMITS.bottom.min}
+                        max={PET_CHARACTER_POSITION_LIMITS.bottom.max}
+                        step="1"
+                        value={debugCharacterPosition.bottom}
+                        onChange={(event) => updateDebugCharacterPosition('bottom', event.target.value)}
+                      />
+                    </label>
+                    <label className="pet-character-debug__control">
+                      <span>Shadow gap</span>
+                      <input
+                        type="range"
+                        min={PET_CHARACTER_POSITION_LIMITS.shadowGap.min}
+                        max={PET_CHARACTER_POSITION_LIMITS.shadowGap.max}
+                        step="1"
+                        value={debugCharacterPosition.shadowGap}
+                        onChange={(event) => updateDebugCharacterPosition('shadowGap', event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="pet-character-debug__reset"
+                      onClick={resetDebugCharacterPosition}
+                    >
+                      Reset position
+                    </button>
                   </div>
                   <button
                     type="button"
@@ -3154,17 +3517,7 @@ useEffect(() => {
             onClick={handlePetCharacterCameraToggle}
             onKeyDown={handlePetCharacterCameraKeyDown}
           >
-            <span className="pet-character__head">
-              <span className="pet-character__eye pet-character__eye--left" />
-              <span className="pet-character__eye pet-character__eye--right" />
-              <span className="pet-character__mouth" />
-            </span>
-            <span className="pet-character__neck" />
-            <span className="pet-character__body" />
-            <span className="pet-character__arm pet-character__arm--left" />
-            <span className="pet-character__arm pet-character__arm--right" />
-            <span className="pet-character__leg pet-character__leg--left" />
-            <span className="pet-character__leg pet-character__leg--right" />
+            <MeoBoxPetCharacter />
             <span className="pet-character__camera" aria-hidden="true">
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--left" />
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--right" />
