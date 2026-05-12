@@ -436,10 +436,11 @@
             />
             <path
               class="pants-fill ink-line-heavy"
+              data-pants-path
               d="M334 786 Q392 816 450 816 Q508 817 566 786 L587 867 Q526 888 458 878 Q444 876 430 878 Q365 888 313 867 Z"
             />
             <path class="ink-line" d="M336 789 Q412 823 564 789" />
-            <path class="pants-seam" d="M450 818 Q451 846 450 872" />
+            <path class="pants-seam" data-pants-seam d="M450 818 Q451 846 450 872" />
           </g>
 
           <g class="arms" filter="url(#roughen)">
@@ -523,7 +524,10 @@
         "headScaleX": 1,
         "headScaleY": 1,
         "headStroke": 21,
-        "earStroke": 21
+        "earStroke": 21,
+        "pantsHeight": 0,
+        "seamY": 0,
+        "seamLength": 54
       }
     </script>
 
@@ -848,6 +852,72 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Pants height</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Pants height value"
+            data-number="pantsHeight"
+          />
+        </span>
+        <input
+          type="range"
+          min="0"
+          max="50"
+          step="1"
+          value="0"
+          data-control="pantsHeight"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Seam Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Seam Y value"
+            data-number="seamY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="50"
+          step="1"
+          value="0"
+          data-control="seamY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Seam length</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="54"
+            aria-label="Seam length value"
+            data-number="seamLength"
+          />
+        </span>
+        <input
+          type="range"
+          min="20"
+          max="80"
+          step="1"
+          value="54"
+          data-control="seamLength"
+        />
+      </label>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -877,6 +947,9 @@
         headScaleY: 1,
         headStroke: 21,
         earStroke: 21,
+        pantsHeight: 0,
+        seamY: 0,
+        seamLength: 54,
       };
 
       const debugStorageKey = "meo-box-character-debug";
@@ -915,6 +988,8 @@
       const headParts = [...document.querySelectorAll("[data-head-part]")];
       const headBoxLines = [...document.querySelectorAll("[data-head-box-line]")];
       const earLines = [...document.querySelectorAll("[data-ear-line]")];
+      const pantsPath = document.querySelector("[data-pants-path]");
+      const pantsSeam = document.querySelector("[data-pants-seam]");
       const controlLimits = Object.fromEntries(
         controls.map((control) => [
           control.dataset.control,
@@ -1030,6 +1105,16 @@
         earLines.forEach((line) => {
           line.style.strokeWidth = debugState.earStroke;
         });
+
+        const pantsHeightOffset = debugState.pantsHeight;
+        const newPantsPath = `M334 786 Q392 816 450 816 Q508 817 566 786 L${587} ${867 + pantsHeightOffset} Q526 ${888 + pantsHeightOffset} 458 ${878 + pantsHeightOffset} Q444 ${876 + pantsHeightOffset} 430 ${878 + pantsHeightOffset} Q365 ${888 + pantsHeightOffset} 313 ${867 + pantsHeightOffset} Z`;
+        pantsPath.setAttribute("d", newPantsPath);
+
+        const seamStartY = 818 + debugState.seamY;
+        const seamMidY = seamStartY + (debugState.seamLength / 2);
+        const seamEndY = seamStartY + debugState.seamLength;
+        const newSeamPath = `M450 ${seamStartY} Q451 ${seamMidY} 450 ${seamEndY}`;
+        pantsSeam.setAttribute("d", newSeamPath);
 
         controls.forEach((control) => {
           const key = control.dataset.control;
