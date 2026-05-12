@@ -503,7 +503,15 @@
         "leftHandX": 0,
         "leftHandY": 0,
         "rightHandX": 0,
-        "rightHandY": 0
+        "rightHandY": 0,
+        "leftArmCurve1X": 0,
+        "leftArmCurve1Y": 0,
+        "leftArmCurve2X": 0,
+        "leftArmCurve2Y": 0,
+        "rightArmCurve1X": 0,
+        "rightArmCurve1Y": 0,
+        "rightArmCurve2X": 0,
+        "rightArmCurve2Y": 0
       }
     </script>
 
@@ -1070,6 +1078,182 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left arm curve 1 X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left arm curve 1 X value"
+            data-number="leftArmCurve1X"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftArmCurve1X"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left arm curve 1 Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left arm curve 1 Y value"
+            data-number="leftArmCurve1Y"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftArmCurve1Y"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left arm curve 2 X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left arm curve 2 X value"
+            data-number="leftArmCurve2X"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftArmCurve2X"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left arm curve 2 Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left arm curve 2 Y value"
+            data-number="leftArmCurve2Y"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftArmCurve2Y"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right arm curve 1 X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right arm curve 1 X value"
+            data-number="rightArmCurve1X"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightArmCurve1X"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right arm curve 1 Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right arm curve 1 Y value"
+            data-number="rightArmCurve1Y"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightArmCurve1Y"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right arm curve 2 X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right arm curve 2 X value"
+            data-number="rightArmCurve2X"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightArmCurve2X"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right arm curve 2 Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right arm curve 2 Y value"
+            data-number="rightArmCurve2Y"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightArmCurve2Y"
+        />
+      </label>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -1110,6 +1294,14 @@
         leftHandY: 0,
         rightHandX: 0,
         rightHandY: 0,
+        leftArmCurve1X: 0,
+        leftArmCurve1Y: 0,
+        leftArmCurve2X: 0,
+        leftArmCurve2Y: 0,
+        rightArmCurve1X: 0,
+        rightArmCurve1Y: 0,
+        rightArmCurve2X: 0,
+        rightArmCurve2Y: 0,
       };
 
       const debugStorageKey = "meo-box-character-debug";
@@ -1284,7 +1476,11 @@
         const leftShoulderY = 544 + debugState.leftShoulderY;
         const leftHandX = 301 + debugState.leftHandX;
         const leftHandY = 795 + debugState.leftHandY;
-        const newLeftArmPath = `M${leftShoulderX} ${leftShoulderY} C335 633 318 706 ${leftHandX} ${leftHandY}`;
+        const leftCurve1X = 335 + debugState.leftArmCurve1X;
+        const leftCurve1Y = 633 + debugState.leftArmCurve1Y;
+        const leftCurve2X = 318 + debugState.leftArmCurve2X;
+        const leftCurve2Y = 706 + debugState.leftArmCurve2Y;
+        const newLeftArmPath = `M${leftShoulderX} ${leftShoulderY} C${leftCurve1X} ${leftCurve1Y} ${leftCurve2X} ${leftCurve2Y} ${leftHandX} ${leftHandY}`;
         leftArm.setAttribute("d", newLeftArmPath);
         leftHand.setAttribute("cx", leftHandX - 3);
         leftHand.setAttribute("cy", leftHandY + 20);
@@ -1293,7 +1489,11 @@
         const rightShoulderY = 544 + debugState.rightShoulderY;
         const rightHandX = 599 + debugState.rightHandX;
         const rightHandY = 795 + debugState.rightHandY;
-        const newRightArmPath = `M${rightShoulderX} ${rightShoulderY} C565 633 582 706 ${rightHandX} ${rightHandY}`;
+        const rightCurve1X = 565 + debugState.rightArmCurve1X;
+        const rightCurve1Y = 633 + debugState.rightArmCurve1Y;
+        const rightCurve2X = 582 + debugState.rightArmCurve2X;
+        const rightCurve2Y = 706 + debugState.rightArmCurve2Y;
+        const newRightArmPath = `M${rightShoulderX} ${rightShoulderY} C${rightCurve1X} ${rightCurve1Y} ${rightCurve2X} ${rightCurve2Y} ${rightHandX} ${rightHandY}`;
         rightArm.setAttribute("d", newRightArmPath);
         rightHand.setAttribute("cx", rightHandX + 3);
         rightHand.setAttribute("cy", rightHandY + 20);
@@ -1396,16 +1596,19 @@
 
         try {
           localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
-          const htmlSource = await buildSavedHtml();
 
-          await writeSavedHtmlFile(htmlSource);
+          // Update the embedded config in the current page
+          const savedConfig = serializeConfigForHtml(debugState);
+          configNode.textContent = "\n" + savedConfig + "\n    ";
+
+          setSaveStatus("Saved successfully!");
+
+          // Clear status after 2 seconds
+          setTimeout(() => {
+            setSaveStatus("");
+          }, 2000);
         } catch (error) {
-          if (error.name === "AbortError") {
-            setSaveStatus("Save canceled");
-            return;
-          }
-
-          console.error("Unable to save character HTML", error);
+          console.error("Unable to save character config", error);
           setSaveStatus("Save failed");
         } finally {
           debugSave.disabled = false;
