@@ -370,18 +370,22 @@
 
         <g class="character">
           <g class="ears" data-head-part filter="url(#roughen)">
-            <path
-              class="ear-line"
-              data-ear-line
-              d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365"
-            />
-            <path class="ink-line" d="M254 249 L211 257 L264 327" />
-            <path
-              class="ear-line"
-              data-ear-line
-              d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365"
-            />
-            <path class="ink-line" d="M646 249 L689 257 L636 327" />
+            <g class="left-ear" data-left-ear>
+              <path
+                class="ear-line"
+                data-ear-line
+                d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365"
+              />
+              <path class="ink-line" d="M254 249 L211 257 L264 327" />
+            </g>
+            <g class="right-ear" data-right-ear>
+              <path
+                class="ear-line"
+                data-ear-line
+                d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365"
+              />
+              <path class="ink-line" d="M646 249 L689 257 L636 327" />
+            </g>
           </g>
 
           <g class="legs" filter="url(#roughen)">
@@ -511,7 +515,11 @@
         "rightArmCurve1X": 0,
         "rightArmCurve1Y": 0,
         "rightArmCurve2X": 0,
-        "rightArmCurve2Y": 0
+        "rightArmCurve2Y": 0,
+        "leftEarScale": 1,
+        "leftEarY": 0,
+        "rightEarScale": 1,
+        "rightEarY": 0
       }
     </script>
 
@@ -1254,6 +1262,94 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left ear scale</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="decimal"
+            value="1"
+            aria-label="Left ear scale value"
+            data-number="leftEarScale"
+          />
+        </span>
+        <input
+          type="range"
+          min="0.5"
+          max="1.5"
+          step="0.01"
+          value="1"
+          data-control="leftEarScale"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left ear Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left ear Y value"
+            data-number="leftEarY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="1"
+          value="0"
+          data-control="leftEarY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right ear scale</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="decimal"
+            value="1"
+            aria-label="Right ear scale value"
+            data-number="rightEarScale"
+          />
+        </span>
+        <input
+          type="range"
+          min="0.5"
+          max="1.5"
+          step="0.01"
+          value="1"
+          data-control="rightEarScale"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right ear Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right ear Y value"
+            data-number="rightEarY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="1"
+          value="0"
+          data-control="rightEarY"
+        />
+      </label>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -1302,6 +1398,10 @@
         rightArmCurve1Y: 0,
         rightArmCurve2X: 0,
         rightArmCurve2Y: 0,
+        leftEarScale: 1,
+        leftEarY: 0,
+        rightEarScale: 1,
+        rightEarY: 0,
       };
 
       const debugStorageKey = "meo-box-character-debug";
@@ -1346,6 +1446,8 @@
       const rightArm = document.querySelector("[data-right-arm]");
       const leftHand = document.querySelector("[data-left-hand]");
       const rightHand = document.querySelector("[data-right-hand]");
+      const leftEar = document.querySelector("[data-left-ear]");
+      const rightEar = document.querySelector("[data-right-ear]");
       const controlLimits = Object.fromEntries(
         controls.map((control) => [
           control.dataset.control,
@@ -1370,6 +1472,8 @@
         "mouthScale",
         "headScaleX",
         "headScaleY",
+        "leftEarScale",
+        "rightEarScale",
       ]);
 
       const readDebugState = () => {
@@ -1497,6 +1601,22 @@
         rightArm.setAttribute("d", newRightArmPath);
         rightHand.setAttribute("cx", rightHandX + 3);
         rightHand.setAttribute("cy", rightHandY + 20);
+
+        const leftEarTransform = [
+          "translate(254 285)",
+          `scale(${debugState.leftEarScale})`,
+          "translate(-254 -285)",
+          `translate(0 ${debugState.leftEarY})`,
+        ].join(" ");
+        leftEar.setAttribute("transform", leftEarTransform);
+
+        const rightEarTransform = [
+          "translate(646 285)",
+          `scale(${debugState.rightEarScale})`,
+          "translate(-646 -285)",
+          `translate(0 ${debugState.rightEarY})`,
+        ].join(" ");
+        rightEar.setAttribute("transform", rightEarTransform);
 
         controls.forEach((control) => {
           const key = control.dataset.control;
