@@ -34,7 +34,8 @@
       }
 
       button,
-      input {
+      input,
+      select {
         font: inherit;
       }
 
@@ -56,8 +57,30 @@
       }
 
       .character {
+        transform-box: view-box;
         transform-origin: 450px 610px;
         animation: meo-breathe 3.8s ease-in-out infinite;
+        will-change: transform;
+      }
+
+      .character[data-animation="wobble"] {
+        animation: meo-wobble 1.15s ease-in-out infinite;
+      }
+
+      .character[data-animation="hop"] {
+        animation: meo-hop 0.95s ease-in-out infinite;
+      }
+
+      .character[data-animation="squash"] {
+        animation: meo-squash 1.25s ease-in-out infinite;
+      }
+
+      .character[data-animation="sway"] {
+        animation: meo-sway 2.15s ease-in-out infinite;
+      }
+
+      .character[data-animation="none"] {
+        animation: none;
       }
 
       .ink-line {
@@ -236,6 +259,30 @@
         accent-color: var(--ink);
       }
 
+      .animation-control {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0 10px;
+        padding-top: 12px;
+        border-top: 2px dashed var(--ink);
+      }
+
+      .animation-control-label {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .animation-control-select {
+        min-height: 44px;
+        width: 100%;
+        border: 2px solid var(--ink);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
       .debug-actions {
         display: flex;
         flex-wrap: wrap;
@@ -282,6 +329,74 @@
 
         50% {
           transform: translateY(-5px) rotate(0.3deg);
+        }
+      }
+
+      @keyframes meo-wobble {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-1.8deg) scale(1);
+        }
+
+        22% {
+          transform: translateY(-3px) rotate(2.4deg) scale(1);
+        }
+
+        48% {
+          transform: translateY(1px) rotate(-2.6deg) scale(1);
+        }
+
+        74% {
+          transform: translateY(-1px) rotate(1.9deg) scale(1);
+        }
+      }
+
+      @keyframes meo-hop {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+
+        38% {
+          transform: translateY(-20px) scale(1.03);
+        }
+
+        58% {
+          transform: translateY(0) scale(1.05, 0.96);
+        }
+      }
+
+      @keyframes meo-squash {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+
+        35% {
+          transform: translateY(6px) scale(1.08, 0.92);
+        }
+
+        62% {
+          transform: translateY(-4px) scale(0.97, 1.04);
+        }
+      }
+
+      @keyframes meo-sway {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-0.8deg) scale(1);
+        }
+
+        25% {
+          transform: translateY(-4px) rotate(1.1deg) scale(1.01);
+        }
+
+        50% {
+          transform: translateY(1px) rotate(0.6deg) scale(1);
+        }
+
+        75% {
+          transform: translateY(-3px) rotate(-1.2deg) scale(1.01);
         }
       }
 
@@ -368,7 +483,7 @@
           </filter>
         </defs>
 
-        <g class="character">
+        <g class="character" data-animation="idle">
           <g class="ears" data-head-part filter="url(#roughen)">
             <g class="left-ear" data-left-ear>
               <path
@@ -1350,6 +1465,25 @@
         />
       </label>
 
+      <div class="animation-control">
+        <label class="animation-control-label" for="characterAnimation">
+          Animation
+        </label>
+        <select
+          class="animation-control-select"
+          id="characterAnimation"
+          aria-label="Character animation"
+          data-animation-select
+        >
+          <option value="idle">Breathe</option>
+          <option value="wobble">Wobble</option>
+          <option value="hop">Hop</option>
+          <option value="squash">Squash</option>
+          <option value="sway">Sway</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -1405,7 +1539,17 @@
       };
 
       const debugStorageKey = "meo-box-character-debug";
+      const animationStorageKey = "meo-box-character-animation";
+      const allowedAnimations = new Set([
+        "idle",
+        "wobble",
+        "hop",
+        "squash",
+        "sway",
+        "none",
+      ]);
       const configNode = document.querySelector("[data-character-config]");
+      const character = document.querySelector(".character");
       const debugPanel = document.querySelector("[data-debug-panel]");
       const debugToggle = document.querySelector("[data-debug-toggle]");
       const debugSave = document.querySelector("[data-debug-save]");
@@ -1413,6 +1557,7 @@
         "[data-debug-save-status]",
       );
       const debugReset = document.querySelector("[data-debug-reset]");
+      const animationSelect = document.querySelector("[data-animation-select]");
       const controls = [...document.querySelectorAll("[data-control]")];
       const numberInputs = [...document.querySelectorAll("[data-number]")];
       const eyeParts = {
@@ -1488,6 +1633,25 @@
       };
 
       let debugState = readDebugState();
+
+      const readAnimationState = () => {
+        const savedAnimation = localStorage.getItem(animationStorageKey);
+
+        return allowedAnimations.has(savedAnimation) ? savedAnimation : "idle";
+      };
+
+      const applyAnimationState = (animationName, shouldSave = false) => {
+        const nextAnimation = allowedAnimations.has(animationName)
+          ? animationName
+          : "idle";
+
+        character.dataset.animation = nextAnimation;
+        animationSelect.value = nextAnimation;
+
+        if (shouldSave) {
+          localStorage.setItem(animationStorageKey, nextAnimation);
+        }
+      };
 
       const coerceDebugValue = (key, value, fallback = debugDefaults[key]) => {
         const limits = controlLimits[key];
@@ -1779,12 +1943,17 @@
 
       debugSave.addEventListener("click", saveDebugConfig);
 
+      animationSelect.addEventListener("change", () => {
+        applyAnimationState(animationSelect.value, true);
+      });
+
       debugReset.addEventListener("click", () => {
         debugState = { ...debugDefaults };
         setSaveStatus("");
         applyDebugState();
       });
 
+      applyAnimationState(readAnimationState());
       applyDebugState();
     </script>
   </body>
