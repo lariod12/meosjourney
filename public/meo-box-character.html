@@ -158,16 +158,6 @@
         transform-box: fill-box;
       }
 
-      .left-arm {
-        transform-origin: 327px 545px;
-        animation: left-arm-drift 4.4s ease-in-out infinite;
-      }
-
-      .right-arm {
-        transform-origin: 573px 545px;
-        animation: right-arm-drift 4.4s ease-in-out infinite;
-      }
-
       .debug-toggle {
         position: fixed;
         right: 24px;
@@ -314,33 +304,9 @@
         }
       }
 
-      @keyframes left-arm-drift {
-        0%,
-        100% {
-          transform: rotate(1deg);
-        }
-
-        50% {
-          transform: rotate(-2deg);
-        }
-      }
-
-      @keyframes right-arm-drift {
-        0%,
-        100% {
-          transform: rotate(-1deg);
-        }
-
-        50% {
-          transform: rotate(2deg);
-        }
-      }
-
       @media (prefers-reduced-motion: reduce) {
         .character,
-        .eye,
-        .left-arm,
-        .right-arm {
+        .eye {
           animation: none;
         }
       }
@@ -446,14 +412,16 @@
           <g class="arms" filter="url(#roughen)">
             <path
               class="left-arm ink-line-heavy"
+              data-left-arm
               d="M362 544 C335 633 318 706 301 795"
             />
-            <circle class="pupil" cx="298" cy="815" r="23" />
+            <circle class="pupil" data-left-hand cx="298" cy="815" r="23" />
             <path
               class="right-arm ink-line-heavy"
+              data-right-arm
               d="M538 544 C565 633 582 706 599 795"
             />
-            <circle class="pupil" cx="602" cy="815" r="23" />
+            <circle class="pupil" data-right-hand cx="602" cy="815" r="23" />
           </g>
 
           <g class="head" data-head-part filter="url(#roughen)">
@@ -527,7 +495,15 @@
         "earStroke": 21,
         "pantsHeight": 0,
         "seamY": 0,
-        "seamLength": 54
+        "seamLength": 54,
+        "leftShoulderX": 0,
+        "leftShoulderY": 0,
+        "rightShoulderX": 0,
+        "rightShoulderY": 0,
+        "leftHandX": 0,
+        "leftHandY": 0,
+        "rightHandX": 0,
+        "rightHandY": 0
       }
     </script>
 
@@ -918,6 +894,182 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left shoulder X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left shoulder X value"
+            data-number="leftShoulderX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="1"
+          value="0"
+          data-control="leftShoulderX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left shoulder Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left shoulder Y value"
+            data-number="leftShoulderY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftShoulderY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right shoulder X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right shoulder X value"
+            data-number="rightShoulderX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="1"
+          value="0"
+          data-control="rightShoulderX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right shoulder Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right shoulder Y value"
+            data-number="rightShoulderY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightShoulderY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left hand X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left hand X value"
+            data-number="leftHandX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftHandX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left hand Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left hand Y value"
+            data-number="leftHandY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="leftHandY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right hand X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right hand X value"
+            data-number="rightHandX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightHandX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right hand Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right hand Y value"
+            data-number="rightHandY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          data-control="rightHandY"
+        />
+      </label>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -950,6 +1102,14 @@
         pantsHeight: 0,
         seamY: 0,
         seamLength: 54,
+        leftShoulderX: 0,
+        leftShoulderY: 0,
+        rightShoulderX: 0,
+        rightShoulderY: 0,
+        leftHandX: 0,
+        leftHandY: 0,
+        rightHandX: 0,
+        rightHandY: 0,
       };
 
       const debugStorageKey = "meo-box-character-debug";
@@ -990,6 +1150,10 @@
       const earLines = [...document.querySelectorAll("[data-ear-line]")];
       const pantsPath = document.querySelector("[data-pants-path]");
       const pantsSeam = document.querySelector("[data-pants-seam]");
+      const leftArm = document.querySelector("[data-left-arm]");
+      const rightArm = document.querySelector("[data-right-arm]");
+      const leftHand = document.querySelector("[data-left-hand]");
+      const rightHand = document.querySelector("[data-right-hand]");
       const controlLimits = Object.fromEntries(
         controls.map((control) => [
           control.dataset.control,
@@ -1061,7 +1225,7 @@
           {},
         );
 
-      const applyDebugState = () => {
+      const applyDebugState = (shouldSave = false) => {
         debugState = normalizeDebugState(debugState);
 
         Object.values(eyeParts).forEach((eyePart) => {
@@ -1116,6 +1280,24 @@
         const newSeamPath = `M450 ${seamStartY} Q451 ${seamMidY} 450 ${seamEndY}`;
         pantsSeam.setAttribute("d", newSeamPath);
 
+        const leftShoulderX = 362 + debugState.leftShoulderX;
+        const leftShoulderY = 544 + debugState.leftShoulderY;
+        const leftHandX = 301 + debugState.leftHandX;
+        const leftHandY = 795 + debugState.leftHandY;
+        const newLeftArmPath = `M${leftShoulderX} ${leftShoulderY} C335 633 318 706 ${leftHandX} ${leftHandY}`;
+        leftArm.setAttribute("d", newLeftArmPath);
+        leftHand.setAttribute("cx", leftHandX - 3);
+        leftHand.setAttribute("cy", leftHandY + 20);
+
+        const rightShoulderX = 538 + debugState.rightShoulderX;
+        const rightShoulderY = 544 + debugState.rightShoulderY;
+        const rightHandX = 599 + debugState.rightHandX;
+        const rightHandY = 795 + debugState.rightHandY;
+        const newRightArmPath = `M${rightShoulderX} ${rightShoulderY} C565 633 582 706 ${rightHandX} ${rightHandY}`;
+        rightArm.setAttribute("d", newRightArmPath);
+        rightHand.setAttribute("cx", rightHandX + 3);
+        rightHand.setAttribute("cy", rightHandY + 20);
+
         controls.forEach((control) => {
           const key = control.dataset.control;
           control.value = debugState[key];
@@ -1125,7 +1307,9 @@
           );
         });
 
-        localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
+        if (shouldSave) {
+          localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
+        }
       };
 
       const setSaveStatus = (message) => {
@@ -1211,6 +1395,7 @@
         setSaveStatus("Saving...");
 
         try {
+          localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
           const htmlSource = await buildSavedHtml();
 
           await writeSavedHtmlFile(htmlSource);
