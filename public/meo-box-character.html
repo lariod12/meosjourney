@@ -76,6 +76,22 @@
         stroke-linejoin: round;
       }
 
+      .ear-line {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 21;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .head-box-line {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 21;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
       .box-fill,
       .eye-fill {
         fill: var(--paper);
@@ -389,12 +405,14 @@
         <g class="character">
           <g class="ears" data-head-part filter="url(#roughen)">
             <path
-              class="ink-line-heavy"
+              class="ear-line"
+              data-ear-line
               d="M254 205 C174 216 165 220 170 243 C176 270 225 333 263 365"
             />
             <path class="ink-line" d="M254 249 L211 257 L264 327" />
             <path
-              class="ink-line-heavy"
+              class="ear-line"
+              data-ear-line
               d="M646 205 C726 216 735 220 730 243 C724 270 675 333 637 365"
             />
             <path class="ink-line" d="M646 249 L689 257 L636 327" />
@@ -439,14 +457,16 @@
 
           <g class="head" data-head-part filter="url(#roughen)">
             <path
-              class="box-fill ink-line-heavy"
+              class="box-fill head-box-line"
+              data-head-box-line
               d="M250 214 H650 L640 518 Q640 538 620 539 H280 Q260 538 260 518 Z"
             />
             <path
-              class="box-fill ink-line-heavy"
+              class="box-fill head-box-line"
+              data-head-box-line
               d="M250 214 L315 158 H585 L650 214 Z"
             />
-            <path class="ink-line-heavy" d="M250 214 H650" />
+            <path class="head-box-line" data-head-box-line d="M250 214 H650" />
           </g>
 
           <g class="face" data-head-part>
@@ -501,7 +521,9 @@
         "mouthX": 0,
         "mouthY": 0,
         "headScaleX": 1,
-        "headScaleY": 1
+        "headScaleY": 1,
+        "headStroke": 21,
+        "earStroke": 21
       }
     </script>
 
@@ -782,6 +804,50 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Head border</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="21"
+            aria-label="Head border value"
+            data-number="headStroke"
+          />
+        </span>
+        <input
+          type="range"
+          min="12"
+          max="32"
+          step="1"
+          value="21"
+          data-control="headStroke"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Ear border</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="21"
+            aria-label="Ear border value"
+            data-number="earStroke"
+          />
+        </span>
+        <input
+          type="range"
+          min="12"
+          max="32"
+          step="1"
+          value="21"
+          data-control="earStroke"
+        />
+      </label>
+
       <div class="debug-actions">
         <button class="debug-save" type="button" data-debug-save>Save</button>
         <button class="debug-reset" type="button" data-debug-reset>
@@ -809,6 +875,8 @@
         mouthY: 0,
         headScaleX: 1,
         headScaleY: 1,
+        headStroke: 21,
+        earStroke: 21,
       };
 
       const debugStorageKey = "meo-box-character-debug";
@@ -845,6 +913,8 @@
       const mouthLine = document.querySelector("[data-mouth-line]");
       const mouthGroup = document.querySelector("[data-mouth-group]");
       const headParts = [...document.querySelectorAll("[data-head-part]")];
+      const headBoxLines = [...document.querySelectorAll("[data-head-box-line]")];
+      const earLines = [...document.querySelectorAll("[data-ear-line]")];
       const controlLimits = Object.fromEntries(
         controls.map((control) => [
           control.dataset.control,
@@ -951,6 +1021,14 @@
 
         headParts.forEach((part) => {
           part.setAttribute("transform", headTransform);
+        });
+
+        headBoxLines.forEach((line) => {
+          line.style.strokeWidth = debugState.headStroke;
+        });
+
+        earLines.forEach((line) => {
+          line.style.strokeWidth = debugState.earStroke;
         });
 
         controls.forEach((control) => {
