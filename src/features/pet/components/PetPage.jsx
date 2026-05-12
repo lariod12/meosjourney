@@ -1412,6 +1412,8 @@ const MeoBoxPetCharacter = () => {
   ].join(' ');
   const leftEyeOffset = config.eyeX - config.eyeSpacing;
   const rightEyeOffset = config.eyeX + config.eyeSpacing;
+  const leftSleepEyePath = `M${349 + leftEyeOffset} ${349 + config.eyeY} C${360 + leftEyeOffset} ${367 + config.eyeY} ${381 + leftEyeOffset} ${367 + config.eyeY} ${392 + leftEyeOffset} ${349 + config.eyeY}`;
+  const rightSleepEyePath = `M${508 + rightEyeOffset} ${349 + config.eyeY} C${519 + rightEyeOffset} ${367 + config.eyeY} ${540 + rightEyeOffset} ${367 + config.eyeY} ${551 + rightEyeOffset} ${349 + config.eyeY}`;
 
   return (
     <svg
@@ -1577,6 +1579,10 @@ const MeoBoxPetCharacter = () => {
               r="15"
             />
           </g>
+          <g className="pet-box-character__sleep-eyes" aria-hidden="true">
+            <path className="pet-box-character__sleep-eye" d={leftSleepEyePath} />
+            <path className="pet-box-character__sleep-eye" d={rightSleepEyePath} />
+          </g>
           <g className="pet-box-character__mouth" transform={mouthTransform}>
             <path
               className="pet-box-character__mouth-line"
@@ -1586,6 +1592,14 @@ const MeoBoxPetCharacter = () => {
           </g>
           <path className="pet-box-character__whisker" d="M556 412 Q575 407 589 405" />
           <path className="pet-box-character__whisker" d="M558 432 Q580 436 593 445" />
+        </g>
+        <g className="pet-box-character__sleep-zzz" aria-hidden="true">
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--1" x="626" y="156">Z</text>
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--2" x="658" y="126">Z</text>
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--3" x="688" y="98">Z</text>
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--4" x="634" y="152">Z</text>
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--5" x="666" y="122">Z</text>
+          <text className="pet-box-character__sleep-z pet-box-character__sleep-z--6" x="696" y="94">Z</text>
         </g>
       </g>
     </g>
@@ -3527,14 +3541,6 @@ useEffect(() => {
               <span className="pet-character__camera-flash" />
             </span>
 
-            {/* ZZZ particles when sleeping (hide when awakening overlay is shown) */}
-            {isSleeping && !isAwakening && (
-              <div className="pet-sleep-zzz" aria-hidden="true">
-                <span className="pet-sleep-z pet-sleep-z--1">Z</span>
-                <span className="pet-sleep-z pet-sleep-z--2">Z</span>
-                <span className="pet-sleep-z pet-sleep-z--3">Z</span>
-              </div>
-            )}
           </div>
         </div>
 

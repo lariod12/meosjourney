@@ -1643,6 +1643,7 @@
 .pet-box-character__line-heavy,
 .pet-box-character__head-line,
 .pet-box-character__eye-line,
+.pet-box-character__sleep-eye,
 .pet-box-character__mouth-line,
 .pet-box-character__pants-seam,
 .pet-box-character__whisker {
@@ -1666,6 +1667,11 @@
 
 .pet-box-character__eye-line {
   fill: #ffffff;
+  stroke-width: 12;
+}
+
+.pet-box-character__sleep-eye {
+  opacity: 0;
   stroke-width: 12;
 }
 
@@ -1729,6 +1735,35 @@
 
 .pet-box-character__eye-group--right {
   animation-delay: 12ms;
+}
+
+.pet-box-character__sleep-zzz {
+  pointer-events: none;
+}
+
+.pet-box-character__sleep-z {
+  opacity: 0;
+  fill: #000000;
+  stroke: #ffffff;
+  stroke-width: 10;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+  font-family: 'Patrick Hand', 'Kalam', 'Architects Daughter', cursive;
+  font-size: 54px;
+  font-style: italic;
+  font-weight: 900;
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+.pet-box-character__sleep-z--2,
+.pet-box-character__sleep-z--5 {
+  font-size: 42px;
+}
+
+.pet-box-character__sleep-z--3,
+.pet-box-character__sleep-z--6 {
+  font-size: 32px;
 }
 
 @keyframes pet-box-blink {
@@ -2536,6 +2571,43 @@
   animation: pet-sleep-breathe 2s ease-in-out infinite;
 }
 
+.pet-character--sleeping .pet-box-character__eye-group {
+  animation: none;
+  opacity: 0;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-eye {
+  opacity: 1;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z {
+  animation: pet-box-sleep-zzz-rise 2.4s ease-in-out infinite;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--1 {
+  animation-delay: 0s;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--2 {
+  animation-delay: 0.18s;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--3 {
+  animation-delay: 0.36s;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--4 {
+  animation-delay: 1.2s;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--5 {
+  animation-delay: 1.38s;
+}
+
+.pet-character--sleeping .pet-box-character__sleep-z--6 {
+  animation-delay: 1.56s;
+}
+
 @keyframes pet-sleep-breathe {
   0%, 100% {
     transform: translateX(-50%) translateY(0) scale(var(--pet-character-scale));
@@ -2545,63 +2617,21 @@
   }
 }
 
-/* ZZZ particles */
-.pet-sleep-zzz {
-  position: absolute;
-  left: 50%;
-  top: -40px;
-  width: 60px;
-  height: 80px;
-  pointer-events: none;
-}
-
-.pet-sleep-z {
-  position: absolute;
-  font-size: 32px;
-  font-weight: 900;
-  font-style: italic;
-  color: #fff;
-  text-shadow:
-    -2px -2px 0 #000,
-    2px -2px 0 #000,
-    -2px 2px 0 #000,
-    2px 2px 0 #000,
-    0 0 8px rgba(255, 255, 255, 0.8);
-  opacity: 0;
-  animation: pet-zzz-float 2s ease-in-out infinite;
-}
-
-.pet-sleep-z--1 {
-  left: 10px;
-  animation-delay: 0s;
-}
-
-.pet-sleep-z--2 {
-  left: 25px;
-  font-size: 28px;
-  animation-delay: 0.6s;
-}
-
-.pet-sleep-z--3 {
-  left: 40px;
-  font-size: 24px;
-  animation-delay: 1.2s;
-}
-
-@keyframes pet-zzz-float {
+@keyframes pet-box-sleep-zzz-rise {
   0% {
     opacity: 0;
-    transform: translateY(0) scale(0.8);
+    transform: translate(0, 26px) scale(0.78) rotate(-8deg);
   }
-  20% {
+  16% {
     opacity: 1;
   }
-  80% {
-    opacity: 1;
+  55% {
+    opacity: 0.9;
   }
+  76%,
   100% {
     opacity: 0;
-    transform: translateY(-60px) scale(1.2);
+    transform: translate(28px, -42px) scale(1.08) rotate(8deg);
   }
 }
 
