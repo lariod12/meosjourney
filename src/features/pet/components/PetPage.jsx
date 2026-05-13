@@ -10,7 +10,7 @@ import {
   LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain,
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
   LuClapperboard, LuMusic, LuShoppingBag, LuScissors, LuWashingMachine, LuDumbbell, LuPaintbrush,
-  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera,
+  LuHammer, LuBed, LuTrainFront, LuSunset, LuWaves, LuLaptop, LuPlus, LuSearch, LuCamera, LuCameraOff,
   LuImage, LuGalleryHorizontal, LuX, LuCheck
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
@@ -356,6 +356,10 @@ const PET_CAMERA_FLASH_DURATION_MS = 500;
 const PET_CAMERA_POST_FLASH_HOLD_MS = 500;
 const PET_CAMERA_LOWER_DURATION_MS = 400;
 const PET_CAMERA_READY_TIMEOUT_MS = 10000;
+const PET_CAMERA_REFUSAL_MESSAGES = {
+  critical: 'Tui không thể chụp ảnh lúc này... tui đang cạn kiệt sức rồi.',
+  sleeping: 'Tui đang ngủ rồi... để tui nghỉ ngơi thêm chút nha.'
+};
 
 const randomBetween = (min, max) => Math.round(min + Math.random() * (max - min));
 
@@ -1923,6 +1927,7 @@ const PetPage = ({ onBack }) => {
   const cameraInputRef = useRef(null);
   const [isCameraPoseActive, setIsCameraPoseActive] = useState(false);
   const [isPetCameraControlVisible, setIsPetCameraControlVisible] = useState(false);
+  const [isPetCameraRefusalVisible, setIsPetCameraRefusalVisible] = useState(false);
   const [cameraPhase, setCameraPhase] = useState('idle'); // 'idle', 'raising', 'capturing', 'flash', 'lowering'
   const [capturedPetPhoto, setCapturedPetPhoto] = useState(null);
   const [petPhotoTitle, setPetPhotoTitle] = useState('');
@@ -3221,8 +3226,26 @@ useEffect(() => {
     }
   };
 
+  const showCriticalPetCameraRefusal = () => {
+    setIsPetCameraControlVisible(false);
+    setIsPetCameraRefusalVisible(true);
+    setCameraPhase('idle');
+    setIsCameraPoseActive(false);
+    resetCameraInput();
+
+    if (cameraPoseTimerRef.current) {
+      window.clearTimeout(cameraPoseTimerRef.current);
+      cameraPoseTimerRef.current = null;
+    }
+    if (cameraPickerFallbackTimerRef.current) {
+      window.clearTimeout(cameraPickerFallbackTimerRef.current);
+      cameraPickerFallbackTimerRef.current = null;
+    }
+  };
+
   const lowerPetCameraPose = () => {
     setIsPetCameraControlVisible(false);
+    setIsPetCameraRefusalVisible(false);
 
     if (cameraPoseTimerRef.current) {
       window.clearTimeout(cameraPoseTimerRef.current);
@@ -3333,13 +3356,33 @@ useEffect(() => {
   const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
   const isPetCameraReady = cameraPhase === 'capturing';
   const isPetCameraBusy = cameraPhase !== 'idle';
-  const isPetCameraControlDisabled = !isPetCameraControlVisible || isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
-  const isPetCameraInputDisabled = !isPetCameraControlVisible || isPetCameraBaseDisabled || !isPetCameraReady;
+  const isPetCameraSleepBlocked = isSleeping
+    || activePetCharacterPresentation.state === PET_CHARACTER_STATES.sleeping;
+  const isPetCameraCriticalBlocked = petReaction.level === 'critical'
+    || activePetCharacterPresentation.state === PET_CHARACTER_STATES.critical;
+  const isPetCameraRefusalBlocked = isPetCameraCriticalBlocked || isPetCameraSleepBlocked;
+  const petCameraRefusalMessage = isPetCameraSleepBlocked
+    ? PET_CAMERA_REFUSAL_MESSAGES.sleeping
+    : PET_CAMERA_REFUSAL_MESSAGES.critical;
+  const isPetCameraControlsVisible = isPetCameraControlVisible && !isPetCameraRefusalVisible && !isPetCameraRefusalBlocked;
+  const isPetCameraControlDisabled = !isPetCameraControlsVisible || isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
+  const isPetCameraInputDisabled = !isPetCameraControlsVisible || isPetCameraBaseDisabled || !isPetCameraReady;
+  const isPetCameraOverlayVisible = isPetCameraControlsVisible || isPetCameraRefusalVisible;
 
   const handlePetCharacterCameraToggle = () => {
     lastInteractionRef.current = Date.now();
 
     if (cameraPhase === 'flash' || isPetPhotoModalOpen || isSavingPetPhoto) return;
+
+    if (isPetCameraRefusalVisible) {
+      lowerPetCameraPose();
+      return;
+    }
+
+    if (isPetCameraRefusalBlocked && !isAwakening) {
+      showCriticalPetCameraRefusal();
+      return;
+    }
 
     if (isPetCameraControlVisible || isCameraPoseActive || cameraPhase !== 'idle') {
       lowerPetCameraPose();
@@ -3645,7 +3688,7 @@ useEffect(() => {
           <div
             className={petCharacterClassName}
             role="button"
-            tabIndex={isSleeping || isAwakening || isPetPhotoModalOpen ? -1 : 0}
+            tabIndex={isAwakening || isPetPhotoModalOpen ? -1 : 0}
             aria-label={isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control'}
             aria-pressed={isPetCameraControlVisible || isCameraPoseActive}
             onClick={handlePetCharacterCameraToggle}
@@ -3665,45 +3708,62 @@ useEffect(() => {
         </div>
 
         <div
-          className={`pet-camera-action-overlay ${isPetCameraControlVisible ? 'pet-camera-action-overlay--visible' : ''}`}
-          aria-hidden={!isPetCameraControlVisible}
+          className={`pet-camera-action-overlay ${isPetCameraOverlayVisible ? 'pet-camera-action-overlay--visible' : ''} ${isPetCameraRefusalVisible ? 'pet-camera-action-overlay--refusal' : ''}`}
+          aria-hidden={!isPetCameraOverlayVisible}
         >
           <div className="pet-camera-action-overlay__backdrop" aria-hidden="true" />
-          <div className="pet-camera-action-overlay__controls">
-            <label
-              className={`pet-stage-camera-button ${isPetCameraControlVisible ? 'pet-stage-camera-button--visible' : ''} ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraReady ? 'pet-stage-camera-button--ready' : ''} ${isPetCameraControlDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
-              onClick={handleCameraPose}
-              onKeyDown={handleCameraKeyDown}
-              aria-label={isPetCameraReady ? 'Open camera to take a pet photo' : 'Raise pet camera'}
-              aria-disabled={isPetCameraControlDisabled}
-              aria-hidden={!isPetCameraControlVisible}
-              aria-pressed={isCameraPoseActive}
-              role="button"
-              tabIndex={isPetCameraControlDisabled ? -1 : 0}
-            >
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleCameraCapture}
-                disabled={isPetCameraInputDisabled}
-                className="pet-stage-camera-button__input"
-                aria-hidden="true"
-                tabIndex={-1}
-              />
-              <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
-            </label>
-            <button
-              type="button"
-              className="pet-stage-camera-cancel-button"
-              onClick={lowerPetCameraPose}
-              aria-label="Close camera controls"
-              tabIndex={isPetCameraControlVisible ? 0 : -1}
-            >
-              <LuX aria-hidden="true" />
-            </button>
-          </div>
+          {isPetCameraRefusalVisible ? (
+            <div className="pet-camera-action-overlay__refusal" role="status" aria-label="Pet refuses photo">
+              <div className="pet-camera-action-overlay__refusal-bubble">
+                {petCameraRefusalMessage}
+              </div>
+              <button
+                type="button"
+                className="pet-camera-action-overlay__refusal-mark"
+                onClick={lowerPetCameraPose}
+                aria-label="Close pet refusal"
+              >
+                <LuCameraOff className="pet-camera-action-overlay__refusal-camera" aria-hidden="true" />
+                <span className="pet-camera-action-overlay__refusal-x" aria-hidden="true">X</span>
+              </button>
+            </div>
+          ) : (
+            <div className="pet-camera-action-overlay__controls">
+              <label
+                className={`pet-stage-camera-button ${isPetCameraControlsVisible ? 'pet-stage-camera-button--visible' : ''} ${isCameraPoseActive ? 'pet-stage-camera-button--active' : ''} ${isPetCameraReady ? 'pet-stage-camera-button--ready' : ''} ${isPetCameraControlDisabled ? 'pet-stage-camera-button--disabled' : ''}`}
+                onClick={handleCameraPose}
+                onKeyDown={handleCameraKeyDown}
+                aria-label={isPetCameraReady ? 'Open camera to take a pet photo' : 'Raise pet camera'}
+                aria-disabled={isPetCameraControlDisabled}
+                aria-hidden={!isPetCameraControlsVisible}
+                aria-pressed={isCameraPoseActive}
+                role="button"
+                tabIndex={isPetCameraControlDisabled ? -1 : 0}
+              >
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCameraCapture}
+                  disabled={isPetCameraInputDisabled}
+                  className="pet-stage-camera-button__input"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                />
+                <LuCamera className="pet-stage-camera-button__icon" aria-hidden="true" />
+              </label>
+              <button
+                type="button"
+                className="pet-stage-camera-cancel-button"
+                onClick={lowerPetCameraPose}
+                aria-label="Close camera controls"
+                tabIndex={isPetCameraControlsVisible ? 0 : -1}
+              >
+                <LuX aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
 
         <section className="pet-bottom-sheet" aria-label="Pet item inventory preview">

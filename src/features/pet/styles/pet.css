@@ -324,6 +324,10 @@
     visibility 0s linear 0s;
 }
 
+.pet-camera-action-overlay--refusal {
+  z-index: 34;
+}
+
 .pet-camera-action-overlay__backdrop {
   position: absolute;
   top: max(0px, calc(var(--pet-camera-backdrop-top) - var(--pet-camera-backdrop-lift)));
@@ -335,6 +339,10 @@
     rgba(255, 255, 255, 0.74);
   border-top: 4px solid #000000;
   pointer-events: none;
+}
+
+.pet-camera-action-overlay--refusal .pet-camera-action-overlay__backdrop {
+  position: absolute;
 }
 
 .pet-camera-action-overlay__controls {
@@ -352,6 +360,127 @@
 .pet-camera-action-overlay--visible .pet-camera-action-overlay__backdrop,
 .pet-camera-action-overlay--visible .pet-camera-action-overlay__controls {
   pointer-events: auto;
+}
+
+.pet-camera-action-overlay__refusal {
+  position: absolute;
+  top: max(0px, calc(var(--pet-camera-backdrop-top) - var(--pet-camera-backdrop-lift)));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto 120px;
+  place-items: center;
+  gap: 12px;
+  padding: 18px;
+  color: #000000;
+  font-family: 'Kalam', cursive;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.pet-camera-action-overlay__refusal-bubble {
+  position: relative;
+  width: min(300px, calc(100% - 28px));
+  padding: 12px 14px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 4px 4px 0 #000000;
+  font-size: 18px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.pet-camera-action-overlay__refusal-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  width: 18px;
+  height: 18px;
+  border-right: 3px solid #000000;
+  border-bottom: 3px solid #000000;
+  background: #ffffff;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 3px 3px 0 #000000;
+}
+
+.pet-camera-action-overlay__refusal-mark {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border: 3px solid #000000;
+  border-radius: 18px;
+  padding: 0;
+  background: #ffffff;
+  color: #000000;
+  display: grid;
+  place-items: center;
+  box-shadow: 6px 6px 0 #000000;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transform-origin: 50% 65%;
+  animation: pet-camera-refusal-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.pet-camera-action-overlay__refusal-mark:focus-visible {
+  outline: 3px solid #666666;
+  outline-offset: 4px;
+}
+
+.pet-camera-action-overlay__refusal-camera {
+  width: 56px;
+  height: 56px;
+  color: #000000;
+  opacity: 1;
+  stroke-width: 2.8;
+}
+
+.pet-camera-action-overlay__refusal-x {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 4px 4px 0 #000000;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  line-height: 1;
+}
+
+@keyframes pet-camera-refusal-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(0.95) rotate(-5deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-10deg);
+  }
 }
 
 .pet-stage-camera-button {
