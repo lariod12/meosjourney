@@ -106,8 +106,7 @@
 }
 
 /* Status-based overlay patterns (using ::before to not override time backgrounds) */
-.pet-stage--needs-care::before,
-.pet-stage--critical::before {
+.pet-stage--needs-care::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -118,10 +117,6 @@
 
 .pet-stage--needs-care::before {
   background: repeating-linear-gradient(135deg, #ffffff 0 18px, transparent 18px 30px);
-}
-
-.pet-stage--critical::before {
-  background: repeating-linear-gradient(135deg, #ffffff 0 12px, transparent 12px 22px);
 }
 
 .pet-character-debug {
