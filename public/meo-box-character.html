@@ -75,8 +75,8 @@
         animation: meo-squash 1.25s ease-in-out infinite;
       }
 
-      .character[data-animation="sway"] {
-        animation: meo-sway 2.15s ease-in-out infinite;
+      .character[data-animation="wave"] {
+        animation: meo-wave 2.15s ease-in-out infinite;
       }
 
       .character[data-animation="none"] {
@@ -136,6 +136,21 @@
         stroke-linejoin: round;
       }
 
+      .expression-line {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 13;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .sleep-z {
+        fill: var(--ink);
+        font-family: "Comic Sans MS", "Arial Black", sans-serif;
+        font-size: 44px;
+        font-weight: 900;
+      }
+
       .body-fill {
         fill: url(#bodyShade);
       }
@@ -172,6 +187,10 @@
 
       .eye-right {
         animation-delay: 12ms;
+      }
+
+      .character:not([data-expression="stable"]) .eye {
+        animation: none;
       }
 
       .left-arm,
@@ -259,6 +278,7 @@
         accent-color: var(--ink);
       }
 
+      .state-control,
       .animation-control {
         display: grid;
         gap: 8px;
@@ -267,11 +287,13 @@
         border-top: 2px dashed var(--ink);
       }
 
+      .state-control-label,
       .animation-control-label {
         font-size: 14px;
         font-weight: 700;
       }
 
+      .state-control-select,
       .animation-control-select {
         min-height: 44px;
         width: 100%;
@@ -381,7 +403,7 @@
         }
       }
 
-      @keyframes meo-sway {
+      @keyframes meo-wave {
         0%,
         100% {
           transform: translateY(0) rotate(-0.8deg) scale(1);
@@ -483,7 +505,7 @@
           </filter>
         </defs>
 
-        <g class="character" data-animation="idle">
+        <g class="character" data-animation="idle" data-expression="stable">
           <g class="ears" data-head-part filter="url(#roughen)">
             <g class="left-ear" data-left-ear>
               <path
@@ -582,12 +604,30 @@
               <circle class="pupil" cx="521" cy="340" r="15" />
             </g>
 
+            <g class="expression-eyes">
+              <path class="expression-line" data-left-brow d="" />
+              <path class="expression-line" data-right-brow d="" />
+              <path class="expression-line" data-left-closed-eye d="" />
+              <path class="expression-line" data-right-closed-eye d="" />
+            </g>
+
             <g class="mouth" data-mouth-group>
               <path
                 class="mouth-line"
                 data-mouth-line
                 d="M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453"
               />
+            </g>
+            <g class="sleep-zs" data-sleep-zs aria-hidden="true">
+              <text class="sleep-z" x="676" y="216" transform="rotate(-9 676 216)">
+                Z
+              </text>
+              <text class="sleep-z" x="648" y="267" transform="rotate(8 648 267)">
+                Z
+              </text>
+              <text class="sleep-z" x="687" y="320" transform="rotate(-7 687 320)">
+                Z
+              </text>
             </g>
             <path class="whisker" d="M556 412 Q575 407 589 405" />
             <path class="whisker" d="M558 432 Q580 436 593 445" />
@@ -634,7 +674,22 @@
         "leftEarScale": 1,
         "leftEarY": 0,
         "rightEarScale": 1,
-        "rightEarY": 0
+        "rightEarY": 0,
+        "leftBrowX": 0,
+        "leftBrowY": 0,
+        "rightBrowX": 0,
+        "rightBrowY": 0,
+        "browCurve": 0,
+        "leftPupilX": 0,
+        "leftPupilY": 0,
+        "leftPupilSize": 0,
+        "rightPupilX": 0,
+        "rightPupilY": 0,
+        "rightPupilSize": 0,
+        "leftBrowLength": 0,
+        "rightBrowLength": 0,
+        "faceExpression": "stable",
+        "bodyAnimation": "idle"
       }
     </script>
 
@@ -1465,6 +1520,310 @@
         />
       </label>
 
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left pupil X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left pupil X value"
+            data-number="leftPupilX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="30"
+          step="1"
+          value="0"
+          data-control="leftPupilX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left pupil Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left pupil Y value"
+            data-number="leftPupilY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="30"
+          step="1"
+          value="0"
+          data-control="leftPupilY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left pupil size</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left pupil size value"
+            data-number="leftPupilSize"
+          />
+        </span>
+        <input
+          type="range"
+          min="-8"
+          max="18"
+          step="1"
+          value="0"
+          data-control="leftPupilSize"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right pupil X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right pupil X value"
+            data-number="rightPupilX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="30"
+          step="1"
+          value="0"
+          data-control="rightPupilX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right pupil Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right pupil Y value"
+            data-number="rightPupilY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="30"
+          step="1"
+          value="0"
+          data-control="rightPupilY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right pupil size</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right pupil size value"
+            data-number="rightPupilSize"
+          />
+        </span>
+        <input
+          type="range"
+          min="-8"
+          max="18"
+          step="1"
+          value="0"
+          data-control="rightPupilSize"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left brow X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left brow X value"
+            data-number="leftBrowX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-60"
+          max="60"
+          step="1"
+          value="0"
+          data-control="leftBrowX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left brow Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left brow Y value"
+            data-number="leftBrowY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-60"
+          max="60"
+          step="1"
+          value="0"
+          data-control="leftBrowY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right brow X</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right brow X value"
+            data-number="rightBrowX"
+          />
+        </span>
+        <input
+          type="range"
+          min="-60"
+          max="60"
+          step="1"
+          value="0"
+          data-control="rightBrowX"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right brow Y</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right brow Y value"
+            data-number="rightBrowY"
+          />
+        </span>
+        <input
+          type="range"
+          min="-60"
+          max="60"
+          step="1"
+          value="0"
+          data-control="rightBrowY"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Brow curve</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Brow curve value"
+            data-number="browCurve"
+          />
+        </span>
+        <input
+          type="range"
+          min="-50"
+          max="50"
+          step="1"
+          value="0"
+          data-control="browCurve"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Left brow length</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Left brow length value"
+            data-number="leftBrowLength"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="50"
+          step="1"
+          value="0"
+          data-control="leftBrowLength"
+        />
+      </label>
+
+      <label class="debug-control">
+        <span class="debug-control-row">
+          <span>Right brow length</span>
+          <input
+            class="debug-control-number"
+            type="text"
+            inputmode="numeric"
+            value="0"
+            aria-label="Right brow length value"
+            data-number="rightBrowLength"
+          />
+        </span>
+        <input
+          type="range"
+          min="-30"
+          max="50"
+          step="1"
+          value="0"
+          data-control="rightBrowLength"
+        />
+      </label>
+
+      <div class="state-control">
+        <label class="state-control-label" for="faceExpression">
+          Face state
+        </label>
+        <select
+          class="state-control-select"
+          id="faceExpression"
+          aria-label="Face state"
+          data-face-select
+        >
+          <option value="stable">stable</option>
+          <option value="needs-care">needs-care</option>
+          <option value="critical">critical</option>
+          <option value="excellent">excellent</option>
+          <option value="sleeping">sleeping</option>
+        </select>
+      </div>
+
       <div class="animation-control">
         <label class="animation-control-label" for="characterAnimation">
           Animation
@@ -1475,12 +1834,12 @@
           aria-label="Character animation"
           data-animation-select
         >
-          <option value="idle">Breathe</option>
-          <option value="wobble">Wobble</option>
-          <option value="hop">Hop</option>
-          <option value="squash">Squash</option>
-          <option value="sway">Sway</option>
-          <option value="none">None</option>
+          <option value="idle">idle</option>
+          <option value="wobble">wobble</option>
+          <option value="hop">hop</option>
+          <option value="wave">wave</option>
+          <option value="squash">squash</option>
+          <option value="none">none</option>
         </select>
       </div>
 
@@ -1536,18 +1895,46 @@
         leftEarY: 0,
         rightEarScale: 1,
         rightEarY: 0,
+        leftBrowX: 0,
+        leftBrowY: 0,
+        rightBrowX: 0,
+        rightBrowY: 0,
+        browCurve: 0,
+        leftPupilX: 0,
+        leftPupilY: 0,
+        leftPupilSize: 0,
+        rightPupilX: 0,
+        rightPupilY: 0,
+        rightPupilSize: 0,
+        leftBrowLength: 0,
+        rightBrowLength: 0,
       };
 
       const debugStorageKey = "meo-box-character-debug";
       const animationStorageKey = "meo-box-character-animation";
+      const faceStorageKey = "meo-box-character-face";
       const allowedAnimations = new Set([
         "idle",
         "wobble",
         "hop",
         "squash",
-        "sway",
+        "wave",
         "none",
       ]);
+      const allowedFaceExpressions = new Set([
+        "stable",
+        "needs-care",
+        "critical",
+        "excellent",
+        "sleeping",
+      ]);
+      const faceAnimationMap = {
+        stable: "idle",
+        "needs-care": "wave",
+        critical: "wobble",
+        excellent: "hop",
+        sleeping: "wave",
+      };
       const configNode = document.querySelector("[data-character-config]");
       const character = document.querySelector(".character");
       const debugPanel = document.querySelector("[data-debug-panel]");
@@ -1557,31 +1944,41 @@
         "[data-debug-save-status]",
       );
       const debugReset = document.querySelector("[data-debug-reset]");
+      const faceExpressionSelect = document.querySelector("[data-face-select]");
       const animationSelect = document.querySelector("[data-animation-select]");
       const controls = [...document.querySelectorAll("[data-control]")];
       const numberInputs = [...document.querySelectorAll("[data-number]")];
       const eyeParts = {
         left: {
+          group: document.querySelector(".eye-left"),
           line: document.querySelector(".eye-left [data-eye-line]"),
           pupil: document.querySelector(".eye-left .pupil"),
           lineCx: 369,
           lineCy: 335,
           pupilCx: 379,
           pupilCy: 340,
+          pupilR: 15,
           direction: -1,
         },
         right: {
+          group: document.querySelector(".eye-right"),
           line: document.querySelector(".eye-right [data-eye-line]"),
           pupil: document.querySelector(".eye-right .pupil"),
           lineCx: 531,
           lineCy: 335,
           pupilCx: 521,
           pupilCy: 340,
+          pupilR: 15,
           direction: 1,
         },
       };
       const mouthLine = document.querySelector("[data-mouth-line]");
       const mouthGroup = document.querySelector("[data-mouth-group]");
+      const leftBrow = document.querySelector("[data-left-brow]");
+      const rightBrow = document.querySelector("[data-right-brow]");
+      const leftClosedEye = document.querySelector("[data-left-closed-eye]");
+      const rightClosedEye = document.querySelector("[data-right-closed-eye]");
+      const sleepZs = document.querySelector("[data-sleep-zs]");
       const headParts = [...document.querySelectorAll("[data-head-part]")];
       const headBoxLines = [...document.querySelectorAll("[data-head-box-line]")];
       const earLines = [...document.querySelectorAll("[data-ear-line]")];
@@ -1620,6 +2017,81 @@
         "leftEarScale",
         "rightEarScale",
       ]);
+      const stableMouthPath =
+        "M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453";
+      const facePresets = {
+        stable: {
+          eyes: {
+            mode: "open",
+            left: { rx: 44, ry: 58, cx: 369, cy: 335, pupilCx: 379, pupilCy: 340 },
+            right: { rx: 44, ry: 58, cx: 531, cy: 335, pupilCx: 521, pupilCy: 340 },
+          },
+          mouth: { d: stableMouthPath, fill: "none" },
+        },
+        "needs-care": {
+          eyes: {
+            mode: "open",
+            left: { rx: 28, ry: 33, cx: 374, cy: 356, pupilCx: 373, pupilCy: 364, pupilR: 12 },
+            right: { rx: 28, ry: 33, cx: 526, cy: 356, pupilCx: 527, pupilCy: 364, pupilR: 12 },
+          },
+          brows: {
+            left: {
+              start: [335, 331],
+              control: [360, 312],
+              end: [390, 313],
+            },
+            right: {
+              start: [510, 313],
+              control: [540, 312],
+              end: [565, 331],
+            },
+          },
+          mouth: { d: "M435 462 Q450 441 465 462", fill: "none" },
+        },
+        critical: {
+          eyes: {
+            mode: "open",
+            left: { rx: 43, ry: 56, cx: 368, cy: 344, pupilCx: 368, pupilCy: 344, hidePupil: true },
+            right: { rx: 43, ry: 56, cx: 532, cy: 344, pupilCx: 532, pupilCy: 344, hidePupil: true },
+          },
+          brows: {
+            left: {
+              start: [337, 291],
+              control: [370, 319],
+              end: [400, 289],
+            },
+            right: {
+              start: [500, 289],
+              control: [530, 319],
+              end: [563, 291],
+            },
+          },
+          mouth: {
+            d: "M417 467 Q450 423 486 467 Q450 448 417 467 Z",
+            fill: "var(--paper)",
+          },
+        },
+        excellent: {
+          eyes: {
+            mode: "closed",
+            left: "M333 354 Q368 304 403 354",
+            right: "M497 354 Q532 304 567 354",
+          },
+          mouth: {
+            d: "M416 398 H484 Q478 463 450 464 Q422 463 416 398 Z",
+            fill: "var(--paper)",
+          },
+        },
+        sleeping: {
+          eyes: {
+            mode: "closed",
+            left: "M333 360 Q368 392 403 360",
+            right: "M497 360 Q532 392 567 360",
+          },
+          mouth: { d: stableMouthPath, fill: "none" },
+          zzz: true,
+        },
+      };
 
       const readDebugState = () => {
         try {
@@ -1636,20 +2108,179 @@
 
       const readAnimationState = () => {
         const savedAnimation = localStorage.getItem(animationStorageKey);
+        const embeddedAnimation = debugDefaults.bodyAnimation;
+        const preferredAnimation = savedAnimation || embeddedAnimation;
 
-        return allowedAnimations.has(savedAnimation) ? savedAnimation : "idle";
+        if (preferredAnimation === "sway") {
+          return "wave";
+        }
+
+        return allowedAnimations.has(preferredAnimation)
+          ? preferredAnimation
+          : "idle";
       };
+
+      const readFaceExpressionState = () => {
+        const savedFaceExpression = localStorage.getItem(faceStorageKey);
+        const embeddedFaceExpression = debugDefaults.faceExpression;
+        const preferredFaceExpression =
+          savedFaceExpression || embeddedFaceExpression;
+
+        return allowedFaceExpressions.has(preferredFaceExpression)
+          ? preferredFaceExpression
+          : "stable";
+      };
+
+      let faceExpressionState = readFaceExpressionState();
+      let animationState = readAnimationState();
 
       const applyAnimationState = (animationName, shouldSave = false) => {
         const nextAnimation = allowedAnimations.has(animationName)
           ? animationName
           : "idle";
 
+        animationState = nextAnimation;
         character.dataset.animation = nextAnimation;
         animationSelect.value = nextAnimation;
 
         if (shouldSave) {
           localStorage.setItem(animationStorageKey, nextAnimation);
+        }
+      };
+
+      const setPathVisibility = (path, shouldShow) => {
+        path.style.display = shouldShow ? "" : "none";
+      };
+
+      const buildAdjustableBrowPath = (browPreset, side) => {
+        if (!browPreset) {
+          return "";
+        }
+
+        if (typeof browPreset === "string") {
+          return browPreset;
+        }
+
+        const browX = side === "left" ? debugState.leftBrowX : debugState.rightBrowX;
+        const browY = side === "left" ? debugState.leftBrowY : debugState.rightBrowY;
+        const browLength =
+          side === "left" ? debugState.leftBrowLength : debugState.rightBrowLength;
+        const [startX, startY] = browPreset.start;
+        const [controlX, controlY] = browPreset.control;
+        const [endX, endY] = browPreset.end;
+        const browDeltaX = endX - startX;
+        const browDeltaY = endY - startY;
+        const browDistance = Math.hypot(browDeltaX, browDeltaY) || 1;
+        const lengthOffsetX = (browDeltaX / browDistance) * (browLength / 2);
+        const lengthOffsetY = (browDeltaY / browDistance) * (browLength / 2);
+
+        return `M${startX + browX - lengthOffsetX} ${
+          startY + browY - lengthOffsetY
+        } Q${controlX + browX} ${
+          controlY + browY + debugState.browCurve
+        } ${endX + browX + lengthOffsetX} ${endY + browY + lengthOffsetY}`;
+      };
+
+      const getPupilAdjustment = (side) =>
+        side === "left"
+          ? {
+              x: debugState.leftPupilX,
+              y: debugState.leftPupilY,
+              size: debugState.leftPupilSize,
+            }
+          : {
+              x: debugState.rightPupilX,
+              y: debugState.rightPupilY,
+              size: debugState.rightPupilSize,
+            };
+
+      const applyFaceExpressionState = (
+        expressionName,
+        shouldSave = false,
+        shouldSyncAnimation = false,
+      ) => {
+        const nextExpression = allowedFaceExpressions.has(expressionName)
+          ? expressionName
+          : "stable";
+        const preset = facePresets[nextExpression] || facePresets.stable;
+
+        faceExpressionState = nextExpression;
+        character.dataset.expression = nextExpression;
+        faceExpressionSelect.value = nextExpression;
+
+        Object.entries(eyeParts).forEach(([side, eyePart]) => {
+          const stableEyeOffset =
+            debugState.eyeX + debugState.eyeSpacing * eyePart.direction;
+          const eyePreset =
+            nextExpression === "stable"
+              ? {
+                  rx: debugState.eyeRx,
+                  ry: debugState.eyeRy,
+                  cx: eyePart.lineCx + stableEyeOffset,
+                  cy: eyePart.lineCy + debugState.eyeY,
+                  pupilCx: eyePart.pupilCx + stableEyeOffset,
+                  pupilCy: eyePart.pupilCy + debugState.eyeY,
+                  pupilR: eyePart.pupilR,
+                }
+              : preset.eyes.mode === "open"
+                ? preset.eyes[side]
+                : null;
+
+          eyePart.group.style.display = eyePreset ? "" : "none";
+          eyePart.group.removeAttribute("transform");
+
+          if (!eyePreset) {
+            return;
+          }
+
+          eyePart.line.setAttribute("cx", eyePreset.cx);
+          eyePart.line.setAttribute("cy", eyePreset.cy);
+          eyePart.line.setAttribute("rx", eyePreset.rx);
+          eyePart.line.setAttribute("ry", eyePreset.ry);
+          eyePart.line.style.strokeWidth = debugState.eyeStroke;
+          const pupilAdjustment = getPupilAdjustment(side);
+          const pupilRadius = Math.max(
+            1,
+            (eyePreset.pupilR ?? eyePart.pupilR) + pupilAdjustment.size,
+          );
+
+          eyePart.pupil.setAttribute("cx", eyePreset.pupilCx + pupilAdjustment.x);
+          eyePart.pupil.setAttribute("cy", eyePreset.pupilCy + pupilAdjustment.y);
+          eyePart.pupil.setAttribute("r", pupilRadius);
+          eyePart.pupil.style.display = eyePreset.hidePupil ? "none" : "";
+        });
+
+        const hasClosedEyes = preset.eyes.mode === "closed";
+        setPathVisibility(leftClosedEye, hasClosedEyes);
+        setPathVisibility(rightClosedEye, hasClosedEyes);
+        leftClosedEye.setAttribute("d", hasClosedEyes ? preset.eyes.left : "");
+        rightClosedEye.setAttribute(
+          "d",
+          hasClosedEyes ? preset.eyes.right : "",
+        );
+
+        setPathVisibility(leftBrow, Boolean(preset.brows));
+        setPathVisibility(rightBrow, Boolean(preset.brows));
+        leftBrow.setAttribute(
+          "d",
+          buildAdjustableBrowPath(preset.brows?.left, "left"),
+        );
+        rightBrow.setAttribute(
+          "d",
+          buildAdjustableBrowPath(preset.brows?.right, "right"),
+        );
+
+        mouthLine.setAttribute("d", preset.mouth.d);
+        mouthLine.style.fill = preset.mouth.fill;
+        mouthLine.style.strokeWidth = debugState.mouthStroke;
+        sleepZs.style.display = preset.zzz ? "" : "none";
+
+        if (shouldSave) {
+          localStorage.setItem(faceStorageKey, nextExpression);
+        }
+
+        if (shouldSyncAnimation) {
+          applyAnimationState(faceAnimationMap[nextExpression], shouldSave);
         }
       };
 
@@ -1791,6 +2422,8 @@
           );
         });
 
+        applyFaceExpressionState(faceExpressionState);
+
         if (shouldSave) {
           localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
         }
@@ -1817,10 +2450,15 @@
       };
 
       const serializeConfigForHtml = (state) =>
-        JSON.stringify(normalizeDebugState(state), null, 2).replace(
-          /^/gm,
-          "      ",
-        );
+        JSON.stringify(
+          {
+            ...normalizeDebugState(state),
+            faceExpression: faceExpressionState,
+            bodyAnimation: animationState,
+          },
+          null,
+          2,
+        ).replace(/^/gm, "      ");
 
       const buildSavedHtml = async () => {
         const htmlSource = await getCurrentHtmlSource();
@@ -1880,6 +2518,8 @@
 
         try {
           localStorage.setItem(debugStorageKey, JSON.stringify(debugState));
+          localStorage.setItem(faceStorageKey, faceExpressionState);
+          localStorage.setItem(animationStorageKey, animationState);
 
           // Update the embedded config in the current page
           const savedConfig = serializeConfigForHtml(debugState);
@@ -1951,14 +2591,24 @@
         applyAnimationState(animationSelect.value, true);
       });
 
+      faceExpressionSelect.addEventListener("change", () => {
+        applyFaceExpressionState(faceExpressionSelect.value, true, true);
+      });
+
       debugReset.addEventListener("click", () => {
         debugState = { ...debugDefaults };
+        faceExpressionState = "stable";
+        animationState = "idle";
+        localStorage.removeItem(faceStorageKey);
+        localStorage.removeItem(animationStorageKey);
         setSaveStatus("");
+        applyAnimationState(animationState);
         applyDebugState();
       });
 
-      applyAnimationState(readAnimationState());
+      applyAnimationState(animationState);
       applyDebugState();
+      applyFaceExpressionState(faceExpressionState);
     </script>
   </body>
 </html>
