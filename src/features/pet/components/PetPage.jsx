@@ -1363,8 +1363,101 @@ const MEO_BOX_CHARACTER_CONFIG = {
   rightEarY: -4
 };
 
-const MeoBoxPetCharacter = () => {
+const MEO_BOX_STABLE_MOUTH_PATH = 'M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453';
+const MEO_BOX_FACE_PRESETS = {
+  [PET_CHARACTER_STATES.stable]: {
+    eyes: {
+      mode: 'open',
+      useDebugEyeConfig: true,
+      left: { rx: 44, ry: 58, cx: 369, cy: 335, pupilCx: 379, pupilCy: 340 },
+      right: { rx: 44, ry: 58, cx: 531, cy: 335, pupilCx: 521, pupilCy: 340 }
+    },
+    mouth: { d: MEO_BOX_STABLE_MOUTH_PATH, fill: 'none' }
+  },
+  [PET_CHARACTER_STATES.needsCare]: {
+    eyes: {
+      mode: 'open',
+      left: { rx: 28, ry: 33, cx: 374, cy: 356, pupilCx: 380, pupilCy: 367, pupilR: 12 },
+      right: { rx: 28, ry: 33, cx: 526, cy: 356, pupilCx: 518, pupilCy: 367, pupilR: 12 }
+    },
+    brows: {
+      left: {
+        start: [338, 335],
+        control: [363, 342],
+        end: [393, 317]
+      },
+      right: {
+        start: [511.80158851617875, 317.2441562416585],
+        control: [538, 341],
+        end: [559.1984114838212, 332.7558437583415]
+      }
+    },
+    mouth: { d: 'M435 462 Q450 441 465 462', fill: 'none' }
+  },
+  [PET_CHARACTER_STATES.critical]: {
+    eyes: {
+      mode: 'open',
+      left: { rx: 43, ry: 56, cx: 368, cy: 344, pupilCx: 368, pupilCy: 344, hidePupil: true },
+      right: { rx: 43, ry: 56, cx: 532, cy: 344, pupilCx: 532, pupilCy: 344, hidePupil: true }
+    },
+    brows: {
+      left: {
+        start: [337, 291],
+        control: [370, 319],
+        end: [400, 289]
+      },
+      right: {
+        start: [500, 289],
+        control: [530, 319],
+        end: [563, 291]
+      }
+    },
+    mouth: { d: 'M417 467 Q450 423 486 467 Q450 448 417 467 Z', fill: '#ffffff' }
+  },
+  [PET_CHARACTER_STATES.excellent]: {
+    eyes: {
+      mode: 'closed',
+      left: 'M333 354 Q368 304 403 354',
+      right: 'M497 354 Q532 304 567 354'
+    },
+    mouth: { d: 'M416 398 H484 Q478 463 450 464 Q422 463 416 398 Z', fill: '#ffffff' }
+  },
+  [PET_CHARACTER_STATES.sleeping]: {
+    eyes: {
+      mode: 'closed',
+      left: 'M333 360 Q368 392 403 360',
+      right: 'M497 360 Q532 392 567 360'
+    },
+    mouth: { d: MEO_BOX_STABLE_MOUTH_PATH, fill: 'none' },
+    zzz: true
+  }
+};
+
+const buildBrowPath = ({ start, control, end }) => (
+  `M${start[0]} ${start[1]} Q${control[0]} ${control[1]} ${end[0]} ${end[1]}`
+);
+
+const MeoBoxPetCharacter = ({ state = PET_CHARACTER_STATES.stable }) => {
   const config = MEO_BOX_CHARACTER_CONFIG;
+  const facePreset = MEO_BOX_FACE_PRESETS[state] || MEO_BOX_FACE_PRESETS[PET_CHARACTER_STATES.stable];
+  const usesOpenEyes = facePreset.eyes.mode === 'open';
+  const getOpenEyePreset = (side) => {
+    const eye = facePreset.eyes[side];
+    if (!facePreset.eyes.useDebugEyeConfig) return eye;
+
+    const direction = side === 'left' ? -1 : 1;
+    const eyeOffset = config.eyeX + config.eyeSpacing * direction;
+
+    return {
+      ...eye,
+      cx: eye.cx + eyeOffset,
+      cy: eye.cy + config.eyeY,
+      rx: config.eyeRx,
+      ry: config.eyeRy,
+      pupilCx: eye.pupilCx + eyeOffset,
+      pupilCy: eye.pupilCy + config.eyeY
+    };
+  };
   const headTransform = [
     'translate(450 350)',
     `scale(${config.headScaleX} ${config.headScaleY})`,
@@ -1410,10 +1503,6 @@ const MeoBoxPetCharacter = () => {
     'translate(-646 -285)',
     `translate(0 ${config.rightEarY})`
   ].join(' ');
-  const leftEyeOffset = config.eyeX - config.eyeSpacing;
-  const rightEyeOffset = config.eyeX + config.eyeSpacing;
-  const leftSleepEyePath = `M${349 + leftEyeOffset} ${349 + config.eyeY} C${360 + leftEyeOffset} ${367 + config.eyeY} ${381 + leftEyeOffset} ${367 + config.eyeY} ${392 + leftEyeOffset} ${349 + config.eyeY}`;
-  const rightSleepEyePath = `M${508 + rightEyeOffset} ${349 + config.eyeY} C${519 + rightEyeOffset} ${367 + config.eyeY} ${540 + rightEyeOffset} ${367 + config.eyeY} ${551 + rightEyeOffset} ${349 + config.eyeY}`;
 
   return (
     <svg
@@ -1547,47 +1636,52 @@ const MeoBoxPetCharacter = () => {
         </g>
 
         <g className="pet-box-character__face" transform={headTransform}>
-          <g className="pet-box-character__eye-group pet-box-character__eye-group--left">
-            <ellipse
-              className="pet-box-character__eye-line"
-              cx={369 + leftEyeOffset}
-              cy={335 + config.eyeY}
-              rx={config.eyeRx}
-              ry={config.eyeRy}
-              style={{ strokeWidth: config.eyeStroke }}
-            />
-            <circle
-              className="pet-box-character__fill-ink"
-              cx={379 + leftEyeOffset}
-              cy={340 + config.eyeY}
-              r="15"
-            />
-          </g>
-          <g className="pet-box-character__eye-group pet-box-character__eye-group--right">
-            <ellipse
-              className="pet-box-character__eye-line"
-              cx={531 + rightEyeOffset}
-              cy={335 + config.eyeY}
-              rx={config.eyeRx}
-              ry={config.eyeRy}
-              style={{ strokeWidth: config.eyeStroke }}
-            />
-            <circle
-              className="pet-box-character__fill-ink"
-              cx={521 + rightEyeOffset}
-              cy={340 + config.eyeY}
-              r="15"
-            />
-          </g>
-          <g className="pet-box-character__sleep-eyes" aria-hidden="true">
-            <path className="pet-box-character__sleep-eye" d={leftSleepEyePath} />
-            <path className="pet-box-character__sleep-eye" d={rightSleepEyePath} />
-          </g>
+          {usesOpenEyes ? (
+            <>
+              {['left', 'right'].map((side) => {
+                const eye = getOpenEyePreset(side);
+                return (
+                  <g
+                    className={`pet-box-character__eye-group pet-box-character__eye-group--${side}`}
+                    key={side}
+                  >
+                    <ellipse
+                      className="pet-box-character__eye-line"
+                      cx={eye.cx}
+                      cy={eye.cy}
+                      rx={eye.rx}
+                      ry={eye.ry}
+                      style={{ strokeWidth: config.eyeStroke }}
+                    />
+                    {!eye.hidePupil && (
+                      <circle
+                        className="pet-box-character__fill-ink"
+                        cx={eye.pupilCx}
+                        cy={eye.pupilCy}
+                        r={eye.pupilR || 15}
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </>
+          ) : (
+            <g className="pet-box-character__sleep-eyes" aria-hidden="true">
+              <path className="pet-box-character__sleep-eye" d={facePreset.eyes.left} style={{ opacity: 1 }} />
+              <path className="pet-box-character__sleep-eye" d={facePreset.eyes.right} style={{ opacity: 1 }} />
+            </g>
+          )}
+          {facePreset.brows && (
+            <g className="pet-box-character__expression-eyes" aria-hidden="true">
+              <path className="pet-box-character__expression-line" d={buildBrowPath(facePreset.brows.left)} />
+              <path className="pet-box-character__expression-line" d={buildBrowPath(facePreset.brows.right)} />
+            </g>
+          )}
           <g className="pet-box-character__mouth" transform={mouthTransform}>
             <path
               className="pet-box-character__mouth-line"
-              d="M449 409 C474 392 487 421 458 424 C489 431 475 467 445 453"
-              style={{ strokeWidth: config.mouthStroke }}
+              d={facePreset.mouth.d}
+              style={{ strokeWidth: config.mouthStroke, fill: facePreset.mouth.fill }}
             />
           </g>
           <path className="pet-box-character__whisker" d="M556 412 Q575 407 589 405" />
@@ -3531,7 +3625,7 @@ useEffect(() => {
             onClick={handlePetCharacterCameraToggle}
             onKeyDown={handlePetCharacterCameraKeyDown}
           >
-            <MeoBoxPetCharacter />
+            <MeoBoxPetCharacter state={activePetCharacterPresentation.state} />
             <span className="pet-character__camera" aria-hidden="true">
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--left" />
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--right" />

@@ -1644,6 +1644,7 @@
 .pet-box-character__head-line,
 .pet-box-character__eye-line,
 .pet-box-character__sleep-eye,
+.pet-box-character__expression-line,
 .pet-box-character__mouth-line,
 .pet-box-character__pants-seam,
 .pet-box-character__whisker {
@@ -1673,6 +1674,10 @@
 .pet-box-character__sleep-eye {
   opacity: 0;
   stroke-width: 12;
+}
+
+.pet-box-character__expression-line {
+  stroke-width: 13;
 }
 
 .pet-box-character__mouth-line {
