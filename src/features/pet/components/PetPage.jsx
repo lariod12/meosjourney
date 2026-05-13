@@ -770,12 +770,32 @@ const PET_CHARACTER_DEBUG_PRESETS = [
 const PET_CHARACTER_POSITION_STORAGE_KEY = 'meo-pet-character-position-debug';
 const PET_CHARACTER_POSITION_DEFAULTS = {
   bottom: 44,
-  shadowGap: -8
+  shadowGap: -8,
+  cameraArmX: -10,
+  cameraArmTop: 20,
+  cameraArmWidth: 22,
+  cameraArmHeight: 52,
+  cameraArmRotate: 6
 };
 const PET_CHARACTER_POSITION_LIMITS = {
   bottom: { min: 20, max: 120 },
-  shadowGap: { min: -28, max: 24 }
+  shadowGap: { min: -28, max: 24 },
+  cameraArmX: { min: -24, max: 12 },
+  cameraArmTop: { min: 8, max: 38 },
+  cameraArmWidth: { min: 12, max: 36 },
+  cameraArmHeight: { min: 34, max: 76 },
+  cameraArmRotate: { min: -20, max: 20 }
 };
+
+const PET_CHARACTER_POSITION_CONTROLS = [
+  { key: 'bottom', label: 'Pet bottom', unit: 'px' },
+  { key: 'shadowGap', label: 'Shadow gap', unit: 'px' },
+  { key: 'cameraArmX', label: 'Camera arm X', unit: 'px' },
+  { key: 'cameraArmTop', label: 'Camera arm top', unit: 'px' },
+  { key: 'cameraArmWidth', label: 'Camera arm width', unit: 'px' },
+  { key: 'cameraArmHeight', label: 'Camera arm height', unit: 'px' },
+  { key: 'cameraArmRotate', label: 'Camera arm rotate', unit: 'deg' }
+];
 
 const clampCharacterPositionValue = (key, value) => {
   const limits = PET_CHARACTER_POSITION_LIMITS[key];
@@ -1887,7 +1907,12 @@ const PetPage = ({ onBack }) => {
 
       return {
         bottom: clampCharacterPositionValue('bottom', savedPosition?.bottom),
-        shadowGap: clampCharacterPositionValue('shadowGap', savedPosition?.shadowGap)
+        shadowGap: clampCharacterPositionValue('shadowGap', savedPosition?.shadowGap),
+        cameraArmX: clampCharacterPositionValue('cameraArmX', savedPosition?.cameraArmX),
+        cameraArmTop: clampCharacterPositionValue('cameraArmTop', savedPosition?.cameraArmTop),
+        cameraArmWidth: clampCharacterPositionValue('cameraArmWidth', savedPosition?.cameraArmWidth),
+        cameraArmHeight: clampCharacterPositionValue('cameraArmHeight', savedPosition?.cameraArmHeight),
+        cameraArmRotate: clampCharacterPositionValue('cameraArmRotate', savedPosition?.cameraArmRotate)
       };
     } catch {
       return { ...PET_CHARACTER_POSITION_DEFAULTS };
@@ -2058,7 +2083,12 @@ const PetPage = ({ onBack }) => {
   const petStageStyle = isPetCharacterDebugEnabled
     ? {
       '--pet-character-bottom': `${debugCharacterPosition.bottom}px`,
-      '--pet-shadow-gap': `${debugCharacterPosition.shadowGap}px`
+      '--pet-shadow-gap': `${debugCharacterPosition.shadowGap}px`,
+      '--pet-camera-arm-x': `${debugCharacterPosition.cameraArmX}px`,
+      '--pet-camera-arm-top': `${debugCharacterPosition.cameraArmTop}px`,
+      '--pet-camera-arm-width': `${debugCharacterPosition.cameraArmWidth}px`,
+      '--pet-camera-arm-height': `${debugCharacterPosition.cameraArmHeight}px`,
+      '--pet-camera-arm-rotate': `${debugCharacterPosition.cameraArmRotate}deg`
     }
     : undefined;
 
@@ -3492,30 +3522,25 @@ useEffect(() => {
                     <span>Speed: {activePetCharacterSpeed}</span>
                     <span>Bottom: {debugCharacterPosition.bottom}px</span>
                     <span>Shadow gap: {debugCharacterPosition.shadowGap}px</span>
+                    <span>Camera arm X: {debugCharacterPosition.cameraArmX}px</span>
+                    <span>Camera arm top: {debugCharacterPosition.cameraArmTop}px</span>
+                    <span>Camera arm size: {debugCharacterPosition.cameraArmWidth}px x {debugCharacterPosition.cameraArmHeight}px</span>
+                    <span>Camera arm rotate: {debugCharacterPosition.cameraArmRotate}deg</span>
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Character position controls">
-                    <label className="pet-character-debug__control">
-                      <span>Pet bottom</span>
-                      <input
-                        type="range"
-                        min={PET_CHARACTER_POSITION_LIMITS.bottom.min}
-                        max={PET_CHARACTER_POSITION_LIMITS.bottom.max}
-                        step="1"
-                        value={debugCharacterPosition.bottom}
-                        onChange={(event) => updateDebugCharacterPosition('bottom', event.target.value)}
-                      />
-                    </label>
-                    <label className="pet-character-debug__control">
-                      <span>Shadow gap</span>
-                      <input
-                        type="range"
-                        min={PET_CHARACTER_POSITION_LIMITS.shadowGap.min}
-                        max={PET_CHARACTER_POSITION_LIMITS.shadowGap.max}
-                        step="1"
-                        value={debugCharacterPosition.shadowGap}
-                        onChange={(event) => updateDebugCharacterPosition('shadowGap', event.target.value)}
-                      />
-                    </label>
+                    {PET_CHARACTER_POSITION_CONTROLS.map((control) => (
+                      <label className="pet-character-debug__control" key={control.key}>
+                        <span>{control.label}: {debugCharacterPosition[control.key]}{control.unit}</span>
+                        <input
+                          type="range"
+                          min={PET_CHARACTER_POSITION_LIMITS[control.key].min}
+                          max={PET_CHARACTER_POSITION_LIMITS[control.key].max}
+                          step="1"
+                          value={debugCharacterPosition[control.key]}
+                          onChange={(event) => updateDebugCharacterPosition(control.key, event.target.value)}
+                        />
+                      </label>
+                    ))}
                     <button
                       type="button"
                       className="pet-character-debug__reset"
