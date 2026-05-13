@@ -29,7 +29,7 @@
 .pet-stage {
   --pet-character-bottom: 44px;
   --pet-character-scale: 1;
-  --pet-shadow-gap: -12px;
+  --pet-shadow-gap: -8px;
   position: relative;
   min-height: 0;
   background: #ffffff;
@@ -1750,11 +1750,11 @@
   opacity: 0;
   fill: #000000;
   stroke: #ffffff;
-  stroke-width: 10;
+  stroke-width: 12;
   paint-order: stroke fill;
   stroke-linejoin: round;
   font-family: 'Patrick Hand', 'Kalam', 'Architects Daughter', cursive;
-  font-size: 54px;
+  font-size: 72px;
   font-style: italic;
   font-weight: 900;
   transform-box: view-box;
@@ -1763,12 +1763,12 @@
 
 .pet-box-character__sleep-z--2,
 .pet-box-character__sleep-z--5 {
-  font-size: 42px;
+  font-size: 56px;
 }
 
 .pet-box-character__sleep-z--3,
 .pet-box-character__sleep-z--6 {
-  font-size: 32px;
+  font-size: 42px;
 }
 
 @keyframes pet-box-blink {
@@ -1922,11 +1922,11 @@
   position: absolute;
   left: 50%;
   bottom: calc(var(--pet-character-bottom) - var(--pet-shadow-gap));
-  width: 80px;
-  height: 12px;
+  width: 86px;
+  height: 13px;
   border-radius: 50%;
-  background: #999999;
-  opacity: 0.32;
+  background: #808080;
+  opacity: 0.34;
   transform: translateX(-50%);
   transform-origin: 50% 50%;
   z-index: 4;
@@ -1938,9 +1938,25 @@
   animation: pet-effect-hop-shadow 0.95s ease-in-out infinite;
 }
 
+.pet-character__shadow--effect-wobble {
+  animation: pet-effect-wobble-shadow 1.15s ease-in-out infinite;
+}
+
+.pet-character__shadow--effect-squash {
+  animation: pet-effect-squash-shadow 1.25s ease-in-out infinite;
+}
+
+.pet-character__shadow--effect-wave {
+  animation: pet-effect-sway-shadow 2.15s ease-in-out infinite;
+}
+
+.pet-character__shadow--sleeping {
+  animation: pet-sleep-shadow 2s ease-in-out infinite;
+}
+
 .pet-character__shadow--camera-active {
   animation: none;
-  opacity: 0.32;
+  opacity: 0.34;
   transform: translateX(-50%) scale(1);
 }
 
@@ -2586,7 +2602,7 @@
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z {
-  animation: pet-box-sleep-zzz-rise 2.4s ease-in-out infinite;
+  animation: pet-box-sleep-zzz-rise 3s ease-in-out infinite;
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--1 {
@@ -2594,23 +2610,23 @@
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--2 {
-  animation-delay: 0.18s;
+  animation-delay: 0.24s;
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--3 {
-  animation-delay: 0.36s;
+  animation-delay: 0.48s;
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--4 {
-  animation-delay: 1.2s;
+  animation-delay: 1.5s;
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--5 {
-  animation-delay: 1.38s;
+  animation-delay: 1.74s;
 }
 
 .pet-character--sleeping .pet-box-character__sleep-z--6 {
-  animation-delay: 1.56s;
+  animation-delay: 1.98s;
 }
 
 @keyframes pet-sleep-breathe {
@@ -2625,18 +2641,20 @@
 @keyframes pet-box-sleep-zzz-rise {
   0% {
     opacity: 0;
-    transform: translate(0, 26px) scale(0.78) rotate(-8deg);
+    transform: translate(0, 22px) scale(0.72) rotate(-8deg);
   }
-  16% {
+  18% {
     opacity: 1;
+    transform: translate(8px, 2px) scale(1) rotate(-4deg);
   }
-  55% {
-    opacity: 0.9;
+  58% {
+    opacity: 0.96;
+    transform: translate(24px, -34px) scale(1.22) rotate(5deg);
   }
-  76%,
+  82%,
   100% {
     opacity: 0;
-    transform: translate(28px, -42px) scale(1.08) rotate(8deg);
+    transform: translate(42px, -64px) scale(1.38) rotate(10deg);
   }
 }
 
@@ -2693,16 +2711,84 @@
 @keyframes pet-effect-hop-shadow {
   0%,
   100% {
-    opacity: 0.32;
+    opacity: 0.34;
     transform: translateX(-50%) scale(1);
   }
   38% {
-    opacity: 0.2;
-    transform: translateX(-50%) scale(0.64, 0.82);
+    opacity: 0.16;
+    transform: translateX(-50%) scale(0.48, 0.7);
   }
   58% {
-    opacity: 0.36;
-    transform: translateX(-50%) scale(1.08, 0.92);
+    opacity: 0.42;
+    transform: translateX(-50%) scale(1.2, 0.88);
+  }
+}
+
+@keyframes pet-effect-wobble-shadow {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translateX(-50%) scale(1);
+  }
+  22% {
+    opacity: 0.26;
+    transform: translateX(-50%) scale(0.9, 0.82);
+  }
+  48% {
+    opacity: 0.38;
+    transform: translateX(-50%) scale(1.08, 0.9);
+  }
+  74% {
+    opacity: 0.29;
+    transform: translateX(-50%) scale(0.95, 0.84);
+  }
+}
+
+@keyframes pet-effect-squash-shadow {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translateX(-50%) scale(1);
+  }
+  35% {
+    opacity: 0.43;
+    transform: translateX(-50%) scale(1.22, 0.9);
+  }
+  62% {
+    opacity: 0.24;
+    transform: translateX(-50%) scale(0.82, 0.76);
+  }
+}
+
+@keyframes pet-effect-sway-shadow {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translateX(-50%) scale(1);
+  }
+  25% {
+    opacity: 0.25;
+    transform: translateX(-50%) scale(0.86, 0.78);
+  }
+  50% {
+    opacity: 0.37;
+    transform: translateX(-50%) scale(1.06, 0.9);
+  }
+  75% {
+    opacity: 0.27;
+    transform: translateX(-50%) scale(0.9, 0.8);
+  }
+}
+
+@keyframes pet-sleep-shadow {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: translateX(-50%) scale(0.96, 0.9);
+  }
+  50% {
+    opacity: 0.25;
+    transform: translateX(-50%) scale(0.86, 0.82);
   }
 }
 

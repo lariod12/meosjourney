@@ -770,7 +770,7 @@ const PET_CHARACTER_DEBUG_PRESETS = [
 const PET_CHARACTER_POSITION_STORAGE_KEY = 'meo-pet-character-position-debug';
 const PET_CHARACTER_POSITION_DEFAULTS = {
   bottom: 44,
-  shadowGap: -12
+  shadowGap: -8
 };
 const PET_CHARACTER_POSITION_LIMITS = {
   bottom: { min: 20, max: 120 },
@@ -2051,6 +2051,7 @@ const PetPage = ({ onBack }) => {
   ].filter(Boolean).join(' ');
   const petCharacterShadowClassName = [
     'pet-character__shadow',
+    `pet-character__shadow--${activePetCharacterPresentation.state}`,
     `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
     isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
   ].filter(Boolean).join(' ');
