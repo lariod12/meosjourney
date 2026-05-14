@@ -10,9 +10,6 @@ const Avatar = () => {
   const [hasError, setHasError] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const imgRef = useRef(null);
   const showLoading = data.avatarLoading || (avatarSrc && !imageLoaded && !hasError);
   const showPlaceholder = !showLoading && (!avatarSrc || hasError);
@@ -37,27 +34,8 @@ const Avatar = () => {
   const xpPercentage = (data.currentXP / data.maxXP) * 100;
 
   const handleMyHomeClick = () => {
-    setShowPasswordModal(true);
-    setPassword('');
-    setPasswordError('');
-  };
-
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (password === '0929') {
-      setShowPasswordModal(false);
-      setIsFlipped(false);
-      navigate('/pet');
-    } else {
-      setPasswordError('Wrong password!');
-      setPassword('');
-    }
-  };
-
-  const handlePasswordCancel = () => {
-    setShowPasswordModal(false);
-    setPassword('');
-    setPasswordError('');
+    setIsFlipped(false);
+    navigate('/pet');
   };
 
   return (
@@ -146,44 +124,6 @@ const Avatar = () => {
           <div className="xp-max">{data.maxXP.toLocaleString()}</div>
         </div>
       </div>
-
-      {/* Password Modal */}
-      {showPasswordModal && (
-        <div className="password-modal-overlay" onClick={handlePasswordCancel}>
-          <div className="password-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="password-modal__title">Enter Password</h3>
-            <form onSubmit={handlePasswordSubmit}>
-              <input
-                type="password"
-                className="password-modal__input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password..."
-                autoFocus
-                autoComplete="off"
-              />
-              {passwordError && (
-                <p className="password-modal__error">{passwordError}</p>
-              )}
-              <div className="password-modal__buttons">
-                <button
-                  type="button"
-                  className="password-modal__button"
-                  onClick={handlePasswordCancel}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="password-modal__button password-modal__button--primary"
-                >
-                  Enter
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

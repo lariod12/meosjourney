@@ -1,15 +1,20 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { CharacterProvider } from './contexts';
 import { characterData } from './data/characterData';
 import { useCharacterData } from './hooks/useCharacterData';
 import { LoadingDialog } from './components/common';
+import PasswordModal from './components/PasswordModal/PasswordModal';
+import ConfirmModal from './components/ConfirmModal/ConfirmModal';
+import { usePasswordGate } from './features/auth/hooks/usePasswordGate';
+import { fetchConfig } from './services/nocodb';
 import CharacterSheet from './pages/HomePage';
 import './styles/global.css';
 
 const UserPage = lazy(() => import('./pages/UserPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const PetPage = lazy(() => import('./pages/PetPage'));
+const PET_SESSION_KEY = 'pet_meos05_access';
 
 const withPageLoader = (element) => (
   <Suspense fallback={<LoadingDialog />}>
@@ -19,6 +24,89 @@ const withPageLoader = (element) => (
 
 const PetPageWrapper = () => {
   const navigate = useNavigate();
+  const [correctPassword, setCorrectPassword] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    confirmText: 'OK',
+    cancelText: null,
+    onConfirm: null,
+    onCancel: null,
+    canClose: false
+  });
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const cfg = await fetchConfig();
+        if (cfg?.pwDailyUpdate) {
+          setCorrectPassword(cfg.pwDailyUpdate);
+          return;
+        }
+
+        console.warn('Pet page password is not configured');
+        navigate('/');
+      } catch (error) {
+        console.error('Error loading pet page password config:', error);
+        navigate('/');
+      }
+    };
+
+    loadConfig();
+  }, [navigate]);
+
+  const {
+    isAuthenticated,
+    showPasswordModal,
+    handlePasswordSubmit,
+    handlePasswordCancel
+  } = usePasswordGate({
+    correctPassword,
+    sessionKey: PET_SESSION_KEY,
+    onBack: () => navigate('/'),
+    setConfirmModal,
+    rememberPersistent: true,
+    hidePromptOnFailure: true
+  });
+
+  const authConfirmModal = confirmModal.isOpen ? (
+    <ConfirmModal
+      isOpen={confirmModal.isOpen}
+      type={confirmModal.type}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      confirmText={confirmModal.confirmText}
+      cancelText={confirmModal.cancelText}
+      onConfirm={confirmModal.onConfirm}
+      onCancel={confirmModal.onCancel}
+      canClose={confirmModal.canClose ?? false}
+    />
+  ) : null;
+
+  if (showPasswordModal) {
+    return (
+      <>
+        <PasswordModal
+          onSubmit={handlePasswordSubmit}
+          onCancel={handlePasswordCancel}
+          enableRemember
+        />
+        {authConfirmModal}
+      </>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoadingDialog />
+        {authConfirmModal}
+      </>
+    );
+  }
+
   return <PetPage onBack={() => navigate('/')} />;
 };
 
