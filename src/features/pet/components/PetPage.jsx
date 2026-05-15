@@ -3767,7 +3767,6 @@ useEffect(() => {
               aria-label={`Stage thermometer ${stageTemperature.value}C, ${stageTemperature.label}`}
             >
               <span className="stage-thermometer__cap" aria-hidden="true"></span>
-              <span className="stage-thermometer__label">Thermo</span>
               <span className="stage-thermometer__meter" aria-hidden="true">
                 <span className="stage-thermometer__track">
                   <span className="stage-thermometer__mercury"></span>
@@ -3777,7 +3776,7 @@ useEffect(() => {
                 <span className="stage-thermometer__tick stage-thermometer__tick--low"></span>
               </span>
               <span className="stage-thermometer__bulb" aria-hidden="true"></span>
-              <span className="stage-thermometer__value">{stageTemperature.value}C</span>
+              <span className="stage-thermometer__value">{stageTemperature.value}°C</span>
             </div>
             {moodFloatVisible && moodFloatBatch.map((moodFloatItem, index) => (
               <div key={moodFloatItem.id} className="pet-mood-float pet-mood-float--visible" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
