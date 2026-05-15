@@ -51,6 +51,17 @@ const getTimePeriod = () => {
   return 'midnight'; // 23-5h
 };
 
+const STAGE_TEMPERATURES = {
+  dawn: { value: 18, fill: 34, label: 'Cool dawn' },
+  morning: { value: 24, fill: 54, label: 'Soft morning' },
+  noon: { value: 32, fill: 86, label: 'Hot noon' },
+  afternoon: { value: 29, fill: 74, label: 'Warm afternoon' },
+  dusk: { value: 25, fill: 58, label: 'Mild dusk' },
+  evening: { value: 22, fill: 46, label: 'Calm evening' },
+  night: { value: 19, fill: 36, label: 'Cool night' },
+  midnight: { value: 17, fill: 28, label: 'Cold midnight' }
+};
+
 // Check if current time is meal time
 const getMealTime = (hour, minute) => {
   if (hour === 8 && minute === 0) return 'breakfast';
@@ -801,12 +812,40 @@ const PET_CHARACTER_POSITION_CONTROLS = [
   { key: 'cameraArmRotate', label: 'Camera arm rotate', unit: 'deg' }
 ];
 
+const STAGE_THERMOMETER_POSITION_STORAGE_KEY = 'meo-stage-thermometer-position-debug-v2';
+const STAGE_THERMOMETER_POSITION_DEFAULTS = {
+  x: 0,
+  y: 0,
+  size: 54
+};
+const STAGE_THERMOMETER_POSITION_LIMITS = {
+  x: { min: -120, max: 520 },
+  y: { min: -320, max: 320 },
+  size: { min: 45, max: 220 }
+};
+const STAGE_THERMOMETER_POSITION_CONTROLS = [
+  { key: 'x', label: 'Thermo X', unit: 'px' },
+  { key: 'y', label: 'Thermo Y', unit: 'px' },
+  { key: 'size', label: 'Thermo size', unit: '%' }
+];
+
 const clampCharacterPositionValue = (key, value) => {
   const limits = PET_CHARACTER_POSITION_LIMITS[key];
   const numericValue = Number(value);
 
   if (!limits || !Number.isFinite(numericValue)) {
     return PET_CHARACTER_POSITION_DEFAULTS[key];
+  }
+
+  return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
+};
+
+const clampThermometerPositionValue = (key, value) => {
+  const limits = STAGE_THERMOMETER_POSITION_LIMITS[key];
+  const numericValue = Number(value);
+
+  if (!limits || !Number.isFinite(numericValue)) {
+    return STAGE_THERMOMETER_POSITION_DEFAULTS[key];
   }
 
   return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
@@ -1922,6 +1961,19 @@ const PetPage = ({ onBack }) => {
       return { ...PET_CHARACTER_POSITION_DEFAULTS };
     }
   });
+  const [debugThermometerPosition, setDebugThermometerPosition] = useState(() => {
+    try {
+      const savedPosition = JSON.parse(localStorage.getItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY));
+
+      return {
+        x: clampThermometerPositionValue('x', savedPosition?.x),
+        y: clampThermometerPositionValue('y', savedPosition?.y),
+        size: clampThermometerPositionValue('size', savedPosition?.size)
+      };
+    } catch {
+      return { ...STAGE_THERMOMETER_POSITION_DEFAULTS };
+    }
+  });
   const cameraPoseTimerRef = useRef(null);
   const cameraPickerFallbackTimerRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -2030,6 +2082,7 @@ const PetPage = ({ onBack }) => {
   const activePetCharacterSpeed = debugCharacterPresentation?.speed
     || PET_CHARACTER_EFFECT_DURATIONS[activePetCharacterPresentation.effect]
     || PET_CHARACTER_EFFECT_DURATIONS.idle;
+  const stageTemperature = STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning;
   const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production'
     || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
@@ -2096,6 +2149,12 @@ const PetPage = ({ onBack }) => {
       '--pet-camera-arm-rotate': `${debugCharacterPosition.cameraArmRotate}deg`
     }
     : undefined;
+  const stageThermometerStyle = {
+    '--stage-thermometer-fill': `${stageTemperature.fill}%`,
+    '--stage-thermometer-x': `${debugThermometerPosition.x}px`,
+    '--stage-thermometer-y': `${debugThermometerPosition.y}px`,
+    '--stage-thermometer-scale': debugThermometerPosition.size / 100
+  };
 
   const updateDebugCharacterPosition = (key, value) => {
     setDebugCharacterPosition((currentPosition) => {
@@ -2119,6 +2178,30 @@ const PetPage = ({ onBack }) => {
       localStorage.removeItem(PET_CHARACTER_POSITION_STORAGE_KEY);
     } catch { }
   };
+
+  const updateDebugThermometerPosition = (key, value) => {
+    setDebugThermometerPosition((currentPosition) => {
+      const nextPosition = {
+        ...currentPosition,
+        [key]: clampThermometerPositionValue(key, value)
+      };
+
+      try {
+        localStorage.setItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY, JSON.stringify(nextPosition));
+      } catch { }
+
+      return nextPosition;
+    });
+  };
+
+  const resetDebugThermometerPosition = () => {
+    setDebugThermometerPosition({ ...STAGE_THERMOMETER_POSITION_DEFAULTS });
+
+    try {
+      localStorage.removeItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY);
+    } catch { }
+  };
+
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -3569,8 +3652,12 @@ useEffect(() => {
                     <span>Camera arm top: {debugCharacterPosition.cameraArmTop}px</span>
                     <span>Camera arm size: {debugCharacterPosition.cameraArmWidth}px x {debugCharacterPosition.cameraArmHeight}px</span>
                     <span>Camera arm rotate: {debugCharacterPosition.cameraArmRotate}deg</span>
+                    <span>Thermo X: {debugThermometerPosition.x}px</span>
+                    <span>Thermo Y: {debugThermometerPosition.y}px</span>
+                    <span>Thermo size: {debugThermometerPosition.size}%</span>
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Character position controls">
+                    <span className="pet-character-debug__controls-title">Character position</span>
                     {PET_CHARACTER_POSITION_CONTROLS.map((control) => (
                       <label className="pet-character-debug__control" key={control.key}>
                         <span>{control.label}: {debugCharacterPosition[control.key]}{control.unit}</span>
@@ -3590,6 +3677,29 @@ useEffect(() => {
                       onClick={resetDebugCharacterPosition}
                     >
                       Reset position
+                    </button>
+                  </div>
+                  <div className="pet-character-debug__controls" aria-label="Thermometer position controls">
+                    <span className="pet-character-debug__controls-title">Thermometer position</span>
+                    {STAGE_THERMOMETER_POSITION_CONTROLS.map((control) => (
+                      <label className="pet-character-debug__control" key={control.key}>
+                        <span>{control.label}: {debugThermometerPosition[control.key]}{control.unit}</span>
+                        <input
+                          type="range"
+                          min={STAGE_THERMOMETER_POSITION_LIMITS[control.key].min}
+                          max={STAGE_THERMOMETER_POSITION_LIMITS[control.key].max}
+                          step="1"
+                          value={debugThermometerPosition[control.key]}
+                          onChange={(event) => updateDebugThermometerPosition(control.key, event.target.value)}
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="pet-character-debug__reset"
+                      onClick={resetDebugThermometerPosition}
+                    >
+                      Reset thermometer
                     </button>
                   </div>
                   <button
@@ -3651,6 +3761,24 @@ useEffect(() => {
           </div>
 
           <div className="pet-stage-indicators" aria-label="Pet context">
+            <div
+              className="stage-thermometer"
+              style={stageThermometerStyle}
+              aria-label={`Stage thermometer ${stageTemperature.value}C, ${stageTemperature.label}`}
+            >
+              <span className="stage-thermometer__cap" aria-hidden="true"></span>
+              <span className="stage-thermometer__label">Thermo</span>
+              <span className="stage-thermometer__meter" aria-hidden="true">
+                <span className="stage-thermometer__track">
+                  <span className="stage-thermometer__mercury"></span>
+                </span>
+                <span className="stage-thermometer__tick stage-thermometer__tick--top"></span>
+                <span className="stage-thermometer__tick stage-thermometer__tick--mid"></span>
+                <span className="stage-thermometer__tick stage-thermometer__tick--low"></span>
+              </span>
+              <span className="stage-thermometer__bulb" aria-hidden="true"></span>
+              <span className="stage-thermometer__value">{stageTemperature.value}C</span>
+            </div>
             {moodFloatVisible && moodFloatBatch.map((moodFloatItem, index) => (
               <div key={moodFloatItem.id} className="pet-mood-float pet-mood-float--visible" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
                 {currentMoodItem?.icon ? (
