@@ -27,6 +27,7 @@ import {
   savePhotoAlbum,
   uploadProfileGalleryImages
 } from '../../../services';
+import { getCurrentTemperature, calculateThermometerFill } from '../../../services/weather/openMeteo';
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
 import { PhotoAlbumTab, GalleryTab } from '../../photoalbum/components';
@@ -1991,6 +1992,8 @@ const PetPage = ({ onBack }) => {
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
   }));
+  const [realTemperature, setRealTemperature] = useState(null);
+  const [temperatureError, setTemperatureError] = useState(null);
   const [petStatus, setPetStatus] = useState(() => ({
     health: DEFAULT_PET_STATUS.health,
     hunger: DEFAULT_PET_STATUS.hunger,
@@ -2082,7 +2085,10 @@ const PetPage = ({ onBack }) => {
   const activePetCharacterSpeed = debugCharacterPresentation?.speed
     || PET_CHARACTER_EFFECT_DURATIONS[activePetCharacterPresentation.effect]
     || PET_CHARACTER_EFFECT_DURATIONS.idle;
-  const stageTemperature = STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning;
+
+  // Use real temperature if available, otherwise fallback to mock data
+  const stageTemperature = realTemperature || (STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning);
+
   const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production'
     || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
 
@@ -2293,6 +2299,22 @@ useEffect(() => {
         }
       }
 
+      // Fetch real temperature from Open-Meteo API
+      try {
+        const weatherData = await getCurrentTemperature();
+        setRealTemperature({
+          value: Math.round(weatherData.temperature),
+          fill: calculateThermometerFill(weatherData.temperature),
+          unit: weatherData.unit,
+          location: weatherData.location
+        });
+        setTemperatureError(null);
+      } catch (error) {
+        console.warn('Failed to fetch real temperature, using fallback:', error);
+        setTemperatureError(error.message);
+        // Keep realTemperature as null to use fallback
+      }
+
       // Fetch status data (activities, moods, location)
       const statusData = await fetchStatus();
       if (statusData) {
@@ -2362,6 +2384,31 @@ useEffect(() => {
 
   loadInitialData();
 }, []);
+
+// Refresh real temperature every 5 minutes
+useEffect(() => {
+  if (!realTemperature) return undefined; // Only refresh if initial fetch succeeded
+
+  const refreshTemperature = async () => {
+    try {
+      const weatherData = await getCurrentTemperature();
+      setRealTemperature({
+        value: Math.round(weatherData.temperature),
+        fill: calculateThermometerFill(weatherData.temperature),
+        unit: weatherData.unit,
+        location: weatherData.location
+      });
+      setTemperatureError(null);
+    } catch (error) {
+      console.warn('Failed to refresh temperature:', error);
+      // Keep existing temperature on refresh failure
+    }
+  };
+
+  const intervalId = setInterval(refreshTemperature, 5 * 60 * 1000); // 5 minutes
+
+  return () => clearInterval(intervalId);
+}, [realTemperature]);
 
 // Auto-expand dropdown when data is loaded
 useEffect(() => {
@@ -3764,7 +3811,7 @@ useEffect(() => {
             <div
               className="stage-thermometer"
               style={stageThermometerStyle}
-              aria-label={`Stage thermometer ${stageTemperature.value}C, ${stageTemperature.label}`}
+              aria-label={`Stage thermometer ${stageTemperature.value}${stageTemperature.unit || 'C'}${realTemperature ? ' (real-time)' : ` (${stageTemperature.label || 'estimated'})`}`}
             >
               <span className="stage-thermometer__cap" aria-hidden="true"></span>
               <span className="stage-thermometer__meter" aria-hidden="true">
@@ -3776,7 +3823,9 @@ useEffect(() => {
                 <span className="stage-thermometer__tick stage-thermometer__tick--low"></span>
               </span>
               <span className="stage-thermometer__bulb" aria-hidden="true"></span>
-              <span className="stage-thermometer__value">{stageTemperature.value}°C</span>
+              <span className="stage-thermometer__value">
+                {stageTemperature.value}
+              </span>
             </div>
             {moodFloatVisible && moodFloatBatch.map((moodFloatItem, index) => (
               <div key={moodFloatItem.id} className="pet-mood-float pet-mood-float--visible" style={moodFloatStyles[index]} aria-label={`Current mood ${currentMoodItem?.name || PET_CURRENT_MOOD.label}`}>
