@@ -3802,6 +3802,723 @@
   }
 }
 
+/* Mosquito Animation */
+.pet-mosquito {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 42px;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(1px 1px 0 #ffffff) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  offset-anchor: 50% 50%;
+  offset-distance: 0%;
+  offset-rotate: 0deg;
+  -webkit-offset-rotate: 0deg;
+  animation-duration: var(--mosquito-flight-duration, 5000ms);
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+.pet-mosquito--spawning {
+  offset-distance: 0%;
+}
+
+.pet-mosquito--flying-across {
+  animation-name: mosquito-path-flight;
+}
+
+.pet-mosquito--flying-across .pet-mosquito__buzz {
+  animation-name: mosquito-buzz-hover;
+}
+
+@keyframes mosquito-path-flight {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes mosquito-buzz-hover {
+  0% {
+    transform: translate(0, 0) rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  18% {
+    transform: translate(var(--mosquito-buzz-x), var(--mosquito-buzz-y-neg)) rotate(calc(var(--mosquito-flight-tilt, 0deg) + var(--mosquito-buzz-rotate))) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  39% {
+    transform: translate(var(--mosquito-buzz-x-neg), var(--mosquito-buzz-y)) rotate(calc(var(--mosquito-flight-tilt, 0deg) + var(--mosquito-buzz-rotate-neg))) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  63% {
+    transform: translate(var(--mosquito-buzz-x), var(--mosquito-buzz-y)) rotate(calc(var(--mosquito-flight-tilt, 0deg) + var(--mosquito-buzz-rotate))) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  82% {
+    transform: translate(var(--mosquito-buzz-x-neg), var(--mosquito-buzz-y-neg)) rotate(calc(var(--mosquito-flight-tilt, 0deg) + var(--mosquito-buzz-rotate-neg))) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+}
+
+.mosquito-debug-boundary {
+  position: absolute;
+  border: 2px dashed #ff0000;
+  box-shadow: inset 0 0 0 1px rgba(255, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 999;
+}
+
+.pet-mosquito__buzz {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  transform-origin: center;
+  animation-duration: var(--mosquito-buzz-duration, 220ms);
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.pet-mosquito__thorax {
+  position: absolute;
+  z-index: 3;
+  width: 7px;
+  height: 8px;
+  background: #000000;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  top: 19px;
+  left: 19px;
+}
+
+.pet-mosquito__abdomen {
+  position: absolute;
+  z-index: 2;
+  width: 15px;
+  height: 15px;
+  top: 16px;
+  left: 23px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.pet-mosquito__abdomen::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 25%;
+  width: 6px;
+  height: 50%;
+  border-radius: 50%;
+  background: #000000;
+}
+
+.pet-mosquito__stripe {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 21px;
+  background: #000000;
+  transform: rotate(16deg);
+}
+
+.pet-mosquito__stripe--one {
+  left: 7px;
+}
+
+.pet-mosquito__stripe--two {
+  left: 13px;
+}
+
+.pet-mosquito__head {
+  position: absolute;
+  z-index: 4;
+  width: 7px;
+  height: 7px;
+  background: #000000;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  top: 19px;
+  left: 8px;
+}
+
+.pet-mosquito__head::before,
+.pet-mosquito__head::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.pet-mosquito__head::before {
+  left: 1px;
+}
+
+.pet-mosquito__head::after {
+  right: 1px;
+}
+
+.pet-mosquito__proboscis {
+  position: absolute;
+  width: 15px;
+  height: 1px;
+  background: #000000;
+  top: 3px;
+  left: -13px;
+  border-radius: 999px 0 0 999px;
+  transform: rotate(-5deg);
+}
+
+.pet-mosquito__proboscis::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 5px;
+  height: 1px;
+  background: #000000;
+  transform: rotate(-16deg);
+  transform-origin: right center;
+}
+
+.pet-mosquito__antenna {
+  position: absolute;
+  width: 10px;
+  height: 7px;
+  border-top: 2px solid #000000;
+  border-radius: 50%;
+  top: -4px;
+  left: 0;
+  transform-origin: right bottom;
+}
+
+.pet-mosquito__antenna--left {
+  transform: rotate(-34deg);
+}
+
+.pet-mosquito__antenna--right {
+  top: -2px;
+  transform: rotate(20deg);
+}
+
+.pet-mosquito__wing {
+  position: absolute;
+  z-index: 1;
+  width: 10px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 2px solid #000000;
+  border-radius: 999px 45% 999px 45%;
+  top: 9px;
+  transform-origin: center;
+}
+
+.pet-mosquito__wing--left {
+  left: 18px;
+  transform: rotate(-28deg);
+  animation: mosquito-wing-left 0.055s infinite alternate;
+}
+
+.pet-mosquito__wing--right {
+  left: 24px;
+  transform: rotate(20deg) scaleX(-1);
+  animation: mosquito-wing-right 0.055s infinite alternate;
+}
+
+.pet-mosquito__legs {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.pet-mosquito__leg {
+  position: absolute;
+  z-index: 0;
+  width: 1px;
+  height: 8px;
+  background: #000000;
+  border-radius: 999px;
+  transform-origin: top center;
+}
+
+.pet-mosquito__leg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 1px;
+  height: 5px;
+  background: #000000;
+  border-radius: 999px;
+  transform-origin: top center;
+}
+
+.pet-mosquito__leg--1 { left: 16px; top: 27px; transform: rotate(62deg); }
+.pet-mosquito__leg--1::after { transform: rotate(-32deg); }
+.pet-mosquito__leg--2 { left: 22px; top: 28px; transform: rotate(18deg); }
+.pet-mosquito__leg--2::after { transform: rotate(32deg); }
+.pet-mosquito__leg--3 { left: 29px; top: 27px; transform: rotate(-42deg); }
+.pet-mosquito__leg--3::after { transform: rotate(28deg); }
+.pet-mosquito__leg--4 { left: 16px; top: 16px; transform: rotate(-62deg); }
+.pet-mosquito__leg--4::after { transform: rotate(32deg); }
+.pet-mosquito__leg--5 { left: 22px; top: 15px; transform: rotate(-18deg); }
+.pet-mosquito__leg--5::after { transform: rotate(-32deg); }
+.pet-mosquito__leg--6 { left: 29px; top: 16px; transform: rotate(42deg); }
+.pet-mosquito__leg--6::after { transform: rotate(-28deg); }
+
+@keyframes mosquito-wing-left {
+  0% { transform: rotate(-24deg) scaleY(1); opacity: 0.88; }
+  100% { transform: rotate(-38deg) scaleY(0.52); opacity: 0.5; }
+}
+
+@keyframes mosquito-wing-right {
+  0% { transform: rotate(20deg) scaleX(-1) scaleY(1); opacity: 0.88; }
+  100% { transform: rotate(34deg) scaleX(-1) scaleY(0.52); opacity: 0.5; }
+}
+
+/* Mosquito Debug Panel */
+.mosquito-debug {
+  position: fixed;
+  top: 120px;
+  right: 16px;
+  z-index: 9999;
+  font-family: 'Kalam', cursive;
+}
+
+.mosquito-debug__toggle {
+  padding: 10px 18px;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #000000;
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.mosquito-debug__toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 #000000;
+}
+
+.mosquito-debug__toggle:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #000000;
+}
+
+/* Docked Side Panel */
+.mosquito-debug__dock {
+  position: fixed;
+  top: 24px;
+  right: 16px;
+  bottom: 16px;
+  width: clamp(360px, 28vw, 520px);
+  background: transparent;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+  isolation: isolate;
+  animation: mosquito-debug-fade-in 0.2s ease;
+}
+
+@keyframes mosquito-debug-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Panel */
+.mosquito-debug__panel {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  padding: 20px;
+  border: 4px solid #000000;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 8px 8px 0 #000000;
+  color: #000000;
+  animation: mosquito-debug-slide-up 0.3s ease;
+}
+
+@keyframes mosquito-debug-slide-up {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Close Button */
+.mosquito-debug__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 2px 2px 0 #000000;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  font-family: Arial, sans-serif;
+}
+
+.mosquito-debug__close:hover {
+  transform: translateY(-2px);
+  box-shadow: 3px 3px 0 #000000;
+  background: #f5f5f5;
+}
+
+.mosquito-debug__close:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 #000000;
+}
+
+/* Panel Title */
+.mosquito-debug__title {
+  max-width: calc(100% - 58px);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  font-weight: 700;
+  margin: 0 0 24px 0;
+  padding-bottom: 16px;
+  border-bottom: 3px solid #000000;
+  color: #000000;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* Grid Layout for Sections */
+.mosquito-debug__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.mosquito-debug__section {
+  min-width: 0;
+  padding: 14px;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  background: #f9f9f9;
+}
+
+.mosquito-debug__section--settings {
+  background: #ffffff;
+}
+
+.mosquito-debug__section-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0 0 12px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px dashed #cccccc;
+  color: #000000;
+}
+
+.mosquito-debug__status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mosquito-debug__status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  padding: 6px 0;
+}
+
+.mosquito-debug__status-label {
+  color: #666666;
+  font-weight: 600;
+}
+
+.mosquito-debug__status-value {
+  font-weight: 700;
+  color: #000000;
+  font-size: 1.1rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.mosquito-debug__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mosquito-debug__action {
+  min-height: 44px;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 3px 3px 0 #000000;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.mosquito-debug__action--dark {
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 3px 3px 0 #666666;
+}
+
+.mosquito-debug__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 #000000;
+}
+
+.mosquito-debug__action--dark:hover {
+  box-shadow: 4px 4px 0 #666666;
+}
+
+.mosquito-debug__action:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #000000;
+}
+
+.mosquito-debug__action-status {
+  min-height: 18px;
+  margin: 8px 0;
+  color: #333333;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.mosquito-debug__config-info {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 190px;
+  margin: 10px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 2px dashed #999999;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #000000;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.72rem;
+  font-style: normal;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+}
+
+.mosquito-debug__control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 13px;
+  font-size: 0.95rem;
+}
+
+.mosquito-debug__control:last-child {
+  margin-bottom: 0;
+}
+
+.mosquito-debug__control-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #333333;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.mosquito-debug__control-label strong {
+  color: #000000;
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 58px;
+  text-align: right;
+}
+
+.mosquito-debug__control input[type="range"] {
+  width: 100%;
+  height: 10px;
+  cursor: pointer;
+  background: #e0e0e0;
+  border-radius: 5px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.mosquito-debug__control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #000000;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.mosquito-debug__control input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #000000;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.mosquito-debug__checkboxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mosquito-debug__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  font-weight: 600;
+}
+
+.mosquito-debug__checkbox span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mosquito-debug__checkbox:hover {
+  background: #f0f0f0;
+}
+
+.mosquito-debug__checkbox input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: #000000;
+}
+
+.mosquito-debug__reset {
+  width: 100%;
+  padding: 14px 20px;
+  border: 4px solid #000000;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #000000;
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.mosquito-debug__reset:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 0 #000000;
+  background: #f5f5f5;
+}
+
+.mosquito-debug__reset:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 #000000;
+}
+
+@media (max-width: 640px) {
+  .mosquito-debug {
+    top: auto;
+    right: 12px;
+    bottom: 18px;
+  }
+
+  .mosquito-debug__toggle {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+  }
+
+  .mosquito-debug__dock {
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .mosquito-debug__panel {
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 5px 5px 0 #000000;
+  }
+
+  .mosquito-debug__close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .mosquito-debug__grid {
+    gap: 14px;
+  }
+
+  .mosquito-debug__section {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .mosquito-debug__status-item,
+  .mosquito-debug__control-label {
+    align-items: flex-start;
+  }
+
+  .mosquito-debug__checkboxes {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pet-character,
   .pet-character__eye,
@@ -3811,6 +4528,7 @@
   .pet-bubble::after,
   .pet-bubble p,
   .pet-mood-float,
+  .pet-mosquito,
   .pet-food-effect,
   .pet-food-effect::before,
   .pet-food-effect::after,

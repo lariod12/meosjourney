@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LuChevronLeft, LuChevronDown,
@@ -14,6 +14,7 @@ import {
   LuImage, LuGalleryHorizontal, LuX, LuCheck
 } from 'react-icons/lu';
 import IconRenderer from '../../../components/IconRenderer/IconRenderer';
+import MosquitoDebugPanel from './MosquitoDebugPanel';
 import { LanguageProvider, CharacterProvider } from '../../../contexts';
 import { characterData } from '../../../data/characterData';
 import { useCharacterData } from '../../../hooks/useCharacterData';
@@ -829,6 +830,92 @@ const STAGE_THERMOMETER_POSITION_CONTROLS = [
   { key: 'y', label: 'Thermo Y', unit: 'px' },
   { key: 'size', label: 'Thermo size', unit: '%' }
 ];
+
+const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config';
+const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
+  stageTopPercent: 0,
+  stageBottomPercent: 60,
+  stageLeftPercent: 0,
+  stageRightPercent: 100,
+  showBoundaries: true,
+  showPaths: true,
+  spawnIntervalMinMs: 3000,
+  spawnIntervalMaxMs: 5000,
+  mosquitoesPerSpawnMin: 1,
+  mosquitoesPerSpawnMax: 3,
+  maxMosquitoes: 10,
+  flightDurationMinMs: 3000,
+  flightDurationMaxMs: 7000,
+  sizePercent: 100,
+  curveAmountPercent: 56
+};
+
+const clampMosquitoNumber = (value, fallback, min, max) => {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, Math.round(numericValue)));
+};
+
+const normalizeMosquitoDebugConfig = (config = {}) => {
+  const next = {
+    ...MOSQUITO_DEBUG_CONFIG_DEFAULTS,
+    showBoundaries: typeof config.showBoundaries === 'boolean'
+      ? config.showBoundaries
+      : MOSQUITO_DEBUG_CONFIG_DEFAULTS.showBoundaries,
+    showPaths: typeof config.showPaths === 'boolean'
+      ? config.showPaths
+      : MOSQUITO_DEBUG_CONFIG_DEFAULTS.showPaths,
+    stageTopPercent: clampMosquitoNumber(config.stageTopPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.stageTopPercent, 0, 100),
+    stageBottomPercent: clampMosquitoNumber(config.stageBottomPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.stageBottomPercent, 0, 100),
+    stageLeftPercent: clampMosquitoNumber(config.stageLeftPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.stageLeftPercent, 0, 100),
+    stageRightPercent: clampMosquitoNumber(config.stageRightPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.stageRightPercent, 0, 100),
+    spawnIntervalMinMs: clampMosquitoNumber(config.spawnIntervalMinMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.spawnIntervalMinMs, 500, 10000),
+    spawnIntervalMaxMs: clampMosquitoNumber(config.spawnIntervalMaxMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.spawnIntervalMaxMs, 500, 10000),
+    mosquitoesPerSpawnMin: clampMosquitoNumber(config.mosquitoesPerSpawnMin, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMin, 1, 20),
+    mosquitoesPerSpawnMax: clampMosquitoNumber(config.mosquitoesPerSpawnMax, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMax, 1, 20),
+    maxMosquitoes: clampMosquitoNumber(config.maxMosquitoes, MOSQUITO_DEBUG_CONFIG_DEFAULTS.maxMosquitoes, 1, 50),
+    flightDurationMinMs: clampMosquitoNumber(
+      config.flightDurationMinMs ?? config.flightDurationMs,
+      MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightDurationMinMs,
+      1000,
+      15000
+    ),
+    flightDurationMaxMs: clampMosquitoNumber(
+      config.flightDurationMaxMs ?? config.flightDurationMs,
+      MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightDurationMaxMs,
+      1000,
+      15000
+    ),
+    sizePercent: clampMosquitoNumber(config.sizePercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.sizePercent, 1, 220),
+    curveAmountPercent: clampMosquitoNumber(config.curveAmountPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.curveAmountPercent, 10, 90)
+  };
+
+  if (next.stageTopPercent > next.stageBottomPercent) {
+    next.stageBottomPercent = next.stageTopPercent;
+  }
+  if (next.stageLeftPercent > next.stageRightPercent) {
+    next.stageRightPercent = next.stageLeftPercent;
+  }
+  if (next.spawnIntervalMinMs > next.spawnIntervalMaxMs) {
+    next.spawnIntervalMaxMs = next.spawnIntervalMinMs;
+  }
+  if (next.mosquitoesPerSpawnMin > next.mosquitoesPerSpawnMax) {
+    next.mosquitoesPerSpawnMax = next.mosquitoesPerSpawnMin;
+  }
+  if (next.flightDurationMinMs > next.flightDurationMaxMs) {
+    next.flightDurationMaxMs = next.flightDurationMinMs;
+  }
+
+  return next;
+};
+
+const clampMosquitoRouteValue = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const formatMosquitoPathNumber = (value) => Number(value.toFixed(1));
 
 const clampCharacterPositionValue = (key, value) => {
   const limits = PET_CHARACTER_POSITION_LIMITS[key];
@@ -1994,6 +2081,23 @@ const PetPage = ({ onBack }) => {
   }));
   const [realTemperature, setRealTemperature] = useState(null);
   const [temperatureError, setTemperatureError] = useState(null);
+  const [mosquitoes, setMosquitoes] = useState([]);
+  const petStageRef = useRef(null);
+  const mosquitoTimerRef = useRef(null);
+  const mosquitoMotionTimersRef = useRef([]);
+  const mosquitoesRef = useRef([]);
+  const [isMosquitoDebugOpen, setIsMosquitoDebugOpen] = useState(false);
+  const [mosquitoDebugConfig, setMosquitoDebugConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem(MOSQUITO_DEBUG_CONFIG_STORAGE_KEY);
+      return saved
+        ? normalizeMosquitoDebugConfig(JSON.parse(saved))
+        : { ...MOSQUITO_DEBUG_CONFIG_DEFAULTS };
+    } catch {
+      return { ...MOSQUITO_DEBUG_CONFIG_DEFAULTS };
+    }
+  });
+  const mosquitoDebugConfigRef = useRef(mosquitoDebugConfig);
   const [petStatus, setPetStatus] = useState(() => ({
     health: DEFAULT_PET_STATUS.health,
     hunger: DEFAULT_PET_STATUS.hunger,
@@ -2208,6 +2312,235 @@ const PetPage = ({ onBack }) => {
     } catch { }
   };
 
+  const updateMosquitoDebugConfig = (key, value) => {
+    setMosquitoDebugConfig((current) => {
+      const next = normalizeMosquitoDebugConfig({ ...current, [key]: value });
+      if (key === 'mosquitoesPerSpawnMin' && value > next.mosquitoesPerSpawnMax) {
+        next.mosquitoesPerSpawnMax = value;
+      }
+      if (key === 'mosquitoesPerSpawnMax' && value < next.mosquitoesPerSpawnMin) {
+        next.mosquitoesPerSpawnMin = value;
+      }
+      if (key === 'spawnIntervalMinMs' && value > next.spawnIntervalMaxMs) {
+        next.spawnIntervalMaxMs = value;
+      }
+      if (key === 'spawnIntervalMaxMs' && value < next.spawnIntervalMinMs) {
+        next.spawnIntervalMinMs = value;
+      }
+      if (key === 'flightDurationMinMs' && value > next.flightDurationMaxMs) {
+        next.flightDurationMaxMs = value;
+      }
+      if (key === 'flightDurationMaxMs' && value < next.flightDurationMinMs) {
+        next.flightDurationMinMs = value;
+      }
+      if (key === 'stageTopPercent' && value > next.stageBottomPercent) {
+        next.stageBottomPercent = value;
+      }
+      if (key === 'stageBottomPercent' && value < next.stageTopPercent) {
+        next.stageTopPercent = value;
+      }
+      if (key === 'stageLeftPercent' && value > next.stageRightPercent) {
+        next.stageRightPercent = value;
+      }
+      if (key === 'stageRightPercent' && value < next.stageLeftPercent) {
+        next.stageLeftPercent = value;
+      }
+      mosquitoDebugConfigRef.current = next;
+      try {
+        localStorage.setItem(MOSQUITO_DEBUG_CONFIG_STORAGE_KEY, JSON.stringify(next));
+      } catch { }
+      return next;
+    });
+  };
+
+  const resetMosquitoDebugConfig = () => {
+    const defaults = { ...MOSQUITO_DEBUG_CONFIG_DEFAULTS };
+    mosquitoDebugConfigRef.current = defaults;
+    setMosquitoDebugConfig(defaults);
+    try {
+      localStorage.removeItem(MOSQUITO_DEBUG_CONFIG_STORAGE_KEY);
+    } catch { }
+  };
+
+  const syncMosquitoes = useCallback((updater) => {
+    setMosquitoes((current) => {
+      const next = updater(current);
+      mosquitoesRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const clearMosquitoMotionTimers = useCallback(() => {
+    mosquitoMotionTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    mosquitoMotionTimersRef.current = [];
+  }, []);
+
+  const addMosquitoMotionTimer = useCallback((callback, delay) => {
+    const timerId = setTimeout(() => {
+      mosquitoMotionTimersRef.current = mosquitoMotionTimersRef.current.filter((id) => id !== timerId);
+      callback();
+    }, delay);
+    mosquitoMotionTimersRef.current.push(timerId);
+  }, []);
+
+  const getMosquitoFlightBounds = useCallback((config = mosquitoDebugConfigRef.current) => {
+    const stageElement = petStageRef.current;
+    const stageWidth = Math.max(1, stageElement?.clientWidth || window.innerWidth || 1);
+    const stageHeight = Math.max(1, stageElement?.clientHeight || window.innerHeight || 1);
+    const mosquitoScale = Math.max(0.01, Math.min(2.2, (config.sizePercent || 100) / 100));
+    const mosquitoSizePx = Math.round(48 * mosquitoScale);
+    const mosquitoVisualOverflowPx = Math.round(8 * mosquitoScale);
+    const rawLeft = (stageWidth * config.stageLeftPercent) / 100;
+    const rawRight = (stageWidth * config.stageRightPercent) / 100;
+    const rawTop = (stageHeight * config.stageTopPercent) / 100;
+    const rawBottom = (stageHeight * config.stageBottomPercent) / 100;
+    const leftEdge = Math.min(rawLeft, rawRight) + mosquitoVisualOverflowPx;
+    const rightEdge = Math.max(rawLeft, rawRight);
+    const topEdge = Math.min(rawTop, rawBottom);
+    const bottomEdge = Math.max(rawTop, rawBottom);
+    const right = Math.max(leftEdge, rightEdge - mosquitoSizePx);
+    const bottom = Math.max(topEdge, bottomEdge - mosquitoSizePx);
+
+    return {
+      left: Math.min(leftEdge, right),
+      right,
+      top: Math.min(topEdge, bottom),
+      bottom
+    };
+  }, []);
+
+  const createMosquitoPathD = useCallback((points, bounds) => {
+    if (points.length < 2) {
+      const point = points[0] || { x: bounds.left, y: bounds.top };
+      return `M ${formatMosquitoPathNumber(point.x)} ${formatMosquitoPathNumber(point.y)}`;
+    }
+
+    const clampX = (value) => formatMosquitoPathNumber(clampMosquitoRouteValue(value, bounds.left, bounds.right));
+    const clampY = (value) => formatMosquitoPathNumber(clampMosquitoRouteValue(value, bounds.top, bounds.bottom));
+    const path = [`M ${clampX(points[0].x)} ${clampY(points[0].y)}`];
+    const tension = 0.38;
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const previous = points[index - 1] || points[index];
+      const current = points[index];
+      const next = points[index + 1];
+      const afterNext = points[index + 2] || next;
+      const controlOne = {
+        x: current.x + (next.x - previous.x) * tension / 6,
+        y: current.y + (next.y - previous.y) * tension / 6
+      };
+      const controlTwo = {
+        x: next.x - (afterNext.x - current.x) * tension / 6,
+        y: next.y - (afterNext.y - current.y) * tension / 6
+      };
+
+      path.push(
+        `C ${clampX(controlOne.x)} ${clampY(controlOne.y)} ` +
+        `${clampX(controlTwo.x)} ${clampY(controlTwo.y)} ` +
+        `${clampX(next.x)} ${clampY(next.y)}`
+      );
+    }
+
+    return path.join(' ');
+  }, []);
+
+  const createMosquitoRoute = useCallback((config, entrySide = (Math.random() < 0.5 ? 'left' : 'right'), seedY = null) => {
+    const bounds = getMosquitoFlightBounds(config);
+    const startY = seedY === null
+      ? bounds.top + Math.random() * Math.max(0, bounds.bottom - bounds.top)
+      : Math.min(bounds.bottom, Math.max(bounds.top, seedY));
+    const startX = entrySide === 'left' ? bounds.left : bounds.right;
+    const exitX = entrySide === 'left' ? bounds.right : bounds.left;
+    const direction = entrySide === 'left' ? 1 : -1;
+    const width = Math.max(1, bounds.right - bounds.left);
+    const height = Math.max(1, bounds.bottom - bounds.top);
+    const curveAmount = Math.max(0.1, Math.min(0.9, (config.curveAmountPercent || 56) / 100));
+    const safeTop = bounds.top + Math.min(14, height * 0.12);
+    const safeBottom = bounds.bottom - Math.min(14, height * 0.12);
+    const safeLeft = bounds.left + Math.min(12, width * 0.08);
+    const safeRight = bounds.right - Math.min(12, width * 0.08);
+    const segmentCount = 8 + Math.floor(Math.random() * 4);
+    const waveCount = 1.15 + curveAmount * 2.25 + Math.random() * 0.75;
+    const wavePhase = Math.random() * Math.PI * 2;
+    const driftY = (Math.random() - 0.5) * height * (0.08 + curveAmount * 0.34);
+    const amplitude = Math.min(height * (0.08 + curveAmount * 0.2), 8 + curveAmount * 28 + Math.random() * 12);
+    const loopIndex = 3 + Math.floor(Math.random() * Math.max(1, segmentCount - 5));
+    const shouldLoop = width > 110 && height > 58 && Math.random() < 0.12 + curveAmount * 0.45;
+    const points = [{ x: startX, y: startY }];
+
+    for (let index = 1; index < segmentCount; index += 1) {
+      const progress = index / segmentCount;
+      const progressJitter = (Math.random() - 0.5) * (0.22 / segmentCount);
+      const baseX = startX + (exitX - startX) * progress;
+      const x = clampMosquitoRouteValue(
+        baseX + direction * width * progressJitter,
+        safeLeft,
+        safeRight
+      );
+      const waveY = Math.sin(progress * Math.PI * 2 * waveCount + wavePhase) * amplitude;
+      const flutterY = Math.sin(progress * Math.PI * 2 * (waveCount * 2.6) + wavePhase * 0.7) * amplitude * (0.1 + curveAmount * 0.22);
+      const y = clampMosquitoRouteValue(
+        startY + driftY * progress + waveY + flutterY + (Math.random() - 0.5) * height * (0.02 + curveAmount * 0.09),
+        safeTop,
+        safeBottom
+      );
+
+      if (shouldLoop && index === loopIndex) {
+        const radiusX = Math.min(width * 0.09, Math.max(14, Math.abs(exitX - startX) / segmentCount * 0.52));
+        const radiusY = Math.min(height * 0.16, Math.max(10, radiusX * (0.45 + Math.random() * 0.28)));
+        const centerX = clampMosquitoRouteValue(x, bounds.left + radiusX, bounds.right - radiusX);
+        const centerY = clampMosquitoRouteValue(y, bounds.top + radiusY, bounds.bottom - radiusY);
+        const loopDirection = Math.random() < 0.5 ? 1 : -1;
+
+        points.push(
+          { x: centerX - direction * radiusX, y: centerY },
+          { x: centerX - direction * radiusX * 0.2, y: centerY - loopDirection * radiusY },
+          { x: centerX + direction * radiusX * 0.55, y: centerY - loopDirection * radiusY * 0.25 },
+          { x: centerX + direction * radiusX * 0.25, y: centerY + loopDirection * radiusY * 0.85 },
+          { x: centerX + direction * radiusX, y: centerY }
+        );
+      } else {
+        points.push({ x, y });
+      }
+    }
+
+    const exitY = clampMosquitoRouteValue(
+      startY + driftY + Math.sin(Math.PI * 2 * waveCount + wavePhase) * amplitude * 0.35,
+      safeTop,
+      safeBottom
+    );
+    points.push({ x: exitX, y: exitY });
+
+    const pathRise = exitY - startY;
+    const pathRun = Math.max(1, Math.abs(exitX - startX));
+    const flightTiltDeg = formatMosquitoPathNumber(
+      clampMosquitoRouteValue(Math.atan2(pathRise, pathRun) * (180 / Math.PI) * direction, -32, 32)
+    );
+
+    return {
+      startX,
+      startY,
+      exitX,
+      exitY,
+      pathD: createMosquitoPathD(points, bounds),
+      buzzDurationMs: 170 + Math.floor(Math.random() * 110),
+      buzzX: formatMosquitoPathNumber(1.2 + Math.random() * 2.4),
+      buzzY: formatMosquitoPathNumber(1.4 + Math.random() * 2.8),
+      buzzRotateDeg: formatMosquitoPathNumber(5 + Math.random() * 8),
+      facingScaleX: entrySide === 'left' ? -1 : 1,
+      flightTiltDeg,
+      entrySide,
+      exitSide: entrySide === 'left' ? 'right' : 'left'
+    };
+  }, [createMosquitoPathD, getMosquitoFlightBounds]);
+
+  const getRandomMosquitoFlightDuration = useCallback((config = mosquitoDebugConfigRef.current) => {
+    const durationMin = Math.min(config.flightDurationMinMs, config.flightDurationMaxMs);
+    const durationMax = Math.max(config.flightDurationMinMs, config.flightDurationMaxMs);
+
+    return Math.round(durationMin + Math.random() * Math.max(0, durationMax - durationMin));
+  }, []);
+
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -2409,6 +2742,161 @@ useEffect(() => {
 
   return () => clearInterval(intervalId);
 }, [realTemperature]);
+
+useEffect(() => {
+  mosquitoDebugConfigRef.current = mosquitoDebugConfig;
+  const updatedMosquitoes = mosquitoesRef.current
+    .slice(0, mosquitoDebugConfig.maxMosquitoes)
+    .map((mosquito) => ({
+      ...mosquito,
+      ...createMosquitoRoute(
+        mosquitoDebugConfig,
+        mosquito.entrySide,
+        mosquito.phase === 'flying-across' ? mosquito.exitY : mosquito.startY
+      ),
+      flightDurationMs: getRandomMosquitoFlightDuration(mosquitoDebugConfig)
+    }));
+
+  mosquitoesRef.current = updatedMosquitoes;
+  setMosquitoes(updatedMosquitoes);
+  clearMosquitoMotionTimers();
+
+  updatedMosquitoes.forEach((mosquito) => {
+    if (mosquito.phase === 'spawning') {
+      addMosquitoMotionTimer(() => {
+        syncMosquitoes((current) => current.map((item) => (
+          item.id === mosquito.id ? { ...item, phase: 'flying-across' } : item
+        )));
+      }, 16);
+    }
+
+    addMosquitoMotionTimer(() => {
+      syncMosquitoes((current) => current.filter((item) => item.id !== mosquito.id));
+    }, mosquito.flightDurationMs + 80);
+  });
+}, [
+  addMosquitoMotionTimer,
+  clearMosquitoMotionTimers,
+  createMosquitoRoute,
+  getRandomMosquitoFlightDuration,
+  mosquitoDebugConfig,
+  syncMosquitoes
+]);
+
+// Mosquito spawn system
+useEffect(() => {
+  if (!isPetReady || !isPageVisible) return undefined;
+
+  const spawnMosquito = () => {
+    const config = mosquitoDebugConfigRef.current;
+    const availableSlots = Math.max(0, config.maxMosquitoes - mosquitoesRef.current.length);
+
+    if (availableSlots <= 0) {
+      return;
+    }
+
+    const spawnMin = Math.max(1, Math.min(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
+    const spawnMax = Math.max(spawnMin, Math.max(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
+    const mosquitoesThisSpawn = Math.min(
+      availableSlots,
+      spawnMin + Math.floor(Math.random() * (spawnMax - spawnMin + 1))
+    );
+    const newMosquitoes = Array.from({ length: mosquitoesThisSpawn }, () => {
+      const mosquitoId = `mosquito-${Date.now()}-${Math.random()}`;
+
+      return {
+        id: mosquitoId,
+        ...createMosquitoRoute(config),
+        flightDurationMs: getRandomMosquitoFlightDuration(config),
+        phase: 'spawning'
+      };
+    });
+
+    if (!newMosquitoes.length) {
+      return;
+    }
+
+    syncMosquitoes((current) => [...current, ...newMosquitoes].slice(0, config.maxMosquitoes));
+
+    newMosquitoes.forEach((mosquito) => {
+      addMosquitoMotionTimer(() => {
+        syncMosquitoes((current) => current.map((item) => (
+          item.id === mosquito.id ? { ...item, phase: 'flying-across' } : item
+        )));
+      }, 16);
+
+      addMosquitoMotionTimer(() => {
+        syncMosquitoes((current) => current.filter((item) => item.id !== mosquito.id));
+      }, mosquito.flightDurationMs + 80);
+    });
+  };
+
+  const scheduleNextMosquito = () => {
+    const config = mosquitoDebugConfigRef.current;
+    const delay = config.spawnIntervalMinMs +
+      Math.random() * Math.max(0, config.spawnIntervalMaxMs - config.spawnIntervalMinMs);
+    mosquitoTimerRef.current = setTimeout(() => {
+      spawnMosquito();
+      scheduleNextMosquito();
+    }, delay);
+  };
+
+  scheduleNextMosquito();
+
+  return () => {
+    if (mosquitoTimerRef.current) {
+      clearTimeout(mosquitoTimerRef.current);
+      mosquitoTimerRef.current = null;
+    }
+  };
+}, [
+  addMosquitoMotionTimer,
+  createMosquitoRoute,
+  getRandomMosquitoFlightDuration,
+  isPageVisible,
+  isPetReady,
+  mosquitoDebugConfig.spawnIntervalMaxMs,
+  mosquitoDebugConfig.spawnIntervalMinMs,
+  syncMosquitoes
+]);
+
+useEffect(() => {
+  if (isPetReady && isPageVisible) return undefined;
+
+  if (mosquitoTimerRef.current) {
+    clearTimeout(mosquitoTimerRef.current);
+    mosquitoTimerRef.current = null;
+  }
+  clearMosquitoMotionTimers();
+  syncMosquitoes(() => []);
+
+  return undefined;
+}, [clearMosquitoMotionTimers, isPageVisible, isPetReady, syncMosquitoes]);
+
+useEffect(() => () => {
+  if (mosquitoTimerRef.current) {
+    clearTimeout(mosquitoTimerRef.current);
+  }
+  clearMosquitoMotionTimers();
+}, [clearMosquitoMotionTimers]);
+
+useEffect(() => {
+  const handleResize = () => {
+    const config = mosquitoDebugConfigRef.current;
+    syncMosquitoes((current) => current.map((mosquito) => ({
+      ...mosquito,
+      ...createMosquitoRoute(
+        config,
+        mosquito.entrySide,
+        mosquito.phase === 'flying-across' ? mosquito.exitY : mosquito.startY
+      )
+    })));
+  };
+
+  window.addEventListener('resize', handleResize);
+
+  return () => window.removeEventListener('resize', handleResize);
+}, [createMosquitoRoute, syncMosquitoes]);
 
 // Auto-expand dropdown when data is loaded
 useEffect(() => {
@@ -3638,6 +4126,7 @@ useEffect(() => {
         </div>
 
         <div
+          ref={petStageRef}
           className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}`}
           style={petStageStyle}
         >
@@ -3777,6 +4266,15 @@ useEffect(() => {
             </div>
           )}
 
+          <MosquitoDebugPanel
+            isOpen={isMosquitoDebugOpen}
+            onToggle={() => setIsMosquitoDebugOpen(v => !v)}
+            config={mosquitoDebugConfig}
+            onUpdateConfig={updateMosquitoDebugConfig}
+            onReset={resetMosquitoDebugConfig}
+            mosquitoes={mosquitoes}
+          />
+
           {/* Awakening overlay - tap to wake */}
           {isAwakening && (
             <div
@@ -3858,6 +4356,95 @@ useEffect(() => {
               />
             ))}
           </div>
+
+          {/* Mosquitoes */}
+          {mosquitoes.map((mosquito) => (
+            <div
+              key={mosquito.id}
+              className={`pet-mosquito pet-mosquito--${mosquito.phase}`}
+              style={{
+                '--mosquito-flight-duration': `${mosquito.flightDurationMs}ms`,
+                '--mosquito-buzz-duration': `${mosquito.buzzDurationMs}ms`,
+                '--mosquito-buzz-x': `${mosquito.buzzX}px`,
+                '--mosquito-buzz-y': `${mosquito.buzzY}px`,
+                '--mosquito-buzz-x-neg': `${-mosquito.buzzX}px`,
+                '--mosquito-buzz-y-neg': `${-mosquito.buzzY}px`,
+                '--mosquito-buzz-rotate': `${mosquito.buzzRotateDeg}deg`,
+                '--mosquito-buzz-rotate-neg': `${-mosquito.buzzRotateDeg}deg`,
+                '--mosquito-facing-scale-x': mosquito.facingScaleX ?? -1,
+                '--mosquito-flight-tilt': `${mosquito.flightTiltDeg ?? 0}deg`,
+                '--mosquito-size-scale': mosquitoDebugConfig.sizePercent / 100,
+                offsetPath: `path("${mosquito.pathD}")`,
+                WebkitOffsetPath: `path("${mosquito.pathD}")`
+              }}
+              aria-hidden="true"
+            >
+              <div className="pet-mosquito__buzz">
+                <div className="pet-mosquito__wing pet-mosquito__wing--left"></div>
+                <div className="pet-mosquito__wing pet-mosquito__wing--right"></div>
+                <div className="pet-mosquito__head">
+                  <div className="pet-mosquito__antenna pet-mosquito__antenna--left"></div>
+                  <div className="pet-mosquito__antenna pet-mosquito__antenna--right"></div>
+                  <div className="pet-mosquito__proboscis"></div>
+                </div>
+                <div className="pet-mosquito__thorax"></div>
+                <div className="pet-mosquito__abdomen">
+                  <span className="pet-mosquito__stripe pet-mosquito__stripe--one"></span>
+                  <span className="pet-mosquito__stripe pet-mosquito__stripe--two"></span>
+                </div>
+                <div className="pet-mosquito__legs">
+                  <div className="pet-mosquito__leg pet-mosquito__leg--1"></div>
+                  <div className="pet-mosquito__leg pet-mosquito__leg--2"></div>
+                  <div className="pet-mosquito__leg pet-mosquito__leg--3"></div>
+                  <div className="pet-mosquito__leg pet-mosquito__leg--4"></div>
+                  <div className="pet-mosquito__leg pet-mosquito__leg--5"></div>
+                  <div className="pet-mosquito__leg pet-mosquito__leg--6"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Mosquito debug overlay */}
+          {isPetCharacterDebugEnabled && mosquitoDebugConfig.showBoundaries && (
+            <div
+              className="mosquito-debug-boundary"
+              style={{
+                top: `${mosquitoDebugConfig.stageTopPercent}%`,
+                left: `${mosquitoDebugConfig.stageLeftPercent}%`,
+                width: `${mosquitoDebugConfig.stageRightPercent - mosquitoDebugConfig.stageLeftPercent}%`,
+                height: `${mosquitoDebugConfig.stageBottomPercent - mosquitoDebugConfig.stageTopPercent}%`
+              }}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Mosquito flight paths */}
+          {isPetCharacterDebugEnabled && mosquitoDebugConfig.showPaths && mosquitoes.map((mosquito) => (
+            <svg
+              key={`path-${mosquito.id}`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                zIndex: 998
+              }}
+              aria-hidden="true"
+            >
+              {/* Start point */}
+              <circle cx={mosquito.startX} cy={mosquito.startY} r="4" fill="#000000" opacity="0.7" />
+              <text x={mosquito.startX + 8} y={mosquito.startY} fill="#000000" fontSize="10">{mosquito.entrySide}</text>
+
+              {/* Exit point */}
+              <circle cx={mosquito.exitX} cy={mosquito.exitY} r="4" fill="#666666" opacity="0.7" />
+              <text x={mosquito.exitX + 8} y={mosquito.exitY} fill="#666666" fontSize="10">{mosquito.exitSide}</text>
+
+              {/* Flight path curve */}
+              <path d={mosquito.pathD} fill="none" stroke="#000000" strokeWidth="1.5" strokeDasharray="5,5" opacity="0.55" />
+            </svg>
+          ))}
 
           <span className={petCharacterShadowClassName} aria-hidden="true" />
 
