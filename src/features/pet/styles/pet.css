@@ -1557,6 +1557,10 @@
   will-change: top, transform, opacity;
 }
 
+.pet-stage--rain-none .stage-rain {
+  display: none;
+}
+
 @keyframes stage-rain-fall {
   from {
     top: var(--stage-rain-top);
@@ -1573,8 +1577,8 @@
 
 /* Ground line - creates depth */
 .stage-ground {
-  --stage-ground-impact-height: 16px;
-  --stage-ground-impact-opacity: 0.075;
+  --stage-ground-impact-height: 0;
+  --stage-ground-impact-opacity: 0;
   --stage-ground-impact-speed: 0.68s;
   --stage-ground-impact-dot-one: 52px 14px;
   --stage-ground-impact-dot-two: 78px 17px;
@@ -1603,6 +1607,11 @@
 .pet-stage--midnight .stage-ground {
   background-color: #ffffff !important;
   background-image: none !important;
+}
+
+.pet-stage--rain-none .stage-ground::after {
+  animation: none;
+  content: none;
 }
 
 .pet-stage--rain-drizzle .stage-ground {

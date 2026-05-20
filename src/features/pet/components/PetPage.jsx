@@ -30,7 +30,7 @@ import {
   savePhotoAlbum,
   uploadProfileGalleryImages
 } from '../../../services';
-import { getCurrentTemperature, calculateThermometerFill } from '../../../services/weather/openMeteo';
+import { calculateThermometerFill, getCurrentWeatherWithRain } from '../../../services/weather/openMeteo';
 import LoadingDialog from '../../../components/common/LoadingDialog/LoadingDialog';
 import { saveStatusChangesJournal } from '../../../utils/questJournalUtils';
 import { PhotoAlbumTab, GalleryTab } from '../../photoalbum/components';
@@ -250,7 +250,9 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
-const STAGE_RAIN_DEBUG_STORAGE_KEY = 'meo-stage-rain-debug';
+const STAGE_RAIN_DEBUG_STORAGE_KEY = 'meo-stage-rain-debug-v2';
+const STAGE_RAIN_DEBUG_AUTO_VALUE = 'auto';
+const STAGE_RAIN_DEBUG_NONE_VALUE = 'none';
 const STAGE_RAIN_DEFAULT_VARIANT = 'light';
 const STAGE_RAIN_VARIANTS = [
   { key: 'drizzle', label: 'Mưa phùn', description: 'Fine, quiet, sparse' },
@@ -1090,9 +1092,17 @@ const clampThermometerPositionValue = (key, value) => {
   return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
 };
 
-const normalizeStageRainVariant = (variant) => (
-  STAGE_RAIN_DROPS_BY_VARIANT[variant] ? variant : STAGE_RAIN_DEFAULT_VARIANT
+const normalizeStageRainVariant = (variant, fallback = STAGE_RAIN_DEFAULT_VARIANT) => (
+  STAGE_RAIN_DROPS_BY_VARIANT[variant] ? variant : fallback
 );
+
+const normalizeStageRainDebugVariant = (variant) => {
+  if (variant === STAGE_RAIN_DEBUG_AUTO_VALUE || variant === STAGE_RAIN_DEBUG_NONE_VALUE) {
+    return variant;
+  }
+
+  return normalizeStageRainVariant(variant, STAGE_RAIN_DEBUG_AUTO_VALUE);
+};
 
 const getBasePetCharacterState = (reactionLevel) => {
   if (reactionLevel === 'critical') return PET_CHARACTER_STATES.critical;
@@ -2224,11 +2234,13 @@ const PetPage = ({ onBack }) => {
   const [debugCssStatus, setDebugCssStatus] = useState('');
   const [debugStageRainVariant, setDebugStageRainVariant] = useState(() => {
     try {
-      return normalizeStageRainVariant(localStorage.getItem(STAGE_RAIN_DEBUG_STORAGE_KEY));
+      return normalizeStageRainDebugVariant(localStorage.getItem(STAGE_RAIN_DEBUG_STORAGE_KEY));
     } catch {
-      return STAGE_RAIN_DEFAULT_VARIANT;
+      return STAGE_RAIN_DEBUG_AUTO_VALUE;
     }
   });
+  const [weatherRainVariant, setWeatherRainVariant] = useState(null); // Auto rain from weather API
+  const [isWeatherLoading, setIsWeatherLoading] = useState(true);
   const [debugCharacterPosition, setDebugCharacterPosition] = useState(() => {
     try {
       const savedPosition = JSON.parse(localStorage.getItem(PET_CHARACTER_POSITION_STORAGE_KEY));
@@ -2416,8 +2428,7 @@ const PetPage = ({ onBack }) => {
   // Use real temperature if available, otherwise fallback to mock data
   const stageTemperature = realTemperature || (STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning);
 
-  const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production'
-    || (typeof window !== 'undefined' && window.location.hostname === 'localhost');
+  const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production';
 
   const TABS_PER_PAGE = 4;
   const totalPages = Math.ceil(TABS.length / TABS_PER_PAGE);
@@ -2472,8 +2483,16 @@ const PetPage = ({ onBack }) => {
     `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
     isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
   ].filter(Boolean).join(' ');
-  const activeStageRainVariant = normalizeStageRainVariant(debugStageRainVariant);
-  const activeStageRainDrops = STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant];
+  const normalizedDebugStageRainVariant = normalizeStageRainDebugVariant(debugStageRainVariant);
+  const debugStageRainOverride = isPetCharacterDebugEnabled && normalizedDebugStageRainVariant !== STAGE_RAIN_DEBUG_AUTO_VALUE
+    ? normalizedDebugStageRainVariant
+    : null;
+  const activeStageRainVariant = debugStageRainOverride === STAGE_RAIN_DEBUG_NONE_VALUE
+    ? null
+    : normalizeStageRainVariant(debugStageRainOverride || weatherRainVariant, null);
+  const activeStageRainDrops = activeStageRainVariant
+    ? STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant]
+    : [];
   const activeStageRainBackDrops = activeStageRainDrops.filter((drop) => drop.z <= 3);
   const activeStageRainFrontDrops = activeStageRainDrops.filter((drop) => drop.z > 3);
 
@@ -2511,6 +2530,7 @@ const PetPage = ({ onBack }) => {
   }).filter(zone => zone.drops.length > 0);
 
   const activeStageRainOption = STAGE_RAIN_VARIANTS.find((variant) => variant.key === activeStageRainVariant);
+  const activeStageRainLabel = activeStageRainOption?.label || (isWeatherLoading ? 'Đang kiểm tra thời tiết' : 'Không mưa');
   const petStageStyle = isPetCharacterDebugEnabled
     ? {
       '--pet-character-bottom': `${debugCharacterPosition.bottom}px`,
@@ -2552,7 +2572,7 @@ const PetPage = ({ onBack }) => {
   ].join('\n'), [debugCharacterPosition, debugPetClickArea, debugThermometerPosition]);
 
   const updateDebugStageRainVariant = (variant) => {
-    const nextVariant = normalizeStageRainVariant(variant);
+    const nextVariant = normalizeStageRainDebugVariant(variant);
     setDebugStageRainVariant(nextVariant);
 
     try {
@@ -3467,8 +3487,27 @@ useEffect(() => {
 useEffect(() => {
   const loadInitialData = async () => {
     try {
+      setIsWeatherLoading(true);
+
+      const petPromise = fetchPet().catch((error) => {
+        console.warn('Failed to fetch pet data:', error);
+        return null;
+      });
+      const petEventsPromise = fetchPetEvents().catch((error) => {
+        console.warn('Failed to fetch pet events:', error);
+        return null;
+      });
+      const weatherPromise = getCurrentWeatherWithRain().catch((error) => {
+        console.warn('Failed to fetch real weather, using fallback:', error);
+        return null;
+      });
+      const statusPromise = fetchStatus().catch((error) => {
+        console.warn('Failed to fetch status data:', error);
+        return null;
+      });
+
       // Fetch pet data (food, care inventory, and status)
-      const petData = await fetchPet();
+      const petData = await petPromise;
       if (petData) {
         // Update pet items (food and care inventory)
         if (petData.food || petData.care) {
@@ -3498,36 +3537,35 @@ useEffect(() => {
         }
       }
 
-      try {
-        const loadedPetEvents = await fetchPetEvents();
+      const loadedPetEvents = await petEventsPromise;
+      if (loadedPetEvents) {
         const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object' ? loadedPetEvents : {};
         petEventsRef.current = normalizedPetEvents;
         setPetEvents(normalizedPetEvents);
         const mosquitoCompletedToday = isMosquitoEventClearedToday(normalizedPetEvents);
         mosquitoEventCompletedRef.current = mosquitoCompletedToday;
         setIsMosquitoEventCompletedToday(mosquitoCompletedToday);
-      } catch (error) {
-        console.warn('Failed to fetch pet events:', error);
       }
 
-      // Fetch real temperature from Open-Meteo API
-      try {
-        const weatherData = await getCurrentTemperature();
+      // Fetch real weather from Open-Meteo API before showing the pet stage.
+      const weatherData = await weatherPromise;
+      if (weatherData) {
         setRealTemperature({
           value: Math.round(weatherData.temperature),
           fill: calculateThermometerFill(weatherData.temperature),
           unit: weatherData.unit,
           location: weatherData.location
         });
+        setWeatherRainVariant(weatherData.rainVariant);
         setTemperatureError(null);
-      } catch (error) {
-        console.warn('Failed to fetch real temperature, using fallback:', error);
-        setTemperatureError(error.message);
-        // Keep realTemperature as null to use fallback
+      } else {
+        setWeatherRainVariant(null);
+        setTemperatureError('Weather unavailable');
       }
+      setIsWeatherLoading(false);
 
       // Fetch status data (activities, moods, location)
-      const statusData = await fetchStatus();
+      const statusData = await statusPromise;
       if (statusData) {
         // Update activities
         if (statusData.doing && Array.isArray(statusData.doing)) {
@@ -3588,6 +3626,7 @@ useEffect(() => {
     } catch (error) {
       console.error('❌ Error loading pet page data:', error);
       // Even on error, mark as loaded to show UI
+      setIsWeatherLoading(false);
       setIsDataLoaded(true);
       setIsPetReady(true);
     }
@@ -3596,27 +3635,28 @@ useEffect(() => {
   loadInitialData();
 }, []);
 
-// Refresh real temperature every 5 minutes
+// Refresh real weather every 3 minutes
 useEffect(() => {
   if (!realTemperature) return undefined; // Only refresh if initial fetch succeeded
 
-  const refreshTemperature = async () => {
+  const refreshWeather = async () => {
     try {
-      const weatherData = await getCurrentTemperature();
+      const weatherData = await getCurrentWeatherWithRain({ allowCache: false });
       setRealTemperature({
         value: Math.round(weatherData.temperature),
         fill: calculateThermometerFill(weatherData.temperature),
         unit: weatherData.unit,
         location: weatherData.location
       });
+      setWeatherRainVariant(weatherData.rainVariant);
       setTemperatureError(null);
     } catch (error) {
-      console.warn('Failed to refresh temperature:', error);
-      // Keep existing temperature on refresh failure
+      console.warn('Failed to refresh weather:', error);
+      // Keep existing weather on refresh failure
     }
   };
 
-  const intervalId = setInterval(refreshTemperature, 5 * 60 * 1000); // 5 minutes
+  const intervalId = setInterval(refreshWeather, 3 * 60 * 1000); // 3 minutes
 
   return () => clearInterval(intervalId);
 }, [realTemperature]);
@@ -5020,7 +5060,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
@@ -5052,34 +5092,36 @@ useEffect(() => {
             ))}
           </div>
 
-          <div className="stage-rain stage-rain--back" aria-hidden="true">
-            {activeStageRainBackDrops.map((drop) => (
-              <i
-                key={drop.id}
-                className="stage-rain__drop"
-                style={{
-                  '--stage-rain-left': drop.left,
-                  '--stage-rain-top': drop.top,
-                  '--stage-rain-end-top': drop.endTop,
-                  '--stage-rain-height': drop.height,
-                  '--stage-rain-width': drop.width,
-                  '--stage-rain-opacity': drop.opacity,
-                  '--stage-rain-duration': drop.duration,
-                  '--stage-rain-delay': drop.delay,
-                  '--stage-rain-z': drop.z,
-                  '--stage-rain-drift': drop.drift,
-                  '--stage-rain-blur': drop.blur,
-                  '--stage-rain-scale': drop.scale
-                }}
-              />
-            ))}
-          </div>
+          {activeStageRainVariant && (
+            <div className="stage-rain stage-rain--back" aria-hidden="true">
+              {activeStageRainBackDrops.map((drop) => (
+                <i
+                  key={drop.id}
+                  className="stage-rain__drop"
+                  style={{
+                    '--stage-rain-left': drop.left,
+                    '--stage-rain-top': drop.top,
+                    '--stage-rain-end-top': drop.endTop,
+                    '--stage-rain-height': drop.height,
+                    '--stage-rain-width': drop.width,
+                    '--stage-rain-opacity': drop.opacity,
+                    '--stage-rain-duration': drop.duration,
+                    '--stage-rain-delay': drop.delay,
+                    '--stage-rain-z': drop.z,
+                    '--stage-rain-drift': drop.drift,
+                    '--stage-rain-blur': drop.blur,
+                    '--stage-rain-scale': drop.scale
+                  }}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Ground line */}
           <div className="stage-ground" aria-hidden="true" />
 
           {/* Multiple front rain zones scattered across stage with vertical layers */}
-          {activeStageRainFrontZones.map((zone, zoneIndex) => (
+          {activeStageRainVariant && activeStageRainFrontZones.map((zone, zoneIndex) => (
             zone.layers.map((layer, layerIndex) => (
               <div
                 key={`front-zone-${zoneIndex}-layer-${layerIndex}`}
@@ -5159,7 +5201,7 @@ useEffect(() => {
                     <span>Thermo X: {debugThermometerPosition.x}px</span>
                     <span>Thermo Y: {debugThermometerPosition.y}px</span>
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
-                    <span>Rain: {activeStageRainOption?.label || activeStageRainVariant}</span>
+                    <span>Rain: {activeStageRainLabel}</span>
                     <div className="pet-character-debug__actions">
                       <button
                         type="button"
@@ -5183,8 +5225,26 @@ useEffect(() => {
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Rain type controls">
                     <span className="pet-character-debug__controls-title">Rain type</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${normalizedDebugStageRainVariant === STAGE_RAIN_DEBUG_AUTO_VALUE ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugStageRainVariant(STAGE_RAIN_DEBUG_AUTO_VALUE)}
+                      aria-pressed={normalizedDebugStageRainVariant === STAGE_RAIN_DEBUG_AUTO_VALUE}
+                    >
+                      <span>Auto weather</span>
+                      <small>{weatherRainVariant ? `API: ${activeStageRainLabel}` : 'API: no rain'}</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${normalizedDebugStageRainVariant === STAGE_RAIN_DEBUG_NONE_VALUE ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugStageRainVariant(STAGE_RAIN_DEBUG_NONE_VALUE)}
+                      aria-pressed={normalizedDebugStageRainVariant === STAGE_RAIN_DEBUG_NONE_VALUE}
+                    >
+                      <span>No rain</span>
+                      <small>Force clear stage</small>
+                    </button>
                     {STAGE_RAIN_VARIANTS.map((variant) => {
-                      const isActive = activeStageRainVariant === variant.key;
+                      const isActive = normalizedDebugStageRainVariant === variant.key;
 
                       return (
                         <button
