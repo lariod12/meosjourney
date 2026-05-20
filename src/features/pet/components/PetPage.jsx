@@ -2661,16 +2661,21 @@ const PetPage = ({ onBack }) => {
     });
   }, [queueMosquitoBitePetSave]);
 
-  const handleMosquitoTap = useCallback((mosquitoId, event) => {
-    event.stopPropagation();
-    event.preventDefault();
+  const handleMosquitoTap = useCallback((mosquitoId, event, options = {}) => {
+    const { shouldStopEvent = true, sourceElement = null } = options;
+
+    if (shouldStopEvent) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
 
     const mosquito = mosquitoesRef.current.find((item) => item.id === mosquitoId);
     if (!mosquito || mosquito.isDying) {
       return;
     }
 
-    const mosquitoRect = event.currentTarget.getBoundingClientRect();
+    const mosquitoElement = sourceElement || event.currentTarget.closest('.pet-mosquito') || event.currentTarget;
+    const mosquitoRect = mosquitoElement.getBoundingClientRect();
     const stageRect = petStageRef.current?.getBoundingClientRect();
     const config = mosquitoDebugConfigRef.current;
     const stageBoundaryBottom = stageRect
@@ -2711,6 +2716,51 @@ const PetPage = ({ onBack }) => {
       syncMosquitoes((current) => current.filter((item) => item.id !== mosquitoId));
     }, animationDurationMs);
   }, [addMosquitoMotionTimer, syncMosquitoes]);
+
+  const handlePetStagePointerDownCapture = useCallback((event) => {
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    const stageElement = petStageRef.current;
+    if (!stageElement) {
+      return;
+    }
+
+    const ignoredTarget = event.target.closest?.(
+      'button, input, select, textarea, a, [role="button"], .pet-character-debug, .mosquito-debug'
+    );
+
+    if (ignoredTarget && !ignoredTarget.classList?.contains('pet-character__hit-area')) {
+      return;
+    }
+
+    const mosquitoElements = Array.from(stageElement.querySelectorAll('.pet-mosquito:not(.pet-mosquito--dying)'));
+    for (let index = mosquitoElements.length - 1; index >= 0; index -= 1) {
+      const mosquitoElement = mosquitoElements[index];
+      const buzzElement = mosquitoElement.querySelector('.pet-mosquito__buzz');
+      const hitRect = (buzzElement || mosquitoElement).getBoundingClientRect();
+      const isInside = (
+        event.clientX >= hitRect.left &&
+        event.clientX <= hitRect.right &&
+        event.clientY >= hitRect.top &&
+        event.clientY <= hitRect.bottom
+      );
+
+      if (!isInside) {
+        continue;
+      }
+
+      const mosquitoId = mosquitoElement.dataset.mosquitoId;
+      if (mosquitoId) {
+        handleMosquitoTap(mosquitoId, event, {
+          shouldStopEvent: false,
+          sourceElement: mosquitoElement
+        });
+      }
+      return;
+    }
+  }, [handleMosquitoTap]);
 
   const getMosquitoFlightBounds = useCallback((config = mosquitoDebugConfigRef.current) => {
     const stageElement = petStageRef.current;
@@ -4460,11 +4510,12 @@ useEffect(() => {
   const isPetCameraControlDisabled = !isPetCameraControlsVisible || isPetCameraBaseDisabled || (isPetCameraBusy && !isPetCameraReady);
   const isPetCameraInputDisabled = !isPetCameraControlsVisible || isPetCameraBaseDisabled || !isPetCameraReady;
   const isPetCameraOverlayVisible = isPetCameraControlsVisible || isPetCameraRefusalVisible;
+  const isPetClickBlockedByMosquito = mosquitoes.length > 0;
 
   const handlePetCharacterCameraToggle = () => {
     lastInteractionRef.current = Date.now();
 
-    if (cameraPhase === 'flash' || isPetPhotoModalOpen || isSavingPetPhoto) return;
+    if (isPetClickBlockedByMosquito || cameraPhase === 'flash' || isPetPhotoModalOpen || isSavingPetPhoto) return;
 
     if (isPetCameraRefusalVisible) {
       lowerPetCameraPose();
@@ -4603,6 +4654,7 @@ useEffect(() => {
           ref={petStageRef}
           className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
+          onPointerDownCapture={handlePetStagePointerDownCapture}
         >
           {/* Sun */}
           <div className="stage-sun" aria-hidden="true"></div>
@@ -4909,6 +4961,7 @@ useEffect(() => {
           {mosquitoes.map((mosquito) => (
             <div
               key={mosquito.id}
+              data-mosquito-id={mosquito.id}
               className={`pet-mosquito pet-mosquito--${mosquito.phase}${mosquito.isDying ? ' pet-mosquito--dying' : ''}`}
               style={{
                 left: mosquito.isDying ? `${mosquito.killLeft ?? 0}px` : undefined,
@@ -4954,17 +5007,20 @@ useEffect(() => {
                   ? (mosquito.exitPathD || mosquito.pathD)
                   : (mosquito.approachPathD || mosquito.pathD)}")`
               }}
-              role="button"
-              tabIndex={0}
-              aria-label="Kill mosquito"
-              onPointerDown={(event) => handleMosquitoTap(mosquito.id, event)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  handleMosquitoTap(mosquito.id, event);
-                }
-              }}
+              aria-hidden={mosquito.isDying ? 'true' : undefined}
             >
-              <div className="pet-mosquito__buzz">
+              <div
+                className="pet-mosquito__buzz"
+                role="button"
+                tabIndex={mosquito.isDying ? -1 : 0}
+                aria-label="Kill mosquito"
+                onPointerDown={(event) => handleMosquitoTap(mosquito.id, event)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    handleMosquitoTap(mosquito.id, event);
+                  }
+                }}
+              >
                 <div className="pet-mosquito__wing pet-mosquito__wing--left"></div>
                 <div className="pet-mosquito__wing pet-mosquito__wing--right"></div>
                 <div className="pet-mosquito__head">
@@ -5039,8 +5095,10 @@ useEffect(() => {
             <button
               type="button"
               className="pet-character__hit-area"
-              disabled={isAwakening || isPetPhotoModalOpen}
-              aria-label={isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control'}
+              disabled={isAwakening || isPetPhotoModalOpen || isPetClickBlockedByMosquito}
+              aria-label={isPetClickBlockedByMosquito
+                ? 'Pet action disabled while mosquitoes are present'
+                : (isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control')}
               aria-pressed={isPetCameraControlVisible || isCameraPoseActive}
               onClick={handlePetCharacterCameraToggle}
               onKeyDown={handlePetCharacterCameraKeyDown}
