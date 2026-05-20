@@ -3876,14 +3876,17 @@
   height: 42px;
   pointer-events: none;
   z-index: 10;
-  filter: drop-shadow(1px 1px 0 #ffffff) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  filter: none;
   offset-anchor: 50% 50%;
   offset-distance: 0%;
   offset-rotate: 0deg;
   -webkit-offset-rotate: 0deg;
   animation-duration: var(--mosquito-flight-duration, 5000ms);
   animation-fill-mode: forwards;
-  animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  animation-timing-function: linear;
+  backface-visibility: hidden;
+  contain: layout paint;
+  will-change: offset-distance;
 }
 
 .pet-mosquito--spawning {
@@ -3893,6 +3896,7 @@
 .pet-mosquito--flying-to-pet,
 .pet-mosquito--flying-away {
   animation-name: mosquito-path-flight;
+  will-change: offset-distance;
 }
 
 .pet-mosquito--resting-on-pet {
@@ -3900,17 +3904,24 @@
 }
 
 .pet-mosquito--flying-to-pet .pet-mosquito__buzz,
-.pet-mosquito--resting-on-pet .pet-mosquito__buzz,
 .pet-mosquito--flying-away .pet-mosquito__buzz {
+  animation-name: mosquito-flight-buzz;
+  animation-duration: var(--mosquito-flight-buzz-duration, 420ms);
+  animation-timing-function: ease-in-out;
+}
+
+.pet-mosquito--resting-on-pet .pet-mosquito__buzz {
   animation-name: mosquito-buzz-hover;
 }
 
 @keyframes mosquito-path-flight {
   from {
     offset-distance: 0%;
+    -webkit-offset-distance: 0%;
   }
   to {
     offset-distance: 100%;
+    -webkit-offset-distance: 100%;
   }
 }
 
@@ -3935,6 +3946,16 @@
   }
 }
 
+@keyframes mosquito-flight-buzz {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  50% {
+    transform: translate3d(var(--mosquito-flight-buzz-x), var(--mosquito-flight-buzz-y-neg), 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) + var(--mosquito-flight-buzz-rotate))) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+}
+
 .mosquito-debug-boundary {
   position: absolute;
   border: 2px dashed #ff0000;
@@ -3952,6 +3973,8 @@
   animation-duration: var(--mosquito-buzz-duration, 220ms);
   animation-iteration-count: infinite;
   animation-timing-function: ease-in-out;
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .pet-mosquito__thorax {
@@ -4084,25 +4107,31 @@
 .pet-mosquito__wing {
   position: absolute;
   z-index: 1;
-  width: 10px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.75);
+  width: 13px;
+  height: 9px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(188, 196, 200, 0.72));
   border: 2px solid #000000;
-  border-radius: 999px 45% 999px 45%;
-  top: 9px;
-  transform-origin: center;
+  border-radius: 78% 48% 74% 42%;
+  top: 8px;
+  transform-origin: 10% 86%;
+  will-change: transform, opacity;
 }
 
 .pet-mosquito__wing--left {
-  left: 18px;
-  transform: rotate(-28deg);
-  animation: mosquito-wing-left 0.055s infinite alternate;
+  left: 22px;
+  transform: rotate(-31deg);
+  animation: mosquito-wing-left var(--mosquito-wing-duration, 25ms) infinite alternate;
 }
 
 .pet-mosquito__wing--right {
-  left: 24px;
-  transform: rotate(20deg) scaleX(-1);
-  animation: mosquito-wing-right 0.055s infinite alternate;
+  left: 20px;
+  top: 12px;
+  width: 10px;
+  height: 7px;
+  opacity: 0.38;
+  transform: rotate(-18deg);
+  animation: mosquito-wing-right var(--mosquito-wing-duration, 25ms) infinite alternate;
+  animation-direction: alternate-reverse;
 }
 
 .pet-mosquito__legs {
@@ -4149,13 +4178,17 @@
 .pet-mosquito__leg--6::after { transform: rotate(-28deg); }
 
 @keyframes mosquito-wing-left {
-  0% { transform: rotate(-24deg) scaleY(1); opacity: 0.88; }
-  100% { transform: rotate(-38deg) scaleY(0.52); opacity: 0.5; }
+  0% { transform: rotate(-18deg) translateY(0) scaleX(1) scaleY(1); opacity: 0.92; }
+  35% { transform: rotate(-64deg) translateY(-2px) scaleX(1.08) scaleY(0.22); opacity: 0.28; }
+  70% { transform: rotate(-34deg) translateY(1px) scaleX(0.92) scaleY(0.62); opacity: 0.62; }
+  100% { transform: rotate(-12deg) translateY(0) scaleX(1) scaleY(0.94); opacity: 0.88; }
 }
 
 @keyframes mosquito-wing-right {
-  0% { transform: rotate(20deg) scaleX(-1) scaleY(1); opacity: 0.88; }
-  100% { transform: rotate(34deg) scaleX(-1) scaleY(0.52); opacity: 0.5; }
+  0% { transform: rotate(-9deg) translateY(0) scaleX(1) scaleY(0.72); opacity: 0.46; }
+  35% { transform: rotate(-55deg) translateY(2px) scaleX(1.08) scaleY(0.18); opacity: 0.14; }
+  70% { transform: rotate(-25deg) translateY(-1px) scaleX(0.96) scaleY(0.48); opacity: 0.3; }
+  100% { transform: rotate(-7deg) translateY(0) scaleX(1) scaleY(0.68); opacity: 0.4; }
 }
 
 /* Mosquito Debug Panel */

@@ -853,7 +853,8 @@ const STAGE_THERMOMETER_POSITION_CONTROLS = [
   { key: 'size', label: 'Thermo size', unit: '%' }
 ];
 
-const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config';
+const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
+const MOSQUITO_WING_FLAP_DURATION_MS = 25;
 const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
   stageTopPercent: 0,
   stageBottomPercent: 60,
@@ -866,9 +867,13 @@ const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
   mosquitoesPerSpawnMin: 1,
   mosquitoesPerSpawnMax: 3,
   maxMosquitoes: 10,
-  flightDurationMinMs: 3000,
-  flightDurationMaxMs: 7000,
-  sizePercent: 100,
+  flightSpeedMinPxPerSec: 45,
+  flightSpeedMaxPxPerSec: 70,
+  sizePercent: 210,
+  bodyBuzzDurationMs: 315,
+  bodyBuzzX: 1,
+  bodyBuzzY: 1,
+  bodyBuzzRotateDeg: 2,
   curveAmountPercent: 56
 };
 
@@ -900,19 +905,13 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
     mosquitoesPerSpawnMin: clampMosquitoNumber(config.mosquitoesPerSpawnMin, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMin, 1, 20),
     mosquitoesPerSpawnMax: clampMosquitoNumber(config.mosquitoesPerSpawnMax, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMax, 1, 20),
     maxMosquitoes: clampMosquitoNumber(config.maxMosquitoes, MOSQUITO_DEBUG_CONFIG_DEFAULTS.maxMosquitoes, 1, 50),
-    flightDurationMinMs: clampMosquitoNumber(
-      config.flightDurationMinMs ?? config.flightDurationMs,
-      MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightDurationMinMs,
-      1000,
-      15000
-    ),
-    flightDurationMaxMs: clampMosquitoNumber(
-      config.flightDurationMaxMs ?? config.flightDurationMs,
-      MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightDurationMaxMs,
-      1000,
-      15000
-    ),
+    flightSpeedMinPxPerSec: clampMosquitoNumber(config.flightSpeedMinPxPerSec, MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMinPxPerSec, 10, 240),
+    flightSpeedMaxPxPerSec: clampMosquitoNumber(config.flightSpeedMaxPxPerSec, MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMaxPxPerSec, 10, 240),
     sizePercent: clampMosquitoNumber(config.sizePercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.sizePercent, 1, 220),
+    bodyBuzzDurationMs: clampMosquitoNumber(config.bodyBuzzDurationMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzDurationMs, 35, 1000),
+    bodyBuzzX: clampMosquitoNumber(config.bodyBuzzX, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzX, 0, 8),
+    bodyBuzzY: clampMosquitoNumber(config.bodyBuzzY, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzY, 0, 8),
+    bodyBuzzRotateDeg: clampMosquitoNumber(config.bodyBuzzRotateDeg, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzRotateDeg, 0, 20),
     curveAmountPercent: clampMosquitoNumber(config.curveAmountPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.curveAmountPercent, 10, 90)
   };
 
@@ -928,8 +927,8 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
   if (next.mosquitoesPerSpawnMin > next.mosquitoesPerSpawnMax) {
     next.mosquitoesPerSpawnMax = next.mosquitoesPerSpawnMin;
   }
-  if (next.flightDurationMinMs > next.flightDurationMaxMs) {
-    next.flightDurationMaxMs = next.flightDurationMinMs;
+  if (next.flightSpeedMinPxPerSec > next.flightSpeedMaxPxPerSec) {
+    next.flightSpeedMaxPxPerSec = next.flightSpeedMinPxPerSec;
   }
 
   return next;
@@ -2460,11 +2459,11 @@ const PetPage = ({ onBack }) => {
       if (key === 'spawnIntervalMaxMs' && value < next.spawnIntervalMinMs) {
         next.spawnIntervalMinMs = value;
       }
-      if (key === 'flightDurationMinMs' && value > next.flightDurationMaxMs) {
-        next.flightDurationMaxMs = value;
+      if (key === 'flightSpeedMinPxPerSec' && value > next.flightSpeedMaxPxPerSec) {
+        next.flightSpeedMaxPxPerSec = value;
       }
-      if (key === 'flightDurationMaxMs' && value < next.flightDurationMinMs) {
-        next.flightDurationMinMs = value;
+      if (key === 'flightSpeedMaxPxPerSec' && value < next.flightSpeedMinPxPerSec) {
+        next.flightSpeedMinPxPerSec = value;
       }
       if (key === 'stageTopPercent' && value > next.stageBottomPercent) {
         next.stageBottomPercent = value;
@@ -2605,8 +2604,7 @@ const PetPage = ({ onBack }) => {
       ? bounds.top + Math.random() * Math.max(0, bounds.bottom - bounds.top)
       : Math.min(bounds.bottom, Math.max(bounds.top, seedY));
     const startX = entrySide === 'left' ? bounds.entryLeft : bounds.entryRight;
-    const exitX = entrySide === 'left' ? bounds.entryRight : bounds.entryLeft;
-    const direction = entrySide === 'left' ? 1 : -1;
+    const approachDirection = entrySide === 'left' ? 1 : -1;
     const width = Math.max(1, bounds.right - bounds.left);
     const height = Math.max(1, bounds.bottom - bounds.top);
     const characterScale = Math.max(0.01, bounds.characterScale ?? 1);
@@ -2637,7 +2635,7 @@ const PetPage = ({ onBack }) => {
     const wavePhase = Math.random() * Math.PI * 2;
     const driftY = (Math.random() - 0.5) * height * (0.08 + curveAmount * 0.34);
     const amplitude = Math.min(height * (0.08 + curveAmount * 0.2), 8 + curveAmount * 28 + Math.random() * 12);
-    const buildLegPoints = (from, to, segmentCount, phaseShift = 0) => {
+    const buildLegPoints = (from, to, segmentCount, phaseShift = 0, segmentDirection = approachDirection) => {
       const points = [{ x: from.x, y: from.y }];
 
       for (let index = 1; index < segmentCount; index += 1) {
@@ -2650,7 +2648,7 @@ const PetPage = ({ onBack }) => {
         const waveY = Math.sin((progress + phaseShift) * Math.PI * 2 * waveCount + wavePhase) * legAmplitude;
         const flutterY = Math.sin((progress + phaseShift) * Math.PI * 2 * (waveCount * 2.4) + wavePhase * 0.7) * legAmplitude * (0.1 + curveAmount * 0.2);
         const x = clampMosquitoRouteValue(
-          baseX + direction * width * progressJitter,
+          baseX + segmentDirection * width * progressJitter,
           bounds.pathLeft,
           bounds.pathRight
         );
@@ -2668,6 +2666,12 @@ const PetPage = ({ onBack }) => {
       return points;
     };
 
+    const shouldReverseAfterRest = Math.random() < 0.5;
+    const exitSide = shouldReverseAfterRest
+      ? entrySide
+      : (entrySide === 'left' ? 'right' : 'left');
+    const exitX = exitSide === 'left' ? bounds.entryLeft : bounds.entryRight;
+    const exitDirection = exitX >= restX ? 1 : -1;
     const exitY = clampMosquitoRouteValue(
       restY + driftY + Math.sin(Math.PI * 2 * waveCount + wavePhase) * amplitude * 0.35,
       safeTop,
@@ -2682,16 +2686,29 @@ const PetPage = ({ onBack }) => {
       { x: restX, y: restY },
       { x: exitX, y: exitY },
       exitSegmentCount,
-      0.41
+      0.41,
+      exitDirection
     );
     const approachPathD = createMosquitoPathD(approachPoints, bounds);
     const exitPathD = createMosquitoPathD(exitPoints, bounds);
+    const getPointDistance = (points) => points.reduce((distance, point, index) => {
+      const previous = points[index - 1];
 
-    const pathRise = restY - startY;
-    const pathRun = Math.max(1, Math.abs(restX - startX));
-    const flightTiltDeg = formatMosquitoPathNumber(
-      clampMosquitoRouteValue(Math.atan2(pathRise, pathRun) * (180 / Math.PI) * direction, -32, 32)
-    );
+      if (!previous) {
+        return distance;
+      }
+
+      return distance + Math.hypot(point.x - previous.x, point.y - previous.y);
+    }, 0);
+
+    const getFlightTiltDeg = (from, to, segmentDirection) => {
+      const pathRise = to.y - from.y;
+      const pathRun = Math.max(1, Math.abs(to.x - from.x));
+
+      return formatMosquitoPathNumber(
+        clampMosquitoRouteValue(Math.atan2(pathRise, pathRun) * (180 / Math.PI) * segmentDirection, -32, 32)
+      );
+    };
 
     return {
       startX,
@@ -2702,41 +2719,51 @@ const PetPage = ({ onBack }) => {
       restY,
       approachPathD,
       exitPathD,
+      approachDistancePx: getPointDistance(approachPoints),
+      exitDistancePx: getPointDistance(exitPoints),
       pathD: `${approachPathD} ${exitPathD}`,
-      buzzDurationMs: 170 + Math.floor(Math.random() * 110),
-      buzzX: formatMosquitoPathNumber(1.2 + Math.random() * 2.4),
-      buzzY: formatMosquitoPathNumber(1.4 + Math.random() * 2.8),
-      buzzRotateDeg: formatMosquitoPathNumber(5 + Math.random() * 8),
-      facingScaleX: entrySide === 'left' ? -1 : 1,
-      flightTiltDeg,
+      buzzDurationMs: config.bodyBuzzDurationMs,
+      buzzX: config.bodyBuzzX,
+      buzzY: config.bodyBuzzY,
+      buzzRotateDeg: config.bodyBuzzRotateDeg,
+      facingScaleX: approachDirection > 0 ? -1 : 1,
+      exitFacingScaleX: exitDirection > 0 ? -1 : 1,
+      flightTiltDeg: getFlightTiltDeg({ x: startX, y: startY }, { x: restX, y: restY }, approachDirection),
+      exitFlightTiltDeg: getFlightTiltDeg({ x: restX, y: restY }, { x: exitX, y: exitY }, exitDirection),
       entrySide,
-      exitSide: entrySide === 'left' ? 'right' : 'left'
+      exitSide,
+      exitMode: shouldReverseAfterRest ? 'reverse' : 'continue'
     };
   }, [createMosquitoPathD, debugCharacterPosition.bottom, debugPetClickArea, getMosquitoFlightBounds]);
 
-  const getRandomMosquitoFlightDuration = useCallback((config = mosquitoDebugConfigRef.current) => {
-    const durationMin = Math.min(config.flightDurationMinMs, config.flightDurationMaxMs);
-    const durationMax = Math.max(config.flightDurationMinMs, config.flightDurationMaxMs);
+  const getRandomMosquitoFlightSpeed = useCallback((config = mosquitoDebugConfigRef.current) => {
+    const configSpeedMin = config.flightSpeedMinPxPerSec ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMinPxPerSec;
+    const configSpeedMax = config.flightSpeedMaxPxPerSec ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMaxPxPerSec;
+    const speedMin = Math.min(configSpeedMin, configSpeedMax);
+    const speedMax = Math.max(configSpeedMin, configSpeedMax);
 
-    return Math.round(durationMin + Math.random() * Math.max(0, durationMax - durationMin));
+    return Math.round(speedMin + Math.random() * Math.max(0, speedMax - speedMin));
   }, []);
 
   const getRandomMosquitoHoldDuration = useCallback(() => (
     3000 + Math.round(Math.random() * 4000)
   ), []);
 
-  const createMosquitoMotionTiming = useCallback((config = mosquitoDebugConfigRef.current) => {
-    const flightDurationMs = getRandomMosquitoFlightDuration(config);
-    const approachDurationMs = Math.max(900, Math.round(flightDurationMs * (0.44 + Math.random() * 0.12)));
-    const exitDurationMs = Math.max(900, flightDurationMs - approachDurationMs);
+  const createMosquitoMotionTiming = useCallback((config = mosquitoDebugConfigRef.current, route = {}) => {
+    const flightSpeedPxPerSec = getRandomMosquitoFlightSpeed(config);
+    const approachDistancePx = Math.max(1, route.approachDistancePx || 1);
+    const exitDistancePx = Math.max(1, route.exitDistancePx || 1);
+    const approachDurationMs = Math.max(450, Math.round((approachDistancePx / flightSpeedPxPerSec) * 1000));
+    const exitDurationMs = Math.max(450, Math.round((exitDistancePx / flightSpeedPxPerSec) * 1000));
 
     return {
-      flightDurationMs,
+      flightDurationMs: approachDurationMs + exitDurationMs,
+      flightSpeedPxPerSec,
       approachDurationMs,
       holdDurationMs: getRandomMosquitoHoldDuration(),
       exitDurationMs
     };
-  }, [getRandomMosquitoFlightDuration, getRandomMosquitoHoldDuration]);
+  }, [getRandomMosquitoFlightSpeed, getRandomMosquitoHoldDuration]);
 
   const scheduleMosquitoLifecycle = useCallback((mosquito) => {
     addMosquitoMotionTimer(() => {
@@ -2968,16 +2995,20 @@ useEffect(() => {
   mosquitoDebugConfigRef.current = mosquitoDebugConfig;
   const updatedMosquitoes = mosquitoesRef.current
     .slice(0, mosquitoDebugConfig.maxMosquitoes)
-    .map((mosquito) => ({
-      ...mosquito,
-      ...createMosquitoRoute(
+    .map((mosquito) => {
+      const route = createMosquitoRoute(
         mosquitoDebugConfig,
         mosquito.entrySide,
         mosquito.phase === 'flying-away' ? mosquito.exitY : mosquito.startY
-      ),
-      ...createMosquitoMotionTiming(mosquitoDebugConfig),
-      phase: 'spawning'
-    }));
+      );
+
+      return {
+        ...mosquito,
+        ...route,
+        ...createMosquitoMotionTiming(mosquitoDebugConfig, route),
+        phase: 'spawning'
+      };
+    });
 
   mosquitoesRef.current = updatedMosquitoes;
   setMosquitoes(updatedMosquitoes);
@@ -3013,11 +3044,12 @@ useEffect(() => {
     );
     const newMosquitoes = Array.from({ length: mosquitoesThisSpawn }, () => {
       const mosquitoId = `mosquito-${Date.now()}-${Math.random()}`;
+      const route = createMosquitoRoute(config);
 
       return {
         id: mosquitoId,
-        ...createMosquitoRoute(config),
-        ...createMosquitoMotionTiming(config),
+        ...route,
+        ...createMosquitoMotionTiming(config, route),
         phase: 'spawning'
       };
     });
@@ -4631,14 +4663,24 @@ useEffect(() => {
                   ? (mosquito.exitDurationMs || mosquito.flightDurationMs || 5000)
                   : (mosquito.approachDurationMs || mosquito.flightDurationMs || 5000)}ms`,
                 '--mosquito-buzz-duration': `${mosquito.buzzDurationMs}ms`,
+                '--mosquito-wing-duration': `${MOSQUITO_WING_FLAP_DURATION_MS}ms`,
                 '--mosquito-buzz-x': `${mosquito.buzzX}px`,
                 '--mosquito-buzz-y': `${mosquito.buzzY}px`,
                 '--mosquito-buzz-x-neg': `${-mosquito.buzzX}px`,
                 '--mosquito-buzz-y-neg': `${-mosquito.buzzY}px`,
                 '--mosquito-buzz-rotate': `${mosquito.buzzRotateDeg}deg`,
                 '--mosquito-buzz-rotate-neg': `${-mosquito.buzzRotateDeg}deg`,
-                '--mosquito-facing-scale-x': mosquito.facingScaleX ?? -1,
-                '--mosquito-flight-tilt': `${mosquito.flightTiltDeg ?? 0}deg`,
+                '--mosquito-flight-buzz-duration': `${Math.max(420, mosquito.buzzDurationMs)}ms`,
+                '--mosquito-flight-buzz-x': `${Math.min(1, mosquito.buzzX * 0.25)}px`,
+                '--mosquito-flight-buzz-y': `${Math.min(0.75, mosquito.buzzY * 0.18)}px`,
+                '--mosquito-flight-buzz-y-neg': `${-Math.min(0.75, mosquito.buzzY * 0.18)}px`,
+                '--mosquito-flight-buzz-rotate': `${Math.min(2, mosquito.buzzRotateDeg * 0.18)}deg`,
+                '--mosquito-facing-scale-x': mosquito.phase === 'flying-away'
+                  ? (mosquito.exitFacingScaleX ?? mosquito.facingScaleX ?? -1)
+                  : (mosquito.facingScaleX ?? -1),
+                '--mosquito-flight-tilt': `${mosquito.phase === 'flying-away'
+                  ? (mosquito.exitFlightTiltDeg ?? mosquito.flightTiltDeg ?? 0)
+                  : (mosquito.flightTiltDeg ?? 0)}deg`,
                 '--mosquito-size-scale': mosquitoDebugConfig.sizePercent / 100,
                 offsetPath: `path("${mosquito.phase === 'flying-away'
                   ? (mosquito.exitPathD || mosquito.pathD)

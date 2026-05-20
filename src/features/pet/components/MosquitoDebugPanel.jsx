@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config';
+const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
+const DEFAULT_FLIGHT_SPEED_MIN = 45;
+const DEFAULT_FLIGHT_SPEED_MAX = 70;
 
 export default function MosquitoDebugPanel({
   isOpen,
@@ -13,9 +15,15 @@ export default function MosquitoDebugPanel({
 }) {
   const [saveStatus, setSaveStatus] = useState('');
   const [copyStatus, setCopyStatus] = useState('');
+  const flightSpeedMin = config.flightSpeedMinPxPerSec ?? DEFAULT_FLIGHT_SPEED_MIN;
+  const flightSpeedMax = config.flightSpeedMaxPxPerSec ?? DEFAULT_FLIGHT_SPEED_MAX;
   const configSnippet = useMemo(
-    () => `MOSQUITO_DEBUG_CONFIG = ${JSON.stringify(config, null, 2)};`,
-    [config]
+    () => `MOSQUITO_DEBUG_CONFIG = ${JSON.stringify({
+      ...config,
+      flightSpeedMinPxPerSec: flightSpeedMin,
+      flightSpeedMaxPxPerSec: flightSpeedMax
+    }, null, 2)};`,
+    [config, flightSpeedMax, flightSpeedMin]
   );
 
   const handleSaveSettings = () => {
@@ -93,8 +101,8 @@ export default function MosquitoDebugPanel({
                 <span className="mosquito-debug__status-value">{config.mosquitoesPerSpawnMin} - {config.mosquitoesPerSpawnMax}</span>
               </div>
               <div className="mosquito-debug__status-item">
-                <span className="mosquito-debug__status-label">Flight:</span>
-                <span className="mosquito-debug__status-value">{(config.flightDurationMinMs / 1000).toFixed(1)}s - {(config.flightDurationMaxMs / 1000).toFixed(1)}s</span>
+                <span className="mosquito-debug__status-label">Speed:</span>
+                <span className="mosquito-debug__status-value">{flightSpeedMin} - {flightSpeedMax}px/s</span>
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Size:</span>
@@ -201,29 +209,29 @@ export default function MosquitoDebugPanel({
 
           {/* Flight Speed */}
           <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">✈️ Flight Speed</div>
+            <div className="mosquito-debug__section-title">✈️ Random Flight Speed</div>
 
             <label className="mosquito-debug__control">
-              <span className="mosquito-debug__control-label">Fastest: <strong>{(config.flightDurationMinMs / 1000).toFixed(1)}s</strong></span>
+              <span className="mosquito-debug__control-label">Min speed: <strong>{flightSpeedMin}px/s</strong></span>
               <input
                 type="range"
-                min="1000"
-                max="15000"
-                step="100"
-                value={config.flightDurationMinMs}
-                onChange={(e) => onUpdateConfig('flightDurationMinMs', Number(e.target.value))}
+                min="10"
+                max="240"
+                step="1"
+                value={flightSpeedMin}
+                onChange={(e) => onUpdateConfig('flightSpeedMinPxPerSec', Number(e.target.value))}
               />
             </label>
 
             <label className="mosquito-debug__control">
-              <span className="mosquito-debug__control-label">Slowest: <strong>{(config.flightDurationMaxMs / 1000).toFixed(1)}s</strong></span>
+              <span className="mosquito-debug__control-label">Max speed: <strong>{flightSpeedMax}px/s</strong></span>
               <input
                 type="range"
-                min="1000"
-                max="15000"
-                step="100"
-                value={config.flightDurationMaxMs}
-                onChange={(e) => onUpdateConfig('flightDurationMaxMs', Number(e.target.value))}
+                min="10"
+                max="240"
+                step="1"
+                value={flightSpeedMax}
+                onChange={(e) => onUpdateConfig('flightSpeedMaxPxPerSec', Number(e.target.value))}
               />
             </label>
           </div>
@@ -253,6 +261,59 @@ export default function MosquitoDebugPanel({
                 step="1"
                 value={config.curveAmountPercent}
                 onChange={(e) => onUpdateConfig('curveAmountPercent', Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          {/* Body Buzz */}
+          <div className="mosquito-debug__section">
+            <div className="mosquito-debug__section-title">〰️ Body Buzz</div>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Speed: <strong>{config.bodyBuzzDurationMs}ms</strong></span>
+              <input
+                type="range"
+                min="35"
+                max="1000"
+                step="5"
+                value={config.bodyBuzzDurationMs}
+                onChange={(e) => onUpdateConfig('bodyBuzzDurationMs', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Move X: <strong>{config.bodyBuzzX}px</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="1"
+                value={config.bodyBuzzX}
+                onChange={(e) => onUpdateConfig('bodyBuzzX', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Move Y: <strong>{config.bodyBuzzY}px</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="1"
+                value={config.bodyBuzzY}
+                onChange={(e) => onUpdateConfig('bodyBuzzY', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Rotate: <strong>{config.bodyBuzzRotateDeg}deg</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="20"
+                step="1"
+                value={config.bodyBuzzRotateDeg}
+                onChange={(e) => onUpdateConfig('bodyBuzzRotateDeg', Number(e.target.value))}
               />
             </label>
           </div>
