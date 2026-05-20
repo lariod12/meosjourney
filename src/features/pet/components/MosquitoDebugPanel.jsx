@@ -4,6 +4,10 @@ import { createPortal } from 'react-dom';
 const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
 const DEFAULT_FLIGHT_SPEED_MIN = 45;
 const DEFAULT_FLIGHT_SPEED_MAX = 70;
+const DEFAULT_HOLD_DURATION_MIN_MS = 3000;
+const DEFAULT_HOLD_DURATION_MAX_MS = 7000;
+const DEFAULT_BITE_EFFECT_FONT_SIZE_PX = 34;
+const DEFAULT_BITE_EFFECT_FLOAT_HEIGHT_PX = 96;
 
 export default function MosquitoDebugPanel({
   isOpen,
@@ -17,13 +21,30 @@ export default function MosquitoDebugPanel({
   const [copyStatus, setCopyStatus] = useState('');
   const flightSpeedMin = config.flightSpeedMinPxPerSec ?? DEFAULT_FLIGHT_SPEED_MIN;
   const flightSpeedMax = config.flightSpeedMaxPxPerSec ?? DEFAULT_FLIGHT_SPEED_MAX;
+  const holdDurationMinMs = config.holdDurationMinMs ?? DEFAULT_HOLD_DURATION_MIN_MS;
+  const holdDurationMaxMs = config.holdDurationMaxMs ?? DEFAULT_HOLD_DURATION_MAX_MS;
+  const biteEffectFontSizePx = config.biteEffectFontSizePx ?? DEFAULT_BITE_EFFECT_FONT_SIZE_PX;
+  const biteEffectFloatHeightPx = config.biteEffectFloatHeightPx ?? DEFAULT_BITE_EFFECT_FLOAT_HEIGHT_PX;
   const configSnippet = useMemo(
     () => `MOSQUITO_DEBUG_CONFIG = ${JSON.stringify({
       ...config,
+      isEnabled: config.isEnabled !== false,
       flightSpeedMinPxPerSec: flightSpeedMin,
-      flightSpeedMaxPxPerSec: flightSpeedMax
+      flightSpeedMaxPxPerSec: flightSpeedMax,
+      holdDurationMinMs,
+      holdDurationMaxMs,
+      biteEffectFontSizePx,
+      biteEffectFloatHeightPx
     }, null, 2)};`,
-    [config, flightSpeedMax, flightSpeedMin]
+    [
+      biteEffectFloatHeightPx,
+      biteEffectFontSizePx,
+      config,
+      flightSpeedMax,
+      flightSpeedMin,
+      holdDurationMaxMs,
+      holdDurationMinMs
+    ]
   );
 
   const handleSaveSettings = () => {
@@ -89,6 +110,10 @@ export default function MosquitoDebugPanel({
                 <span className="mosquito-debug__status-value">{mosquitoes.length}</span>
               </div>
               <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Enabled:</span>
+                <span className="mosquito-debug__status-value">{config.isEnabled === false ? 'Off' : 'On'}</span>
+              </div>
+              <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Stage:</span>
                 <span className="mosquito-debug__status-value">{config.stageTopPercent}% - {config.stageBottomPercent}%</span>
               </div>
@@ -103,6 +128,14 @@ export default function MosquitoDebugPanel({
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Speed:</span>
                 <span className="mosquito-debug__status-value">{flightSpeedMin} - {flightSpeedMax}px/s</span>
+              </div>
+              <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Hold:</span>
+                <span className="mosquito-debug__status-value">{(holdDurationMinMs / 1000).toFixed(1)}s - {(holdDurationMaxMs / 1000).toFixed(1)}s</span>
+              </div>
+              <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Damage text:</span>
+                <span className="mosquito-debug__status-value">{biteEffectFontSizePx}px / {biteEffectFloatHeightPx}px</span>
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Size:</span>
@@ -232,6 +265,64 @@ export default function MosquitoDebugPanel({
                 step="1"
                 value={flightSpeedMax}
                 onChange={(e) => onUpdateConfig('flightSpeedMaxPxPerSec', Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          {/* Hold Duration */}
+          <div className="mosquito-debug__section">
+            <div className="mosquito-debug__section-title">⏳ Random Stop Time</div>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Hold min: <strong>{(holdDurationMinMs / 1000).toFixed(1)}s</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="15000"
+                step="100"
+                value={holdDurationMinMs}
+                onChange={(e) => onUpdateConfig('holdDurationMinMs', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Hold max: <strong>{(holdDurationMaxMs / 1000).toFixed(1)}s</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="15000"
+                step="100"
+                value={holdDurationMaxMs}
+                onChange={(e) => onUpdateConfig('holdDurationMaxMs', Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          {/* Bite Effect */}
+          <div className="mosquito-debug__section">
+            <div className="mosquito-debug__section-title">-1 Damage Text</div>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Font size: <strong>{biteEffectFontSizePx}px</strong></span>
+              <input
+                type="range"
+                min="12"
+                max="80"
+                step="1"
+                value={biteEffectFontSizePx}
+                onChange={(e) => onUpdateConfig('biteEffectFontSizePx', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Float height: <strong>{biteEffectFloatHeightPx}px</strong></span>
+              <input
+                type="range"
+                min="24"
+                max="240"
+                step="1"
+                value={biteEffectFloatHeightPx}
+                onChange={(e) => onUpdateConfig('biteEffectFloatHeightPx', Number(e.target.value))}
               />
             </label>
           </div>
@@ -376,6 +467,15 @@ export default function MosquitoDebugPanel({
           <div className="mosquito-debug__section">
             <div className="mosquito-debug__section-title">👁️ Visualization</div>
             <div className="mosquito-debug__checkboxes">
+              <label className="mosquito-debug__checkbox">
+                <input
+                  type="checkbox"
+                  checked={config.isEnabled !== false}
+                  onChange={(e) => onUpdateConfig('isEnabled', e.target.checked)}
+                />
+                <span>Enable mosquitoes</span>
+              </label>
+
               <label className="mosquito-debug__checkbox">
                 <input
                   type="checkbox"

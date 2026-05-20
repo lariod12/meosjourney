@@ -39,6 +39,11 @@
   transition: background 2s ease;
 }
 
+.pet-stage--mosquito-dying {
+  overflow: visible;
+  z-index: 2;
+}
+
 /* Time-based backgrounds */
 .pet-stage--dawn {
   background: linear-gradient(to bottom,
@@ -1634,6 +1639,35 @@
   pointer-events: none;
 }
 
+.pet-mosquito-bite-effects {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.pet-mosquito-bite-effect {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  min-width: 1.8em;
+  height: 1.1em;
+  padding: 0;
+  color: #000000;
+  font-family: 'Patrick Hand', 'Kalam', cursive;
+  font-size: var(--mosquito-bite-font-size, 34px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-50%, -50%, 0) scale(0.92) rotate(-4deg);
+  transform-origin: center;
+  animation: pet-mosquito-bite-float 920ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
 .pet-care-effect {
   position: absolute;
   left: 50%;
@@ -1719,6 +1753,32 @@
   left: 58px;
   bottom: 10px;
   animation-delay: 0.24s;
+}
+
+@keyframes pet-mosquito-bite-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.9) rotate(-4deg);
+  }
+  12% {
+    opacity: 1;
+    transform: translate3d(-50%, calc(-50% - 16px), 0) scale(1.04) rotate(2deg);
+  }
+  68% {
+    opacity: 0.92;
+    transform: translate3d(-50%, calc(-50% - var(--mosquito-bite-float-mid-height, 56px)), 0) scale(1) rotate(-1deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, calc(-50% - var(--mosquito-bite-float-height, 96px)), 0) scale(0.96) rotate(1deg);
+  }
+}
+
+@supports not (width: calc(1px + 1px)) {
+  .pet-mosquito-bite-effect {
+    min-width: 1.8em;
+    height: 1.1em;
+  }
 }
 
 .pet-character {
@@ -3874,7 +3934,9 @@
   top: 0;
   width: 48px;
   height: 42px;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
   z-index: 10;
   filter: none;
   offset-anchor: 50% 50%;
@@ -3889,8 +3951,99 @@
   will-change: offset-distance;
 }
 
+.pet-mosquito--dying {
+  pointer-events: none;
+  z-index: 1001;
+  contain: layout;
+  overflow: visible;
+  offset-distance: 0%;
+  -webkit-offset-distance: 0%;
+  offset-path: none;
+  -webkit-offset-path: none;
+}
+
 .pet-mosquito--spawning {
   offset-distance: 0%;
+}
+
+.pet-mosquito::before,
+.pet-mosquito::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 21px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    inset 0 0 0 1px #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.35);
+  transform-origin: center;
+  animation: none;
+  z-index: 0;
+}
+
+.pet-mosquito::after {
+  width: 9px;
+  height: 9px;
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 1px #000000,
+    inset 0 0 0 1px #000000;
+  animation-delay: 420ms;
+}
+
+.pet-mosquito--resting-on-pet::before,
+.pet-mosquito--resting-on-pet::after {
+  animation: mosquito-locator-pulse 1250ms ease-out infinite;
+}
+
+.pet-mosquito--resting-on-pet::after {
+  animation-delay: 420ms;
+}
+
+.pet-mosquito--dying::before,
+.pet-mosquito--dying::after {
+  left: var(--mosquito-hit-x, 24px);
+  top: var(--mosquito-hit-y, 21px);
+  width: 78px;
+  height: 48px;
+  border: 0;
+  border-radius: 0;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3) rotate(-8deg);
+  animation: mosquito-clap-bubble 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  clip-path: polygon(
+    7% 40%, 18% 28%, 15% 8%, 32% 18%, 48% 3%, 57% 20%,
+    79% 9%, 76% 29%, 96% 34%, 81% 47%, 98% 61%, 78% 65%,
+    86% 88%, 63% 75%, 50% 98%, 42% 76%, 18% 91%, 27% 68%, 4% 66%, 20% 53%
+  );
+}
+
+.pet-mosquito--dying::before {
+  background: #000000;
+  z-index: 6;
+}
+
+.pet-mosquito--dying::after {
+  content: "CLAP!";
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 40px;
+  background: #ffffff;
+  color: #000000;
+  font-family: "Kalam", "Patrick Hand", cursive;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  z-index: 7;
+  animation-delay: 34ms;
 }
 
 .pet-mosquito--flying-to-pet,
@@ -3914,6 +4067,15 @@
   animation-name: mosquito-buzz-hover;
 }
 
+.pet-mosquito--dying .pet-mosquito__buzz {
+  animation: mosquito-tap-kill var(--mosquito-kill-duration, 1400ms) cubic-bezier(0.28, 0.02, 0.72, 1) both;
+}
+
+.pet-mosquito--dying .pet-mosquito__wing,
+.pet-mosquito--dying .pet-mosquito__leg {
+  animation: none;
+}
+
 @keyframes mosquito-path-flight {
   from {
     offset-distance: 0%;
@@ -3922,6 +4084,23 @@
   to {
     offset-distance: 100%;
     -webkit-offset-distance: 100%;
+  }
+}
+
+@keyframes mosquito-locator-pulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  18% {
+    opacity: 0.75;
+  }
+  70% {
+    opacity: 0.28;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.15);
   }
 }
 
@@ -3966,6 +4145,7 @@
 
 .pet-mosquito__buzz {
   position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   transform: rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
@@ -4641,6 +4821,7 @@
   .pet-care-effect__pulse,
   .pet-care-effect__icon-wrap,
   .pet-care-effect__plus,
+  .pet-mosquito-bite-effect,
   .stage-thermometer__mercury,
   .pet-stage-camera-button,
   .pet-stage-camera-flash-screen,
@@ -4674,6 +4855,67 @@
 
   .pet-care-effect {
     opacity: 0;
+  }
+
+  .pet-mosquito-bite-effect {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+  }
+
+}
+
+@keyframes mosquito-clap-bubble {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.32) rotate(-14deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12) rotate(5deg);
+  }
+  42% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.96) rotate(-3deg);
+  }
+  72% {
+    opacity: 0.86;
+    transform: translate(-50%, -50%) scale(1.02) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82) rotate(-8deg);
+  }
+}
+
+@keyframes mosquito-tap-kill {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(var(--mosquito-flight-tilt, 0deg)) scale(var(--mosquito-size-scale, 1)) scaleX(var(--mosquito-facing-scale-x, -1));
+    filter: none;
+  }
+  8% {
+    opacity: 1;
+    transform: translate3d(0, -18px, 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) - 24deg)) scale(calc(var(--mosquito-size-scale, 1) * 1.08), calc(var(--mosquito-size-scale, 1) * 0.82)) scaleX(var(--mosquito-facing-scale-x, -1));
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 16px, 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) + 92deg)) scale(calc(var(--mosquito-size-scale, 1) * 0.98)) scaleX(var(--mosquito-facing-scale-x, -1));
+    filter: grayscale(1);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, var(--mosquito-kill-fall-mid-distance, 70vh), 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) + 100deg)) scale(calc(var(--mosquito-size-scale, 1) * 0.96)) scaleX(var(--mosquito-facing-scale-x, -1));
+    filter: grayscale(1);
+  }
+  96% {
+    opacity: 1;
+    transform: translate3d(0, var(--mosquito-kill-fall-visible-distance, 100vh), 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) + 106deg)) scale(calc(var(--mosquito-size-scale, 1) * 0.94)) scaleX(var(--mosquito-facing-scale-x, -1));
+    filter: grayscale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, var(--mosquito-kill-fall-distance, 100vh), 0) rotate(calc(var(--mosquito-flight-tilt, 0deg) + 108deg)) scale(calc(var(--mosquito-size-scale, 1) * 0.94)) scaleX(var(--mosquito-facing-scale-x, -1));
+    filter: grayscale(1);
   }
 }
 

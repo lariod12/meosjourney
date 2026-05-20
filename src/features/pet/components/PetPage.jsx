@@ -855,7 +855,14 @@ const STAGE_THERMOMETER_POSITION_CONTROLS = [
 
 const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
 const MOSQUITO_WING_FLAP_DURATION_MS = 25;
+const MOSQUITO_BITE_START_DELAY_MS = 420;
+const MOSQUITO_BITE_TICK_MS = 1250;
+const MOSQUITO_BITE_DAMAGE = 1;
+const MOSQUITO_KILL_MIN_ANIMATION_MS = 1400;
+const MOSQUITO_KILL_MAX_ANIMATION_MS = 2600;
+const MOSQUITO_KILL_FALL_SPEED_PX_PER_SEC = 620;
 const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
+  isEnabled: true,
   stageTopPercent: 0,
   stageBottomPercent: 60,
   stageLeftPercent: 0,
@@ -869,6 +876,10 @@ const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
   maxMosquitoes: 10,
   flightSpeedMinPxPerSec: 45,
   flightSpeedMaxPxPerSec: 70,
+  holdDurationMinMs: 3000,
+  holdDurationMaxMs: 7000,
+  biteEffectFontSizePx: 34,
+  biteEffectFloatHeightPx: 96,
   sizePercent: 210,
   bodyBuzzDurationMs: 315,
   bodyBuzzX: 1,
@@ -890,6 +901,9 @@ const clampMosquitoNumber = (value, fallback, min, max) => {
 const normalizeMosquitoDebugConfig = (config = {}) => {
   const next = {
     ...MOSQUITO_DEBUG_CONFIG_DEFAULTS,
+    isEnabled: typeof config.isEnabled === 'boolean'
+      ? config.isEnabled
+      : MOSQUITO_DEBUG_CONFIG_DEFAULTS.isEnabled,
     showBoundaries: typeof config.showBoundaries === 'boolean'
       ? config.showBoundaries
       : MOSQUITO_DEBUG_CONFIG_DEFAULTS.showBoundaries,
@@ -907,6 +921,10 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
     maxMosquitoes: clampMosquitoNumber(config.maxMosquitoes, MOSQUITO_DEBUG_CONFIG_DEFAULTS.maxMosquitoes, 1, 50),
     flightSpeedMinPxPerSec: clampMosquitoNumber(config.flightSpeedMinPxPerSec, MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMinPxPerSec, 10, 240),
     flightSpeedMaxPxPerSec: clampMosquitoNumber(config.flightSpeedMaxPxPerSec, MOSQUITO_DEBUG_CONFIG_DEFAULTS.flightSpeedMaxPxPerSec, 10, 240),
+    holdDurationMinMs: clampMosquitoNumber(config.holdDurationMinMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.holdDurationMinMs, 0, 15000),
+    holdDurationMaxMs: clampMosquitoNumber(config.holdDurationMaxMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.holdDurationMaxMs, 0, 15000),
+    biteEffectFontSizePx: clampMosquitoNumber(config.biteEffectFontSizePx, MOSQUITO_DEBUG_CONFIG_DEFAULTS.biteEffectFontSizePx, 12, 80),
+    biteEffectFloatHeightPx: clampMosquitoNumber(config.biteEffectFloatHeightPx, MOSQUITO_DEBUG_CONFIG_DEFAULTS.biteEffectFloatHeightPx, 24, 240),
     sizePercent: clampMosquitoNumber(config.sizePercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.sizePercent, 1, 220),
     bodyBuzzDurationMs: clampMosquitoNumber(config.bodyBuzzDurationMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzDurationMs, 35, 1000),
     bodyBuzzX: clampMosquitoNumber(config.bodyBuzzX, MOSQUITO_DEBUG_CONFIG_DEFAULTS.bodyBuzzX, 0, 8),
@@ -929,6 +947,9 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
   }
   if (next.flightSpeedMinPxPerSec > next.flightSpeedMaxPxPerSec) {
     next.flightSpeedMaxPxPerSec = next.flightSpeedMinPxPerSec;
+  }
+  if (next.holdDurationMinMs > next.holdDurationMaxMs) {
+    next.holdDurationMaxMs = next.holdDurationMinMs;
   }
 
   return next;
@@ -1346,6 +1367,38 @@ const PetStageCareEffect = ({ effect, onDone }) => {
   );
 };
 
+const PetStageMosquitoBiteEffect = ({ effect, onDone }) => {
+  const fontSizePx = effect.fontSizePx ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.biteEffectFontSizePx;
+  const floatHeightPx = effect.floatHeightPx ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.biteEffectFloatHeightPx;
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      onDone(effect.id);
+    }, 1100);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [effect.id, onDone]);
+
+  return (
+    <div
+      className="pet-mosquito-bite-effect"
+      style={{
+        left: `${effect.x}px`,
+        top: `${effect.y}px`,
+        '--mosquito-bite-font-size': `${fontSizePx}px`,
+        '--mosquito-bite-float-height': `${floatHeightPx}px`,
+        '--mosquito-bite-float-mid-height': `${Math.round(floatHeightPx * 0.58)}px`
+      }}
+      aria-hidden="true"
+      onAnimationEnd={() => onDone(effect.id)}
+    >
+      -1
+    </div>
+  );
+};
+
 const PetUseItemModal = ({ isOpen, category, item, preview, isLoading, onClose, onConfirm }) => {
   if (!isOpen || !item || !preview) {
     return null;
@@ -1444,10 +1497,10 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
     });
 
     if (newAnimatingKeys.size > 0) {
-      // Delay animation to wait for food/care effect to complete (3000ms)
+      const shouldDelayForItemEffect = Array.from(newAnimatingKeys.values()).some((type) => type === 'increase');
+      const animationDelayMs = shouldDelayForItemEffect ? 3000 : 0;
       const delayTimeout = setTimeout(() => {
         setAnimatingKeys(newAnimatingKeys);
-        // Update display values at the same time animation starts
         setDisplayValues(prev => ({ ...prev, ...pendingValues }));
         Object.keys(pendingValues).forEach(key => {
           prevValuesRef.current[key] = pendingValues[key];
@@ -1457,7 +1510,7 @@ const PetInfoDropdown = ({ expanded, onToggle, rows, isDataLoaded }) => {
         setTimeout(() => {
           setAnimatingKeys(new Map());
         }, 600);
-      }, 3000);
+      }, animationDelayMs);
 
       return () => clearTimeout(delayTimeout);
     }
@@ -2013,6 +2066,8 @@ const PetPage = ({ onBack }) => {
   const petPhotoSaveQueueRef = useRef(Promise.resolve());
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
+  const mosquitoBiteSaveTimerRef = useRef(null);
+  const mosquitoBitePendingSaveRef = useRef(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('food');
   const [tabPage, setTabPage] = useState(0);
@@ -2160,6 +2215,7 @@ const PetPage = ({ onBack }) => {
   const [isFoodUseAnimating, setIsFoodUseAnimating] = useState(false);
   const [careEffects, setCareEffects] = useState([]);
   const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
+  const [mosquitoBiteEffects, setMosquitoBiteEffects] = useState([]);
   const [isSavingPet, setIsSavingPet] = useState(false);
   const items = useMemo(() => {
     let itemList = activeTab === 'activity'
@@ -2465,6 +2521,12 @@ const PetPage = ({ onBack }) => {
       if (key === 'flightSpeedMaxPxPerSec' && value < next.flightSpeedMinPxPerSec) {
         next.flightSpeedMinPxPerSec = value;
       }
+      if (key === 'holdDurationMinMs' && value > next.holdDurationMaxMs) {
+        next.holdDurationMaxMs = value;
+      }
+      if (key === 'holdDurationMaxMs' && value < next.holdDurationMinMs) {
+        next.holdDurationMinMs = value;
+      }
       if (key === 'stageTopPercent' && value > next.stageBottomPercent) {
         next.stageBottomPercent = value;
       }
@@ -2514,6 +2576,141 @@ const PetPage = ({ onBack }) => {
     }, delay);
     mosquitoMotionTimersRef.current.push(timerId);
   }, []);
+
+  const handleMosquitoBiteEffectDone = useCallback((effectId) => {
+    setMosquitoBiteEffects((current) => current.filter((effect) => effect.id !== effectId));
+  }, []);
+
+  const queueMosquitoBitePetSave = useCallback((updates) => {
+    mosquitoBitePendingSaveRef.current = updates;
+
+    if (mosquitoBiteSaveTimerRef.current) {
+      window.clearTimeout(mosquitoBiteSaveTimerRef.current);
+    }
+
+    mosquitoBiteSaveTimerRef.current = window.setTimeout(() => {
+      const pendingUpdates = mosquitoBitePendingSaveRef.current;
+      mosquitoBitePendingSaveRef.current = null;
+      mosquitoBiteSaveTimerRef.current = null;
+
+      if (!pendingUpdates) {
+        return;
+      }
+
+      petSaveQueueRef.current = petSaveQueueRef.current
+        .catch(() => {})
+        .then(async () => {
+          const result = await savePet(pendingUpdates);
+          if (!result.success) {
+            console.warn('⚠️ Mosquito bite pet sync failed:', result.message);
+          }
+        })
+        .catch((error) => {
+          console.warn('⚠️ Mosquito bite pet sync failed:', error);
+        });
+    }, 700);
+  }, []);
+
+  const applyMosquitoBite = useCallback((mosquito) => {
+    const isStillResting = mosquitoesRef.current.some((item) => (
+      item.id === mosquito.id && item.phase === 'resting-on-pet' && !item.isDying
+    ));
+
+    if (!isStillResting) {
+      console.log('🦟 Bite skipped: mosquito not resting', mosquito.id);
+      return;
+    }
+
+    if (clampPetStatusValue(petStatusRef.current.health) <= 0) {
+      console.log('🦟 Bite skipped: health already 0');
+      return;
+    }
+
+    const biteId = `mosquito-bite-${mosquito.id}-${Date.now()}-${Math.random()}`;
+    console.log('🦟 Bite applied!', {
+      biteId,
+      position: { x: mosquito.restX, y: mosquito.restY },
+      currentHealth: petStatusRef.current.health
+    });
+    const config = mosquitoDebugConfigRef.current;
+    setMosquitoBiteEffects((current) => ([
+      ...current,
+      {
+        id: biteId,
+        x: mosquito.restX,
+        y: mosquito.restY,
+        fontSizePx: config.biteEffectFontSizePx,
+        floatHeightPx: config.biteEffectFloatHeightPx
+      }
+    ]).slice(-1));
+
+    const currentStatus = petStatusRef.current;
+    const nextStatus = {
+      ...currentStatus,
+      health: clampPetStatusValue(currentStatus.health - MOSQUITO_BITE_DAMAGE, { round: false })
+    };
+    const nextTickAt = formatVietnamTimestamp();
+
+    petStatusRef.current = nextStatus;
+    lastStatusTickAtRef.current = nextTickAt;
+    setPetStatus(nextStatus);
+    setLastStatusTickAt(nextTickAt);
+    queueMosquitoBitePetSave({
+      status: nextStatus,
+      lastStatusTickAt: nextTickAt
+    });
+  }, [queueMosquitoBitePetSave]);
+
+  const handleMosquitoTap = useCallback((mosquitoId, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const mosquito = mosquitoesRef.current.find((item) => item.id === mosquitoId);
+    if (!mosquito || mosquito.isDying) {
+      return;
+    }
+
+    const mosquitoRect = event.currentTarget.getBoundingClientRect();
+    const stageRect = petStageRef.current?.getBoundingClientRect();
+    const config = mosquitoDebugConfigRef.current;
+    const stageBoundaryBottom = stageRect
+      ? stageRect.top + (stageRect.height * Math.max(config.stageTopPercent, config.stageBottomPercent)) / 100
+      : 0;
+    const fallTargetY = Math.max(window.innerHeight || 0, stageBoundaryBottom) + 100;
+    const visibleFallDistancePx = Math.max(260, Math.ceil(fallTargetY - mosquitoRect.top + mosquitoRect.height + 12));
+    const removeFallDistancePx = visibleFallDistancePx + 180;
+    const animationDurationMs = Math.min(
+      MOSQUITO_KILL_MAX_ANIMATION_MS,
+      Math.max(MOSQUITO_KILL_MIN_ANIMATION_MS, Math.round((removeFallDistancePx / MOSQUITO_KILL_FALL_SPEED_PX_PER_SEC) * 1000))
+    );
+    const killLeft = stageRect ? mosquitoRect.left - stageRect.left : mosquito.restX - (mosquitoRect.width / 2);
+    const killTop = stageRect ? mosquitoRect.top - stageRect.top : mosquito.restY - (mosquitoRect.height / 2);
+    const fallbackHitX = mosquitoRect.width / 2;
+    const fallbackHitY = mosquitoRect.height / 2;
+    const hitX = Number.isFinite(event.clientX) ? event.clientX - mosquitoRect.left : fallbackHitX;
+    const hitY = Number.isFinite(event.clientY) ? event.clientY - mosquitoRect.top : fallbackHitY;
+
+    syncMosquitoes((current) => current.map((item) => (
+      item.id === mosquitoId
+        ? {
+          ...item,
+          isDying: true,
+          killLeft,
+          killTop,
+          killHitX: Math.round(Math.min(Math.max(hitX, 0), mosquitoRect.width)),
+          killHitY: Math.round(Math.min(Math.max(hitY, 0), mosquitoRect.height)),
+          killAnimationDurationMs: animationDurationMs,
+          killFallVisibleDistancePx: visibleFallDistancePx,
+          killFallDistancePx: removeFallDistancePx,
+          killFallMidDistancePx: Math.round(visibleFallDistancePx * 0.58)
+        }
+        : item
+    )));
+
+    addMosquitoMotionTimer(() => {
+      syncMosquitoes((current) => current.filter((item) => item.id !== mosquitoId));
+    }, animationDurationMs);
+  }, [addMosquitoMotionTimer, syncMosquitoes]);
 
   const getMosquitoFlightBounds = useCallback((config = mosquitoDebugConfigRef.current) => {
     const stageElement = petStageRef.current;
@@ -2745,9 +2942,14 @@ const PetPage = ({ onBack }) => {
     return Math.round(speedMin + Math.random() * Math.max(0, speedMax - speedMin));
   }, []);
 
-  const getRandomMosquitoHoldDuration = useCallback(() => (
-    3000 + Math.round(Math.random() * 4000)
-  ), []);
+  const getRandomMosquitoHoldDuration = useCallback((config = mosquitoDebugConfigRef.current) => {
+    const configHoldMin = config.holdDurationMinMs ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.holdDurationMinMs;
+    const configHoldMax = config.holdDurationMaxMs ?? MOSQUITO_DEBUG_CONFIG_DEFAULTS.holdDurationMaxMs;
+    const holdMin = Math.min(configHoldMin, configHoldMax);
+    const holdMax = Math.max(configHoldMin, configHoldMax);
+
+    return Math.round(holdMin + Math.random() * Math.max(0, holdMax - holdMin));
+  }, []);
 
   const createMosquitoMotionTiming = useCallback((config = mosquitoDebugConfigRef.current, route = {}) => {
     const flightSpeedPxPerSec = getRandomMosquitoFlightSpeed(config);
@@ -2760,7 +2962,7 @@ const PetPage = ({ onBack }) => {
       flightDurationMs: approachDurationMs + exitDurationMs,
       flightSpeedPxPerSec,
       approachDurationMs,
-      holdDurationMs: getRandomMosquitoHoldDuration(),
+      holdDurationMs: getRandomMosquitoHoldDuration(config),
       exitDurationMs
     };
   }, [getRandomMosquitoFlightSpeed, getRandomMosquitoHoldDuration]);
@@ -2768,26 +2970,46 @@ const PetPage = ({ onBack }) => {
   const scheduleMosquitoLifecycle = useCallback((mosquito) => {
     addMosquitoMotionTimer(() => {
       syncMosquitoes((current) => current.map((item) => (
-        item.id === mosquito.id ? { ...item, phase: 'flying-to-pet' } : item
+        item.id === mosquito.id && !item.isDying ? { ...item, phase: 'flying-to-pet' } : item
       )));
     }, 16);
 
     addMosquitoMotionTimer(() => {
       syncMosquitoes((current) => current.map((item) => (
-        item.id === mosquito.id ? { ...item, phase: 'resting-on-pet' } : item
+        item.id === mosquito.id && !item.isDying ? { ...item, phase: 'resting-on-pet' } : item
       )));
     }, mosquito.approachDurationMs + 40);
 
+    const biteTimers = [];
+    for (
+      let biteOffset = MOSQUITO_BITE_START_DELAY_MS;
+      biteOffset < mosquito.holdDurationMs;
+      biteOffset += MOSQUITO_BITE_TICK_MS
+    ) {
+      biteTimers.push(biteOffset);
+      addMosquitoMotionTimer(() => {
+        applyMosquitoBite(mosquito);
+      }, mosquito.approachDurationMs + 40 + biteOffset);
+    }
+    console.log('🦟 Mosquito motion started:', {
+      id: mosquito.id,
+      holdDurationMs: mosquito.holdDurationMs,
+      biteStartDelay: MOSQUITO_BITE_START_DELAY_MS,
+      biteTickMs: MOSQUITO_BITE_TICK_MS,
+      biteTimersScheduled: biteTimers.length,
+      biteTimers
+    });
+
     addMosquitoMotionTimer(() => {
       syncMosquitoes((current) => current.map((item) => (
-        item.id === mosquito.id ? { ...item, phase: 'flying-away' } : item
+        item.id === mosquito.id && !item.isDying ? { ...item, phase: 'flying-away' } : item
       )));
     }, mosquito.approachDurationMs + mosquito.holdDurationMs + 40);
 
     addMosquitoMotionTimer(() => {
       syncMosquitoes((current) => current.filter((item) => item.id !== mosquito.id));
     }, mosquito.approachDurationMs + mosquito.holdDurationMs + mosquito.exitDurationMs + 120);
-  }, [addMosquitoMotionTimer, syncMosquitoes]);
+  }, [addMosquitoMotionTimer, applyMosquitoBite, syncMosquitoes]);
 
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
@@ -2993,6 +3215,19 @@ useEffect(() => {
 
 useEffect(() => {
   mosquitoDebugConfigRef.current = mosquitoDebugConfig;
+
+  if (!mosquitoDebugConfig.isEnabled) {
+    if (mosquitoTimerRef.current) {
+      clearTimeout(mosquitoTimerRef.current);
+      mosquitoTimerRef.current = null;
+    }
+    clearMosquitoMotionTimers();
+    mosquitoesRef.current = [];
+    setMosquitoes([]);
+    setMosquitoBiteEffects([]);
+    return;
+  }
+
   const updatedMosquitoes = mosquitoesRef.current
     .slice(0, mosquitoDebugConfig.maxMosquitoes)
     .map((mosquito) => {
@@ -3026,7 +3261,7 @@ useEffect(() => {
 
 // Mosquito spawn system
 useEffect(() => {
-  if (!isPetReady || !isPageVisible) return undefined;
+  if (!isPetReady || !isPageVisible || !mosquitoDebugConfig.isEnabled) return undefined;
 
   const spawnMosquito = () => {
     const config = mosquitoDebugConfigRef.current;
@@ -3088,12 +3323,13 @@ useEffect(() => {
   isPetReady,
   mosquitoDebugConfig.spawnIntervalMaxMs,
   mosquitoDebugConfig.spawnIntervalMinMs,
+  mosquitoDebugConfig.isEnabled,
   scheduleMosquitoLifecycle,
   syncMosquitoes
 ]);
 
 useEffect(() => {
-  if (isPetReady && isPageVisible) return undefined;
+  if (isPetReady && isPageVisible && mosquitoDebugConfig.isEnabled) return undefined;
 
   if (mosquitoTimerRef.current) {
     clearTimeout(mosquitoTimerRef.current);
@@ -3101,9 +3337,10 @@ useEffect(() => {
   }
   clearMosquitoMotionTimers();
   syncMosquitoes(() => []);
+  setMosquitoBiteEffects([]);
 
   return undefined;
-}, [clearMosquitoMotionTimers, isPageVisible, isPetReady, syncMosquitoes]);
+}, [clearMosquitoMotionTimers, isPageVisible, isPetReady, mosquitoDebugConfig.isEnabled, syncMosquitoes]);
 
 useEffect(() => () => {
   if (mosquitoTimerRef.current) {
@@ -3451,6 +3688,11 @@ useEffect(() => {
       window.clearTimeout(timeoutId);
     });
     careEffectTimeoutsRef.current.clear();
+    if (mosquitoBiteSaveTimerRef.current) {
+      window.clearTimeout(mosquitoBiteSaveTimerRef.current);
+      mosquitoBiteSaveTimerRef.current = null;
+      mosquitoBitePendingSaveRef.current = null;
+    }
     if (sleepTimerRef.current) {
       clearTimeout(sleepTimerRef.current);
     }
@@ -4359,7 +4601,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
         >
           {/* Sun */}
@@ -4653,12 +4895,25 @@ useEffect(() => {
             ))}
           </div>
 
+          <div className="pet-mosquito-bite-effects" aria-hidden="true">
+            {mosquitoBiteEffects.map((effect) => (
+              <PetStageMosquitoBiteEffect
+                key={effect.id}
+                effect={effect}
+                onDone={handleMosquitoBiteEffectDone}
+              />
+            ))}
+          </div>
+
           {/* Mosquitoes */}
           {mosquitoes.map((mosquito) => (
             <div
               key={mosquito.id}
-              className={`pet-mosquito pet-mosquito--${mosquito.phase}`}
+              className={`pet-mosquito pet-mosquito--${mosquito.phase}${mosquito.isDying ? ' pet-mosquito--dying' : ''}`}
               style={{
+                left: mosquito.isDying ? `${mosquito.killLeft ?? 0}px` : undefined,
+                top: mosquito.isDying ? `${mosquito.killTop ?? 0}px` : undefined,
+                animationName: mosquito.isDying ? 'none' : undefined,
                 '--mosquito-flight-duration': `${mosquito.phase === 'flying-away'
                   ? (mosquito.exitDurationMs || mosquito.flightDurationMs || 5000)
                   : (mosquito.approachDurationMs || mosquito.flightDurationMs || 5000)}ms`,
@@ -4675,6 +4930,16 @@ useEffect(() => {
                 '--mosquito-flight-buzz-y': `${Math.min(0.75, mosquito.buzzY * 0.18)}px`,
                 '--mosquito-flight-buzz-y-neg': `${-Math.min(0.75, mosquito.buzzY * 0.18)}px`,
                 '--mosquito-flight-buzz-rotate': `${Math.min(2, mosquito.buzzRotateDeg * 0.18)}deg`,
+                '--mosquito-bite-font-size': `${mosquitoDebugConfig.biteEffectFontSizePx}px`,
+                '--mosquito-bite-float-height': `${mosquitoDebugConfig.biteEffectFloatHeightPx}px`,
+                '--mosquito-bite-tick-duration': `${MOSQUITO_BITE_TICK_MS}ms`,
+                '--mosquito-bite-start-delay': `${MOSQUITO_BITE_START_DELAY_MS}ms`,
+                '--mosquito-kill-duration': `${mosquito.killAnimationDurationMs ?? MOSQUITO_KILL_MIN_ANIMATION_MS}ms`,
+                '--mosquito-hit-x': `${mosquito.killHitX ?? 24}px`,
+                '--mosquito-hit-y': `${mosquito.killHitY ?? 21}px`,
+                '--mosquito-kill-fall-mid-distance': `${mosquito.killFallMidDistancePx ?? 260}px`,
+                '--mosquito-kill-fall-visible-distance': `${mosquito.killFallVisibleDistancePx ?? 520}px`,
+                '--mosquito-kill-fall-distance': `${mosquito.killFallDistancePx ?? 520}px`,
                 '--mosquito-facing-scale-x': mosquito.phase === 'flying-away'
                   ? (mosquito.exitFacingScaleX ?? mosquito.facingScaleX ?? -1)
                   : (mosquito.facingScaleX ?? -1),
@@ -4682,14 +4947,22 @@ useEffect(() => {
                   ? (mosquito.exitFlightTiltDeg ?? mosquito.flightTiltDeg ?? 0)
                   : (mosquito.flightTiltDeg ?? 0)}deg`,
                 '--mosquito-size-scale': mosquitoDebugConfig.sizePercent / 100,
-                offsetPath: `path("${mosquito.phase === 'flying-away'
+                offsetPath: mosquito.isDying ? 'none' : `path("${mosquito.phase === 'flying-away'
                   ? (mosquito.exitPathD || mosquito.pathD)
                   : (mosquito.approachPathD || mosquito.pathD)}")`,
-                WebkitOffsetPath: `path("${mosquito.phase === 'flying-away'
+                WebkitOffsetPath: mosquito.isDying ? 'none' : `path("${mosquito.phase === 'flying-away'
                   ? (mosquito.exitPathD || mosquito.pathD)
                   : (mosquito.approachPathD || mosquito.pathD)}")`
               }}
-              aria-hidden="true"
+              role="button"
+              tabIndex={0}
+              aria-label="Kill mosquito"
+              onPointerDown={(event) => handleMosquitoTap(mosquito.id, event)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  handleMosquitoTap(mosquito.id, event);
+                }
+              }}
             >
               <div className="pet-mosquito__buzz">
                 <div className="pet-mosquito__wing pet-mosquito__wing--left"></div>
