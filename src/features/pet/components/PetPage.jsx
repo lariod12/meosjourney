@@ -250,6 +250,52 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
+const STAGE_RAIN_DEBUG_STORAGE_KEY = 'meo-stage-rain-debug';
+const STAGE_RAIN_DEFAULT_VARIANT = 'light';
+const STAGE_RAIN_VARIANTS = [
+  { key: 'drizzle', label: 'Mưa phùn', description: 'Fine, quiet, sparse' },
+  { key: 'light', label: 'Mưa nhẹ', description: 'Soft layered rain' },
+  { key: 'heavy', label: 'Mưa nặng hạt', description: 'Dense, fast, dramatic' }
+];
+const STAGE_RAIN_VARIANT_CONFIGS = {
+  drizzle: { count: 58, seed: 11, opacity: [0.3, 0.54], duration: [1.8, 3.2], delay: [0, 3.2], height: [26, 44], width: [1, 1], depth: [1, 4], drift: [-2, 2], top: [-92, -28], blur: [0.15, 0.65] },
+  light: { count: 76, seed: 29, opacity: [0.36, 0.68], duration: [1.05, 2.15], delay: [0, 2.4], height: [36, 62], width: [1, 2], depth: [1, 5], drift: [-2, 2], top: [-88, -24], blur: [0, 0.38] },
+  heavy: { count: 112, seed: 47, opacity: [0.48, 0.86], duration: [0.52, 1.18], delay: [0, 1.4], height: [56, 96], width: [1, 3], depth: [1, 6], drift: [-2, 2], top: [-96, -32], blur: [0, 0.22] }
+};
+const createStageRainNoise = (index, seed, offset = 0) => {
+  const value = Math.sin((index + 1) * (seed + 17.17 + offset) * 91.345);
+  return value - Math.floor(value);
+};
+const pickStageRainRange = ([min, max], noise) => min + (max - min) * noise;
+const createStageRainDrops = (variantKey, config) => (
+  Array.from({ length: config.count }, (_, index) => {
+    const depthNoise = createStageRainNoise(index, config.seed, 5);
+    const depth = Math.round(pickStageRainRange(config.depth, depthNoise));
+    const top = pickStageRainRange(config.top, createStageRainNoise(index, config.seed, 2));
+
+    return {
+      id: `${variantKey}-${index}`,
+      left: `${Math.round(pickStageRainRange([-4, 104], createStageRainNoise(index, config.seed, 1)))}%`,
+      top: `${Math.round(top)}%`,
+      endTop: `${Math.round(102 + Math.abs(top) * 0.22 + createStageRainNoise(index, config.seed, 3) * 18)}%`,
+      opacity: pickStageRainRange(config.opacity, createStageRainNoise(index, config.seed, 4)).toFixed(2),
+      duration: `${pickStageRainRange(config.duration, createStageRainNoise(index, config.seed, 6)).toFixed(2)}s`,
+      delay: `-${pickStageRainRange(config.delay, createStageRainNoise(index, config.seed, 7)).toFixed(2)}s`,
+      height: `${Math.round(pickStageRainRange(config.height, createStageRainNoise(index, config.seed, 8)) * (0.78 + depth * 0.08))}px`,
+      width: `${Math.round(pickStageRainRange(config.width, createStageRainNoise(index, config.seed, 9)))}px`,
+      z: depth,
+      drift: `${Math.round(pickStageRainRange(config.drift, createStageRainNoise(index, config.seed, 10)) * (0.8 + depth * 0.08))}px`,
+      blur: `${pickStageRainRange(config.blur, createStageRainNoise(index, config.seed, 11)).toFixed(2)}px`,
+      scale: (0.78 + depth * 0.12).toFixed(2)
+    };
+  })
+);
+const STAGE_RAIN_DROPS_BY_VARIANT = Object.fromEntries(
+  Object.entries(STAGE_RAIN_VARIANT_CONFIGS).map(([variantKey, config]) => [
+    variantKey,
+    createStageRainDrops(variantKey, config)
+  ])
+);
 const PET_STATUS_DECAY_CHUNK_MS = 60 * 60 * 1000;
 const PET_STATUS_SYNC_MIN_MS = 10 * 1000;
 const PET_STATUS_DECAY = {
@@ -1043,6 +1089,10 @@ const clampThermometerPositionValue = (key, value) => {
 
   return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
 };
+
+const normalizeStageRainVariant = (variant) => (
+  STAGE_RAIN_DROPS_BY_VARIANT[variant] ? variant : STAGE_RAIN_DEFAULT_VARIANT
+);
 
 const getBasePetCharacterState = (reactionLevel) => {
   if (reactionLevel === 'critical') return PET_CHARACTER_STATES.critical;
@@ -2172,6 +2222,13 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const [debugCssStatus, setDebugCssStatus] = useState('');
+  const [debugStageRainVariant, setDebugStageRainVariant] = useState(() => {
+    try {
+      return normalizeStageRainVariant(localStorage.getItem(STAGE_RAIN_DEBUG_STORAGE_KEY));
+    } catch {
+      return STAGE_RAIN_DEFAULT_VARIANT;
+    }
+  });
   const [debugCharacterPosition, setDebugCharacterPosition] = useState(() => {
     try {
       const savedPosition = JSON.parse(localStorage.getItem(PET_CHARACTER_POSITION_STORAGE_KEY));
@@ -2415,6 +2472,9 @@ const PetPage = ({ onBack }) => {
     `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
     isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
   ].filter(Boolean).join(' ');
+  const activeStageRainVariant = normalizeStageRainVariant(debugStageRainVariant);
+  const activeStageRainDrops = STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant];
+  const activeStageRainOption = STAGE_RAIN_VARIANTS.find((variant) => variant.key === activeStageRainVariant);
   const petStageStyle = isPetCharacterDebugEnabled
     ? {
       '--pet-character-bottom': `${debugCharacterPosition.bottom}px`,
@@ -2454,6 +2514,15 @@ const PetPage = ({ onBack }) => {
     `  --stage-thermometer-scale: ${debugThermometerPosition.size / 100};`,
     '}'
   ].join('\n'), [debugCharacterPosition, debugPetClickArea, debugThermometerPosition]);
+
+  const updateDebugStageRainVariant = (variant) => {
+    const nextVariant = normalizeStageRainVariant(variant);
+    setDebugStageRainVariant(nextVariant);
+
+    try {
+      localStorage.setItem(STAGE_RAIN_DEBUG_STORAGE_KEY, nextVariant);
+    } catch { }
+  };
 
   const updateDebugCharacterPosition = (key, value) => {
     setDebugCharacterPosition((currentPosition) => {
@@ -4915,7 +4984,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
@@ -4942,6 +5011,29 @@ useEffect(() => {
                   left: `${star.left}%`,
                   top: `${star.top}%`,
                   animationDelay: `${star.delay}s`
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="stage-rain" aria-hidden="true">
+            {activeStageRainDrops.map((drop) => (
+              <i
+                key={drop.id}
+                className="stage-rain__drop"
+                style={{
+                  '--stage-rain-left': drop.left,
+                  '--stage-rain-top': drop.top,
+                  '--stage-rain-end-top': drop.endTop,
+                  '--stage-rain-height': drop.height,
+                  '--stage-rain-width': drop.width,
+                  '--stage-rain-opacity': drop.opacity,
+                  '--stage-rain-duration': drop.duration,
+                  '--stage-rain-delay': drop.delay,
+                  '--stage-rain-z': drop.z,
+                  '--stage-rain-drift': drop.drift,
+                  '--stage-rain-blur': drop.blur,
+                  '--stage-rain-scale': drop.scale
                 }}
               />
             ))}
@@ -4992,6 +5084,7 @@ useEffect(() => {
                     <span>Thermo X: {debugThermometerPosition.x}px</span>
                     <span>Thermo Y: {debugThermometerPosition.y}px</span>
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
+                    <span>Rain: {activeStageRainOption?.label || activeStageRainVariant}</span>
                     <div className="pet-character-debug__actions">
                       <button
                         type="button"
@@ -5012,6 +5105,25 @@ useEffect(() => {
                       <span className="pet-character-debug__status" role="status">{debugCssStatus}</span>
                     )}
                     <pre className="pet-character-debug__css-snippet">{petDebugCssSnippet}</pre>
+                  </div>
+                  <div className="pet-character-debug__controls" aria-label="Rain type controls">
+                    <span className="pet-character-debug__controls-title">Rain type</span>
+                    {STAGE_RAIN_VARIANTS.map((variant) => {
+                      const isActive = activeStageRainVariant === variant.key;
+
+                      return (
+                        <button
+                          key={variant.key}
+                          type="button"
+                          className={`pet-character-debug__option ${isActive ? 'pet-character-debug__option--active' : ''}`}
+                          onClick={() => updateDebugStageRainVariant(variant.key)}
+                          aria-pressed={isActive}
+                        >
+                          <span>{variant.label}</span>
+                          <small>{variant.description}</small>
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Pet click area controls">
                     <span className="pet-character-debug__controls-title">Pet click area</span>
