@@ -3890,11 +3890,18 @@
   offset-distance: 0%;
 }
 
-.pet-mosquito--flying-across {
+.pet-mosquito--flying-to-pet,
+.pet-mosquito--flying-away {
   animation-name: mosquito-path-flight;
 }
 
-.pet-mosquito--flying-across .pet-mosquito__buzz {
+.pet-mosquito--resting-on-pet {
+  offset-distance: 100%;
+}
+
+.pet-mosquito--flying-to-pet .pet-mosquito__buzz,
+.pet-mosquito--resting-on-pet .pet-mosquito__buzz,
+.pet-mosquito--flying-away .pet-mosquito__buzz {
   animation-name: mosquito-buzz-hover;
 }
 
