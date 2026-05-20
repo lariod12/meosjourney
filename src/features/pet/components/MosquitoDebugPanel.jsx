@@ -349,19 +349,6 @@ export default function MosquitoDebugPanel({
 
   return (
     <>
-      {/* Toggle Button */}
-      <div className="mosquito-debug">
-        <button
-          type="button"
-          className="mosquito-debug__toggle"
-          onClick={onToggle}
-          aria-expanded={isOpen}
-          aria-controls="mosquito-debug-panel"
-        >
-          🦟 Mosquito
-        </button>
-      </div>
-
       {panelContent && typeof document !== 'undefined' && createPortal(panelContent, document.body)}
     </>
   );

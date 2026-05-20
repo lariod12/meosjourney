@@ -2388,24 +2388,34 @@ const PetPage = ({ onBack }) => {
     const stageWidth = Math.max(1, stageElement?.clientWidth || window.innerWidth || 1);
     const stageHeight = Math.max(1, stageElement?.clientHeight || window.innerHeight || 1);
     const mosquitoScale = Math.max(0.01, Math.min(2.2, (config.sizePercent || 100) / 100));
-    const mosquitoSizePx = Math.round(48 * mosquitoScale);
-    const mosquitoVisualOverflowPx = Math.round(8 * mosquitoScale);
+    const mosquitoHalfWidthPx = Math.round(24 * mosquitoScale);
+    const mosquitoHalfHeightPx = Math.round(21 * mosquitoScale);
+    const mosquitoVisualOverflowPx = Math.round(10 * mosquitoScale);
     const rawLeft = (stageWidth * config.stageLeftPercent) / 100;
     const rawRight = (stageWidth * config.stageRightPercent) / 100;
     const rawTop = (stageHeight * config.stageTopPercent) / 100;
     const rawBottom = (stageHeight * config.stageBottomPercent) / 100;
-    const leftEdge = Math.min(rawLeft, rawRight) + mosquitoVisualOverflowPx;
-    const rightEdge = Math.max(rawLeft, rawRight);
-    const topEdge = Math.min(rawTop, rawBottom);
-    const bottomEdge = Math.max(rawTop, rawBottom);
-    const right = Math.max(leftEdge, rightEdge - mosquitoSizePx);
-    const bottom = Math.max(topEdge, bottomEdge - mosquitoSizePx);
+    const boundaryLeft = Math.min(rawLeft, rawRight);
+    const boundaryRight = Math.max(rawLeft, rawRight);
+    const boundaryTop = Math.min(rawTop, rawBottom);
+    const boundaryBottom = Math.max(rawTop, rawBottom);
+    const leftEdge = boundaryLeft + mosquitoHalfWidthPx;
+    const rightEdge = boundaryRight - mosquitoHalfWidthPx;
+    const topEdge = boundaryTop + mosquitoHalfHeightPx;
+    const bottomEdge = boundaryBottom - mosquitoHalfHeightPx;
+    const right = Math.max(leftEdge, rightEdge);
+    const bottom = Math.max(topEdge, bottomEdge);
+    const outsideOffsetX = mosquitoHalfWidthPx + mosquitoVisualOverflowPx + 4;
 
     return {
       left: Math.min(leftEdge, right),
       right,
       top: Math.min(topEdge, bottom),
-      bottom
+      bottom,
+      entryLeft: boundaryLeft - outsideOffsetX,
+      entryRight: boundaryRight + outsideOffsetX,
+      pathLeft: boundaryLeft - outsideOffsetX,
+      pathRight: boundaryRight + outsideOffsetX
     };
   }, []);
 
@@ -2415,7 +2425,9 @@ const PetPage = ({ onBack }) => {
       return `M ${formatMosquitoPathNumber(point.x)} ${formatMosquitoPathNumber(point.y)}`;
     }
 
-    const clampX = (value) => formatMosquitoPathNumber(clampMosquitoRouteValue(value, bounds.left, bounds.right));
+    const pathLeft = bounds.pathLeft ?? bounds.left;
+    const pathRight = bounds.pathRight ?? bounds.right;
+    const clampX = (value) => formatMosquitoPathNumber(clampMosquitoRouteValue(value, pathLeft, pathRight));
     const clampY = (value) => formatMosquitoPathNumber(clampMosquitoRouteValue(value, bounds.top, bounds.bottom));
     const path = [`M ${clampX(points[0].x)} ${clampY(points[0].y)}`];
     const tension = 0.38;
@@ -2449,8 +2461,8 @@ const PetPage = ({ onBack }) => {
     const startY = seedY === null
       ? bounds.top + Math.random() * Math.max(0, bounds.bottom - bounds.top)
       : Math.min(bounds.bottom, Math.max(bounds.top, seedY));
-    const startX = entrySide === 'left' ? bounds.left : bounds.right;
-    const exitX = entrySide === 'left' ? bounds.right : bounds.left;
+    const startX = entrySide === 'left' ? bounds.entryLeft : bounds.entryRight;
+    const exitX = entrySide === 'left' ? bounds.entryRight : bounds.entryLeft;
     const direction = entrySide === 'left' ? 1 : -1;
     const width = Math.max(1, bounds.right - bounds.left);
     const height = Math.max(1, bounds.bottom - bounds.top);
@@ -2471,7 +2483,7 @@ const PetPage = ({ onBack }) => {
     for (let index = 1; index < segmentCount; index += 1) {
       const progress = index / segmentCount;
       const progressJitter = (Math.random() - 0.5) * (0.22 / segmentCount);
-      const baseX = startX + (exitX - startX) * progress;
+      const baseX = bounds.left + (bounds.right - bounds.left) * progress;
       const x = clampMosquitoRouteValue(
         baseX + direction * width * progressJitter,
         safeLeft,
@@ -4178,6 +4190,16 @@ useEffect(() => {
               </button>
               {isCharacterDebugOpen && (
                 <div id="pet-character-debug-panel" className="pet-character-debug__panel">
+                  <button
+                    type="button"
+                    className={`pet-character-debug__option ${isMosquitoDebugOpen ? 'pet-character-debug__option--active' : ''}`}
+                    onClick={() => setIsMosquitoDebugOpen(v => !v)}
+                    aria-expanded={isMosquitoDebugOpen}
+                    aria-controls="mosquito-debug-panel"
+                  >
+                    <span>Mosquito</span>
+                    <small>{isMosquitoDebugOpen ? 'Debug panel open' : 'Open mosquito debug panel'}</small>
+                  </button>
                   <div className="pet-character-debug__current">
                     <span>State: {activePetCharacterPresentation.state}</span>
                     <span>Effect: {activePetCharacterPresentation.effect}</span>

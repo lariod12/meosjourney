@@ -120,10 +120,13 @@
 }
 
 .pet-character-debug {
-  position: absolute;
-  z-index: 18;
-  right: 14px;
-  top: 78px;
+  --pet-debug-top: 128px;
+  --pet-debug-panel-offset: 58px;
+  --pet-debug-bottom-clearance: 50px;
+  position: fixed;
+  z-index: 1000;
+  right: max(14px, calc((100vw - 520px) / 2 + 14px));
+  top: var(--pet-debug-top);
   display: grid;
   justify-items: end;
   gap: 8px;
@@ -151,8 +154,9 @@
 
 .pet-character-debug__panel {
   width: min(268px, calc(100vw - 32px));
-  max-height: min(420px, calc(100dvh - 116px));
+  max-height: max(180px, calc(max(480px, 58dvh) - var(--pet-debug-top) - var(--pet-debug-panel-offset) - var(--pet-debug-bottom-clearance)));
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 10px;
   border: 3px solid #000000;
   border-radius: 8px;
