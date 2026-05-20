@@ -785,6 +785,7 @@ const PET_CHARACTER_DEBUG_PRESETS = [
 ];
 
 const PET_CHARACTER_POSITION_STORAGE_KEY = 'meo-pet-character-position-debug';
+const PET_DEBUG_CSS_SNAPSHOT_STORAGE_KEY = 'meo-pet-debug-css-snapshot';
 const PET_CHARACTER_POSITION_DEFAULTS = {
   bottom: 44,
   shadowGap: -8,
@@ -812,6 +813,27 @@ const PET_CHARACTER_POSITION_CONTROLS = [
   { key: 'cameraArmWidth', label: 'Camera arm width', unit: 'px' },
   { key: 'cameraArmHeight', label: 'Camera arm height', unit: 'px' },
   { key: 'cameraArmRotate', label: 'Camera arm rotate', unit: 'deg' }
+];
+
+const PET_CLICK_AREA_DEBUG_STORAGE_KEY = 'meo-pet-click-area-debug';
+const PET_CLICK_AREA_DEBUG_DEFAULTS = {
+  visible: false,
+  x: 0,
+  y: -20,
+  width: 196,
+  height: 228
+};
+const PET_CLICK_AREA_DEBUG_LIMITS = {
+  x: { min: -140, max: 140 },
+  y: { min: -140, max: 100 },
+  width: { min: 0, max: 300 },
+  height: { min: 100, max: 340 }
+};
+const PET_CLICK_AREA_DEBUG_CONTROLS = [
+  { key: 'x', label: 'Click area X', unit: 'px' },
+  { key: 'y', label: 'Click area Y', unit: 'px' },
+  { key: 'width', label: 'Click area width', unit: 'px' },
+  { key: 'height', label: 'Click area height', unit: 'px' }
 ];
 
 const STAGE_THERMOMETER_POSITION_STORAGE_KEY = 'meo-stage-thermometer-position-debug-v2';
@@ -923,6 +945,17 @@ const clampCharacterPositionValue = (key, value) => {
 
   if (!limits || !Number.isFinite(numericValue)) {
     return PET_CHARACTER_POSITION_DEFAULTS[key];
+  }
+
+  return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
+};
+
+const clampPetClickAreaDebugValue = (key, value) => {
+  const limits = PET_CLICK_AREA_DEBUG_LIMITS[key];
+  const numericValue = Number(value);
+
+  if (!limits || !Number.isFinite(numericValue)) {
+    return PET_CLICK_AREA_DEBUG_DEFAULTS[key];
   }
 
   return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
@@ -2032,6 +2065,7 @@ const PetPage = ({ onBack }) => {
   const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
+  const [debugCssStatus, setDebugCssStatus] = useState('');
   const [debugCharacterPosition, setDebugCharacterPosition] = useState(() => {
     try {
       const savedPosition = JSON.parse(localStorage.getItem(PET_CHARACTER_POSITION_STORAGE_KEY));
@@ -2060,6 +2094,21 @@ const PetPage = ({ onBack }) => {
       };
     } catch {
       return { ...STAGE_THERMOMETER_POSITION_DEFAULTS };
+    }
+  });
+  const [debugPetClickArea, setDebugPetClickArea] = useState(() => {
+    try {
+      const savedClickArea = JSON.parse(localStorage.getItem(PET_CLICK_AREA_DEBUG_STORAGE_KEY));
+
+      return {
+        visible: savedClickArea?.visible === true,
+        x: clampPetClickAreaDebugValue('x', savedClickArea?.x),
+        y: clampPetClickAreaDebugValue('y', savedClickArea?.y),
+        width: clampPetClickAreaDebugValue('width', savedClickArea?.width),
+        height: clampPetClickAreaDebugValue('height', savedClickArea?.height)
+      };
+    } catch {
+      return { ...PET_CLICK_AREA_DEBUG_DEFAULTS };
     }
   });
   const cameraPoseTimerRef = useRef(null);
@@ -2240,7 +2289,8 @@ const PetPage = ({ onBack }) => {
     cameraPhase === 'raising' ? 'pet-character--camera-raising' : '',
     cameraPhase === 'capturing' ? 'pet-character--camera-capturing' : '',
     cameraPhase === 'flash' ? 'pet-character--camera-flash' : '',
-    cameraPhase === 'lowering' ? 'pet-character--camera-lowering' : ''
+    cameraPhase === 'lowering' ? 'pet-character--camera-lowering' : '',
+    isPetCharacterDebugEnabled && debugPetClickArea.visible ? 'pet-character--debug-click-area' : ''
   ].filter(Boolean).join(' ');
   const petCharacterShadowClassName = [
     'pet-character__shadow',
@@ -2256,7 +2306,11 @@ const PetPage = ({ onBack }) => {
       '--pet-camera-arm-top': `${debugCharacterPosition.cameraArmTop}px`,
       '--pet-camera-arm-width': `${debugCharacterPosition.cameraArmWidth}px`,
       '--pet-camera-arm-height': `${debugCharacterPosition.cameraArmHeight}px`,
-      '--pet-camera-arm-rotate': `${debugCharacterPosition.cameraArmRotate}deg`
+      '--pet-camera-arm-rotate': `${debugCharacterPosition.cameraArmRotate}deg`,
+      '--pet-click-area-x': `${debugPetClickArea.x}px`,
+      '--pet-click-area-y': `${debugPetClickArea.y}px`,
+      '--pet-click-area-width': `${debugPetClickArea.width}px`,
+      '--pet-click-area-height': `${debugPetClickArea.height}px`
     }
     : undefined;
   const stageThermometerStyle = {
@@ -2265,6 +2319,24 @@ const PetPage = ({ onBack }) => {
     '--stage-thermometer-y': `${debugThermometerPosition.y}px`,
     '--stage-thermometer-scale': debugThermometerPosition.size / 100
   };
+  const petDebugCssSnippet = useMemo(() => [
+    '.pet-stage {',
+    `  --pet-character-bottom: ${debugCharacterPosition.bottom}px;`,
+    `  --pet-shadow-gap: ${debugCharacterPosition.shadowGap}px;`,
+    `  --pet-camera-arm-x: ${debugCharacterPosition.cameraArmX}px;`,
+    `  --pet-camera-arm-top: ${debugCharacterPosition.cameraArmTop}px;`,
+    `  --pet-camera-arm-width: ${debugCharacterPosition.cameraArmWidth}px;`,
+    `  --pet-camera-arm-height: ${debugCharacterPosition.cameraArmHeight}px;`,
+    `  --pet-camera-arm-rotate: ${debugCharacterPosition.cameraArmRotate}deg;`,
+    `  --pet-click-area-x: ${debugPetClickArea.x}px;`,
+    `  --pet-click-area-y: ${debugPetClickArea.y}px;`,
+    `  --pet-click-area-width: ${debugPetClickArea.width}px;`,
+    `  --pet-click-area-height: ${debugPetClickArea.height}px;`,
+    `  --stage-thermometer-x: ${debugThermometerPosition.x}px;`,
+    `  --stage-thermometer-y: ${debugThermometerPosition.y}px;`,
+    `  --stage-thermometer-scale: ${debugThermometerPosition.size / 100};`,
+    '}'
+  ].join('\n'), [debugCharacterPosition, debugPetClickArea, debugThermometerPosition]);
 
   const updateDebugCharacterPosition = (key, value) => {
     setDebugCharacterPosition((currentPosition) => {
@@ -2310,6 +2382,67 @@ const PetPage = ({ onBack }) => {
     try {
       localStorage.removeItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY);
     } catch { }
+  };
+
+  const saveDebugPetClickArea = (nextClickArea) => {
+    try {
+      localStorage.setItem(PET_CLICK_AREA_DEBUG_STORAGE_KEY, JSON.stringify(nextClickArea));
+    } catch { }
+  };
+
+  const updateDebugPetClickArea = (key, value) => {
+    setDebugPetClickArea((currentClickArea) => {
+      const nextClickArea = {
+        ...currentClickArea,
+        [key]: key === 'visible'
+          ? Boolean(value)
+          : clampPetClickAreaDebugValue(key, value)
+      };
+
+      saveDebugPetClickArea(nextClickArea);
+
+      return nextClickArea;
+    });
+  };
+
+  const resetDebugPetClickArea = () => {
+    const nextClickArea = {
+      ...PET_CLICK_AREA_DEBUG_DEFAULTS,
+      visible: debugPetClickArea.visible
+    };
+
+    setDebugPetClickArea(nextClickArea);
+    saveDebugPetClickArea(nextClickArea);
+  };
+
+  const savePetDebugCssSnapshot = () => {
+    try {
+      localStorage.setItem(PET_DEBUG_CSS_SNAPSHOT_STORAGE_KEY, petDebugCssSnippet);
+      setDebugCssStatus('CSS saved');
+    } catch {
+      setDebugCssStatus('Save failed');
+    }
+  };
+
+  const copyPetDebugCssSnapshot = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(petDebugCssSnippet);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = petDebugCssSnippet;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setDebugCssStatus('CSS copied');
+    } catch {
+      setDebugCssStatus('Copy failed');
+    }
   };
 
   const updateMosquitoDebugConfig = (key, value) => {
@@ -4210,9 +4343,63 @@ useEffect(() => {
                     <span>Camera arm top: {debugCharacterPosition.cameraArmTop}px</span>
                     <span>Camera arm size: {debugCharacterPosition.cameraArmWidth}px x {debugCharacterPosition.cameraArmHeight}px</span>
                     <span>Camera arm rotate: {debugCharacterPosition.cameraArmRotate}deg</span>
+                    <span>Click area: {debugPetClickArea.visible ? 'shown' : 'hidden'} - {debugPetClickArea.width}px x {debugPetClickArea.height}px</span>
+                    <span>Click area offset: {debugPetClickArea.x}px, {debugPetClickArea.y}px</span>
                     <span>Thermo X: {debugThermometerPosition.x}px</span>
                     <span>Thermo Y: {debugThermometerPosition.y}px</span>
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
+                    <div className="pet-character-debug__actions">
+                      <button
+                        type="button"
+                        className="pet-character-debug__reset"
+                        onClick={savePetDebugCssSnapshot}
+                      >
+                        Save CSS
+                      </button>
+                      <button
+                        type="button"
+                        className="pet-character-debug__reset"
+                        onClick={copyPetDebugCssSnapshot}
+                      >
+                        Copy CSS
+                      </button>
+                    </div>
+                    {debugCssStatus && (
+                      <span className="pet-character-debug__status" role="status">{debugCssStatus}</span>
+                    )}
+                    <pre className="pet-character-debug__css-snippet">{petDebugCssSnippet}</pre>
+                  </div>
+                  <div className="pet-character-debug__controls" aria-label="Pet click area controls">
+                    <span className="pet-character-debug__controls-title">Pet click area</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugPetClickArea.visible ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugPetClickArea('visible', !debugPetClickArea.visible)}
+                      aria-pressed={debugPetClickArea.visible}
+                    >
+                      <span>Show click area</span>
+                      <small>{debugPetClickArea.visible ? 'On - visible after closing Debug' : 'Off'}</small>
+                    </button>
+                    {PET_CLICK_AREA_DEBUG_CONTROLS.map((control) => (
+                      <label className="pet-character-debug__control" key={control.key}>
+                        <span>{control.label}: {debugPetClickArea[control.key]}{control.unit}</span>
+                        <input
+                          type="range"
+                          min={PET_CLICK_AREA_DEBUG_LIMITS[control.key].min}
+                          max={PET_CLICK_AREA_DEBUG_LIMITS[control.key].max}
+                          step="1"
+                          value={debugPetClickArea[control.key]}
+                          onChange={(event) => updateDebugPetClickArea(control.key, event.target.value)}
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="pet-character-debug__reset"
+                      onClick={resetDebugPetClickArea}
+                    >
+                      Reset click area
+                    </button>
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Character position controls">
                     <span className="pet-character-debug__controls-title">Character position</span>
@@ -4472,13 +4659,16 @@ useEffect(() => {
 
           <div
             className={petCharacterClassName}
-            role="button"
-            tabIndex={isAwakening || isPetPhotoModalOpen ? -1 : 0}
-            aria-label={isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control'}
-            aria-pressed={isPetCameraControlVisible || isCameraPoseActive}
-            onClick={handlePetCharacterCameraToggle}
-            onKeyDown={handlePetCharacterCameraKeyDown}
           >
+            <button
+              type="button"
+              className="pet-character__hit-area"
+              disabled={isAwakening || isPetPhotoModalOpen}
+              aria-label={isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control'}
+              aria-pressed={isPetCameraControlVisible || isCameraPoseActive}
+              onClick={handlePetCharacterCameraToggle}
+              onKeyDown={handlePetCharacterCameraKeyDown}
+            />
             <MeoBoxPetCharacter state={activePetCharacterPresentation.state} />
             <span className="pet-character__camera" aria-hidden="true">
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--left" />
