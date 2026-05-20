@@ -258,9 +258,9 @@ const STAGE_RAIN_VARIANTS = [
   { key: 'heavy', label: 'Mưa nặng hạt', description: 'Dense, fast, dramatic' }
 ];
 const STAGE_RAIN_VARIANT_CONFIGS = {
-  drizzle: { count: 58, seed: 11, opacity: [0.3, 0.54], duration: [1.8, 3.2], delay: [0, 3.2], height: [26, 44], width: [1, 1], depth: [1, 4], drift: [-2, 2], top: [-92, -28], blur: [0.15, 0.65] },
-  light: { count: 76, seed: 29, opacity: [0.36, 0.68], duration: [1.05, 2.15], delay: [0, 2.4], height: [36, 62], width: [1, 2], depth: [1, 5], drift: [-2, 2], top: [-88, -24], blur: [0, 0.38] },
-  heavy: { count: 112, seed: 47, opacity: [0.48, 0.86], duration: [0.52, 1.18], delay: [0, 1.4], height: [56, 96], width: [1, 3], depth: [1, 6], drift: [-2, 2], top: [-96, -32], blur: [0, 0.22] }
+  drizzle: { count: 88, seed: 11, opacity: [0.25, 0.62], duration: [0.8, 1.6], delay: [0, 1.8], height: [18, 32], width: [1, 2], depth: [1, 6], drift: [-3, 3], top: [-96, -24], blur: [0.1, 0.85] },
+  light: { count: 116, seed: 29, opacity: [0.32, 0.76], duration: [0.5, 1.2], delay: [0, 1.4], height: [22, 42], width: [1, 3], depth: [1, 7], drift: [-3, 3], top: [-92, -20], blur: [0, 0.52] },
+  heavy: { count: 168, seed: 47, opacity: [0.42, 0.92], duration: [0.25, 0.7], delay: [0, 0.9], height: [32, 62], width: [1, 4], depth: [1, 8], drift: [-4, 4], top: [-100, -28], blur: [0, 0.32] }
 };
 const createStageRainNoise = (index, seed, offset = 0) => {
   const value = Math.sin((index + 1) * (seed + 17.17 + offset) * 91.345);
@@ -2474,6 +2474,42 @@ const PetPage = ({ onBack }) => {
   ].filter(Boolean).join(' ');
   const activeStageRainVariant = normalizeStageRainVariant(debugStageRainVariant);
   const activeStageRainDrops = STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant];
+  const activeStageRainBackDrops = activeStageRainDrops.filter((drop) => drop.z <= 3);
+  const activeStageRainFrontDrops = activeStageRainDrops.filter((drop) => drop.z > 3);
+
+  // Split front drops into multiple zones scattered across stage
+  const frontZoneCount = 5; // Number of rain zones
+  const frontDropsPerZone = Math.ceil(activeStageRainFrontDrops.length / frontZoneCount);
+  const activeStageRainFrontZones = Array.from({ length: frontZoneCount }, (_, zoneIndex) => {
+    const startIdx = zoneIndex * frontDropsPerZone;
+    const endIdx = Math.min(startIdx + frontDropsPerZone, activeStageRainFrontDrops.length);
+    const drops = activeStageRainFrontDrops.slice(startIdx, endIdx);
+
+    // Deterministic position for each zone (spread evenly with overlap)
+    const zoneLeft = (zoneIndex * 18) % 75; // 0%, 18%, 36%, 54%, 72%
+    const zoneWidth = 25 + (zoneIndex * 7) % 30; // 25-55% varying widths
+
+    // Create multiple vertical layers for each zone
+    const layerCount = 3; // 3 layers per zone
+    const layers = Array.from({ length: layerCount }, (_, layerIndex) => {
+      const topOffset = -150 + (layerIndex * 80); // -150px, -70px, 10px
+      const bottomOffset = -20 + (layerIndex * 60); // -20px, 40px, 100px
+
+      return {
+        top: `${topOffset}px`,
+        bottom: `${bottomOffset}px`,
+        opacity: 0.78 - (layerIndex * 0.15) // Fade out as we go down
+      };
+    });
+
+    return {
+      drops,
+      left: `${zoneLeft}%`,
+      width: `${zoneWidth}%`,
+      layers
+    };
+  }).filter(zone => zone.drops.length > 0);
+
   const activeStageRainOption = STAGE_RAIN_VARIANTS.find((variant) => variant.key === activeStageRainVariant);
   const petStageStyle = isPetCharacterDebugEnabled
     ? {
@@ -5016,8 +5052,8 @@ useEffect(() => {
             ))}
           </div>
 
-          <div className="stage-rain" aria-hidden="true">
-            {activeStageRainDrops.map((drop) => (
+          <div className="stage-rain stage-rain--back" aria-hidden="true">
+            {activeStageRainBackDrops.map((drop) => (
               <i
                 key={drop.id}
                 className="stage-rain__drop"
@@ -5040,7 +5076,46 @@ useEffect(() => {
           </div>
 
           {/* Ground line */}
-          <div className="stage-ground" aria-hidden="true"></div>
+          <div className="stage-ground" aria-hidden="true" />
+
+          {/* Multiple front rain zones scattered across stage with vertical layers */}
+          {activeStageRainFrontZones.map((zone, zoneIndex) => (
+            zone.layers.map((layer, layerIndex) => (
+              <div
+                key={`front-zone-${zoneIndex}-layer-${layerIndex}`}
+                className="stage-rain stage-rain--front"
+                style={{
+                  left: zone.left,
+                  width: zone.width,
+                  top: layer.top,
+                  bottom: layer.bottom,
+                  opacity: layer.opacity
+                }}
+                aria-hidden="true"
+              >
+                {zone.drops.map((drop) => (
+                  <i
+                    key={`front-${drop.id}-layer-${layerIndex}`}
+                    className="stage-rain__drop"
+                    style={{
+                      '--stage-rain-left': drop.left,
+                      '--stage-rain-top': drop.top,
+                      '--stage-rain-end-top': drop.endTop,
+                      '--stage-rain-height': drop.height,
+                      '--stage-rain-width': drop.width,
+                      '--stage-rain-opacity': drop.opacity,
+                      '--stage-rain-duration': drop.duration,
+                      '--stage-rain-delay': drop.delay,
+                      '--stage-rain-z': drop.z,
+                      '--stage-rain-drift': drop.drift,
+                      '--stage-rain-blur': drop.blur,
+                      '--stage-rain-scale': drop.scale
+                    }}
+                  />
+                ))}
+              </div>
+            ))
+          ))}
           <span
             className={`pet-stage-camera-flash-screen ${cameraPhase === 'flash' ? 'pet-stage-camera-flash-screen--active' : ''}`}
             aria-hidden="true"
