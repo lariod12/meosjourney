@@ -42,6 +42,8 @@ import ConfirmActivityModal from './ConfirmActivityModal';
 import UpdateLocationModal from './UpdateLocationModal';
 import '../styles/pet.css';
 
+const IS_PRODUCTION_MODE = import.meta.env.MODE === 'production';
+
 // Get time period based on current hour
 const getTimePeriod = () => {
   const hour = new Date().getHours();
@@ -2242,6 +2244,10 @@ const PetPage = ({ onBack }) => {
   const [weatherRainVariant, setWeatherRainVariant] = useState(null); // Auto rain from weather API
   const [isWeatherLoading, setIsWeatherLoading] = useState(true);
   const [debugCharacterPosition, setDebugCharacterPosition] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return { ...PET_CHARACTER_POSITION_DEFAULTS };
+    }
+
     try {
       const savedPosition = JSON.parse(localStorage.getItem(PET_CHARACTER_POSITION_STORAGE_KEY));
 
@@ -2259,6 +2265,10 @@ const PetPage = ({ onBack }) => {
     }
   });
   const [debugThermometerPosition, setDebugThermometerPosition] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return { ...STAGE_THERMOMETER_POSITION_DEFAULTS };
+    }
+
     try {
       const savedPosition = JSON.parse(localStorage.getItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY));
 
@@ -2272,6 +2282,10 @@ const PetPage = ({ onBack }) => {
     }
   });
   const [debugPetClickArea, setDebugPetClickArea] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return { ...PET_CLICK_AREA_DEBUG_DEFAULTS };
+    }
+
     try {
       const savedClickArea = JSON.parse(localStorage.getItem(PET_CLICK_AREA_DEBUG_STORAGE_KEY));
 
@@ -2316,6 +2330,10 @@ const PetPage = ({ onBack }) => {
   const [mosquitoEventWaveInfo, setMosquitoEventWaveInfo] = useState({ total: 0, spawned: 0 });
   const [isMosquitoDebugOpen, setIsMosquitoDebugOpen] = useState(false);
   const [mosquitoDebugConfig, setMosquitoDebugConfig] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return { ...MOSQUITO_DEBUG_CONFIG_DEFAULTS };
+    }
+
     try {
       const saved = localStorage.getItem(MOSQUITO_DEBUG_CONFIG_STORAGE_KEY);
       return saved
@@ -2428,7 +2446,7 @@ const PetPage = ({ onBack }) => {
   // Use real temperature if available, otherwise fallback to mock data
   const stageTemperature = realTemperature || (STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning);
 
-  const isPetCharacterDebugEnabled = import.meta.env.MODE !== 'production';
+  const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
 
   const TABS_PER_PAGE = 4;
   const totalPages = Math.ceil(TABS.length / TABS_PER_PAGE);
