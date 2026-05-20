@@ -149,7 +149,7 @@ Quests and achievements load afterward in the background to avoid blocking first
 - retry/backoff handling for rate limits
 - in-flight request deduplication
 - image upload and signed URL handling
-- CRUD functions for status, profile, journals, quests, achievements, confirmations, galleries, and albums
+- CRUD functions for status, profile, journals, quests, achievements, confirmations, galleries, albums, pet state, and event state
 
 ### Refresh Behavior
 

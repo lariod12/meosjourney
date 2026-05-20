@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
+const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v3';
 const DEFAULT_FLIGHT_SPEED_MIN = 45;
-const DEFAULT_FLIGHT_SPEED_MAX = 70;
+const DEFAULT_FLIGHT_SPEED_MAX = 199;
 const DEFAULT_HOLD_DURATION_MIN_MS = 3000;
 const DEFAULT_HOLD_DURATION_MAX_MS = 7000;
-const DEFAULT_BITE_EFFECT_FONT_SIZE_PX = 34;
+const DEFAULT_BITE_EFFECT_FONT_SIZE_PX = 21;
 const DEFAULT_BITE_EFFECT_FLOAT_HEIGHT_PX = 96;
 
 export default function MosquitoDebugPanel({
@@ -15,6 +15,12 @@ export default function MosquitoDebugPanel({
   config,
   onUpdateConfig,
   onReset,
+  onStartEventNow,
+  eventStatus,
+  isEventForced,
+  totalWaves,
+  spawnedWaves,
+  completedAt,
   mosquitoes
 }) {
   const [saveStatus, setSaveStatus] = useState('');
@@ -114,6 +120,24 @@ export default function MosquitoDebugPanel({
                 <span className="mosquito-debug__status-value">{config.isEnabled === false ? 'Off' : 'On'}</span>
               </div>
               <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Event:</span>
+                <span className="mosquito-debug__status-value">{eventStatus || 'Idle'}</span>
+              </div>
+              <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Waves:</span>
+                <span className="mosquito-debug__status-value">{spawnedWaves || 0} / {totalWaves || 0}</span>
+              </div>
+              <div className="mosquito-debug__status-item">
+                <span className="mosquito-debug__status-label">Wave random:</span>
+                <span className="mosquito-debug__status-value">{config.eventWavesMin} - {config.eventWavesMax}</span>
+              </div>
+              {completedAt && (
+                <div className="mosquito-debug__status-item">
+                  <span className="mosquito-debug__status-label">Completed:</span>
+                  <span className="mosquito-debug__status-value">{completedAt}</span>
+                </div>
+              )}
+              <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Stage:</span>
                 <span className="mosquito-debug__status-value">{config.stageTopPercent}% - {config.stageBottomPercent}%</span>
               </div>
@@ -165,6 +189,13 @@ export default function MosquitoDebugPanel({
                 onClick={handleCopySettings}
               >
                 Copy Snippet
+              </button>
+              <button
+                type="button"
+                className={`mosquito-debug__action ${isEventForced ? 'mosquito-debug__action--active' : ''}`}
+                onClick={onStartEventNow}
+              >
+                {isEventForced ? 'Stop Forced Event' : 'Start Event Now'}
               </button>
             </div>
             {(saveStatus || copyStatus) && (
@@ -236,6 +267,30 @@ export default function MosquitoDebugPanel({
                 step="100"
                 value={config.spawnIntervalMaxMs}
                 onChange={(e) => onUpdateConfig('spawnIntervalMaxMs', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Wave min: <strong>{config.eventWavesMin}</strong></span>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                step="1"
+                value={config.eventWavesMin}
+                onChange={(e) => onUpdateConfig('eventWavesMin', Number(e.target.value))}
+              />
+            </label>
+
+            <label className="mosquito-debug__control">
+              <span className="mosquito-debug__control-label">Wave max: <strong>{config.eventWavesMax}</strong></span>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                step="1"
+                value={config.eventWavesMax}
+                onChange={(e) => onUpdateConfig('eventWavesMax', Number(e.target.value))}
               />
             </label>
           </div>

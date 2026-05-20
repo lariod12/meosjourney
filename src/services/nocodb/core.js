@@ -31,7 +31,8 @@ const TABLE_IDS_PRODUCTION = {
   ACHIEVEMENTS_CONFIRM: 'mcynwxx2hpgcolt',
   ATTACHMENTS_GALLERY: 'mirssuqhjx529p5',
   ATTACHMENTS_ALBUM: 'mc6wu0v542g2bnr',
-  PET: 'm5o1zjxu784d955'
+  PET: 'm5o1zjxu784d955',
+  EVENTS: 'mumk1fgly3ngyfw'
 };
 
 const TABLE_IDS_DEVELOPE = {
@@ -46,7 +47,8 @@ const TABLE_IDS_DEVELOPE = {
   ACHIEVEMENTS_CONFIRM: 'mv0l9jz8fhf1gjl',
   ATTACHMENTS_GALLERY: 'mpp72hgqxpn2p3k',
   ATTACHMENTS_ALBUM: 'mkwz7hrtyzkvji6',
-  PET: null
+  PET: null,
+  EVENTS: null
 };
 
 const TABLE_IDS_STAGING = {
@@ -61,7 +63,8 @@ const TABLE_IDS_STAGING = {
   ACHIEVEMENTS_CONFIRM: 'mhnkt1bvw6mnihs',
   ATTACHMENTS_GALLERY: 'mxqkll1rnp0br3r',
   ATTACHMENTS_ALBUM: 'm1fu2odaxm7zj11',
-  PET: 'mubxl2iof13o7de'
+  PET: 'mubxl2iof13o7de',
+  EVENTS: 'm321slymq8whnye'
 };
 
 // Use appropriate table IDs based on environment

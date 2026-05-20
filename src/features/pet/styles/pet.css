@@ -4590,12 +4590,22 @@
   box-shadow: 3px 3px 0 #666666;
 }
 
+.mosquito-debug__action--active {
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 3px 3px 0 #666666;
+}
+
 .mosquito-debug__action:hover {
   transform: translateY(-1px);
   box-shadow: 4px 4px 0 #000000;
 }
 
 .mosquito-debug__action--dark:hover {
+  box-shadow: 4px 4px 0 #666666;
+}
+
+.mosquito-debug__action--active:hover {
   box-shadow: 4px 4px 0 #666666;
 }
 

@@ -22,8 +22,10 @@ import {
   CHARACTER_ID,
   clearNocoDBCache,
   fetchPet,
+  fetchPetEvents,
   fetchStatus,
   savePet,
+  savePetEvents,
   saveStatus,
   savePhotoAlbum,
   uploadProfileGalleryImages
@@ -853,7 +855,13 @@ const STAGE_THERMOMETER_POSITION_CONTROLS = [
   { key: 'size', label: 'Thermo size', unit: '%' }
 ];
 
-const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v2';
+const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v3';
+const MOSQUITO_EVENT_EVENING_START_HOUR = 18;
+const MOSQUITO_EVENT_EVENING_END_HOUR = 23;
+const MOSQUITO_EVENT_NIGHT_START_HOUR = 0;
+const MOSQUITO_EVENT_NIGHT_END_HOUR = 3;
+const MOSQUITO_EVENT_MIN_WAVES = 3;
+const MOSQUITO_EVENT_MAX_WAVES = 5;
 const MOSQUITO_WING_FLAP_DURATION_MS = 25;
 const MOSQUITO_BITE_START_DELAY_MS = 420;
 const MOSQUITO_BITE_TICK_MS = 1250;
@@ -863,29 +871,31 @@ const MOSQUITO_KILL_MAX_ANIMATION_MS = 2600;
 const MOSQUITO_KILL_FALL_SPEED_PX_PER_SEC = 620;
 const MOSQUITO_DEBUG_CONFIG_DEFAULTS = {
   isEnabled: true,
-  stageTopPercent: 0,
-  stageBottomPercent: 60,
+  stageTopPercent: 51,
+  stageBottomPercent: 86,
   stageLeftPercent: 0,
   stageRightPercent: 100,
   showBoundaries: true,
-  showPaths: true,
+  showPaths: false,
   spawnIntervalMinMs: 3000,
   spawnIntervalMaxMs: 5000,
+  eventWavesMin: MOSQUITO_EVENT_MIN_WAVES,
+  eventWavesMax: MOSQUITO_EVENT_MAX_WAVES,
   mosquitoesPerSpawnMin: 1,
   mosquitoesPerSpawnMax: 3,
-  maxMosquitoes: 10,
+  maxMosquitoes: 5,
   flightSpeedMinPxPerSec: 45,
-  flightSpeedMaxPxPerSec: 70,
+  flightSpeedMaxPxPerSec: 199,
   holdDurationMinMs: 3000,
   holdDurationMaxMs: 7000,
-  biteEffectFontSizePx: 34,
+  biteEffectFontSizePx: 21,
   biteEffectFloatHeightPx: 96,
-  sizePercent: 210,
+  sizePercent: 30,
   bodyBuzzDurationMs: 315,
   bodyBuzzX: 1,
   bodyBuzzY: 1,
   bodyBuzzRotateDeg: 2,
-  curveAmountPercent: 56
+  curveAmountPercent: 10
 };
 
 const clampMosquitoNumber = (value, fallback, min, max) => {
@@ -916,6 +926,8 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
     stageRightPercent: clampMosquitoNumber(config.stageRightPercent, MOSQUITO_DEBUG_CONFIG_DEFAULTS.stageRightPercent, 0, 100),
     spawnIntervalMinMs: clampMosquitoNumber(config.spawnIntervalMinMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.spawnIntervalMinMs, 500, 10000),
     spawnIntervalMaxMs: clampMosquitoNumber(config.spawnIntervalMaxMs, MOSQUITO_DEBUG_CONFIG_DEFAULTS.spawnIntervalMaxMs, 500, 10000),
+    eventWavesMin: clampMosquitoNumber(config.eventWavesMin, MOSQUITO_DEBUG_CONFIG_DEFAULTS.eventWavesMin, 1, 20),
+    eventWavesMax: clampMosquitoNumber(config.eventWavesMax, MOSQUITO_DEBUG_CONFIG_DEFAULTS.eventWavesMax, 1, 20),
     mosquitoesPerSpawnMin: clampMosquitoNumber(config.mosquitoesPerSpawnMin, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMin, 1, 20),
     mosquitoesPerSpawnMax: clampMosquitoNumber(config.mosquitoesPerSpawnMax, MOSQUITO_DEBUG_CONFIG_DEFAULTS.mosquitoesPerSpawnMax, 1, 20),
     maxMosquitoes: clampMosquitoNumber(config.maxMosquitoes, MOSQUITO_DEBUG_CONFIG_DEFAULTS.maxMosquitoes, 1, 50),
@@ -942,6 +954,9 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
   if (next.spawnIntervalMinMs > next.spawnIntervalMaxMs) {
     next.spawnIntervalMaxMs = next.spawnIntervalMinMs;
   }
+  if (next.eventWavesMin > next.eventWavesMax) {
+    next.eventWavesMax = next.eventWavesMin;
+  }
   if (next.mosquitoesPerSpawnMin > next.mosquitoesPerSpawnMax) {
     next.mosquitoesPerSpawnMax = next.mosquitoesPerSpawnMin;
   }
@@ -954,6 +969,43 @@ const normalizeMosquitoDebugConfig = (config = {}) => {
 
   return next;
 };
+
+const getMosquitoEventDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const isMosquitoEventWindow = (date = new Date()) => {
+  const hour = date.getHours();
+  return (
+    (hour >= MOSQUITO_EVENT_EVENING_START_HOUR && hour <= MOSQUITO_EVENT_EVENING_END_HOUR) ||
+    (hour >= MOSQUITO_EVENT_NIGHT_START_HOUR && hour <= MOSQUITO_EVENT_NIGHT_END_HOUR)
+  );
+};
+
+const getMosquitoCompletedDateKey = (completedAt) => {
+  if (!completedAt) return null;
+
+  if (typeof completedAt === 'string') {
+    const dateMatch = completedAt.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      return dateMatch[1];
+    }
+  }
+
+  const completedDate = completedAt instanceof Date ? completedAt : new Date(completedAt);
+  if (Number.isNaN(completedDate.getTime())) {
+    return null;
+  }
+
+  return getMosquitoEventDateKey(completedDate);
+};
+
+const isMosquitoEventClearedToday = (events = {}) => (
+  getMosquitoCompletedDateKey(events?.mosquito?.completedAt) === getMosquitoEventDateKey()
+);
 
 const clampMosquitoRouteValue = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -2189,6 +2241,10 @@ const PetPage = ({ onBack }) => {
   const mosquitoTimerRef = useRef(null);
   const mosquitoMotionTimersRef = useRef([]);
   const mosquitoesRef = useRef([]);
+  const mosquitoEventActiveRef = useRef(false);
+  const mosquitoEventTotalWavesRef = useRef(0);
+  const mosquitoEventSpawnedWavesRef = useRef(0);
+  const [mosquitoEventWaveInfo, setMosquitoEventWaveInfo] = useState({ total: 0, spawned: 0 });
   const [isMosquitoDebugOpen, setIsMosquitoDebugOpen] = useState(false);
   const [mosquitoDebugConfig, setMosquitoDebugConfig] = useState(() => {
     try {
@@ -2201,6 +2257,12 @@ const PetPage = ({ onBack }) => {
     }
   });
   const mosquitoDebugConfigRef = useRef(mosquitoDebugConfig);
+  const [mosquitoEventTick, setMosquitoEventTick] = useState(0);
+  const [petEvents, setPetEvents] = useState({});
+  const petEventsRef = useRef({});
+  const [isMosquitoEventCompletedToday, setIsMosquitoEventCompletedToday] = useState(false);
+  const [isMosquitoEventForced, setIsMosquitoEventForced] = useState(false);
+  const mosquitoEventCompletedRef = useRef(isMosquitoEventCompletedToday);
   const [petStatus, setPetStatus] = useState(() => ({
     health: DEFAULT_PET_STATUS.health,
     hunger: DEFAULT_PET_STATUS.hunger,
@@ -2568,6 +2630,99 @@ const PetPage = ({ onBack }) => {
     mosquitoMotionTimersRef.current.forEach((timerId) => clearTimeout(timerId));
     mosquitoMotionTimersRef.current = [];
   }, []);
+
+  const clearMosquitoSpawnTimer = useCallback(() => {
+    if (mosquitoTimerRef.current) {
+      clearTimeout(mosquitoTimerRef.current);
+      mosquitoTimerRef.current = null;
+    }
+  }, []);
+
+  const resetMosquitoEventRun = useCallback(() => {
+    mosquitoEventActiveRef.current = false;
+    mosquitoEventTotalWavesRef.current = 0;
+    mosquitoEventSpawnedWavesRef.current = 0;
+    setMosquitoEventWaveInfo({ total: 0, spawned: 0 });
+    clearMosquitoSpawnTimer();
+    clearMosquitoMotionTimers();
+    syncMosquitoes(() => []);
+    setMosquitoBiteEffects([]);
+  }, [clearMosquitoMotionTimers, clearMosquitoSpawnTimer, syncMosquitoes]);
+
+  const savePetEventsInBackground = useCallback((events) => {
+    petSaveQueueRef.current = petSaveQueueRef.current
+      .catch(() => {})
+      .then(async () => {
+        const result = await savePetEvents(events);
+        if (!result.success) {
+          console.warn('⚠️ Pet events sync failed:', result.message);
+        }
+      })
+      .catch((error) => {
+        console.warn('⚠️ Pet events sync failed:', error);
+      });
+  }, []);
+
+  const updateMosquitoEventRecord = useCallback((mosquitoUpdates) => {
+    const { clearedDate: _legacyClearedDate, ...currentMosquitoEvent } = petEventsRef.current.mosquito || {};
+    const { clearedDate: _ignoredClearedDate, ...cleanMosquitoUpdates } = mosquitoUpdates;
+    const nextEvents = {
+      ...petEventsRef.current,
+      mosquito: {
+        ...currentMosquitoEvent,
+        ...cleanMosquitoUpdates
+      }
+    };
+
+    petEventsRef.current = nextEvents;
+    setPetEvents(nextEvents);
+    mosquitoEventCompletedRef.current = isMosquitoEventClearedToday(nextEvents);
+    setIsMosquitoEventCompletedToday(mosquitoEventCompletedRef.current);
+    savePetEventsInBackground(nextEvents);
+  }, [savePetEventsInBackground]);
+
+  const completeMosquitoEventToday = useCallback(() => {
+    updateMosquitoEventRecord({
+      completedAt: formatVietnamTimestamp(),
+      totalWaves: mosquitoEventTotalWavesRef.current,
+      spawnedWaves: mosquitoEventSpawnedWavesRef.current
+    });
+    setIsMosquitoEventForced(false);
+    resetMosquitoEventRun();
+  }, [resetMosquitoEventRun, updateMosquitoEventRecord]);
+
+  const startMosquitoEventNow = useCallback(() => {
+    if (isMosquitoEventForced) {
+      // Turn off forced mode
+      updateMosquitoEventRecord({
+        completedAt: null,
+        totalWaves: null,
+        spawnedWaves: null,
+        forcedAt: null
+      });
+      setIsMosquitoEventForced(false);
+      resetMosquitoEventRun();
+      setMosquitoEventTick((tick) => tick + 1);
+    } else {
+      // Turn on forced mode
+      if (mosquitoDebugConfigRef.current.isEnabled === false) {
+        const nextConfig = { ...mosquitoDebugConfigRef.current, isEnabled: true };
+        mosquitoDebugConfigRef.current = nextConfig;
+        setMosquitoDebugConfig(nextConfig);
+      }
+      updateMosquitoEventRecord({
+        completedAt: null,
+        totalWaves: null,
+        spawnedWaves: null,
+        forcedAt: formatVietnamTimestamp()
+      });
+      mosquitoEventCompletedRef.current = false;
+      setIsMosquitoEventCompletedToday(false);
+      setIsMosquitoEventForced(true);
+      resetMosquitoEventRun();
+      setMosquitoEventTick((tick) => tick + 1);
+    }
+  }, [isMosquitoEventForced, resetMosquitoEventRun, updateMosquitoEventRecord]);
 
   const addMosquitoMotionTimer = useCallback((callback, delay) => {
     const timerId = setTimeout(() => {
@@ -3061,6 +3216,75 @@ const PetPage = ({ onBack }) => {
     }, mosquito.approachDurationMs + mosquito.holdDurationMs + mosquito.exitDurationMs + 120);
   }, [addMosquitoMotionTimer, applyMosquitoBite, syncMosquitoes]);
 
+  const spawnMosquitoWave = useCallback(() => {
+    const config = mosquitoDebugConfigRef.current;
+    const availableSlots = Math.max(0, config.maxMosquitoes - mosquitoesRef.current.length);
+
+    if (
+      !mosquitoEventActiveRef.current ||
+      mosquitoEventCompletedRef.current ||
+      mosquitoEventSpawnedWavesRef.current >= mosquitoEventTotalWavesRef.current ||
+      availableSlots <= 0
+    ) {
+      return;
+    }
+
+    const spawnMin = Math.max(1, Math.min(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
+    const spawnMax = Math.max(spawnMin, Math.max(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
+    const mosquitoesThisSpawn = Math.min(
+      availableSlots,
+      spawnMin + Math.floor(Math.random() * (spawnMax - spawnMin + 1))
+    );
+    const newMosquitoes = Array.from({ length: mosquitoesThisSpawn }, () => {
+      const mosquitoId = `mosquito-${Date.now()}-${Math.random()}`;
+      const route = createMosquitoRoute(config);
+
+      return {
+        id: mosquitoId,
+        ...route,
+        ...createMosquitoMotionTiming(config, route),
+        phase: 'spawning'
+      };
+    });
+
+    if (!newMosquitoes.length) {
+      return;
+    }
+
+    mosquitoEventSpawnedWavesRef.current += 1;
+    setMosquitoEventWaveInfo({
+      total: mosquitoEventTotalWavesRef.current,
+      spawned: mosquitoEventSpawnedWavesRef.current
+    });
+    syncMosquitoes((current) => [...current, ...newMosquitoes].slice(0, config.maxMosquitoes));
+    newMosquitoes.forEach(scheduleMosquitoLifecycle);
+  }, [
+    createMosquitoMotionTiming,
+    createMosquitoRoute,
+    scheduleMosquitoLifecycle,
+    syncMosquitoes
+  ]);
+
+  const scheduleNextMosquitoWave = useCallback(() => {
+    if (
+      mosquitoTimerRef.current ||
+      !mosquitoEventActiveRef.current ||
+      mosquitoEventCompletedRef.current ||
+      mosquitoEventSpawnedWavesRef.current >= mosquitoEventTotalWavesRef.current
+    ) {
+      return;
+    }
+
+    const config = mosquitoDebugConfigRef.current;
+    const delay = config.spawnIntervalMinMs +
+      Math.random() * Math.max(0, config.spawnIntervalMaxMs - config.spawnIntervalMinMs);
+
+    mosquitoTimerRef.current = setTimeout(() => {
+      mosquitoTimerRef.current = null;
+      spawnMosquitoWave();
+    }, delay);
+  }, [spawnMosquitoWave]);
+
   const selectedPetUsePreview = useMemo(() => (
     selectedPetUseItem
       ? getPetItemUsePreview(selectedPetUseItem.category, petStatus, selectedPetUseItem.item.shape, selectedPetUseItem.item.name)
@@ -3090,6 +3314,23 @@ const PetPage = ({ onBack }) => {
   const currentMoodItem = useMemo(() => (
   moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
 ), [currentMoodName, moodItems]);
+  const mosquitoEventStatus = useMemo(() => {
+    if (isMosquitoEventCompletedToday && !isMosquitoEventForced) {
+      return 'Completed today';
+    }
+
+    if (mosquitoEventActiveRef.current) {
+      const spawnedWaves = mosquitoEventSpawnedWavesRef.current;
+      const totalWaves = mosquitoEventTotalWavesRef.current || '?';
+      return `${isMosquitoEventForced ? 'Forced' : 'Running'} ${spawnedWaves}/${totalWaves}`;
+    }
+
+    if (isMosquitoEventForced) {
+      return 'Forced pending';
+    }
+
+    return isMosquitoEventWindow() ? 'Ready now' : 'Waiting for event window';
+  }, [isMosquitoEventCompletedToday, isMosquitoEventForced, mosquitoEventTick, mosquitoes.length]);
 
   // Generate fixed star positions (only once)
   const starPositions = useMemo(() => (
@@ -3150,6 +3391,18 @@ useEffect(() => {
             });
           }
         }
+      }
+
+      try {
+        const loadedPetEvents = await fetchPetEvents();
+        const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object' ? loadedPetEvents : {};
+        petEventsRef.current = normalizedPetEvents;
+        setPetEvents(normalizedPetEvents);
+        const mosquitoCompletedToday = isMosquitoEventClearedToday(normalizedPetEvents);
+        mosquitoEventCompletedRef.current = mosquitoCompletedToday;
+        setIsMosquitoEventCompletedToday(mosquitoCompletedToday);
+      } catch (error) {
+        console.warn('Failed to fetch pet events:', error);
       }
 
       // Fetch real temperature from Open-Meteo API
@@ -3267,14 +3520,7 @@ useEffect(() => {
   mosquitoDebugConfigRef.current = mosquitoDebugConfig;
 
   if (!mosquitoDebugConfig.isEnabled) {
-    if (mosquitoTimerRef.current) {
-      clearTimeout(mosquitoTimerRef.current);
-      mosquitoTimerRef.current = null;
-    }
-    clearMosquitoMotionTimers();
-    mosquitoesRef.current = [];
-    setMosquitoes([]);
-    setMosquitoBiteEffects([]);
+    resetMosquitoEventRun();
     return;
   }
 
@@ -3305,92 +3551,109 @@ useEffect(() => {
   createMosquitoMotionTiming,
   createMosquitoRoute,
   mosquitoDebugConfig,
+  resetMosquitoEventRun,
   scheduleMosquitoLifecycle,
   syncMosquitoes
 ]);
 
-// Mosquito spawn system
+// Mosquito daily event window
 useEffect(() => {
-  if (!isPetReady || !isPageVisible || !mosquitoDebugConfig.isEnabled) return undefined;
+  const intervalId = window.setInterval(() => {
+    setMosquitoEventTick((tick) => tick + 1);
+  }, 60 * 1000);
 
-  const spawnMosquito = () => {
-    const config = mosquitoDebugConfigRef.current;
-    const availableSlots = Math.max(0, config.maxMosquitoes - mosquitoesRef.current.length);
-
-    if (availableSlots <= 0) {
-      return;
-    }
-
-    const spawnMin = Math.max(1, Math.min(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
-    const spawnMax = Math.max(spawnMin, Math.max(config.mosquitoesPerSpawnMin, config.mosquitoesPerSpawnMax));
-    const mosquitoesThisSpawn = Math.min(
-      availableSlots,
-      spawnMin + Math.floor(Math.random() * (spawnMax - spawnMin + 1))
-    );
-    const newMosquitoes = Array.from({ length: mosquitoesThisSpawn }, () => {
-      const mosquitoId = `mosquito-${Date.now()}-${Math.random()}`;
-      const route = createMosquitoRoute(config);
-
-      return {
-        id: mosquitoId,
-        ...route,
-        ...createMosquitoMotionTiming(config, route),
-        phase: 'spawning'
-      };
-    });
-
-    if (!newMosquitoes.length) {
-      return;
-    }
-
-    syncMosquitoes((current) => [...current, ...newMosquitoes].slice(0, config.maxMosquitoes));
-
-    newMosquitoes.forEach(scheduleMosquitoLifecycle);
-  };
-
-  const scheduleNextMosquito = () => {
-    const config = mosquitoDebugConfigRef.current;
-    const delay = config.spawnIntervalMinMs +
-      Math.random() * Math.max(0, config.spawnIntervalMaxMs - config.spawnIntervalMinMs);
-    mosquitoTimerRef.current = setTimeout(() => {
-      spawnMosquito();
-      scheduleNextMosquito();
-    }, delay);
-  };
-
-  scheduleNextMosquito();
-
-  return () => {
-    if (mosquitoTimerRef.current) {
-      clearTimeout(mosquitoTimerRef.current);
-      mosquitoTimerRef.current = null;
-    }
-  };
-}, [
-  createMosquitoMotionTiming,
-  createMosquitoRoute,
-  isPageVisible,
-  isPetReady,
-  mosquitoDebugConfig.spawnIntervalMaxMs,
-  mosquitoDebugConfig.spawnIntervalMinMs,
-  mosquitoDebugConfig.isEnabled,
-  scheduleMosquitoLifecycle,
-  syncMosquitoes
-]);
+  return () => window.clearInterval(intervalId);
+}, []);
 
 useEffect(() => {
-  if (isPetReady && isPageVisible && mosquitoDebugConfig.isEnabled) return undefined;
-
-  if (mosquitoTimerRef.current) {
-    clearTimeout(mosquitoTimerRef.current);
-    mosquitoTimerRef.current = null;
+  if (isMosquitoEventForced) {
+    return;
   }
-  clearMosquitoMotionTimers();
-  syncMosquitoes(() => []);
-  setMosquitoBiteEffects([]);
+
+  const completedToday = isMosquitoEventClearedToday(petEventsRef.current);
+  mosquitoEventCompletedRef.current = completedToday;
+  setIsMosquitoEventCompletedToday(completedToday);
+}, [isMosquitoEventForced, mosquitoEventTick, petEvents]);
+
+useEffect(() => {
+  const shouldRunMosquitoEvent = (
+    isPetReady &&
+    isPageVisible &&
+    mosquitoDebugConfig.isEnabled &&
+    !isMosquitoEventCompletedToday &&
+    (isMosquitoEventForced || isMosquitoEventWindow())
+  );
+
+  if (!shouldRunMosquitoEvent) {
+    resetMosquitoEventRun();
+    return undefined;
+  }
+
+  if (!mosquitoEventActiveRef.current) {
+    mosquitoEventActiveRef.current = true;
+    const config = mosquitoDebugConfigRef.current;
+    mosquitoEventTotalWavesRef.current = randomBetween(config.eventWavesMin, config.eventWavesMax);
+    mosquitoEventSpawnedWavesRef.current = 0;
+    setMosquitoEventWaveInfo({
+      total: mosquitoEventTotalWavesRef.current,
+      spawned: 0
+    });
+    console.log('🦟 Mosquito event started:', {
+      totalWaves: mosquitoEventTotalWavesRef.current,
+      window: `${MOSQUITO_EVENT_EVENING_START_HOUR}:00-${MOSQUITO_EVENT_EVENING_END_HOUR}:59 & ${MOSQUITO_EVENT_NIGHT_START_HOUR}:00-${MOSQUITO_EVENT_NIGHT_END_HOUR}:59`
+    });
+  }
+
+  if (mosquitoesRef.current.length === 0) {
+    scheduleNextMosquitoWave();
+  }
 
   return undefined;
-}, [clearMosquitoMotionTimers, isPageVisible, isPetReady, mosquitoDebugConfig.isEnabled, syncMosquitoes]);
+}, [
+  isMosquitoEventCompletedToday,
+  isPageVisible,
+  isPetReady,
+  mosquitoDebugConfig.isEnabled,
+  isMosquitoEventForced,
+  mosquitoEventTick,
+  resetMosquitoEventRun,
+  scheduleNextMosquitoWave
+]);
+
+useEffect(() => {
+  if (
+    !mosquitoEventActiveRef.current ||
+    isMosquitoEventCompletedToday ||
+    !isPetReady ||
+    !isPageVisible ||
+    !mosquitoDebugConfig.isEnabled ||
+    (!isMosquitoEventForced && !isMosquitoEventWindow()) ||
+    mosquitoes.length > 0
+  ) {
+    return undefined;
+  }
+
+  if (
+    mosquitoEventTotalWavesRef.current > 0 &&
+    mosquitoEventSpawnedWavesRef.current >= mosquitoEventTotalWavesRef.current
+  ) {
+    completeMosquitoEventToday();
+    return undefined;
+  }
+
+  scheduleNextMosquitoWave();
+  return undefined;
+}, [
+  completeMosquitoEventToday,
+  isMosquitoEventCompletedToday,
+  isPageVisible,
+  isPetReady,
+  isMosquitoEventForced,
+  mosquitoes.length,
+  mosquitoDebugConfig.isEnabled,
+  mosquitoEventTick,
+  scheduleNextMosquitoWave
+]);
 
 useEffect(() => () => {
   if (mosquitoTimerRef.current) {
@@ -4862,6 +5125,12 @@ useEffect(() => {
             config={mosquitoDebugConfig}
             onUpdateConfig={updateMosquitoDebugConfig}
             onReset={resetMosquitoDebugConfig}
+            onStartEventNow={startMosquitoEventNow}
+            eventStatus={mosquitoEventStatus}
+            isEventForced={isMosquitoEventForced}
+            totalWaves={mosquitoEventWaveInfo.total || petEvents?.mosquito?.totalWaves || 0}
+            spawnedWaves={mosquitoEventWaveInfo.spawned || petEvents?.mosquito?.spawnedWaves || 0}
+            completedAt={petEvents?.mosquito?.completedAt || null}
             mosquitoes={mosquitoes}
           />
 

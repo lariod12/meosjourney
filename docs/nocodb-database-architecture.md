@@ -16,6 +16,8 @@ src/services/nocodb.js
     |-- journals.js
     |-- quests.js
     |-- achievements.js
+    |-- pet.js
+    |-- events.js
     `-- media.js
 ```
 
@@ -26,6 +28,8 @@ src/services/nocodb.js
 | `journals.js` | Journal/history read and write operations. |
 | `quests.js` | Quest, quest confirmation, quest image upload, quest approval data. |
 | `achievements.js` | Achievement, achievement confirmation, achievement image upload, achievement approval data. |
+| `pet.js` | Pet inventory and pet status records. |
+| `events.js` | Shared app event-state records, including pet events. |
 | `media.js` | Profile gallery, home gallery, photo album, and NocoDB storage upload handling. |
 
 ## Environment Table Sets
@@ -45,6 +49,8 @@ The app uses different physical NocoDB table IDs per Vite mode.
 | `ACHIEVEMENTS_CONFIRM` | `mv0l9jz8fhf1gjl` | `mlayyfujdqnghzb` | `mcynwxx2hpgcolt` |
 | `ATTACHMENTS_GALLERY` | `mpp72hgqxpn2p3k` | `mc8mv7di4aadfz1` | `mirssuqhjx529p5` |
 | `ATTACHMENTS_ALBUM` | `mkwz7hrtyzkvji6` | `mi5yptema60aqcq` | `mc6wu0v542g2bnr` |
+| `PET` | `null` | `mubxl2iof13o7de` | `m5o1zjxu784d955` |
+| `EVENTS` | `null` | `m321slymq8whnye` | `mumk1fgly3ngyfw` |
 
 `staging` is treated as production-like for image behavior. Do not use development image assumptions in staging.
 
@@ -109,6 +115,48 @@ Constraints:
 - XP updates patch `current_xp`, `level`, and `max_xp`.
 - Level-up uses `CONFIG.level_grow_rate` and `CONFIG.xp_multiplier`.
 - Profile avatar/gallery images are stored in `ATTACHMENTS_GALLERY`, not directly in `PROFILE`.
+
+### `PET`
+
+Stores pet-page inventory and status.
+
+| Field | Purpose |
+| --- | --- |
+| `food` | JSON array of pet food inventory items. |
+| `care` | JSON array of pet care inventory items. |
+| `status_health`, `status_hunger`, `status_sanity` | Numeric pet status values. |
+| `last_status_tick_at` | Last timestamp used for elapsed-time status decay. |
+
+Constraints:
+
+- There is expected to be one active pet record with `Title = pet`.
+- Pet event state is stored in `EVENTS`, not in this table.
+
+### `EVENTS`
+
+Stores lightweight event state for the app.
+
+| Field | Purpose |
+| --- | --- |
+| `title` | Event state namespace. `events` is used for pet-page events. |
+| `mosquito` | JSON object containing mosquito event state. |
+
+Mosquito event-state shape:
+
+```json
+{
+  "clearedDate": "2026-05-20",
+  "completedAt": "2026-05-20T22:13:00.000+07:00"
+}
+```
+
+Constraints:
+
+- Keep pet event state in the `title = events` record.
+- The `mosquito` field stores daily mosquito event completion status.
+- Mosquito event runs during two time windows: **18:00-23:59** (evening) and **00:00-03:00** (night).
+- Event resets daily and can only be completed once per day.
+- Do not store event state in `PET.food` or `PET.care`.
 
 ### `CONFIG`
 
@@ -404,4 +452,3 @@ Do not use MCP to write, update, or delete data unless the user has confirmed:
 - exact intended mutation
 
 Never write MCP tokens into docs, code, commits, or chat output.
-
