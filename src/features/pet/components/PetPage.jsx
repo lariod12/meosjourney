@@ -2255,6 +2255,18 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const [debugCssStatus, setDebugCssStatus] = useState('');
+  const [debugAwakeningMode, setDebugAwakeningMode] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return 'auto';
+    }
+
+    try {
+      const saved = localStorage.getItem('pet-debug-awakening-mode');
+      return saved === 'sleep' || saved === 'awakening' ? saved : 'auto';
+    } catch {
+      return 'auto';
+    }
+  });
   const [debugStageTimePeriod, setDebugStageTimePeriod] = useState(() => {
     if (IS_PRODUCTION_MODE) {
       return STAGE_TIME_DEBUG_AUTO_VALUE;
@@ -2402,6 +2414,10 @@ const PetPage = ({ onBack }) => {
   const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
   const [mosquitoBiteEffects, setMosquitoBiteEffects] = useState([]);
   const [isSavingPet, setIsSavingPet] = useState(false);
+  const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
+  const debugAwakeningModeActive = isPetCharacterDebugEnabled ? debugAwakeningMode : 'auto';
+  const activeIsSleeping = debugAwakeningModeActive === 'sleep' || debugAwakeningModeActive === 'awakening' || isSleeping;
+  const activeIsAwakening = debugAwakeningModeActive === 'awakening' || isAwakening;
   const items = useMemo(() => {
     let itemList = activeTab === 'activity'
       ? activityItems
@@ -2412,7 +2428,7 @@ const PetPage = ({ onBack }) => {
           : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food);
 
     // When sleeping, move Bed item to the top of Care tab
-    if (isSleeping && activeTab === 'care' && Array.isArray(itemList)) {
+    if (activeIsSleeping && activeTab === 'care' && Array.isArray(itemList)) {
       const bedIndex = itemList.findIndex(item =>
         item.name && item.name.toLowerCase() === 'bed'
       );
@@ -2451,7 +2467,7 @@ const PetPage = ({ onBack }) => {
     }
 
     return itemList;
-  }, [activeTab, activityItems, moodItems, petItems, isSleeping, currentActivityName, currentMoodName]);
+  }, [activeIsSleeping, activeTab, activityItems, moodItems, petItems, currentActivityName, currentMoodName]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
     return getPetReaction(petStatus, biologicalClock);
@@ -2460,16 +2476,16 @@ const PetPage = ({ onBack }) => {
   const petCharacterPresentation = useMemo(() => getPetCharacterPresentation({
     reactionLevel: petReaction.level,
     biologicalClock,
-    isSleeping,
-    isAwakening,
+    isSleeping: activeIsSleeping,
+    isAwakening: activeIsAwakening,
     hasItemFeedback: hasPetItemFeedback,
     thoughtBubbleVisible,
     entryWaveActive: petEntryWaveActive
   }), [
     biologicalClock,
     hasPetItemFeedback,
-    isAwakening,
-    isSleeping,
+    activeIsAwakening,
+    activeIsSleeping,
     petEntryWaveActive,
     petReaction.level,
     thoughtBubbleVisible
@@ -2479,7 +2495,6 @@ const PetPage = ({ onBack }) => {
     || PET_CHARACTER_EFFECT_DURATIONS[activePetCharacterPresentation.effect]
     || PET_CHARACTER_EFFECT_DURATIONS.idle;
 
-  const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
   const normalizedDebugStageTimePeriod = normalizeStageTimeDebugPeriod(debugStageTimePeriod);
   const activeTimePeriod = isPetCharacterDebugEnabled && normalizedDebugStageTimePeriod !== STAGE_TIME_DEBUG_AUTO_VALUE
     ? normalizedDebugStageTimePeriod
@@ -2700,6 +2715,33 @@ const PetPage = ({ onBack }) => {
     try {
       localStorage.removeItem(STAGE_THERMOMETER_POSITION_STORAGE_KEY);
     } catch { }
+  };
+
+  const updateDebugAwakeningMode = (mode) => {
+    if (IS_PRODUCTION_MODE) {
+      return;
+    }
+
+    const validMode = mode === 'sleep' || mode === 'awakening' ? mode : 'auto';
+    setDebugAwakeningMode(validMode);
+    setDebugCharacterPresentation(null);
+
+    try {
+      localStorage.setItem('pet-debug-awakening-mode', validMode);
+    } catch { }
+
+    // Apply state immediately
+    if (validMode === 'auto') {
+      // Reset to normal behavior - let other effects handle state
+      setIsSleeping(false);
+      setIsAwakening(false);
+    } else if (validMode === 'sleep') {
+      setIsSleeping(true);
+      setIsAwakening(false);
+    } else if (validMode === 'awakening') {
+      setIsSleeping(true);
+      setIsAwakening(true);
+    }
   };
 
   const saveDebugPetClickArea = (nextClickArea) => {
@@ -3543,7 +3585,7 @@ const PetPage = ({ onBack }) => {
   ), []);
 
 useEffect(() => {
-  if (!isPetReady || entryWaveStartedRef.current || isSleeping || isAwakening) return undefined;
+  if (!isPetReady || entryWaveStartedRef.current || activeIsSleeping || activeIsAwakening) return undefined;
 
   entryWaveStartedRef.current = true;
   const shouldWaveOnEntry = Math.random() < 0.65;
@@ -3557,7 +3599,7 @@ useEffect(() => {
   return () => {
     window.clearTimeout(timeoutId);
   };
-}, [isAwakening, isPetReady, isSleeping]);
+}, [activeIsAwakening, activeIsSleeping, isPetReady]);
 
 // Load initial data from NocoDB
 useEffect(() => {
@@ -3967,7 +4009,7 @@ useEffect(() => {
   // Smart thought bubble with status-based timing
   useEffect(() => {
     // Don't show bubble when sleeping or awakening
-    if (isSleeping || isAwakening) {
+    if (activeIsSleeping || activeIsAwakening) {
       if (bubbleTimerRef.current) {
         clearTimeout(bubbleTimerRef.current);
         bubbleTimerRef.current = null;
@@ -4036,7 +4078,7 @@ useEffect(() => {
         clearTimeout(hideTimeoutId);
       }
     };
-  }, [isPageVisible, petReaction.level, isSleeping, isAwakening]);
+  }, [activeIsAwakening, activeIsSleeping, isPageVisible, petReaction.level]);
 
   // Smart mood float with timing (similar to thought bubble)
   useEffect(() => {
@@ -4813,9 +4855,14 @@ useEffect(() => {
   };
 
   const handleWakeUpTap = () => {
-    if (!isAwakening) return;
+    if (!activeIsAwakening) return;
 
     console.log('👆 User tapped to wake up pet');
+    if (debugAwakeningMode !== 'auto') {
+      updateDebugAwakeningMode('auto');
+      return;
+    }
+
     setIsSleeping(false);
     setIsAwakening(false);
 
@@ -4979,10 +5026,10 @@ useEffect(() => {
     enqueuePetPhotoSave(savePayload);
   };
 
-  const isPetCameraBaseDisabled = isSleeping || isAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
+  const isPetCameraBaseDisabled = activeIsSleeping || activeIsAwakening || isPetPhotoModalOpen || isSavingPetPhoto;
   const isPetCameraReady = cameraPhase === 'capturing';
   const isPetCameraBusy = cameraPhase !== 'idle';
-  const isPetCameraSleepBlocked = isSleeping
+  const isPetCameraSleepBlocked = activeIsSleeping
     || activePetCharacterPresentation.state === PET_CHARACTER_STATES.sleeping;
   const isPetCameraCriticalBlocked = petReaction.level === 'critical'
     || activePetCharacterPresentation.state === PET_CHARACTER_STATES.critical;
@@ -5006,7 +5053,7 @@ useEffect(() => {
       return;
     }
 
-    if (isPetCameraRefusalBlocked && !isAwakening) {
+    if (isPetCameraRefusalBlocked && !activeIsAwakening) {
       showCriticalPetCameraRefusal();
       return;
     }
@@ -5016,7 +5063,7 @@ useEffect(() => {
       return;
     }
 
-    if (isSleeping || isAwakening) return;
+    if (activeIsSleeping || activeIsAwakening) return;
 
     setIsPetCameraControlVisible(true);
   };
@@ -5371,6 +5418,36 @@ useEffect(() => {
                       );
                     })}
                   </div>
+                  <div className="pet-character-debug__controls" aria-label="Sleep and wake debug controls">
+                    <span className="pet-character-debug__controls-title">Sleep / wake state</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugAwakeningMode === 'auto' ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugAwakeningMode('auto')}
+                      aria-pressed={debugAwakeningMode === 'auto'}
+                    >
+                      <span>Auto</span>
+                      <small>Normal behavior</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugAwakeningMode === 'sleep' ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugAwakeningMode('sleep')}
+                      aria-pressed={debugAwakeningMode === 'sleep'}
+                    >
+                      <span>Force sleep</span>
+                      <small>Pet sleeping</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugAwakeningMode === 'awakening' ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugAwakeningMode('awakening')}
+                      aria-pressed={debugAwakeningMode === 'awakening'}
+                    >
+                      <span>Force awakening</span>
+                      <small>Show tap-to-wake overlay</small>
+                    </button>
+                  </div>
                   <div className="pet-character-debug__controls" aria-label="Pet click area controls">
                     <span className="pet-character-debug__controls-title">Pet click area</span>
                     <button
@@ -5493,7 +5570,7 @@ useEffect(() => {
           />
 
           {/* Awakening overlay - tap to wake */}
-          {isAwakening && (
+          {activeIsAwakening && (
             <div
               className="pet-awakening-overlay"
               onClick={handleWakeUpTap}
@@ -5722,7 +5799,7 @@ useEffect(() => {
             <button
               type="button"
               className="pet-character__hit-area"
-              disabled={isAwakening || isPetPhotoModalOpen || isPetClickBlockedByMosquito}
+              disabled={activeIsAwakening || isPetPhotoModalOpen || isPetClickBlockedByMosquito}
               aria-label={isPetClickBlockedByMosquito
                 ? 'Pet action disabled while mosquitoes are present'
                 : (isPetCameraControlVisible || isCameraPoseActive ? 'Hide pet camera control' : 'Show pet camera control')}
@@ -5942,10 +6019,10 @@ useEffect(() => {
                     ? getPetItemUsePreview(activeTab, petStatus, item.shape, item.name)
                     : null;
                   console.log('📊 Preview for', item.name, ':', petUsePreview);
-                  const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || isSleeping);
-                  const isCareLocked = activeTab === 'care' && (isCareUseAnimating || isSleeping);
+                  const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || activeIsSleeping);
+                  const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping);
                   const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet || isFoodLocked || isCareLocked));
-                  const disabledReason = isSleeping
+                  const disabledReason = activeIsSleeping
                     ? 'Pet đang ngủ, đợi sáng mai nhé! 💤'
                     : isFoodLocked
                       ? 'Đợi món trước tan hết đã nha.'
