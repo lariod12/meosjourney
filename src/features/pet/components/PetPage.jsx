@@ -279,6 +279,12 @@ const STAGE_RAIN_VARIANT_CONFIGS = {
   light: { count: 116, seed: 29, opacity: [0.32, 0.76], duration: [0.5, 1.2], delay: [0, 1.4], height: [22, 42], width: [1, 3], depth: [1, 7], drift: [-3, 3], top: [-92, -20], blur: [0, 0.52] },
   heavy: { count: 168, seed: 47, opacity: [0.42, 0.92], duration: [0.25, 0.7], delay: [0, 0.9], height: [32, 62], width: [1, 4], depth: [1, 8], drift: [-4, 4], top: [-100, -28], blur: [0, 0.32] }
 };
+const STAGE_RAIN_MOBILE_DROP_LIMITS = {
+  drizzle: 28,
+  light: 36,
+  heavy: 48
+};
+const STAGE_RAIN_MOBILE_QUERY = '(max-width: 768px), (hover: none) and (pointer: coarse)';
 const createStageRainNoise = (index, seed, offset = 0) => {
   const value = Math.sin((index + 1) * (seed + 17.17 + offset) * 91.345);
   return value - Math.floor(value);
@@ -2414,6 +2420,13 @@ const PetPage = ({ onBack }) => {
   const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
   const [mosquitoBiteEffects, setMosquitoBiteEffects] = useState([]);
   const [isSavingPet, setIsSavingPet] = useState(false);
+  const [isMobileRainReduced, setIsMobileRainReduced] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
+
+    return window.matchMedia(STAGE_RAIN_MOBILE_QUERY).matches;
+  });
   const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
   const debugAwakeningModeActive = isPetCharacterDebugEnabled ? debugAwakeningMode : 'auto';
   const activeIsSleeping = debugAwakeningModeActive === 'sleep' || debugAwakeningModeActive === 'awakening' || isSleeping;
@@ -2522,6 +2535,27 @@ const PetPage = ({ onBack }) => {
     }
   }, [activeTab, tabPage]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia(STAGE_RAIN_MOBILE_QUERY);
+    const updateMobileRainMode = () => {
+      setIsMobileRainReduced(mediaQuery.matches);
+    };
+
+    updateMobileRainMode();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateMobileRainMode);
+      return () => mediaQuery.removeEventListener('change', updateMobileRainMode);
+    }
+
+    mediaQuery.addListener(updateMobileRainMode);
+    return () => mediaQuery.removeListener(updateMobileRainMode);
+  }, []);
+
   const handlePrevPage = () => {
     if (canGoPrev) {
       const nextPage = tabPage - 1;
@@ -2567,11 +2601,21 @@ const PetPage = ({ onBack }) => {
   const activeStageRainDrops = activeStageRainVariant
     ? STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant]
     : [];
-  const activeStageRainBackDrops = activeStageRainDrops.filter((drop) => drop.z <= 3);
-  const activeStageRainFrontDrops = activeStageRainDrops.filter((drop) => drop.z > 3);
+  const visibleStageRainDrops = useMemo(() => {
+    if (!isMobileRainReduced || !activeStageRainVariant) {
+      return activeStageRainDrops;
+    }
+
+    const mobileLimit = STAGE_RAIN_MOBILE_DROP_LIMITS[activeStageRainVariant] || 36;
+    const step = Math.max(1, Math.ceil(activeStageRainDrops.length / mobileLimit));
+
+    return activeStageRainDrops.filter((_, index) => index % step === 0).slice(0, mobileLimit);
+  }, [activeStageRainDrops, activeStageRainVariant, isMobileRainReduced]);
+  const activeStageRainBackDrops = visibleStageRainDrops.filter((drop) => drop.z <= 3);
+  const activeStageRainFrontDrops = visibleStageRainDrops.filter((drop) => drop.z > 3);
 
   // Split front drops into multiple zones scattered across stage
-  const frontZoneCount = 5; // Number of rain zones
+  const frontZoneCount = isMobileRainReduced ? 3 : 5; // Number of rain zones
   const frontDropsPerZone = Math.ceil(activeStageRainFrontDrops.length / frontZoneCount);
   const activeStageRainFrontZones = Array.from({ length: frontZoneCount }, (_, zoneIndex) => {
     const startIdx = zoneIndex * frontDropsPerZone;
@@ -2583,7 +2627,7 @@ const PetPage = ({ onBack }) => {
     const zoneWidth = 25 + (zoneIndex * 7) % 30; // 25-55% varying widths
 
     // Create multiple vertical layers for each zone
-    const layerCount = 3; // 3 layers per zone
+    const layerCount = isMobileRainReduced ? 1 : 3; // Keep mobile rain light for responsive taps.
     const layers = Array.from({ length: layerCount }, (_, layerIndex) => {
       const topOffset = -150 + (layerIndex * 80); // -150px, -70px, 10px
       const bottomOffset = -20 + (layerIndex * 60); // -20px, 40px, 100px
