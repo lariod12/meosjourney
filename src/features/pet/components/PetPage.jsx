@@ -68,6 +68,17 @@ const STAGE_TEMPERATURES = {
   midnight: { value: 17, fill: 28, label: 'Cold midnight' }
 };
 
+const STAGE_TIME_PERIODS = [
+  { key: 'dawn', label: 'Dawn', description: '05:00 - 07:00' },
+  { key: 'morning', label: 'Morning', description: '07:00 - 11:00' },
+  { key: 'noon', label: 'Noon', description: '11:00 - 14:00' },
+  { key: 'afternoon', label: 'Afternoon', description: '14:00 - 17:00' },
+  { key: 'dusk', label: 'Dusk', description: '17:00 - 19:00' },
+  { key: 'evening', label: 'Evening', description: '19:00 - 21:00' },
+  { key: 'night', label: 'Night', description: '21:00 - 23:00' },
+  { key: 'midnight', label: 'Midnight', description: '23:00 - 05:00' }
+];
+
 // Check if current time is meal time
 const getMealTime = (hour, minute) => {
   if (hour === 8 && minute === 0) return 'breakfast';
@@ -252,6 +263,8 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
+const STAGE_TIME_DEBUG_STORAGE_KEY = 'meo-stage-time-debug-v1';
+const STAGE_TIME_DEBUG_AUTO_VALUE = 'auto';
 const STAGE_RAIN_DEBUG_STORAGE_KEY = 'meo-stage-rain-debug-v2';
 const STAGE_RAIN_DEBUG_AUTO_VALUE = 'auto';
 const STAGE_RAIN_DEBUG_NONE_VALUE = 'none';
@@ -1104,6 +1117,14 @@ const normalizeStageRainDebugVariant = (variant) => {
   }
 
   return normalizeStageRainVariant(variant, STAGE_RAIN_DEBUG_AUTO_VALUE);
+};
+
+const normalizeStageTimeDebugPeriod = (period) => {
+  if (period === STAGE_TIME_DEBUG_AUTO_VALUE) {
+    return period;
+  }
+
+  return STAGE_TEMPERATURES[period] ? period : STAGE_TIME_DEBUG_AUTO_VALUE;
 };
 
 const getBasePetCharacterState = (reactionLevel) => {
@@ -2234,7 +2255,22 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const [debugCssStatus, setDebugCssStatus] = useState('');
+  const [debugStageTimePeriod, setDebugStageTimePeriod] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return STAGE_TIME_DEBUG_AUTO_VALUE;
+    }
+
+    try {
+      return normalizeStageTimeDebugPeriod(localStorage.getItem(STAGE_TIME_DEBUG_STORAGE_KEY));
+    } catch {
+      return STAGE_TIME_DEBUG_AUTO_VALUE;
+    }
+  });
   const [debugStageRainVariant, setDebugStageRainVariant] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return STAGE_RAIN_DEBUG_AUTO_VALUE;
+    }
+
     try {
       return normalizeStageRainDebugVariant(localStorage.getItem(STAGE_RAIN_DEBUG_STORAGE_KEY));
     } catch {
@@ -2443,10 +2479,14 @@ const PetPage = ({ onBack }) => {
     || PET_CHARACTER_EFFECT_DURATIONS[activePetCharacterPresentation.effect]
     || PET_CHARACTER_EFFECT_DURATIONS.idle;
 
-  // Use real temperature if available, otherwise fallback to mock data
-  const stageTemperature = realTemperature || (STAGE_TEMPERATURES[timePeriod] || STAGE_TEMPERATURES.morning);
-
   const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
+  const normalizedDebugStageTimePeriod = normalizeStageTimeDebugPeriod(debugStageTimePeriod);
+  const activeTimePeriod = isPetCharacterDebugEnabled && normalizedDebugStageTimePeriod !== STAGE_TIME_DEBUG_AUTO_VALUE
+    ? normalizedDebugStageTimePeriod
+    : timePeriod;
+
+  // Use real temperature if available, otherwise fallback to mock data
+  const stageTemperature = realTemperature || (STAGE_TEMPERATURES[activeTimePeriod] || STAGE_TEMPERATURES.morning);
 
   const TABS_PER_PAGE = 4;
   const totalPages = Math.ceil(TABS.length / TABS_PER_PAGE);
@@ -2508,11 +2548,7 @@ const PetPage = ({ onBack }) => {
   const activeStageRainVariant = debugStageRainOverride === STAGE_RAIN_DEBUG_NONE_VALUE
     ? null
     : normalizeStageRainVariant(debugStageRainOverride || weatherRainVariant, null);
-  const shouldShowMorningRainClouds = Boolean(activeStageRainVariant)
-    && (
-      timePeriod === 'morning'
-      || (debugStageRainOverride && debugStageRainOverride !== STAGE_RAIN_DEBUG_NONE_VALUE)
-    );
+  const isRainWeatherActive = Boolean(activeStageRainVariant);
   const activeStageRainDrops = activeStageRainVariant
     ? STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant]
     : [];
@@ -2594,7 +2630,24 @@ const PetPage = ({ onBack }) => {
     '}'
   ].join('\n'), [debugCharacterPosition, debugPetClickArea, debugThermometerPosition]);
 
+  const updateDebugStageTimePeriod = (period) => {
+    if (IS_PRODUCTION_MODE) {
+      return;
+    }
+
+    const nextPeriod = normalizeStageTimeDebugPeriod(period);
+    setDebugStageTimePeriod(nextPeriod);
+
+    try {
+      localStorage.setItem(STAGE_TIME_DEBUG_STORAGE_KEY, nextPeriod);
+    } catch { }
+  };
+
   const updateDebugStageRainVariant = (variant) => {
+    if (IS_PRODUCTION_MODE) {
+      return;
+    }
+
     const nextVariant = normalizeStageRainDebugVariant(variant);
     setDebugStageRainVariant(nextVariant);
 
@@ -5083,7 +5136,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${shouldShowMorningRainClouds ? ' pet-stage--morning-rain-clouds-visible' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${activeTimePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${isRainWeatherActive ? ' pet-stage--rain-weather-active' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
@@ -5230,6 +5283,7 @@ useEffect(() => {
                     <span>Thermo X: {debugThermometerPosition.x}px</span>
                     <span>Thermo Y: {debugThermometerPosition.y}px</span>
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
+                    <span>Time: {activeTimePeriod}{normalizedDebugStageTimePeriod === STAGE_TIME_DEBUG_AUTO_VALUE ? ' (auto)' : ' (debug)'}</span>
                     <span>Rain: {activeStageRainLabel}</span>
                     <div className="pet-character-debug__actions">
                       <button
@@ -5251,6 +5305,34 @@ useEffect(() => {
                       <span className="pet-character-debug__status" role="status">{debugCssStatus}</span>
                     )}
                     <pre className="pet-character-debug__css-snippet">{petDebugCssSnippet}</pre>
+                  </div>
+                  <div className="pet-character-debug__controls" aria-label="Stage time controls">
+                    <span className="pet-character-debug__controls-title">Time of day</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${normalizedDebugStageTimePeriod === STAGE_TIME_DEBUG_AUTO_VALUE ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugStageTimePeriod(STAGE_TIME_DEBUG_AUTO_VALUE)}
+                      aria-pressed={normalizedDebugStageTimePeriod === STAGE_TIME_DEBUG_AUTO_VALUE}
+                    >
+                      <span>Auto time</span>
+                      <small>Current: {timePeriod}</small>
+                    </button>
+                    {STAGE_TIME_PERIODS.map((period) => {
+                      const isActive = normalizedDebugStageTimePeriod === period.key;
+
+                      return (
+                        <button
+                          key={period.key}
+                          type="button"
+                          className={`pet-character-debug__option ${isActive ? 'pet-character-debug__option--active' : ''}`}
+                          onClick={() => updateDebugStageTimePeriod(period.key)}
+                          aria-pressed={isActive}
+                        >
+                          <span>{period.label}</span>
+                          <small>{period.description}</small>
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="pet-character-debug__controls" aria-label="Rain type controls">
                     <span className="pet-character-debug__controls-title">Rain type</span>

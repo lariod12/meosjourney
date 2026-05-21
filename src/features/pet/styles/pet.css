@@ -110,6 +110,17 @@
   );
 }
 
+.pet-stage--rain-weather-active {
+  background:
+    linear-gradient(
+      to bottom,
+      #5c5c5c 0%,
+      #8a8a8a 42%,
+      #b8b8b8 72%,
+      #e5e5e5 100%
+    );
+}
+
 /* Status-based overlay patterns (using ::before to not override time backgrounds) */
 .pet-stage--needs-care::before {
   content: '';
@@ -1334,19 +1345,16 @@
   opacity: 1;
 }
 
-.pet-stage--morning-rain-clouds-visible .stage-sun {
-  opacity: 0;
-  transform: translateY(8px) scale(0.82);
-}
-
 .stage-morning-rain-clouds {
-  --stage-clouds-x: -20px;
-  --stage-clouds-y: 16px;
-  --stage-clouds-mid-x: -14px;
-  --stage-clouds-mid-y: 11px;
+  --stage-clouds-x: -50%;
+  --stage-clouds-y: 0px;
+  --stage-clouds-mid-x: calc(-50% + 6px);
+  --stage-clouds-mid-y: -5px;
   position: absolute;
-  left: 25%;
-  bottom: 60%;
+  top: 68px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
   width: 148px;
   height: 86px;
   opacity: 0;
@@ -1356,50 +1364,7 @@
   z-index: 2;
 }
 
-.pet-stage--dawn .stage-morning-rain-clouds {
-  --stage-clouds-x: -18px;
-  --stage-clouds-y: 12px;
-  --stage-clouds-mid-x: -12px;
-  --stage-clouds-mid-y: 7px;
-  left: 10%;
-  bottom: 15%;
-}
-
-.pet-stage--morning .stage-morning-rain-clouds {
-  left: 25%;
-  bottom: 60%;
-}
-
-.pet-stage--noon .stage-morning-rain-clouds {
-  --stage-clouds-x: -50%;
-  --stage-clouds-y: 16px;
-  --stage-clouds-mid-x: calc(-50% + 6px);
-  --stage-clouds-mid-y: 11px;
-  left: 50%;
-  bottom: 75%;
-}
-
-.pet-stage--afternoon .stage-morning-rain-clouds {
-  --stage-clouds-x: -128px;
-  --stage-clouds-y: 16px;
-  --stage-clouds-mid-x: -134px;
-  --stage-clouds-mid-y: 11px;
-  left: auto;
-  right: 25%;
-  bottom: 60%;
-}
-
-.pet-stage--dusk .stage-morning-rain-clouds {
-  --stage-clouds-x: -130px;
-  --stage-clouds-y: 11px;
-  --stage-clouds-mid-x: -136px;
-  --stage-clouds-mid-y: 6px;
-  left: auto;
-  right: 10%;
-  bottom: 15%;
-}
-
-.pet-stage--morning-rain-clouds-visible .stage-morning-rain-clouds {
+.pet-stage--rain-weather-active .stage-morning-rain-clouds {
   opacity: 1;
   transform: translate(var(--stage-clouds-x), var(--stage-clouds-y));
   animation: stage-morning-rain-clouds-float 3.8s ease-in-out infinite;
@@ -1702,6 +1667,13 @@
   opacity: 1;
   left: 30%;
   bottom: 65%;
+}
+
+.pet-stage--rain-weather-active .stage-sun,
+.pet-stage--rain-weather-active .stage-moon {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Stars */
