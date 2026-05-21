@@ -149,7 +149,7 @@
 /* Suggestions Dropdown */
 /* Error Message */
 .add-activity-modal__error {
-  font-family: ''Playfair Display'', serif;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-size: 0.85rem;
   color: #000000;

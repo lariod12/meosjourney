@@ -3,7 +3,12 @@
 
 /* === GLOBAL BUTTON STYLES === */
 .capacitor-android button,
-.mobile button,
+.mobile button {
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  font-size: 16px !important; /* Prevent iOS zoom on focus */
+}
+
 @media (max-width: 768px) {
   button {
     min-height: 48px !important;
@@ -16,7 +21,12 @@
 .capacitor-android .icon-button,
 .capacitor-android button[class*="icon"],
 .mobile .icon-button,
-.mobile button[class*="icon"],
+.mobile button[class*="icon"] {
+  min-width: 48px !important;
+  min-height: 48px !important;
+  padding: 12px !important;
+}
+
 @media (max-width: 768px) {
   .icon-button,
   button[class*="icon"] {
@@ -32,7 +42,12 @@
 .capacitor-android select,
 .mobile input,
 .mobile textarea,
-.mobile select,
+.mobile select {
+  min-height: 44px !important;
+  padding: 10px 12px !important;
+  font-size: 16px !important; /* Prevent iOS zoom */
+}
+
 @media (max-width: 768px) {
   input,
   textarea,
@@ -45,14 +60,18 @@
 
 /* === MODAL CLOSE BUTTONS === */
 .capacitor-android .modal__close,
-.capacitor-android [class*="modal"]__close,
 .capacitor-android [class*="-modal__close"],
 .mobile .modal__close,
-.mobile [class*="modal"]__close,
-.mobile [class*="-modal__close"],
+.mobile [class*="-modal__close"] {
+  min-width: 48px !important;
+  min-height: 48px !important;
+  padding: 12px !important;
+  top: 8px !important;
+  right: 8px !important;
+}
+
 @media (max-width: 768px) {
   .modal__close,
-  [class*="modal"]__close,
   [class*="-modal__close"] {
     min-width: 48px !important;
     min-height: 48px !important;
@@ -66,7 +85,11 @@
 .capacitor-android .card,
 .capacitor-android [class*="card"],
 .mobile .card,
-.mobile [class*="card"],
+.mobile [class*="card"] {
+  min-height: 56px !important;
+  padding: 12px 16px !important;
+}
+
 @media (max-width: 768px) {
   .card,
   [class*="card"] {
@@ -81,7 +104,11 @@
 .capacitor-android [class*="tab-btn"],
 .mobile .tab-button,
 .mobile .tab-btn,
-.mobile [class*="tab-btn"],
+.mobile [class*="tab-btn"] {
+  min-height: 48px !important;
+  padding: 12px 16px !important;
+}
+
 @media (max-width: 768px) {
   .tab-button,
   .tab-btn,
@@ -143,14 +170,14 @@
 /* === MODAL BUTTONS === */
 @media (max-width: 768px) {
   [class*="-modal__button"],
-  [class*="modal-"]button {
+  button[class*="modal-"] {
     min-height: 48px !important;
     padding: 12px 20px !important;
     font-size: 16px !important;
   }
 
   [class*="-modal__footer"],
-  [class*="modal-"]footer {
+  footer[class*="modal-"] {
     gap: 12px !important;
   }
 }

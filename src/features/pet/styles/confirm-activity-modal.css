@@ -98,7 +98,7 @@
 
 .confirm-activity-modal__label {
   display: block;
-  font-family: ''Playfair Display'', serif;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-size: 0.95rem;
   font-weight: 600;
@@ -107,7 +107,7 @@
 }
 /* Error Message */
 .confirm-activity-modal__error {
-  font-family: ''Playfair Display'', serif;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-size: 0.85rem;
   color: #000000;

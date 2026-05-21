@@ -1,10 +1,15 @@
 .pet-page {
+  --pet-display-font: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --pet-hand-font: 'Kalam', 'Patrick Hand', 'Architects Daughter', 'Comic Sans MS', cursive;
+  --pet-sketch-font: 'Patrick Hand', 'Kalam', 'Architects Daughter', 'Comic Sans MS', cursive;
   box-sizing: border-box;
   height: 100dvh;
   background: #ffffff;
   color: #000000;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--pet-display-font);
   font-style: italic;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -146,7 +151,7 @@
   display: grid;
   justify-items: end;
   gap: 8px;
-  font-family: 'Kalam', cursive;
+  font-family: var(--pet-hand-font);
   font-style: normal;
 }
 
@@ -432,7 +437,7 @@
   gap: 12px;
   padding: 18px;
   color: #000000;
-  font-family: 'Kalam', cursive;
+  font-family: var(--pet-hand-font);
   font-style: normal;
   font-weight: 900;
   line-height: 1;
@@ -481,15 +486,27 @@
   box-shadow: 6px 6px 0 #000000;
   font: inherit;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
+  outline: none;
   transform-origin: 50% 65%;
   animation: pet-camera-refusal-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.pet-camera-action-overlay__refusal-mark:focus-visible {
-  outline: 3px solid #666666;
-  outline-offset: 4px;
+.pet-camera-action-overlay__refusal-mark:focus {
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pet-camera-action-overlay__refusal-mark:focus-visible {
+    outline: 3px solid #666666;
+    outline-offset: 4px;
+  }
 }
 
 .pet-camera-action-overlay__refusal-camera {
@@ -554,23 +571,39 @@
   place-items: center;
   cursor: pointer;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transform: translate(16px, 96px) rotate(-20deg) scale(0.62);
   transform-origin: 50% 70%;
   transition:
     opacity 240ms ease,
+    visibility 0s linear 240ms,
     transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 240ms ease,
     background-color 260ms ease,
     color 260ms ease;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .pet-stage-camera-button--visible {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
   transform: translateY(0) rotate(-10deg) scale(1);
+  transition:
+    opacity 240ms ease,
+    visibility 0s linear 0s,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 240ms ease,
+    background-color 260ms ease,
+    color 260ms ease;
 }
 
 .pet-stage-camera-button--visible.pet-stage-camera-button--active,
@@ -581,10 +614,30 @@
   box-shadow: 6px 6px 0 #000000;
 }
 
-.pet-stage-camera-button:hover,
-.pet-stage-camera-button:focus-visible {
-  outline: 3px solid #666666;
-  outline-offset: 3px;
+.pet-stage-camera-button:focus {
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pet-stage-camera-button:hover,
+  .pet-stage-camera-button:focus-visible {
+    outline: 3px solid #666666;
+    outline-offset: 3px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .pet-camera-action-overlay__refusal-mark,
+  .pet-camera-action-overlay__refusal-mark:active,
+  .pet-camera-action-overlay__refusal-mark:focus,
+  .pet-camera-action-overlay__refusal-mark:focus-visible,
+  .pet-stage-camera-button,
+  .pet-stage-camera-button:active,
+  .pet-stage-camera-button:focus,
+  .pet-stage-camera-button:focus-visible {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 .pet-stage-camera-button:disabled,
@@ -642,6 +695,9 @@
   height: 100%;
   opacity: 0;
   cursor: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pet-stage-camera-button__input:disabled {
@@ -665,14 +721,26 @@
   cursor: pointer;
   transform: rotate(6deg);
   pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
+  outline: none;
 }
 
-.pet-stage-camera-cancel-button:hover,
-.pet-stage-camera-cancel-button:focus-visible {
-  outline: 3px solid #666666;
-  outline-offset: 3px;
+.pet-stage-camera-cancel-button:focus {
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pet-stage-camera-cancel-button:hover,
+  .pet-stage-camera-cancel-button:focus-visible {
+    outline: 3px solid #666666;
+    outline-offset: 3px;
+  }
 }
 
 .pet-stage-camera-cancel-button svg {
@@ -2144,20 +2212,47 @@
   padding: 0;
   border: 0;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.001);
-  color: #000000;
+  background: transparent;
+  color: transparent;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
+  outline: none;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
 }
 
 .pet-character__hit-area:disabled {
   cursor: default;
 }
 
-.pet-character__hit-area:focus-visible {
-  outline: 3px solid #666666;
-  outline-offset: 4px;
+.pet-character__hit-area:focus {
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pet-character__hit-area:focus-visible {
+    outline: 3px solid #666666;
+    outline-offset: 4px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .pet-character__hit-area,
+  .pet-character__hit-area:active,
+  .pet-character__hit-area:focus,
+  .pet-character__hit-area:focus-visible {
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    transform: translateX(calc(-50% + var(--pet-click-area-x, 0px)));
+  }
 }
 
 .pet-character--debug-click-area .pet-character__hit-area::after {
@@ -2169,7 +2264,7 @@
   box-shadow: inset 0 0 0 1px rgba(255, 0, 0, 0.28), 0 0 0 1px #ffffff;
   color: #000000;
   background: rgba(255, 255, 255, 0.08);
-  font-family: 'Kalam', cursive;
+  font-family: var(--pet-hand-font);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -2510,7 +2605,7 @@
   stroke-width: 12;
   paint-order: stroke fill;
   stroke-linejoin: round;
-  font-family: 'Patrick Hand', 'Kalam', 'Architects Daughter', cursive;
+  font-family: var(--pet-sketch-font);
   font-size: 72px;
   font-style: italic;
   font-weight: 900;
@@ -3133,7 +3228,7 @@
 
 /* Empty Icon Text */
 .pet-item-card__empty {
-  font-family: ''Playfair Display'', serif;
+  font-family: var(--pet-display-font);
   font-style: italic;
   font-size: 0.9rem;
   color: #999999;
