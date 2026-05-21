@@ -2508,6 +2508,11 @@ const PetPage = ({ onBack }) => {
   const activeStageRainVariant = debugStageRainOverride === STAGE_RAIN_DEBUG_NONE_VALUE
     ? null
     : normalizeStageRainVariant(debugStageRainOverride || weatherRainVariant, null);
+  const shouldShowMorningRainClouds = Boolean(activeStageRainVariant)
+    && (
+      timePeriod === 'morning'
+      || (debugStageRainOverride && debugStageRainOverride !== STAGE_RAIN_DEBUG_NONE_VALUE)
+    );
   const activeStageRainDrops = activeStageRainVariant
     ? STAGE_RAIN_DROPS_BY_VARIANT[activeStageRainVariant]
     : [];
@@ -5078,12 +5083,18 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${timePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${shouldShowMorningRainClouds ? ' pet-stage--morning-rain-clouds-visible' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
           {/* Sun */}
           <div className="stage-sun" aria-hidden="true"></div>
+          <div className="stage-morning-rain-clouds" aria-hidden="true">
+            <span className="stage-morning-rain-cloud stage-morning-rain-cloud--left"></span>
+            <span className="stage-morning-rain-cloud stage-morning-rain-cloud--main"></span>
+            <span className="stage-morning-rain-cloud stage-morning-rain-cloud--top"></span>
+            <span className="stage-morning-rain-cloud stage-morning-rain-cloud--right"></span>
+          </div>
 
           {/* Moon with craters */}
           <div className="stage-moon" aria-hidden="true">
