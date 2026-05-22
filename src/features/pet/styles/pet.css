@@ -436,7 +436,7 @@
 
 .pet-topbar {
   position: absolute;
-  z-index: 20;
+  z-index: 60;
   top: 16px;
   left: 14px;
   right: 14px;
@@ -1877,6 +1877,794 @@
   pointer-events: none;
 }
 
+.pet-birthday-event {
+  --pet-party-color-1: #ff4f8b;
+  --pet-party-color-2: #ffd447;
+  --pet-party-color-3: #42d392;
+  --pet-party-color-4: #4da3ff;
+  --pet-party-color-5: #b86bff;
+  --pet-party-color-6: #ff7a45;
+  --pet-gift-wrap-color: #ffffff;
+  --pet-gift-wrap-shade: #e6e6e6;
+  --pet-gift-ribbon-color: #000000;
+  --pet-gift-bow-color: #ffffff;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint style;
+  font-family: var(--pet-hand-font);
+  font-style: normal;
+}
+
+.pet-birthday-event--celebrating {
+  --pet-gift-wrap-color: var(--pet-party-color-4);
+  --pet-gift-wrap-shade: #c8e8ff;
+  --pet-gift-ribbon-color: var(--pet-party-color-1);
+  --pet-gift-bow-color: var(--pet-party-color-2);
+}
+
+.pet-birthday-event__fireworks {
+  position: absolute;
+  z-index: 0;
+  inset: 70px 0 120px;
+  overflow: hidden;
+  contain: layout paint style;
+  opacity: 0.82;
+}
+
+.pet-birthday-event__firework {
+  --pet-firework-size: 4px;
+  --pet-firework-speed: 1.85s;
+  --pet-firework-start:
+    0 0 var(--pet-party-color-1),
+    0 0 var(--pet-party-color-2),
+    0 0 var(--pet-party-color-3),
+    0 0 var(--pet-party-color-4),
+    0 0 var(--pet-party-color-5),
+    0 0 var(--pet-party-color-6),
+    0 0 var(--pet-party-color-1),
+    0 0 var(--pet-party-color-2),
+    0 0 var(--pet-party-color-3),
+    0 0 var(--pet-party-color-4),
+    0 0 var(--pet-party-color-5),
+    0 0 var(--pet-party-color-6);
+  --pet-firework-burst:
+    -48px -28px var(--pet-party-color-1),
+    -32px -58px var(--pet-party-color-2),
+    4px -68px var(--pet-party-color-3),
+    38px -50px var(--pet-party-color-4),
+    58px -16px var(--pet-party-color-5),
+    46px 22px var(--pet-party-color-6),
+    16px 48px var(--pet-party-color-1),
+    -20px 46px var(--pet-party-color-2),
+    -54px 20px var(--pet-party-color-3),
+    -66px -8px var(--pet-party-color-4),
+    -28px 6px var(--pet-party-color-5),
+    24px -8px var(--pet-party-color-6);
+  position: absolute;
+  width: var(--pet-firework-size);
+  height: var(--pet-firework-size);
+  border-radius: 50%;
+  background: transparent;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+.pet-birthday-event__firework::before,
+.pet-birthday-event__firework::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--pet-firework-size);
+  height: var(--pet-firework-size);
+  border-radius: 50%;
+  background: var(--pet-party-color-1);
+  box-shadow: var(--pet-firework-start);
+  transform: translate3d(0, 0, 0) scale(0.45);
+  opacity: 0;
+  animation:
+    pet-birthday-firework-bang var(--pet-firework-speed) ease-out infinite,
+    pet-birthday-firework-gravity var(--pet-firework-speed) ease-in infinite,
+    pet-birthday-firework-fade var(--pet-firework-speed) ease-out infinite;
+}
+
+.pet-birthday-event__firework::after {
+  --pet-firework-burst:
+    -34px -42px var(--pet-party-color-2),
+    -8px -62px var(--pet-party-color-5),
+    28px -60px var(--pet-party-color-1),
+    56px -32px var(--pet-party-color-3),
+    62px 6px var(--pet-party-color-6),
+    34px 38px var(--pet-party-color-4),
+    -2px 56px var(--pet-party-color-2),
+    -38px 36px var(--pet-party-color-5),
+    -58px 2px var(--pet-party-color-1),
+    -48px -24px var(--pet-party-color-3),
+    -14px 14px var(--pet-party-color-6),
+    20px 10px var(--pet-party-color-4);
+  animation-delay: 0.22s;
+}
+
+.pet-birthday-event__firework--one {
+  left: 8%;
+  top: 34px;
+}
+
+.pet-birthday-event__firework--two {
+  right: 12%;
+  top: 88px;
+  --pet-firework-size: 3px;
+  --pet-firework-speed: 2.05s;
+  --pet-firework-burst:
+    -38px -22px var(--pet-party-color-4),
+    -22px -46px var(--pet-party-color-1),
+    8px -54px var(--pet-party-color-6),
+    34px -34px var(--pet-party-color-2),
+    48px -4px var(--pet-party-color-5),
+    38px 24px var(--pet-party-color-3),
+    10px 42px var(--pet-party-color-4),
+    -24px 34px var(--pet-party-color-1),
+    -46px 12px var(--pet-party-color-6),
+    -52px -14px var(--pet-party-color-2),
+    -18px 4px var(--pet-party-color-5),
+    18px -4px var(--pet-party-color-3);
+}
+
+.pet-birthday-event__firework--three {
+  left: 58%;
+  top: 16px;
+  --pet-firework-size: 3px;
+  --pet-firework-speed: 2.25s;
+  --pet-firework-burst:
+    -30px -18px var(--pet-party-color-6),
+    -18px -38px var(--pet-party-color-3),
+    6px -46px var(--pet-party-color-5),
+    28px -28px var(--pet-party-color-1),
+    40px -2px var(--pet-party-color-2),
+    28px 22px var(--pet-party-color-4),
+    4px 34px var(--pet-party-color-6),
+    -22px 28px var(--pet-party-color-3),
+    -38px 6px var(--pet-party-color-5),
+    -42px -12px var(--pet-party-color-1),
+    -12px 6px var(--pet-party-color-2),
+    14px -2px var(--pet-party-color-4);
+}
+
+.pet-birthday-event__gift {
+  --pet-gift-scale: 1;
+  position: absolute;
+  z-index: 4;
+  left: calc(50% + 92px);
+  bottom: 58px;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translateY(0) scale(var(--pet-gift-scale)) rotate(2deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(3px 3px 0 #000000);
+  will-change: transform;
+  animation: pet-birthday-gift-wiggle 1.25s ease-in-out infinite;
+}
+
+.pet-birthday-event__gift:focus-visible {
+  outline: 3px solid #000000;
+  outline-offset: 8px;
+}
+
+.pet-birthday-event__gift:active {
+  animation-duration: 0.55s;
+}
+
+.pet-birthday-event__gift:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.pet-birthday-event__gift--opened {
+  animation: none;
+  transform: translateY(0) scale(var(--pet-gift-scale)) rotate(-2deg);
+}
+
+.pet-birthday-event__gift--shaking {
+  animation: pet-birthday-gift-shake 0.9s cubic-bezier(0.28, 0.06, 0.22, 1) both;
+}
+
+.pet-birthday-event__gift.pet-birthday-event__gift--fading {
+  pointer-events: none;
+  animation: pet-birthday-gift-open-fade 1.3s ease-out 0.2s both;
+}
+
+.pet-birthday-event__gift.pet-birthday-event__gift--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pet-birthday-event__gift-body,
+.pet-birthday-event__gift-lid {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 3px solid #000000;
+  background:
+    linear-gradient(90deg, transparent 0 38%, var(--pet-gift-ribbon-color) 38% 53%, transparent 53% 100%),
+    repeating-linear-gradient(135deg, var(--pet-gift-wrap-color) 0 8px, var(--pet-gift-wrap-shade) 8px 15px);
+  transition: transform 0.38s ease, bottom 0.38s ease;
+}
+
+.pet-birthday-event__gift-body {
+  bottom: 0;
+  width: 46px;
+  height: 34px;
+  border-radius: 5px 5px 8px 8px;
+}
+
+.pet-birthday-event__gift-lid {
+  bottom: 32px;
+  width: 52px;
+  height: 14px;
+  border-radius: 7px 7px 4px 4px;
+  transform-origin: 16% 100%;
+}
+
+.pet-birthday-event__gift--opened .pet-birthday-event__gift-lid {
+  bottom: 42px;
+  transform: translateX(-50%) rotate(-18deg);
+}
+
+.pet-birthday-event__gift-bow {
+  position: absolute;
+  bottom: 43px;
+  width: 18px;
+  height: 15px;
+  border: 3px solid #000000;
+  border-radius: 50% 50% 50% 8px;
+  background: var(--pet-gift-bow-color);
+  transition: transform 0.38s ease, bottom 0.38s ease;
+}
+
+.pet-birthday-event__gift-bow--left {
+  left: 11px;
+  transform: rotate(-24deg);
+}
+
+.pet-birthday-event__gift--opened .pet-birthday-event__gift-bow--left {
+  bottom: 50px;
+  transform: translateX(-4px) rotate(-40deg);
+}
+
+.pet-birthday-event__gift-bow--right {
+  right: 8px;
+  transform: scaleX(-1) rotate(-24deg);
+}
+
+.pet-birthday-event__gift--opened .pet-birthday-event__gift-bow--right {
+  bottom: 48px;
+  transform: translateX(4px) scaleX(-1) rotate(-42deg);
+}
+
+.pet-birthday-event__teddy {
+  --pet-teddy-fur: #b9793d;
+  --pet-teddy-fur-dark: #845326;
+  --pet-teddy-fur-light: #f0bd78;
+  --pet-teddy-rotate: 0deg;
+  --pet-teddy-scale: 0.96;
+  --pet-teddy-pop-peak-scale: 1.06;
+  --pet-teddy-flight-mid-x: 30px;
+  --pet-teddy-flight-end-x: 58px;
+  --pet-teddy-flight-end-y: 0px;
+  --pet-teddy-flight-peak-y: -54px;
+  position: absolute;
+  z-index: 5;
+  left: calc(50% + 92px);
+  bottom: 58px;
+  width: 54px;
+  height: 54px;
+  pointer-events: none;
+  transform: translate3d(var(--pet-teddy-flight-end-x), var(--pet-teddy-flight-end-y), 0) rotate(var(--pet-teddy-rotate)) scale(var(--pet-teddy-scale));
+  transform-origin: 50% 100%;
+  filter: drop-shadow(2px 2px 0 #000000);
+  contain: layout paint style;
+  animation: pet-birthday-teddy-flight 0.9s cubic-bezier(0.16, 1.2, 0.3, 1) both;
+}
+
+.pet-birthday-event__teddy span {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.pet-birthday-event__teddy-ear {
+  top: 2px;
+  width: 17px;
+  height: 17px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 52%, var(--pet-teddy-fur-light) 0 36%, transparent 38%),
+    var(--pet-teddy-fur-dark);
+}
+
+.pet-birthday-event__teddy-ear--left {
+  left: 8px;
+}
+
+.pet-birthday-event__teddy-ear--right {
+  right: 8px;
+}
+
+.pet-birthday-event__teddy-head {
+  left: 13px;
+  top: 6px;
+  z-index: 2;
+  width: 29px;
+  height: 28px;
+  border: 2px solid #000000;
+  border-radius: 48% 48% 44% 44%;
+  background: var(--pet-teddy-fur);
+}
+
+.pet-birthday-event__teddy-body {
+  left: 14px;
+  bottom: 8px;
+  z-index: 1;
+  width: 28px;
+  height: 27px;
+  border: 2px solid #000000;
+  border-radius: 50% 50% 45% 45%;
+  background:
+    radial-gradient(ellipse at 50% 60%, var(--pet-teddy-fur-light) 0 42%, transparent 45%),
+    var(--pet-teddy-fur);
+}
+
+.pet-birthday-event__teddy-arm {
+  top: 25px;
+  z-index: 0;
+  width: 13px;
+  height: 19px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: var(--pet-teddy-fur-dark);
+}
+
+.pet-birthday-event__teddy-arm--left {
+  left: 8px;
+  transform: rotate(28deg);
+}
+
+.pet-birthday-event__teddy-arm--right {
+  right: 8px;
+  transform: rotate(-28deg);
+}
+
+.pet-birthday-event__teddy-leg {
+  bottom: 2px;
+  z-index: 0;
+  width: 16px;
+  height: 13px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: var(--pet-teddy-fur-dark);
+}
+
+.pet-birthday-event__teddy-leg--left {
+  left: 12px;
+  transform: rotate(-14deg);
+}
+
+.pet-birthday-event__teddy-leg--right {
+  right: 12px;
+  transform: rotate(14deg);
+}
+
+.pet-birthday-event__teddy-eye {
+  top: 17px;
+  z-index: 3;
+  width: 4px;
+  height: 5px;
+  border-radius: 50%;
+  background: #000000;
+}
+
+.pet-birthday-event__teddy-eye--left {
+  left: 22px;
+}
+
+.pet-birthday-event__teddy-eye--right {
+  right: 22px;
+}
+
+.pet-birthday-event__teddy-muzzle {
+  left: 20px;
+  top: 21px;
+  z-index: 3;
+  width: 15px;
+  height: 10px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: var(--pet-teddy-fur-light);
+}
+
+.pet-birthday-event__teddy-muzzle::before,
+.pet-birthday-event__teddy-muzzle::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 5px;
+  height: 5px;
+  border-bottom: 1px solid #000000;
+  border-radius: 50%;
+}
+
+.pet-birthday-event__teddy-muzzle::before {
+  left: 2px;
+}
+
+.pet-birthday-event__teddy-muzzle::after {
+  right: 2px;
+}
+
+.pet-birthday-event__teddy-nose {
+  left: 25px;
+  top: 22px;
+  z-index: 4;
+  width: 6px;
+  height: 5px;
+  border-radius: 50% 50% 45% 45%;
+  background: #000000;
+}
+
+.pet-birthday-event__confetti {
+  position: absolute;
+  z-index: 0;
+  inset: 72px 0 0;
+  overflow: hidden;
+  contain: layout paint style;
+}
+
+.pet-birthday-event__confetti-piece {
+  --pet-birthday-confetti-left: 50%;
+  --pet-birthday-confetti-delay: 0s;
+  --pet-birthday-confetti-duration: 4s;
+  --pet-birthday-confetti-rotate: 180deg;
+  --pet-birthday-confetti-color: var(--pet-party-color-1);
+  position: absolute;
+  top: -18px;
+  left: var(--pet-birthday-confetti-left);
+  width: 6px;
+  height: 12px;
+  border: 2px solid #000000;
+  background: var(--pet-birthday-confetti-color);
+  opacity: 0.78;
+  transform: rotate(0deg);
+  will-change: transform, opacity;
+  animation: pet-birthday-confetti-fall var(--pet-birthday-confetti-duration) linear infinite;
+  animation-delay: var(--pet-birthday-confetti-delay);
+}
+
+.pet-birthday-event__confetti-piece:nth-child(3n) {
+  width: 10px;
+  height: 6px;
+}
+
+.pet-birthday-event__confetti-piece:nth-child(4n) {
+  border-radius: 50%;
+}
+
+.pet-birthday-event__confetti-piece--1 { --pet-birthday-confetti-left: 5%; --pet-birthday-confetti-delay: -0.1s; --pet-birthday-confetti-duration: 4.5s; --pet-birthday-confetti-color: var(--pet-party-color-1); }
+.pet-birthday-event__confetti-piece--2 { --pet-birthday-confetti-left: 12%; --pet-birthday-confetti-delay: -2.1s; --pet-birthday-confetti-duration: 5.2s; --pet-birthday-confetti-color: var(--pet-party-color-2); }
+.pet-birthday-event__confetti-piece--3 { --pet-birthday-confetti-left: 18%; --pet-birthday-confetti-delay: -1.4s; --pet-birthday-confetti-duration: 4.2s; --pet-birthday-confetti-color: var(--pet-party-color-4); }
+.pet-birthday-event__confetti-piece--4 { --pet-birthday-confetti-left: 25%; --pet-birthday-confetti-delay: -3.3s; --pet-birthday-confetti-duration: 5.7s; --pet-birthday-confetti-color: var(--pet-party-color-3); }
+.pet-birthday-event__confetti-piece--5 { --pet-birthday-confetti-left: 31%; --pet-birthday-confetti-delay: -0.8s; --pet-birthday-confetti-duration: 4.9s; --pet-birthday-confetti-color: var(--pet-party-color-5); }
+.pet-birthday-event__confetti-piece--6 { --pet-birthday-confetti-left: 38%; --pet-birthday-confetti-delay: -2.8s; --pet-birthday-confetti-duration: 4.6s; --pet-birthday-confetti-color: var(--pet-party-color-6); }
+.pet-birthday-event__confetti-piece--7 { --pet-birthday-confetti-left: 44%; --pet-birthday-confetti-delay: -1.8s; --pet-birthday-confetti-duration: 5.4s; --pet-birthday-confetti-color: var(--pet-party-color-2); }
+.pet-birthday-event__confetti-piece--8 { --pet-birthday-confetti-left: 51%; --pet-birthday-confetti-delay: -3.8s; --pet-birthday-confetti-duration: 4.4s; --pet-birthday-confetti-color: var(--pet-party-color-1); }
+.pet-birthday-event__confetti-piece--9 { --pet-birthday-confetti-left: 57%; --pet-birthday-confetti-delay: -0.4s; --pet-birthday-confetti-duration: 5.1s; --pet-birthday-confetti-color: var(--pet-party-color-3); }
+.pet-birthday-event__confetti-piece--10 { --pet-birthday-confetti-left: 64%; --pet-birthday-confetti-delay: -2.4s; --pet-birthday-confetti-duration: 4.3s; --pet-birthday-confetti-color: var(--pet-party-color-4); }
+.pet-birthday-event__confetti-piece--11 { --pet-birthday-confetti-left: 71%; --pet-birthday-confetti-delay: -1.1s; --pet-birthday-confetti-duration: 5.6s; --pet-birthday-confetti-color: var(--pet-party-color-6); }
+.pet-birthday-event__confetti-piece--12 { --pet-birthday-confetti-left: 78%; --pet-birthday-confetti-delay: -3.1s; --pet-birthday-confetti-duration: 4.8s; --pet-birthday-confetti-color: var(--pet-party-color-5); }
+.pet-birthday-event__confetti-piece--13 { --pet-birthday-confetti-left: 84%; --pet-birthday-confetti-delay: -1.7s; --pet-birthday-confetti-duration: 5.3s; --pet-birthday-confetti-color: var(--pet-party-color-1); }
+.pet-birthday-event__confetti-piece--14 { --pet-birthday-confetti-left: 90%; --pet-birthday-confetti-delay: -3.9s; --pet-birthday-confetti-duration: 4.7s; --pet-birthday-confetti-color: var(--pet-party-color-4); }
+.pet-birthday-event__confetti-piece--15 { --pet-birthday-confetti-left: 96%; --pet-birthday-confetti-delay: -0.6s; --pet-birthday-confetti-duration: 5.5s; --pet-birthday-confetti-color: var(--pet-party-color-2); }
+.pet-birthday-event__confetti-piece--16 { --pet-birthday-confetti-left: 8%; --pet-birthday-confetti-delay: -3.6s; --pet-birthday-confetti-duration: 4.1s; --pet-birthday-confetti-color: var(--pet-party-color-5); }
+.pet-birthday-event__confetti-piece--17 { --pet-birthday-confetti-left: 69%; --pet-birthday-confetti-delay: -2.9s; --pet-birthday-confetti-duration: 5s; --pet-birthday-confetti-color: var(--pet-party-color-3); }
+.pet-birthday-event__confetti-piece--18 { --pet-birthday-confetti-left: 35%; --pet-birthday-confetti-delay: -4.4s; --pet-birthday-confetti-duration: 4.6s; --pet-birthday-confetti-color: var(--pet-party-color-6); }
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .pet-birthday-event {
+    z-index: 1;
+  }
+
+  .pet-birthday-event__fireworks {
+    display: block;
+    inset: 74px 0 auto;
+    height: 120px;
+    opacity: 0.64;
+  }
+
+  .pet-birthday-event__firework {
+    --pet-firework-size: 3px;
+    --pet-firework-speed: 3.4s;
+  }
+
+  .pet-birthday-event__firework--one {
+    left: 18%;
+    top: 24px;
+  }
+
+  .pet-birthday-event__firework--two {
+    right: 15%;
+    top: 72px;
+  }
+
+  .pet-birthday-event__firework--three {
+    left: 58%;
+    top: 12px;
+  }
+
+  .pet-birthday-event__gift {
+    --pet-gift-scale: 0.84;
+    left: auto;
+    right: 72px;
+    bottom: 42px;
+    transform-origin: 100% 100%;
+    filter: none;
+    animation-duration: 1.8s;
+  }
+
+  .pet-birthday-event__teddy {
+    --pet-teddy-scale: 0.92;
+    --pet-teddy-pop-peak-scale: 1.02;
+    --pet-teddy-flight-mid-x: 24px;
+    --pet-teddy-flight-end-x: 52px;
+    --pet-teddy-flight-end-y: -10px;
+    --pet-teddy-flight-peak-y: -44px;
+    left: auto;
+    right: 72px;
+    bottom: 42px;
+    width: 45px;
+    height: 45px;
+    filter: none;
+  }
+
+  .pet-birthday-event__teddy-ear {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+  }
+
+  .pet-birthday-event__teddy-head {
+    left: 10px;
+    top: 5px;
+    width: 25px;
+    height: 24px;
+  }
+
+  .pet-birthday-event__teddy-body {
+    left: 11px;
+    bottom: 6px;
+    width: 24px;
+    height: 23px;
+  }
+
+  .pet-birthday-event__teddy-arm {
+    top: 21px;
+    width: 11px;
+    height: 16px;
+  }
+
+  .pet-birthday-event__teddy-leg {
+    width: 14px;
+    height: 11px;
+  }
+
+  .pet-birthday-event__teddy-eye--left {
+    left: 18px;
+  }
+
+  .pet-birthday-event__teddy-eye--right {
+    right: 18px;
+  }
+
+  .pet-birthday-event__teddy-muzzle {
+    left: 16px;
+    top: 18px;
+    width: 13px;
+    height: 9px;
+  }
+
+  .pet-birthday-event__teddy-nose {
+    left: 20px;
+    top: 19px;
+  }
+
+  .pet-birthday-event__confetti {
+    inset: 80px 0 0;
+  }
+
+  .pet-birthday-event__confetti-piece {
+    width: 5px;
+    height: 10px;
+    opacity: 0.42;
+    animation-duration: calc(var(--pet-birthday-confetti-duration) * 1.35);
+  }
+
+  .pet-birthday-event__confetti-piece:nth-child(n+9) {
+    display: none;
+    animation: none;
+  }
+}
+
+@keyframes pet-birthday-firework-bang {
+  0% {
+    box-shadow: var(--pet-firework-start);
+    transform: translate3d(0, 0, 0) scale(0.35);
+  }
+
+  45% {
+    box-shadow: var(--pet-firework-burst);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  100% {
+    box-shadow: var(--pet-firework-burst);
+    transform: translate3d(0, 0, 0) scale(0.82);
+  }
+}
+
+@keyframes pet-birthday-firework-gravity {
+  0%, 42% {
+    translate: 0 0;
+  }
+
+  100% {
+    translate: 0 34px;
+  }
+}
+
+@keyframes pet-birthday-firework-fade {
+  0% {
+    opacity: 0;
+  }
+
+  10%, 52% {
+    opacity: 0.86;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pet-birthday-gift-wiggle {
+  0%, 100% {
+    transform: translateY(0) scale(var(--pet-gift-scale)) rotate(2deg);
+  }
+
+  18% {
+    transform: translateY(-3px) scale(var(--pet-gift-scale)) rotate(-7deg);
+  }
+
+  36% {
+    transform: translateY(1px) scale(var(--pet-gift-scale)) rotate(6deg);
+  }
+
+  54% {
+    transform: translateY(-4px) scale(var(--pet-gift-scale)) rotate(-5deg);
+  }
+
+  72% {
+    transform: translateY(0) scale(var(--pet-gift-scale)) rotate(4deg);
+  }
+}
+
+@keyframes pet-birthday-gift-shake {
+  0% {
+    transform: translate3d(0, 0, 0) scale(var(--pet-gift-scale)) rotate(2deg);
+  }
+
+  12% {
+    transform: translate3d(-3px, -2px, 0) scale(var(--pet-gift-scale)) rotate(-8deg);
+  }
+
+  24% {
+    transform: translate3d(4px, 1px, 0) scale(var(--pet-gift-scale)) rotate(9deg);
+  }
+
+  36% {
+    transform: translate3d(-5px, -3px, 0) scale(var(--pet-gift-scale)) rotate(-10deg);
+  }
+
+  50% {
+    transform: translate3d(5px, 0, 0) scale(var(--pet-gift-scale)) rotate(8deg);
+  }
+
+  64% {
+    transform: translate3d(-4px, -2px, 0) scale(var(--pet-gift-scale)) rotate(-7deg);
+  }
+
+  78% {
+    transform: translate3d(3px, 0, 0) scale(var(--pet-gift-scale)) rotate(5deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(var(--pet-gift-scale)) rotate(-2deg);
+  }
+}
+
+@keyframes pet-birthday-gift-open-fade {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--pet-gift-scale)) rotate(-2deg);
+  }
+
+  42% {
+    opacity: 1;
+    transform: translate3d(-2px, -5px, 0) scale(var(--pet-gift-scale)) rotate(-5deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-8px, 14px, 0) scale(var(--pet-gift-scale)) rotate(8deg);
+  }
+}
+
+@keyframes pet-birthday-teddy-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) rotate(-16deg) scale(0.32);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translate3d(6px, -12px, 0) rotate(-8deg) scale(0.68);
+  }
+
+  58% {
+    opacity: 1;
+    transform: translate3d(var(--pet-teddy-flight-mid-x), var(--pet-teddy-flight-peak-y), 0) rotate(12deg) scale(var(--pet-teddy-pop-peak-scale));
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(var(--pet-teddy-flight-end-x), var(--pet-teddy-flight-end-y), 0) rotate(var(--pet-teddy-rotate)) scale(var(--pet-teddy-scale));
+  }
+}
+
+@keyframes pet-birthday-wish-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) rotate(-1deg) scale(0.88);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(-1deg) scale(1);
+  }
+}
+
+@keyframes pet-birthday-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(-12px, -30px, 0) rotate(0deg);
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(18px, 54dvh, 0) rotate(260deg);
+  }
+}
+
 /* Stars */
 .stage-stars {
   position: absolute;
@@ -2395,6 +3183,69 @@
 
 .pet-character__hit-area:focus {
   outline: none;
+}
+
+.pet-character__birthday-hat {
+  position: absolute;
+  z-index: 42;
+  left: 50%;
+  top: -22px;
+  width: 42px;
+  height: 48px;
+  border: 3px solid #000000;
+  background:
+    repeating-linear-gradient(135deg, #ff4f8b 0 7px, #ffd447 7px 13px);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform: translateX(-50%) rotate(-5deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(2px 2px 0 #000000);
+  will-change: transform;
+  animation: pet-birthday-hat-wiggle 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.pet-character__birthday-hat::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: -5px;
+  height: 9px;
+  border: 3px solid #000000;
+  border-radius: 999px;
+  background: #42d392;
+}
+
+.pet-character__birthday-hat-tip {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  background: #4da3ff;
+  transform: translateX(-50%);
+}
+
+@keyframes pet-birthday-hat-wiggle {
+  0%, 100% {
+    transform: translateX(-50%) rotate(-5deg);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(-2px) rotate(4deg);
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .pet-character__birthday-hat {
+    width: 36px;
+    height: 42px;
+    top: -18px;
+    filter: none;
+    animation-duration: 3.2s;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3554,6 +4405,66 @@
   border: 2px solid #000000;
   border-radius: 50%;
   background: #f7f7f7;
+}
+
+.pet-birthday-wish-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.pet-birthday-wish-modal__dialog {
+  width: min(82vw, 320px);
+  padding: 18px 18px 16px;
+  border: 4px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 6px 6px 0 #000000;
+  text-align: center;
+  transform: rotate(-1deg);
+  animation: pet-birthday-wish-pop 0.28s ease-out both;
+}
+
+.pet-birthday-wish-modal__dialog p {
+  margin: 0 0 10px;
+  font-family: var(--pet-title-font);
+  font-size: clamp(22px, 7vw, 32px);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.pet-birthday-wish-modal__hint {
+  display: block;
+  margin: 0 auto 12px;
+  color: #000000;
+  font-family: var(--pet-hand-font);
+  font-size: clamp(15px, 4.2vw, 18px);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.pet-birthday-wish-modal__countdown {
+  display: inline-grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 3px 3px 0 #000000;
+  font-family: var(--pet-title-font);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .pet-status-list {
@@ -5757,7 +6668,13 @@
   .pet-stage-camera-button,
   .pet-stage-camera-flash-screen,
   .pet-character__camera,
-  .pet-character__camera-flash {
+  .pet-character__camera-flash,
+  .pet-birthday-event__firework,
+  .pet-birthday-event__gift,
+  .pet-birthday-event__teddy,
+  .pet-birthday-wish-modal__dialog,
+  .pet-birthday-event__confetti-piece,
+  .pet-character__birthday-hat {
     animation: none;
     transition: none;
   }

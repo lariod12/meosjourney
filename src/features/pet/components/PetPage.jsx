@@ -257,6 +257,24 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.1.0',
+    changes: [
+      {
+        title: 'Birthday event',
+        summary: 'Hiển thị birthday effect trên sân khấu pet theo ngày cấu hình trong events.',
+        details: [
+          'Đọc birthday từ pet events với format MM-DD và enabled flag.',
+          'Khi đúng ngày, sân khấu hiển thị gift box trắng đen để mở lời chúc Happy Birthday.',
+          'Sau khi bấm gift box, popup lời chúc làm mờ sân khấu, đếm ngược 3-2-1 rồi tự đóng.',
+          'Khi popup đóng, gift box rung lắc trước khi mở bung, unlock gift màu, confetti, pháo hoa và mũ sinh nhật cho pet.',
+          'Gấu bông màu bay ra từ đúng vị trí hộp quà rồi đáp bên phải, trong khi gift box tan biến dần.',
+          'Gift box chỉ mở một lần trong phiên birthday để tránh click lặp lại.',
+          'Debug mode có Force birthday để preview event mà không cần sửa ngày trong database.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.0.0',
     changes: [
       {
@@ -1000,6 +1018,10 @@ const PET_CHARACTER_POSITION_CONTROLS = [
 const PET_CHARACTER_BASE_WIDTH = 168;
 const PET_CHARACTER_BASE_HEIGHT = 210;
 const PET_CLICK_AREA_DEBUG_STORAGE_KEY = 'meo-pet-click-area-debug-v2';
+const PET_BIRTHDAY_DEBUG_STORAGE_KEY = 'meo-pet-birthday-debug-mode';
+const PET_BIRTHDAY_DEBUG_AUTO_VALUE = 'auto';
+const PET_BIRTHDAY_DEBUG_FORCE_VALUE = 'force';
+const PET_BIRTHDAY_CONFETTI_PIECES = Array.from({ length: 18 }, (_, index) => index + 1);
 const PET_CLICK_AREA_DEBUG_DEFAULTS = {
   visible: false,
   x: 0,
@@ -1187,6 +1209,29 @@ const getMosquitoCompletedDateKey = (completedAt) => {
 
 const isMosquitoEventClearedToday = (events = {}) => (
   getMosquitoCompletedDateKey(events?.mosquito?.completedAt) === getMosquitoEventDateKey()
+);
+
+const getBirthdayDateKey = (date = new Date()) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${month}-${day}`;
+};
+
+const isBirthdayDateValue = (value) => typeof value === 'string' && /^\d{2}-\d{2}$/.test(value.trim());
+
+const getBirthdayDisplayDate = (value) => {
+  if (!isBirthdayDateValue(value)) {
+    return 'Not set';
+  }
+
+  const [month, day] = value.trim().split('-');
+  return `${day}-${month}`;
+};
+
+const isBirthdayEventToday = (birthday = {}, date = new Date()) => (
+  birthday?.enabled === true &&
+  isBirthdayDateValue(birthday?.date) &&
+  birthday.date.trim() === getBirthdayDateKey(date)
 );
 
 const clampMosquitoRouteValue = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -2383,6 +2428,12 @@ const PetPage = ({ onBack }) => {
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
   const [debugCssStatus, setDebugCssStatus] = useState('');
+  const [isBirthdayGiftOpened, setIsBirthdayGiftOpened] = useState(false);
+  const [isBirthdayGiftPopupOpen, setIsBirthdayGiftPopupOpen] = useState(false);
+  const [isBirthdaySurpriseRevealed, setIsBirthdaySurpriseRevealed] = useState(false);
+  const [isBirthdayTeddyVisible, setIsBirthdayTeddyVisible] = useState(false);
+  const [birthdayGiftRevealPhase, setBirthdayGiftRevealPhase] = useState('idle');
+  const [birthdayGiftCountdown, setBirthdayGiftCountdown] = useState(3);
   const [debugAwakeningMode, setDebugAwakeningMode] = useState(() => {
     if (IS_PRODUCTION_MODE) {
       return 'auto';
@@ -2415,6 +2466,26 @@ const PetPage = ({ onBack }) => {
       return normalizeStageRainDebugVariant(localStorage.getItem(STAGE_RAIN_DEBUG_STORAGE_KEY));
     } catch {
       return STAGE_RAIN_DEBUG_AUTO_VALUE;
+    }
+  });
+  const [debugBirthdayMode, setDebugBirthdayMode] = useState(() => {
+    if (IS_PRODUCTION_MODE) {
+      return PET_BIRTHDAY_DEBUG_AUTO_VALUE;
+    }
+
+    try {
+      if (typeof window !== 'undefined') {
+        const debugParam = new URLSearchParams(window.location.search).get('birthday');
+        if (debugParam === PET_BIRTHDAY_DEBUG_FORCE_VALUE) {
+          return PET_BIRTHDAY_DEBUG_FORCE_VALUE;
+        }
+      }
+
+      return localStorage.getItem(PET_BIRTHDAY_DEBUG_STORAGE_KEY) === PET_BIRTHDAY_DEBUG_FORCE_VALUE
+        ? PET_BIRTHDAY_DEBUG_FORCE_VALUE
+        : PET_BIRTHDAY_DEBUG_AUTO_VALUE;
+    } catch {
+      return PET_BIRTHDAY_DEBUG_AUTO_VALUE;
     }
   });
   const [weatherRainVariant, setWeatherRainVariant] = useState(null); // Auto rain from weather API
@@ -2909,6 +2980,22 @@ const PetPage = ({ onBack }) => {
       setIsSleeping(true);
       setIsAwakening(true);
     }
+  };
+
+  const updateDebugBirthdayMode = (mode) => {
+    if (IS_PRODUCTION_MODE) {
+      return;
+    }
+
+    const validMode = mode === PET_BIRTHDAY_DEBUG_FORCE_VALUE
+      ? PET_BIRTHDAY_DEBUG_FORCE_VALUE
+      : PET_BIRTHDAY_DEBUG_AUTO_VALUE;
+
+    setDebugBirthdayMode(validMode);
+
+    try {
+      localStorage.setItem(PET_BIRTHDAY_DEBUG_STORAGE_KEY, validMode);
+    } catch { }
   };
 
   const saveDebugPetClickArea = (nextClickArea) => {
@@ -3725,6 +3812,69 @@ const PetPage = ({ onBack }) => {
   const currentMoodItem = useMemo(() => (
   moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
 ), [currentMoodName, moodItems]);
+  const birthdayEvent = petEvents?.birthday || {};
+  const birthdayDisplayDate = getBirthdayDisplayDate(birthdayEvent?.date);
+  const isBirthdayForced = isPetCharacterDebugEnabled && debugBirthdayMode === PET_BIRTHDAY_DEBUG_FORCE_VALUE;
+  const isBirthdayToday = useMemo(
+    () => isBirthdayEventToday(birthdayEvent),
+    [birthdayEvent, mosquitoEventTick]
+  );
+  const isBirthdayActive = isBirthdayForced || isBirthdayToday;
+  const isBirthdayCelebrationUnlocked = isBirthdayActive && isBirthdaySurpriseRevealed;
+  const birthdayEventStatus = birthdayEvent?.enabled === true && isBirthdayDateValue(birthdayEvent?.date)
+    ? (isBirthdayActive ? `Active today (${birthdayDisplayDate})` : `Waiting for ${birthdayDisplayDate}`)
+    : 'Not configured';
+  useEffect(() => {
+    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayTeddyVisible || birthdayGiftRevealPhase !== 'idle')) {
+      setIsBirthdayGiftOpened(false);
+      setIsBirthdayGiftPopupOpen(false);
+      setIsBirthdaySurpriseRevealed(false);
+      setIsBirthdayTeddyVisible(false);
+      setBirthdayGiftRevealPhase('idle');
+      setBirthdayGiftCountdown(3);
+    }
+  }, [birthdayGiftRevealPhase, isBirthdayActive, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyVisible]);
+  useEffect(() => {
+    if (!isBirthdayGiftPopupOpen) {
+      return undefined;
+    }
+
+    const countdownTimer = window.setTimeout(() => {
+      if (birthdayGiftCountdown <= 1) {
+        setIsBirthdayGiftPopupOpen(false);
+        setBirthdayGiftRevealPhase('shaking');
+        return;
+      }
+
+      setBirthdayGiftCountdown((currentValue) => Math.max(1, currentValue - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(countdownTimer);
+  }, [birthdayGiftCountdown, isBirthdayGiftPopupOpen]);
+  useEffect(() => {
+    if (!isBirthdayActive || birthdayGiftRevealPhase !== 'shaking') {
+      return undefined;
+    }
+
+    const giftOpenTimer = window.setTimeout(() => {
+      setIsBirthdaySurpriseRevealed(true);
+      setIsBirthdayTeddyVisible(true);
+      setBirthdayGiftRevealPhase('bursting');
+    }, 900);
+
+    return () => window.clearTimeout(giftOpenTimer);
+  }, [birthdayGiftRevealPhase, isBirthdayActive]);
+  useEffect(() => {
+    if (!isBirthdayActive || birthdayGiftRevealPhase !== 'bursting') {
+      return undefined;
+    }
+
+    const giftFinishTimer = window.setTimeout(() => {
+      setBirthdayGiftRevealPhase('finished');
+    }, 1500);
+
+    return () => window.clearTimeout(giftFinishTimer);
+  }, [birthdayGiftRevealPhase, isBirthdayActive]);
   const mosquitoEventStatus = useMemo(() => {
     if (isMosquitoEventCompletedToday && !isMosquitoEventForced) {
       return 'Completed today';
@@ -5242,6 +5392,20 @@ useEffect(() => {
     handlePetCharacterCameraToggle();
   };
 
+  const handleBirthdayGiftClick = (event) => {
+    event.stopPropagation();
+    if (isBirthdayGiftOpened) {
+      return;
+    }
+
+    setIsBirthdayGiftOpened(true);
+    setIsBirthdaySurpriseRevealed(false);
+    setIsBirthdayTeddyVisible(false);
+    setBirthdayGiftRevealPhase('idle');
+    setBirthdayGiftCountdown(3);
+    setIsBirthdayGiftPopupOpen(true);
+  };
+
   const handleCameraPose = (event) => {
     if (event?.target === cameraInputRef.current) return;
 
@@ -5351,7 +5515,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${activeTimePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${isRainWeatherActive ? ' pet-stage--rain-weather-active' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${activeTimePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${isRainWeatherActive ? ' pet-stage--rain-weather-active' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}${isBirthdayActive ? ' pet-stage--birthday' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
@@ -5460,6 +5624,59 @@ useEffect(() => {
             aria-hidden="true"
           />
 
+          {isBirthdayActive && (
+            <div className={`pet-birthday-event ${isBirthdayCelebrationUnlocked ? 'pet-birthday-event--celebrating' : ''}`} aria-label="Birthday event is active">
+              {isBirthdayCelebrationUnlocked && (
+                <div className="pet-birthday-event__fireworks" aria-hidden="true">
+                  <span className="pet-birthday-event__firework pet-birthday-event__firework--one" />
+                  <span className="pet-birthday-event__firework pet-birthday-event__firework--two" />
+                  <span className="pet-birthday-event__firework pet-birthday-event__firework--three" />
+                </div>
+              )}
+              <button
+                type="button"
+                className={[
+                  'pet-birthday-event__gift',
+                  birthdayGiftRevealPhase === 'shaking' ? 'pet-birthday-event__gift--shaking' : '',
+                  isBirthdayCelebrationUnlocked ? 'pet-birthday-event__gift--opened' : '',
+                  birthdayGiftRevealPhase === 'bursting' ? 'pet-birthday-event__gift--fading' : '',
+                  birthdayGiftRevealPhase === 'finished' ? 'pet-birthday-event__gift--hidden' : ''
+                ].filter(Boolean).join(' ')}
+                onClick={handleBirthdayGiftClick}
+                disabled={isBirthdayGiftOpened}
+                aria-label={isBirthdayGiftOpened ? 'Birthday gift opened' : 'Open birthday gift'}
+              >
+                <span className="pet-birthday-event__gift-lid" />
+                <span className="pet-birthday-event__gift-bow pet-birthday-event__gift-bow--left" />
+                <span className="pet-birthday-event__gift-bow pet-birthday-event__gift-bow--right" />
+                <span className="pet-birthday-event__gift-body" />
+              </button>
+              {isBirthdayTeddyVisible && (
+                <div className="pet-birthday-event__teddy" aria-hidden="true">
+                  <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--left" />
+                  <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--right" />
+                  <span className="pet-birthday-event__teddy-body" />
+                  <span className="pet-birthday-event__teddy-arm pet-birthday-event__teddy-arm--left" />
+                  <span className="pet-birthday-event__teddy-arm pet-birthday-event__teddy-arm--right" />
+                  <span className="pet-birthday-event__teddy-leg pet-birthday-event__teddy-leg--left" />
+                  <span className="pet-birthday-event__teddy-leg pet-birthday-event__teddy-leg--right" />
+                  <span className="pet-birthday-event__teddy-head" />
+                  <span className="pet-birthday-event__teddy-eye pet-birthday-event__teddy-eye--left" />
+                  <span className="pet-birthday-event__teddy-eye pet-birthday-event__teddy-eye--right" />
+                  <span className="pet-birthday-event__teddy-muzzle" />
+                  <span className="pet-birthday-event__teddy-nose" />
+                </div>
+              )}
+              {isBirthdayCelebrationUnlocked && (
+                <div className="pet-birthday-event__confetti" aria-hidden="true">
+                  {PET_BIRTHDAY_CONFETTI_PIECES.map((pieceNumber) => (
+                    <i key={pieceNumber} className={`pet-birthday-event__confetti-piece pet-birthday-event__confetti-piece--${pieceNumber}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {isPetCharacterDebugEnabled && (
             <div className={`pet-character-debug ${isCharacterDebugOpen ? 'pet-character-debug--open' : ''}`}>
               <button
@@ -5498,6 +5715,7 @@ useEffect(() => {
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
                     <span>Time: {activeTimePeriod}{normalizedDebugStageTimePeriod === STAGE_TIME_DEBUG_AUTO_VALUE ? ' (auto)' : ' (debug)'}</span>
                     <span>Rain: {activeStageRainLabel}</span>
+                    <span>Birthday: {birthdayEventStatus}{isBirthdayForced ? ' (debug)' : ''}</span>
                     <div className="pet-character-debug__actions">
                       <button
                         type="button"
@@ -5589,6 +5807,27 @@ useEffect(() => {
                         </button>
                       );
                     })}
+                    </div>
+                    <div className="pet-character-debug__controls" aria-label="Birthday event controls">
+                    <span className="pet-character-debug__controls-title">Birthday event</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugBirthdayMode === PET_BIRTHDAY_DEBUG_AUTO_VALUE ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugBirthdayMode(PET_BIRTHDAY_DEBUG_AUTO_VALUE)}
+                      aria-pressed={debugBirthdayMode === PET_BIRTHDAY_DEBUG_AUTO_VALUE}
+                    >
+                      <span>Auto birthday</span>
+                      <small>{birthdayEventStatus}</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugBirthdayMode === PET_BIRTHDAY_DEBUG_FORCE_VALUE ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => updateDebugBirthdayMode(PET_BIRTHDAY_DEBUG_FORCE_VALUE)}
+                      aria-pressed={debugBirthdayMode === PET_BIRTHDAY_DEBUG_FORCE_VALUE}
+                    >
+                      <span>Force birthday</span>
+                      <small>Preview the full-day birthday stage</small>
+                    </button>
                     </div>
                     <div className="pet-character-debug__controls" aria-label="Sleep and wake debug controls">
                     <span className="pet-character-debug__controls-title">Sleep / wake state</span>
@@ -6003,6 +6242,11 @@ useEffect(() => {
               onKeyDown={handlePetCharacterCameraKeyDown}
             />
             <MeoBoxPetCharacter state={activePetCharacterPresentation.state} />
+            {isBirthdayCelebrationUnlocked && (
+              <span className="pet-character__birthday-hat" aria-hidden="true">
+                <span className="pet-character__birthday-hat-tip" />
+              </span>
+            )}
             <span className="pet-character__camera" aria-hidden="true">
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--left" />
               <span className="pet-character__camera-hold-arm pet-character__camera-hold-arm--right" />
@@ -6335,6 +6579,31 @@ useEffect(() => {
                 <li key={detail}>{detail}</li>
               ))}
             </ul>
+          </div>
+        </div>
+      )}
+
+      {isBirthdayGiftPopupOpen && (
+        <div
+          className="pet-birthday-wish-modal"
+          role="presentation"
+        >
+          <div
+            className="pet-birthday-wish-modal__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pet-birthday-wish-modal-title"
+          >
+            <p id="pet-birthday-wish-modal-title">Happy birthday to you</p>
+            <span className="pet-birthday-wish-modal__hint">
+              Please wait, a surprise is coming for you.
+            </span>
+            <strong
+              className="pet-birthday-wish-modal__countdown"
+              aria-live="polite"
+            >
+              {birthdayGiftCountdown}
+            </strong>
           </div>
         </div>
       )}
