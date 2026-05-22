@@ -886,25 +886,27 @@ const PET_CHARACTER_POSITION_CONTROLS = [
   { key: 'cameraArmRotate', label: 'Camera arm rotate', unit: 'deg' }
 ];
 
-const PET_CLICK_AREA_DEBUG_STORAGE_KEY = 'meo-pet-click-area-debug';
+const PET_CHARACTER_BASE_WIDTH = 168;
+const PET_CHARACTER_BASE_HEIGHT = 210;
+const PET_CLICK_AREA_DEBUG_STORAGE_KEY = 'meo-pet-click-area-debug-v2';
 const PET_CLICK_AREA_DEBUG_DEFAULTS = {
   visible: false,
   x: 0,
-  y: -20,
-  width: 196,
-  height: 228
+  y: 8,
+  width: 34,
+  height: 84
 };
 const PET_CLICK_AREA_DEBUG_LIMITS = {
-  x: { min: -140, max: 140 },
-  y: { min: -140, max: 100 },
-  width: { min: 0, max: 300 },
-  height: { min: 100, max: 340 }
+  x: { min: -80, max: 80 },
+  y: { min: -70, max: 90 },
+  width: { min: 0, max: 140 },
+  height: { min: 20, max: 140 }
 };
 const PET_CLICK_AREA_DEBUG_CONTROLS = [
-  { key: 'x', label: 'Click area X', unit: 'px' },
-  { key: 'y', label: 'Click area Y', unit: 'px' },
-  { key: 'width', label: 'Click area width', unit: 'px' },
-  { key: 'height', label: 'Click area height', unit: 'px' }
+  { key: 'x', label: 'Click area X', unit: '%', step: 0.5 },
+  { key: 'y', label: 'Click area Y', unit: '%', step: 0.5 },
+  { key: 'width', label: 'Click area width', unit: '%', step: 0.5 },
+  { key: 'height', label: 'Click area height', unit: '%', step: 0.5 }
 ];
 
 const STAGE_THERMOMETER_POSITION_STORAGE_KEY = 'meo-stage-thermometer-position-debug-v2';
@@ -1099,8 +1101,17 @@ const clampPetClickAreaDebugValue = (key, value) => {
     return PET_CLICK_AREA_DEBUG_DEFAULTS[key];
   }
 
-  return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)));
+  return Math.round(Math.min(limits.max, Math.max(limits.min, numericValue)) * 10) / 10;
 };
+
+const formatPetClickAreaPercent = (value) => `${Number(value).toFixed(1).replace(/\.0$/, '')}%`;
+
+const getPetClickAreaPixelBounds = (clickArea = PET_CLICK_AREA_DEBUG_DEFAULTS) => ({
+  x: (clickArea.x / 100) * PET_CHARACTER_BASE_WIDTH,
+  y: (clickArea.y / 100) * PET_CHARACTER_BASE_HEIGHT,
+  width: (clickArea.width / 100) * PET_CHARACTER_BASE_WIDTH,
+  height: (clickArea.height / 100) * PET_CHARACTER_BASE_HEIGHT
+});
 
 const clampThermometerPositionValue = (key, value) => {
   const limits = STAGE_THERMOMETER_POSITION_LIMITS[key];
@@ -2658,10 +2669,10 @@ const PetPage = ({ onBack }) => {
       '--pet-camera-arm-width': `${debugCharacterPosition.cameraArmWidth}px`,
       '--pet-camera-arm-height': `${debugCharacterPosition.cameraArmHeight}px`,
       '--pet-camera-arm-rotate': `${debugCharacterPosition.cameraArmRotate}deg`,
-      '--pet-click-area-x': `${debugPetClickArea.x}px`,
-      '--pet-click-area-y': `${debugPetClickArea.y}px`,
-      '--pet-click-area-width': `${debugPetClickArea.width}px`,
-      '--pet-click-area-height': `${debugPetClickArea.height}px`
+      '--pet-click-area-x': formatPetClickAreaPercent(debugPetClickArea.x),
+      '--pet-click-area-y': formatPetClickAreaPercent(debugPetClickArea.y),
+      '--pet-click-area-width': formatPetClickAreaPercent(debugPetClickArea.width),
+      '--pet-click-area-height': formatPetClickAreaPercent(debugPetClickArea.height)
     }
     : undefined;
   const stageThermometerStyle = {
@@ -2679,10 +2690,10 @@ const PetPage = ({ onBack }) => {
     `  --pet-camera-arm-width: ${debugCharacterPosition.cameraArmWidth}px;`,
     `  --pet-camera-arm-height: ${debugCharacterPosition.cameraArmHeight}px;`,
     `  --pet-camera-arm-rotate: ${debugCharacterPosition.cameraArmRotate}deg;`,
-    `  --pet-click-area-x: ${debugPetClickArea.x}px;`,
-    `  --pet-click-area-y: ${debugPetClickArea.y}px;`,
-    `  --pet-click-area-width: ${debugPetClickArea.width}px;`,
-    `  --pet-click-area-height: ${debugPetClickArea.height}px;`,
+    `  --pet-click-area-x: ${formatPetClickAreaPercent(debugPetClickArea.x)};`,
+    `  --pet-click-area-y: ${formatPetClickAreaPercent(debugPetClickArea.y)};`,
+    `  --pet-click-area-width: ${formatPetClickAreaPercent(debugPetClickArea.width)};`,
+    `  --pet-click-area-height: ${formatPetClickAreaPercent(debugPetClickArea.height)};`,
     `  --stage-thermometer-x: ${debugThermometerPosition.x}px;`,
     `  --stage-thermometer-y: ${debugThermometerPosition.y}px;`,
     `  --stage-thermometer-scale: ${debugThermometerPosition.size / 100};`,
@@ -3297,14 +3308,15 @@ const PetPage = ({ onBack }) => {
     const width = Math.max(1, bounds.right - bounds.left);
     const height = Math.max(1, bounds.bottom - bounds.top);
     const characterScale = Math.max(0.01, bounds.characterScale ?? 1);
-    const clickAreaWidth = Math.max(0, debugPetClickArea.width);
-    const clickAreaHeight = Math.max(1, debugPetClickArea.height);
+    const clickAreaBounds = getPetClickAreaPixelBounds(debugPetClickArea);
+    const clickAreaWidth = Math.max(0, clickAreaBounds.width);
+    const clickAreaHeight = Math.max(1, clickAreaBounds.height);
     const visualClickAreaWidth = clickAreaWidth * characterScale;
     const visualClickAreaHeight = clickAreaHeight * characterScale;
     const petOriginX = bounds.stageWidth / 2;
     const petOriginY = bounds.stageHeight - debugCharacterPosition.bottom;
-    const clickAreaLeft = petOriginX + (debugPetClickArea.x - (clickAreaWidth / 2)) * characterScale;
-    const clickAreaTop = petOriginY - (210 * characterScale) + (debugPetClickArea.y * characterScale);
+    const clickAreaLeft = petOriginX + (clickAreaBounds.x - (clickAreaWidth / 2)) * characterScale;
+    const clickAreaTop = petOriginY - (PET_CHARACTER_BASE_HEIGHT * characterScale) + (clickAreaBounds.y * characterScale);
     const restX = clampMosquitoRouteValue(
       clickAreaWidth === 0 ? clickAreaLeft : clickAreaLeft + Math.random() * visualClickAreaWidth,
       bounds.pathLeft,
@@ -5369,8 +5381,8 @@ useEffect(() => {
                     <span>Camera arm top: {debugCharacterPosition.cameraArmTop}px</span>
                     <span>Camera arm size: {debugCharacterPosition.cameraArmWidth}px x {debugCharacterPosition.cameraArmHeight}px</span>
                     <span>Camera arm rotate: {debugCharacterPosition.cameraArmRotate}deg</span>
-                    <span>Click area: {debugPetClickArea.visible ? 'shown' : 'hidden'} - {debugPetClickArea.width}px x {debugPetClickArea.height}px</span>
-                    <span>Click area offset: {debugPetClickArea.x}px, {debugPetClickArea.y}px</span>
+                    <span>Click area: {debugPetClickArea.visible ? 'shown' : 'hidden'} - {formatPetClickAreaPercent(debugPetClickArea.width)} x {formatPetClickAreaPercent(debugPetClickArea.height)}</span>
+                    <span>Click area offset: {formatPetClickAreaPercent(debugPetClickArea.x)}, {formatPetClickAreaPercent(debugPetClickArea.y)}</span>
                     <span>Thermo X: {debugThermometerPosition.x}px</span>
                     <span>Thermo Y: {debugThermometerPosition.y}px</span>
                     <span>Thermo size: {debugThermometerPosition.size}%</span>
@@ -5505,12 +5517,12 @@ useEffect(() => {
                     </button>
                     {PET_CLICK_AREA_DEBUG_CONTROLS.map((control) => (
                       <label className="pet-character-debug__control" key={control.key}>
-                        <span>{control.label}: {debugPetClickArea[control.key]}{control.unit}</span>
+                        <span>{control.label}: {formatPetClickAreaPercent(debugPetClickArea[control.key])}</span>
                         <input
                           type="range"
                           min={PET_CLICK_AREA_DEBUG_LIMITS[control.key].min}
                           max={PET_CLICK_AREA_DEBUG_LIMITS[control.key].max}
-                          step="1"
+                          step={control.step}
                           value={debugPetClickArea[control.key]}
                           onChange={(event) => updateDebugPetClickArea(control.key, event.target.value)}
                         />

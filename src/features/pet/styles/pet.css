@@ -2230,11 +2230,11 @@
 
 .pet-character__hit-area {
   position: absolute;
-  left: 50%;
+  left: calc(50% + var(--pet-click-area-x, 0px));
   top: var(--pet-click-area-y, -20px);
   width: var(--pet-click-area-width, 196px);
   height: var(--pet-click-area-height, 228px);
-  transform: translateX(calc(-50% + var(--pet-click-area-x, 0px)));
+  transform: translateX(-50%);
   z-index: 60;
   display: block;
   padding: 0;
@@ -2279,7 +2279,7 @@
     outline: none;
     box-shadow: none;
     background: transparent;
-    transform: translateX(calc(-50% + var(--pet-click-area-x, 0px)));
+    transform: translateX(-50%);
   }
 }
 
@@ -5417,8 +5417,21 @@
   }
 
   .pet-stage {
-    --pet-character-bottom: 52px;
+    --pet-character-bottom: 44px;
     --pet-character-scale: 0.75;
+    --pet-shadow-gap: -8px;
+    --pet-camera-arm-x: -10px;
+    --pet-camera-arm-top: 20px;
+    --pet-camera-arm-width: 22px;
+    --pet-camera-arm-height: 52px;
+    --pet-camera-arm-rotate: 6deg;
+    --pet-click-area-x: 0%;
+    --pet-click-area-y: 8%;
+    --pet-click-area-width: 34%;
+    --pet-click-area-height: 84%;
+    --stage-thermometer-x: 0px;
+    --stage-thermometer-y: 0px;
+    --stage-thermometer-scale: 0.54;
   }
 
   .pet-phone {
