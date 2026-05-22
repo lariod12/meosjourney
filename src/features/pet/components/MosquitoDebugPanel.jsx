@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 const MOSQUITO_DEBUG_CONFIG_STORAGE_KEY = 'mosquito-debug-config-shape-lab-v3';
 const DEFAULT_FLIGHT_SPEED_MIN = 45;
@@ -10,8 +9,6 @@ const DEFAULT_BITE_EFFECT_FONT_SIZE_PX = 21;
 const DEFAULT_BITE_EFFECT_FLOAT_HEIGHT_PX = 96;
 
 export default function MosquitoDebugPanel({
-  isOpen,
-  onToggle,
   config,
   onUpdateConfig,
   onReset,
@@ -31,6 +28,9 @@ export default function MosquitoDebugPanel({
   const holdDurationMaxMs = config.holdDurationMaxMs ?? DEFAULT_HOLD_DURATION_MAX_MS;
   const biteEffectFontSizePx = config.biteEffectFontSizePx ?? DEFAULT_BITE_EFFECT_FONT_SIZE_PX;
   const biteEffectFloatHeightPx = config.biteEffectFloatHeightPx ?? DEFAULT_BITE_EFFECT_FLOAT_HEIGHT_PX;
+  const mosquitoCount = mosquitoes.length;
+  const eventLabel = eventStatus || 'Idle';
+  const waveLabel = `${spawnedWaves || 0} / ${totalWaves || 0}`;
   const configSnippet = useMemo(
     () => `MOSQUITO_DEBUG_CONFIG = ${JSON.stringify({
       ...config,
@@ -83,8 +83,8 @@ export default function MosquitoDebugPanel({
     }
   };
 
-  const panelContent = isOpen ? (
-    <div className="mosquito-debug__dock">
+  return (
+    <div className="mosquito-debug">
       <div
         id="mosquito-debug-panel"
         className="mosquito-debug__panel"
@@ -92,28 +92,35 @@ export default function MosquitoDebugPanel({
         role="region"
         aria-labelledby="mosquito-debug-title"
       >
-        {/* Close Button */}
-        <button
-          type="button"
-          className="mosquito-debug__close"
-          onClick={onToggle}
-          aria-label="Close"
-        >
-          ×
-        </button>
-
         {/* Title */}
-        <h2 id="mosquito-debug-title" className="mosquito-debug__title">🦟 Mosquito Debug Panel</h2>
+        <h2 id="mosquito-debug-title" className="mosquito-debug__title">Mosquito Debug</h2>
+        <div className="mosquito-debug__quick-stats" aria-label="Mosquito debug quick stats">
+          <span>
+            <strong>{mosquitoCount}</strong>
+            Active
+          </span>
+          <span>
+            <strong>{eventLabel}</strong>
+            Event
+          </span>
+          <span>
+            <strong>{waveLabel}</strong>
+            Waves
+          </span>
+        </div>
 
         {/* Grid Layout */}
         <div className="mosquito-debug__grid">
           {/* Status */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">📊 Status</div>
+          <details className="mosquito-debug__section" open>
+            <summary className="mosquito-debug__section-title">
+              <span>Status</span>
+              <small>{eventLabel}</small>
+            </summary>
             <div className="mosquito-debug__status">
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Active:</span>
-                <span className="mosquito-debug__status-value">{mosquitoes.length}</span>
+                <span className="mosquito-debug__status-value">{mosquitoCount}</span>
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Enabled:</span>
@@ -121,11 +128,11 @@ export default function MosquitoDebugPanel({
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Event:</span>
-                <span className="mosquito-debug__status-value">{eventStatus || 'Idle'}</span>
+                <span className="mosquito-debug__status-value">{eventLabel}</span>
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Waves:</span>
-                <span className="mosquito-debug__status-value">{spawnedWaves || 0} / {totalWaves || 0}</span>
+                <span className="mosquito-debug__status-value">{waveLabel}</span>
               </div>
               <div className="mosquito-debug__status-item">
                 <span className="mosquito-debug__status-label">Wave random:</span>
@@ -170,11 +177,14 @@ export default function MosquitoDebugPanel({
                 <span className="mosquito-debug__status-value">{config.curveAmountPercent}%</span>
               </div>
             </div>
-          </div>
+          </details>
 
           {/* Current Settings */}
-          <div className="mosquito-debug__section mosquito-debug__section--settings">
-            <div className="mosquito-debug__section-title">🧾 Current Settings</div>
+          <details className="mosquito-debug__section mosquito-debug__section--settings" open>
+            <summary className="mosquito-debug__section-title">
+              <span>Current Settings</span>
+              <small>Save / copy</small>
+            </summary>
             <div className="mosquito-debug__actions">
               <button
                 type="button"
@@ -204,11 +214,14 @@ export default function MosquitoDebugPanel({
               </div>
             )}
             <pre className="mosquito-debug__config-info">{configSnippet}</pre>
-          </div>
+          </details>
 
           {/* Spawn Settings */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">⏱️ Spawn Settings</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Spawn Settings</span>
+              <small>{config.mosquitoesPerSpawnMin}-{config.mosquitoesPerSpawnMax} every {(config.spawnIntervalMinMs / 1000).toFixed(1)}-{(config.spawnIntervalMaxMs / 1000).toFixed(1)}s</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Max mosquitoes: <strong>{config.maxMosquitoes}</strong></span>
@@ -293,11 +306,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('eventWavesMax', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Flight Speed */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">✈️ Random Flight Speed</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Random Flight Speed</span>
+              <small>{flightSpeedMin}-{flightSpeedMax}px/s</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Min speed: <strong>{flightSpeedMin}px/s</strong></span>
@@ -322,11 +338,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('flightSpeedMaxPxPerSec', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Hold Duration */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">⏳ Random Stop Time</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Random Stop Time</span>
+              <small>{(holdDurationMinMs / 1000).toFixed(1)}-{(holdDurationMaxMs / 1000).toFixed(1)}s</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Hold min: <strong>{(holdDurationMinMs / 1000).toFixed(1)}s</strong></span>
@@ -351,11 +370,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('holdDurationMaxMs', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Bite Effect */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">-1 Damage Text</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>-1 Damage Text</span>
+              <small>{biteEffectFontSizePx}px / {biteEffectFloatHeightPx}px</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Font size: <strong>{biteEffectFontSizePx}px</strong></span>
@@ -380,11 +402,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('biteEffectFloatHeightPx', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Shape & Path */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">🧬 Shape & Path</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Shape & Path</span>
+              <small>{config.sizePercent}% / curve {config.curveAmountPercent}%</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Size: <strong>{config.sizePercent}%</strong></span>
@@ -409,11 +434,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('curveAmountPercent', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Body Buzz */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">〰️ Body Buzz</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Body Buzz</span>
+              <small>{config.bodyBuzzDurationMs}ms / {config.bodyBuzzX},{config.bodyBuzzY}px</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Speed: <strong>{config.bodyBuzzDurationMs}ms</strong></span>
@@ -462,11 +490,14 @@ export default function MosquitoDebugPanel({
                 onChange={(e) => onUpdateConfig('bodyBuzzRotateDeg', Number(e.target.value))}
               />
             </label>
-          </div>
+          </details>
 
           {/* Stage Boundaries */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">📐 Stage Boundaries (%)</div>
+          <details className="mosquito-debug__section">
+            <summary className="mosquito-debug__section-title">
+              <span>Stage Boundaries (%)</span>
+              <small>{config.stageTopPercent}-{config.stageBottomPercent}% Y</small>
+            </summary>
 
             <label className="mosquito-debug__control">
               <span className="mosquito-debug__control-label">Top: <strong>{config.stageTopPercent}%</strong></span>
@@ -516,11 +547,14 @@ export default function MosquitoDebugPanel({
               />
             </label>
 
-          </div>
+          </details>
 
           {/* Visualization */}
-          <div className="mosquito-debug__section">
-            <div className="mosquito-debug__section-title">👁️ Visualization</div>
+          <details className="mosquito-debug__section" open>
+            <summary className="mosquito-debug__section-title">
+              <span>Visualization</span>
+              <small>{config.isEnabled === false ? 'Off' : 'On'}</small>
+            </summary>
             <div className="mosquito-debug__checkboxes">
               <label className="mosquito-debug__checkbox">
                 <input
@@ -549,7 +583,7 @@ export default function MosquitoDebugPanel({
                 <span>Show flight paths</span>
               </label>
             </div>
-          </div>
+          </details>
         </div>
 
         <button
@@ -561,11 +595,5 @@ export default function MosquitoDebugPanel({
         </button>
       </div>
     </div>
-  ) : null;
-
-  return (
-    <>
-      {panelContent && typeof document !== 'undefined' && createPortal(panelContent, document.body)}
-    </>
   );
 }

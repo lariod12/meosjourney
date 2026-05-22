@@ -2393,7 +2393,6 @@ const PetPage = ({ onBack }) => {
   const mosquitoEventTotalWavesRef = useRef(0);
   const mosquitoEventSpawnedWavesRef = useRef(0);
   const [mosquitoEventWaveInfo, setMosquitoEventWaveInfo] = useState({ total: 0, spawned: 0 });
-  const [isMosquitoDebugOpen, setIsMosquitoDebugOpen] = useState(false);
   const [mosquitoDebugConfig, setMosquitoDebugConfig] = useState(() => {
     if (IS_PRODUCTION_MODE) {
       return { ...MOSQUITO_DEBUG_CONFIG_DEFAULTS };
@@ -5359,19 +5358,17 @@ useEffect(() => {
               >
                 Debug
               </button>
-              {isCharacterDebugOpen && (
-                <div id="pet-character-debug-panel" className="pet-character-debug__panel">
-                  <button
-                    type="button"
-                    className={`pet-character-debug__option ${isMosquitoDebugOpen ? 'pet-character-debug__option--active' : ''}`}
-                    onClick={() => setIsMosquitoDebugOpen(v => !v)}
-                    aria-expanded={isMosquitoDebugOpen}
-                    aria-controls="mosquito-debug-panel"
-                  >
-                    <span>Mosquito</span>
-                    <small>{isMosquitoDebugOpen ? 'Debug panel open' : 'Open mosquito debug panel'}</small>
-                  </button>
-                  <div className="pet-character-debug__current">
+              <div
+                id="pet-character-debug-panel"
+                className="pet-character-debug__panel"
+                aria-hidden={!isCharacterDebugOpen}
+              >
+                  <details className="pet-character-debug__group" open>
+                    <summary className="pet-character-debug__group-title">
+                      <span>Current snapshot</span>
+                      <small>{activePetCharacterPresentation.state} / {activePetCharacterPresentation.effect}</small>
+                    </summary>
+                    <div className="pet-character-debug__current">
                     <span>State: {activePetCharacterPresentation.state}</span>
                     <span>Effect: {activePetCharacterPresentation.effect}</span>
                     <span>Speed: {activePetCharacterSpeed}</span>
@@ -5408,8 +5405,14 @@ useEffect(() => {
                       <span className="pet-character-debug__status" role="status">{debugCssStatus}</span>
                     )}
                     <pre className="pet-character-debug__css-snippet">{petDebugCssSnippet}</pre>
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Stage time controls">
+                    </div>
+                  </details>
+                  <details className="pet-character-debug__group" open>
+                    <summary className="pet-character-debug__group-title">
+                      <span>Stage</span>
+                      <small>{activeTimePeriod} / {activeStageRainLabel}</small>
+                    </summary>
+                    <div className="pet-character-debug__controls" aria-label="Stage time controls">
                     <span className="pet-character-debug__controls-title">Time of day</span>
                     <button
                       type="button"
@@ -5436,8 +5439,8 @@ useEffect(() => {
                         </button>
                       );
                     })}
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Rain type controls">
+                    </div>
+                    <div className="pet-character-debug__controls" aria-label="Rain type controls">
                     <span className="pet-character-debug__controls-title">Rain type</span>
                     <button
                       type="button"
@@ -5473,8 +5476,8 @@ useEffect(() => {
                         </button>
                       );
                     })}
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Sleep and wake debug controls">
+                    </div>
+                    <div className="pet-character-debug__controls" aria-label="Sleep and wake debug controls">
                     <span className="pet-character-debug__controls-title">Sleep / wake state</span>
                     <button
                       type="button"
@@ -5503,8 +5506,14 @@ useEffect(() => {
                       <span>Force awakening</span>
                       <small>Show tap-to-wake overlay</small>
                     </button>
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Pet click area controls">
+                    </div>
+                  </details>
+                  <details className="pet-character-debug__group" open>
+                    <summary className="pet-character-debug__group-title">
+                      <span>Pet click area</span>
+                      <small>{debugPetClickArea.visible ? 'Shown' : 'Hidden'} / {formatPetClickAreaPercent(debugPetClickArea.width)}</small>
+                    </summary>
+                    <div className="pet-character-debug__controls" aria-label="Pet click area controls">
                     <span className="pet-character-debug__controls-title">Pet click area</span>
                     <button
                       type="button"
@@ -5535,8 +5544,14 @@ useEffect(() => {
                     >
                       Reset click area
                     </button>
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Character position controls">
+                    </div>
+                  </details>
+                  <details className="pet-character-debug__group">
+                    <summary className="pet-character-debug__group-title">
+                      <span>Stage layout</span>
+                      <small>Bottom {debugCharacterPosition.bottom}px / Thermo {debugThermometerPosition.size}%</small>
+                    </summary>
+                    <div className="pet-character-debug__controls" aria-label="Character position controls">
                     <span className="pet-character-debug__controls-title">Character position</span>
                     {PET_CHARACTER_POSITION_CONTROLS.map((control) => (
                       <label className="pet-character-debug__control" key={control.key}>
@@ -5558,8 +5573,8 @@ useEffect(() => {
                     >
                       Reset position
                     </button>
-                  </div>
-                  <div className="pet-character-debug__controls" aria-label="Thermometer position controls">
+                    </div>
+                    <div className="pet-character-debug__controls" aria-label="Thermometer position controls">
                     <span className="pet-character-debug__controls-title">Thermometer position</span>
                     {STAGE_THERMOMETER_POSITION_CONTROLS.map((control) => (
                       <label className="pet-character-debug__control" key={control.key}>
@@ -5581,49 +5596,60 @@ useEffect(() => {
                     >
                       Reset thermometer
                     </button>
-                  </div>
-                  <button
-                    type="button"
-                    className={`pet-character-debug__option ${!debugCharacterPresentation ? 'pet-character-debug__option--active' : ''}`}
-                    onClick={() => setDebugCharacterPresentation(null)}
-                  >
-                    <span>Live priority</span>
-                    <small>{petCharacterPresentation.state} + {petCharacterPresentation.effect}</small>
-                  </button>
-                  {PET_CHARACTER_DEBUG_PRESETS.map((preset) => {
-                    const isActive = debugCharacterPresentation?.label === preset.label;
-
-                    return (
+                    </div>
+                  </details>
+                  <details className="pet-character-debug__group">
+                    <summary className="pet-character-debug__group-title">
+                      <span>Character presets</span>
+                      <small>{debugCharacterPresentation?.label || 'Live priority'}</small>
+                    </summary>
+                    <div className="pet-character-debug__controls" aria-label="Character preset controls">
                       <button
-                        key={preset.label}
                         type="button"
-                        className={`pet-character-debug__option ${isActive ? 'pet-character-debug__option--active' : ''}`}
-                        onClick={() => setDebugCharacterPresentation(preset)}
+                        className={`pet-character-debug__option ${!debugCharacterPresentation ? 'pet-character-debug__option--active' : ''}`}
+                        onClick={() => setDebugCharacterPresentation(null)}
                       >
-                        <span>{preset.label}</span>
-                        <small>{preset.state} + {preset.effect} - {preset.speed}</small>
+                        <span>Live priority</span>
+                        <small>{petCharacterPresentation.state} + {petCharacterPresentation.effect}</small>
                       </button>
-                    );
-                  })}
-                </div>
-              )}
+                      {PET_CHARACTER_DEBUG_PRESETS.map((preset) => {
+                        const isActive = debugCharacterPresentation?.label === preset.label;
+
+                        return (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            className={`pet-character-debug__option ${isActive ? 'pet-character-debug__option--active' : ''}`}
+                            onClick={() => setDebugCharacterPresentation(preset)}
+                          >
+                            <span>{preset.label}</span>
+                            <small>{preset.state} + {preset.effect} - {preset.speed}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </details>
+                  <details className="pet-character-debug__group">
+                    <summary className="pet-character-debug__group-title">
+                      <span>Mosquito</span>
+                      <small>{mosquitoes.length} active / {mosquitoEventStatus || 'Idle'}</small>
+                    </summary>
+                    <MosquitoDebugPanel
+                      config={mosquitoDebugConfig}
+                      onUpdateConfig={updateMosquitoDebugConfig}
+                      onReset={resetMosquitoDebugConfig}
+                      onStartEventNow={startMosquitoEventNow}
+                      eventStatus={mosquitoEventStatus}
+                      isEventForced={isMosquitoEventForced}
+                      totalWaves={mosquitoEventWaveInfo.total || petEvents?.mosquito?.totalWaves || 0}
+                      spawnedWaves={mosquitoEventWaveInfo.spawned || petEvents?.mosquito?.spawnedWaves || 0}
+                      completedAt={petEvents?.mosquito?.completedAt || null}
+                      mosquitoes={mosquitoes}
+                    />
+                  </details>
+              </div>
             </div>
           )}
-
-          <MosquitoDebugPanel
-            isOpen={isMosquitoDebugOpen}
-            onToggle={() => setIsMosquitoDebugOpen(v => !v)}
-            config={mosquitoDebugConfig}
-            onUpdateConfig={updateMosquitoDebugConfig}
-            onReset={resetMosquitoDebugConfig}
-            onStartEventNow={startMosquitoEventNow}
-            eventStatus={mosquitoEventStatus}
-            isEventForced={isMosquitoEventForced}
-            totalWaves={mosquitoEventWaveInfo.total || petEvents?.mosquito?.totalWaves || 0}
-            spawnedWaves={mosquitoEventWaveInfo.spawned || petEvents?.mosquito?.spawnedWaves || 0}
-            completedAt={petEvents?.mosquito?.completedAt || null}
-            mosquitoes={mosquitoes}
-          />
 
           {/* Awakening overlay - tap to wake */}
           {activeIsAwakening && (
