@@ -265,9 +265,11 @@ const PET_PAGE_CHANGELOGS = [
         details: [
           'Đọc birthday từ pet events với format MM-DD và enabled flag.',
           'Khi đúng ngày, sân khấu hiển thị gift box trắng đen để mở lời chúc Happy Birthday.',
+          'Trong ngày birthday, Health, Hunger và Sanity luôn được buff full khi vào app và giữ full cho tới khi hết birthday.',
           'Sau khi bấm gift box, popup lời chúc làm mờ sân khấu, đếm ngược 3-2-1 rồi tự đóng.',
-          'Khi popup đóng, gift box rung lắc trước khi mở bung, unlock gift màu, confetti, pháo hoa và mũ sinh nhật cho pet.',
-          'Gấu bông màu bay ra từ đúng vị trí hộp quà rồi đáp bên phải, trong khi gift box tan biến dần.',
+          'Khi popup đóng, gift box trắng đen rung lắc trước khi mở bung, confetti, pháo hoa và mũ sinh nhật cho pet.',
+          'Gấu bông màu bay ra từ đúng vị trí hộp quà, đáp bên phải, chờ 0.5 giây rồi lắc lư vui nhộn đến gần pet.',
+          'Sau khi gấu bông đứng gần pet, có thể tap vào gấu để gấu nhảy ngẫu nhiên quanh trục X hiện tại.',
           'Gift box chỉ mở một lần trong phiên birthday để tránh click lặp lại.',
           'Debug mode có Force birthday để preview event mà không cần sửa ngày trong database.'
         ]
@@ -709,6 +711,11 @@ const DEFAULT_PET_STATUS = PET_STATUS_ROWS.reduce((status, row) => ({
   ...status,
   [row.key]: row.value
 }), {});
+const PET_BIRTHDAY_FULL_STATUS = {
+  health: 100,
+  hunger: 100,
+  sanity: 100
+};
 
 const DEFAULT_PET_SHAPES = [...DEFAULT_PET_ITEMS.food, ...DEFAULT_PET_ITEMS.care].reduce((shapes, item) => {
   shapes[item.name.toLowerCase()] = item.shape;
@@ -731,6 +738,10 @@ const clampPetStatus = (status = {}) => ({
   hunger: clampPetStatusValue(status.hunger ?? DEFAULT_PET_STATUS.hunger, { round: false }),
   sanity: clampPetStatusValue(status.sanity ?? DEFAULT_PET_STATUS.sanity, { round: false })
 });
+
+const isFullPetStatus = (status = {}) => (
+  PET_STATUS_KEYS.every((key) => clampPetStatusValue(status[key]) === PET_BIRTHDAY_FULL_STATUS[key])
+);
 
 const getPetStatusLevel = (value) => {
   if (value <= 20) return 'critical';
@@ -1022,6 +1033,12 @@ const PET_BIRTHDAY_DEBUG_STORAGE_KEY = 'meo-pet-birthday-debug-mode';
 const PET_BIRTHDAY_DEBUG_AUTO_VALUE = 'auto';
 const PET_BIRTHDAY_DEBUG_FORCE_VALUE = 'force';
 const PET_BIRTHDAY_CONFETTI_PIECES = Array.from({ length: 18 }, (_, index) => index + 1);
+const PET_BIRTHDAY_TEDDY_READY_DELAY_MS = 2500;
+const PET_BIRTHDAY_TEDDY_WANDER_DURATION_MS = 680;
+const PET_BIRTHDAY_TEDDY_WANDER_LIMITS = {
+  x: { min: -42, max: 42 },
+  y: { min: -14, max: 14 }
+};
 const PET_CLICK_AREA_DEBUG_DEFAULTS = {
   visible: false,
   x: 0,
@@ -2432,6 +2449,19 @@ const PetPage = ({ onBack }) => {
   const [isBirthdayGiftPopupOpen, setIsBirthdayGiftPopupOpen] = useState(false);
   const [isBirthdaySurpriseRevealed, setIsBirthdaySurpriseRevealed] = useState(false);
   const [isBirthdayTeddyVisible, setIsBirthdayTeddyVisible] = useState(false);
+  const [isBirthdayTeddyReadyForTap, setIsBirthdayTeddyReadyForTap] = useState(false);
+  const [birthdayTeddyOffset, setBirthdayTeddyOffset] = useState({ x: 0, y: 0 });
+  const [birthdayTeddyWander, setBirthdayTeddyWander] = useState({
+    active: false,
+    startX: 0,
+    startY: 0,
+    targetX: 0,
+    targetY: 0,
+    rotate: -4,
+    midY: -20,
+    version: 0
+  });
+  const birthdayTeddyWanderTimerRef = useRef(null);
   const [birthdayGiftRevealPhase, setBirthdayGiftRevealPhase] = useState('idle');
   const [birthdayGiftCountdown, setBirthdayGiftCountdown] = useState(3);
   const [debugAwakeningMode, setDebugAwakeningMode] = useState(() => {
@@ -2606,6 +2636,9 @@ const PetPage = ({ onBack }) => {
   const [lastStatusTickAt, setLastStatusTickAt] = useState(null);
   const petStatusRef = useRef(petStatus);
   const lastStatusTickAtRef = useRef(lastStatusTickAt);
+  const isBirthdayActiveRef = useRef(false);
+  const isBirthdayTodayRef = useRef(false);
+  const birthdayStatusSyncedKeyRef = useRef(null);
   const [petItemModalCategory, setPetItemModalCategory] = useState(null);
   const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
   const [foodEffects, setFoodEffects] = useState([]);
@@ -2784,6 +2817,26 @@ const PetPage = ({ onBack }) => {
     `pet-character__shadow--effect-${activePetCharacterPresentation.effect}`,
     isCameraPoseActive ? 'pet-character__shadow--camera-active' : ''
   ].filter(Boolean).join(' ');
+  const birthdayTeddyClassName = [
+    'pet-birthday-event__teddy',
+    isBirthdayTeddyReadyForTap ? 'pet-birthday-event__teddy--tap-ready' : '',
+    isBirthdayTeddyReadyForTap && !birthdayTeddyWander.active ? 'pet-birthday-event__teddy--settled' : '',
+    birthdayTeddyWander.active ? 'pet-birthday-event__teddy--wandering' : '',
+    birthdayTeddyWander.active
+      ? `pet-birthday-event__teddy--wander-${birthdayTeddyWander.version % 2 === 0 ? 'even' : 'odd'}`
+      : ''
+  ].filter(Boolean).join(' ');
+  const birthdayTeddyStyle = isBirthdayTeddyReadyForTap
+    ? {
+      '--pet-teddy-wander-start-x': `${birthdayTeddyWander.startX}px`,
+      '--pet-teddy-wander-start-y': `${birthdayTeddyWander.startY}px`,
+      '--pet-teddy-wander-x': `${birthdayTeddyWander.active ? birthdayTeddyWander.targetX : birthdayTeddyOffset.x}px`,
+      '--pet-teddy-wander-y': `${birthdayTeddyWander.active ? birthdayTeddyWander.targetY : birthdayTeddyOffset.y}px`,
+      '--pet-teddy-wander-mid-x': `${(birthdayTeddyWander.startX + birthdayTeddyWander.targetX) / 2}px`,
+      '--pet-teddy-wander-rotate': `${birthdayTeddyWander.rotate}deg`,
+      '--pet-teddy-wander-mid-y': `${birthdayTeddyWander.midY}px`
+    }
+    : undefined;
   const normalizedDebugStageRainVariant = normalizeStageRainDebugVariant(debugStageRainVariant);
   const debugStageRainOverride = isPetCharacterDebugEnabled && normalizedDebugStageRainVariant !== STAGE_RAIN_DEBUG_AUTO_VALUE
     ? normalizedDebugStageRainVariant
@@ -3270,6 +3323,11 @@ const PetPage = ({ onBack }) => {
 
     if (!isStillResting) {
       console.log('🦟 Bite skipped: mosquito not resting', mosquito.id);
+      return;
+    }
+
+    if (isBirthdayActiveRef.current) {
+      console.log('🦟 Bite skipped: birthday buff active');
       return;
     }
 
@@ -3825,15 +3883,61 @@ const PetPage = ({ onBack }) => {
     ? (isBirthdayActive ? `Active today (${birthdayDisplayDate})` : `Waiting for ${birthdayDisplayDate}`)
     : 'Not configured';
   useEffect(() => {
-    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayTeddyVisible || birthdayGiftRevealPhase !== 'idle')) {
+    isBirthdayActiveRef.current = isBirthdayActive;
+    isBirthdayTodayRef.current = isBirthdayToday;
+  }, [isBirthdayActive, isBirthdayToday]);
+  useEffect(() => {
+    if (!isBirthdayActive) {
+      birthdayStatusSyncedKeyRef.current = null;
+      return;
+    }
+
+    const nextStatus = { ...PET_BIRTHDAY_FULL_STATUS };
+    const nextTickAt = formatVietnamTimestamp();
+    const shouldSyncStatus = isBirthdayToday && (
+      !isFullPetStatus(petStatusRef.current) ||
+      birthdayStatusSyncedKeyRef.current !== getBirthdayDateKey()
+    );
+
+    petStatusRef.current = nextStatus;
+    lastStatusTickAtRef.current = nextTickAt;
+    setPetStatus(nextStatus);
+    setLastStatusTickAt(nextTickAt);
+
+    if (shouldSyncStatus) {
+      birthdayStatusSyncedKeyRef.current = getBirthdayDateKey();
+      enqueuePetSave({
+        status: nextStatus,
+        lastStatusTickAt: nextTickAt
+      });
+    }
+  }, [isBirthdayActive, isBirthdayToday]);
+  useEffect(() => {
+    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayTeddyVisible || isBirthdayTeddyReadyForTap || birthdayGiftRevealPhase !== 'idle')) {
       setIsBirthdayGiftOpened(false);
       setIsBirthdayGiftPopupOpen(false);
       setIsBirthdaySurpriseRevealed(false);
       setIsBirthdayTeddyVisible(false);
+      setIsBirthdayTeddyReadyForTap(false);
+      setBirthdayTeddyOffset({ x: 0, y: 0 });
+      setBirthdayTeddyWander((currentWander) => ({
+        active: false,
+        startX: 0,
+        startY: 0,
+        targetX: 0,
+        targetY: 0,
+        rotate: -4,
+        midY: -20,
+        version: currentWander.version
+      }));
+      if (birthdayTeddyWanderTimerRef.current) {
+        window.clearTimeout(birthdayTeddyWanderTimerRef.current);
+        birthdayTeddyWanderTimerRef.current = null;
+      }
       setBirthdayGiftRevealPhase('idle');
       setBirthdayGiftCountdown(3);
     }
-  }, [birthdayGiftRevealPhase, isBirthdayActive, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyVisible]);
+  }, [birthdayGiftRevealPhase, isBirthdayActive, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyReadyForTap, isBirthdayTeddyVisible]);
   useEffect(() => {
     if (!isBirthdayGiftPopupOpen) {
       return undefined;
@@ -3875,6 +3979,25 @@ const PetPage = ({ onBack }) => {
 
     return () => window.clearTimeout(giftFinishTimer);
   }, [birthdayGiftRevealPhase, isBirthdayActive]);
+  useEffect(() => {
+    if (!isBirthdayTeddyVisible) {
+      setIsBirthdayTeddyReadyForTap(false);
+      return undefined;
+    }
+
+    setIsBirthdayTeddyReadyForTap(false);
+    const teddyTapReadyTimer = window.setTimeout(() => {
+      setIsBirthdayTeddyReadyForTap(true);
+    }, PET_BIRTHDAY_TEDDY_READY_DELAY_MS);
+
+    return () => window.clearTimeout(teddyTapReadyTimer);
+  }, [isBirthdayTeddyVisible]);
+  useEffect(() => () => {
+    if (birthdayTeddyWanderTimerRef.current) {
+      window.clearTimeout(birthdayTeddyWanderTimerRef.current);
+      birthdayTeddyWanderTimerRef.current = null;
+    }
+  }, []);
   const mosquitoEventStatus = useMemo(() => {
     if (isMosquitoEventCompletedToday && !isMosquitoEventForced) {
       return 'Completed today';
@@ -3942,8 +4065,22 @@ useEffect(() => {
         return null;
       });
 
+      const [petData, loadedPetEvents] = await Promise.all([petPromise, petEventsPromise]);
+      const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object'
+        ? loadedPetEvents
+        : {};
+      const isBirthdayTodayOnLoad = isBirthdayEventToday(normalizedPetEvents?.birthday);
+      const isBirthdayActiveOnLoad = isBirthdayForced || isBirthdayTodayOnLoad;
+
+      if (loadedPetEvents) {
+        petEventsRef.current = normalizedPetEvents;
+        setPetEvents(normalizedPetEvents);
+        const mosquitoCompletedToday = isMosquitoEventClearedToday(normalizedPetEvents);
+        mosquitoEventCompletedRef.current = mosquitoCompletedToday;
+        setIsMosquitoEventCompletedToday(mosquitoCompletedToday);
+      }
+
       // Fetch pet data (food, care inventory, and status)
-      const petData = await petPromise;
       if (petData) {
         // Update pet items (food and care inventory)
         if (petData.food || petData.care) {
@@ -3955,8 +4092,23 @@ useEffect(() => {
           }));
         }
 
-        // Apply elapsed-time decay before showing pet status.
-        if (petData.status) {
+        if (isBirthdayActiveOnLoad) {
+          const nextStatus = { ...PET_BIRTHDAY_FULL_STATUS };
+          const nextTickAt = formatVietnamTimestamp();
+
+          petStatusRef.current = nextStatus;
+          lastStatusTickAtRef.current = nextTickAt;
+          setPetStatus(nextStatus);
+          setLastStatusTickAt(nextTickAt);
+
+          if (isBirthdayTodayOnLoad && !isFullPetStatus(petData.status)) {
+            birthdayStatusSyncedKeyRef.current = getBirthdayDateKey();
+            enqueuePetSave({
+              status: nextStatus,
+              lastStatusTickAt: nextTickAt
+            });
+          }
+        } else if (petData.status) {
           const decayedPet = calculatePetStatusDecay(petData.status, petData.lastStatusTickAt);
 
           petStatusRef.current = decayedPet.status;
@@ -3971,16 +4123,6 @@ useEffect(() => {
             });
           }
         }
-      }
-
-      const loadedPetEvents = await petEventsPromise;
-      if (loadedPetEvents) {
-        const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object' ? loadedPetEvents : {};
-        petEventsRef.current = normalizedPetEvents;
-        setPetEvents(normalizedPetEvents);
-        const mosquitoCompletedToday = isMosquitoEventClearedToday(normalizedPetEvents);
-        mosquitoEventCompletedRef.current = mosquitoCompletedToday;
-        setIsMosquitoEventCompletedToday(mosquitoCompletedToday);
       }
 
       // Fetch real weather from Open-Meteo API before showing the pet stage.
@@ -4283,6 +4425,32 @@ useEffect(() => {
 // Page Visibility API - detect when user is viewing the page
   useEffect(() => {
     const syncElapsedPetStatus = () => {
+      if (isBirthdayActiveRef.current) {
+        const nextStatus = { ...PET_BIRTHDAY_FULL_STATUS };
+        const nextTickAt = formatVietnamTimestamp();
+        const shouldSyncStatus = isBirthdayTodayRef.current && (
+          !isFullPetStatus(petStatusRef.current) ||
+          birthdayStatusSyncedKeyRef.current !== getBirthdayDateKey()
+        );
+
+        petStatusRef.current = nextStatus;
+        lastStatusTickAtRef.current = nextTickAt;
+        setPetStatus(nextStatus);
+        setLastStatusTickAt(nextTickAt);
+
+        if (shouldSyncStatus) {
+          birthdayStatusSyncedKeyRef.current = getBirthdayDateKey();
+          savePet({
+            status: nextStatus,
+            lastStatusTickAt: nextTickAt
+          }).catch((error) => {
+            console.warn('⚠️ Birthday pet status exit sync failed:', error);
+          });
+        }
+
+        return;
+      }
+
       const decayedPet = calculatePetStatusDecay(
         petStatusRef.current,
         lastStatusTickAtRef.current
@@ -4529,6 +4697,10 @@ useEffect(() => {
   useEffect(() => {
     let penaltyIntervalId;
 
+    if (isBirthdayActive) {
+      return () => {};
+    }
+
     if (biologicalClock.isHungry || biologicalClock.isSleepy) {
       penaltyIntervalId = setInterval(() => {
         setPetStatus(prev => {
@@ -4559,7 +4731,7 @@ useEffect(() => {
         clearInterval(penaltyIntervalId);
       }
     };
-  }, [biologicalClock.isHungry, biologicalClock.isSleepy]);
+  }, [biologicalClock.isHungry, biologicalClock.isSleepy, isBirthdayActive]);
 
   // Update time period every minute
   useEffect(() => {
@@ -4725,7 +4897,9 @@ useEffect(() => {
 
     console.log('✅ Confirming use of:', selectedPetUseItem.item.name, 'shape:', selectedPetUseItem.item.shape);
 
-    const nextStatus = selectedPetUsePreview.nextStatus;
+    const nextStatus = isBirthdayActiveRef.current
+      ? { ...PET_BIRTHDAY_FULL_STATUS }
+      : selectedPetUsePreview.nextStatus;
     const nextTickAt = formatVietnamTimestamp();
     const usedPetItem = selectedPetUseItem;
 
@@ -5401,9 +5575,69 @@ useEffect(() => {
     setIsBirthdayGiftOpened(true);
     setIsBirthdaySurpriseRevealed(false);
     setIsBirthdayTeddyVisible(false);
+    setIsBirthdayTeddyReadyForTap(false);
+    setBirthdayTeddyOffset({ x: 0, y: 0 });
+    setBirthdayTeddyWander((currentWander) => ({
+      active: false,
+      startX: 0,
+      startY: 0,
+      targetX: 0,
+      targetY: 0,
+      rotate: -4,
+      midY: -20,
+      version: currentWander.version
+    }));
+    if (birthdayTeddyWanderTimerRef.current) {
+      window.clearTimeout(birthdayTeddyWanderTimerRef.current);
+      birthdayTeddyWanderTimerRef.current = null;
+    }
     setBirthdayGiftRevealPhase('idle');
     setBirthdayGiftCountdown(3);
     setIsBirthdayGiftPopupOpen(true);
+  };
+
+  const handleBirthdayTeddyTap = (event) => {
+    event.stopPropagation();
+    if (!isBirthdayTeddyReadyForTap || birthdayTeddyWander.active) {
+      return;
+    }
+
+    const { x: xLimits, y: yLimits } = PET_BIRTHDAY_TEDDY_WANDER_LIMITS;
+    const direction = birthdayTeddyOffset.x > xLimits.max - 10
+      ? -1
+      : birthdayTeddyOffset.x < xLimits.min + 10
+        ? 1
+        : (Math.random() < 0.5 ? -1 : 1);
+    const targetX = Math.min(xLimits.max, Math.max(xLimits.min, birthdayTeddyOffset.x + direction * (16 + Math.random() * 30)));
+    const targetY = Math.min(yLimits.max, Math.max(yLimits.min, (Math.random() * (yLimits.max - yLimits.min)) + yLimits.min));
+    const targetRotate = Math.round((Math.random() * 18) - 9);
+    const midY = Math.min(-14, Math.min(birthdayTeddyOffset.y, targetY) - 18);
+
+    setBirthdayTeddyWander((currentWander) => ({
+      active: true,
+      startX: birthdayTeddyOffset.x,
+      startY: birthdayTeddyOffset.y,
+      targetX,
+      targetY,
+      rotate: targetRotate,
+      midY,
+      version: currentWander.version + 1
+    }));
+
+    if (birthdayTeddyWanderTimerRef.current) {
+      window.clearTimeout(birthdayTeddyWanderTimerRef.current);
+    }
+
+    birthdayTeddyWanderTimerRef.current = window.setTimeout(() => {
+      setBirthdayTeddyOffset({ x: targetX, y: targetY });
+      setBirthdayTeddyWander((currentWander) => ({
+        ...currentWander,
+        active: false,
+        startX: targetX,
+        startY: targetY
+      }));
+      birthdayTeddyWanderTimerRef.current = null;
+    }, PET_BIRTHDAY_TEDDY_WANDER_DURATION_MS);
   };
 
   const handleCameraPose = (event) => {
@@ -5652,7 +5886,14 @@ useEffect(() => {
                 <span className="pet-birthday-event__gift-body" />
               </button>
               {isBirthdayTeddyVisible && (
-                <div className="pet-birthday-event__teddy" aria-hidden="true">
+                <button
+                  type="button"
+                  className={birthdayTeddyClassName}
+                  style={birthdayTeddyStyle}
+                  onClick={handleBirthdayTeddyTap}
+                  disabled={!isBirthdayTeddyReadyForTap || birthdayTeddyWander.active}
+                  aria-label="Move birthday teddy"
+                >
                   <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--left" />
                   <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--right" />
                   <span className="pet-birthday-event__teddy-body" />
@@ -5665,7 +5906,7 @@ useEffect(() => {
                   <span className="pet-birthday-event__teddy-eye pet-birthday-event__teddy-eye--right" />
                   <span className="pet-birthday-event__teddy-muzzle" />
                   <span className="pet-birthday-event__teddy-nose" />
-                </div>
+                </button>
               )}
               {isBirthdayCelebrationUnlocked && (
                 <div className="pet-birthday-event__confetti" aria-hidden="true">

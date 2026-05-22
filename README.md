@@ -49,9 +49,11 @@ Agents must update this section whenever Pet Page behavior, UI, data flow, or us
 
 - Có birthday event đọc từ `events.birthday` với format `MM-DD` và `enabled`.
 - Khi đúng ngày birthday, sân khấu chỉ hiển thị gift box trắng đen.
+- Trong ngày birthday, Health, Hunger và Sanity luôn được buff full khi vào app và giữ full cho tới khi hết birthday.
 - Sau khi bấm gift box, popup lời chúc làm mờ màn hình, hiện dòng chờ surprise bằng tiếng Anh và đếm ngược 3-2-1 rồi tự đóng.
-- Khi popup đóng, gift box rung lắc trước khi mở bung, rồi sân khấu unlock gift màu, confetti, pháo hoa cùng mũ sinh nhật cho pet.
-- Gấu bông màu bay ra từ đúng vị trí hộp quà rồi đáp bên phải, trong khi gift box tan biến dần.
+- Khi popup đóng, gift box trắng đen rung lắc trước khi mở bung, rồi sân khấu unlock confetti, pháo hoa cùng mũ sinh nhật cho pet.
+- Gấu bông màu bay ra từ đúng vị trí hộp quà, đáp bên phải, chờ 0.5 giây rồi lắc lư vui nhộn đến gần pet.
+- Sau khi gấu bông đứng gần pet, có thể tap vào gấu để gấu nhảy ngẫu nhiên quanh trục X hiện tại.
 - Gift box chỉ mở một lần trong phiên birthday để tránh click lặp lại.
 - Debug mode có Force birthday để preview effect mà không cần sửa ngày trong database.
 
