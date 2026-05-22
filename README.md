@@ -41,6 +41,25 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 - Discord notifications for submissions, admin task creation, approvals, and level ups
 - Request deduplication, throttling, and retry backoff for NocoDB calls
 
+## Pet Page Changelogs
+
+Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
+
+### v1.0.0
+
+- Quản lý đồ ăn và vật phẩm chăm sóc cho pet.
+- Theo dõi Health, Hunger, Sanity và trạng thái ngủ/thức.
+- Quản lý hoạt động hiện tại, mood hiện tại và vị trí của Méo.
+- Chụp ảnh pet để lưu vào album hoặc gallery.
+- Hiển thị journal, history, album, gallery và status trong bottom tabs.
+- Thêm tab Changelogs ở bottom sheet để theo dõi nhiều version.
+- Mỗi version trong Changelogs mặc định collapse, chỉ hiện số version và expand ra mới thấy changes.
+- Cho phép bấm từng change trong version đã expand để mở popup mô tả chi tiết feature.
+- Lấy thời tiết thật để đồng bộ nền mưa và hiệu ứng mưa trên sân khấu pet.
+- Hiển thị nhiệt độ thật hoặc fallback theo khung giờ bằng thermometer.
+- Có mosquito event với wave, path bay, tap diệt muỗi, bite effect và lưu tiến độ event.
+- Thay đổi background, bedtime, meal time và biểu cảm pet theo thời gian trong ngày.
+
 ## Quick Start
 
 ### Prerequisites

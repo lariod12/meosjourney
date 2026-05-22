@@ -251,8 +251,119 @@ const TABS = [
   { key: 'gallery', label: 'Gallery', Icon: LuGalleryHorizontal },
   { key: 'journal', label: 'Journal', Icon: LuFootprints },
   { key: 'history', label: 'History', Icon: LuBookOpen },
-  { key: 'status', label: 'Status', Icon: LuGauge }
+  { key: 'status', label: 'Status', Icon: LuGauge },
+  { key: 'changelogs', label: 'Changelogs', Icon: LuCheck }
 ];
+
+const PET_PAGE_CHANGELOGS = [
+  {
+    version: 'v1.0.0',
+    changes: [
+      {
+        title: 'Đồ ăn & chăm sóc',
+        summary: 'Quản lý đồ ăn và vật phẩm chăm sóc cho pet.',
+        details: [
+          'Hiển thị danh sách Food và Care trong bottom sheet.',
+          'Cho phép thêm item mới với tên và icon riêng.',
+          'Dùng item để tác động trực tiếp lên Health, Hunger hoặc Sanity.',
+          'Khóa thao tác khi pet đang ngủ hoặc hiệu ứng trước đó chưa hoàn tất.'
+        ]
+      },
+      {
+        title: 'Status pet',
+        summary: 'Theo dõi Health, Hunger, Sanity và trạng thái ngủ/thức.',
+        details: [
+          'Hiển thị các chỉ số Health, Hunger và Sanity theo dạng status card.',
+          'Tính toán decay theo thời gian để trạng thái pet không đứng yên.',
+          'Nhận biết trạng thái ổn định, cần chăm sóc hoặc nguy cấp.',
+          'Tự chuyển pet sang ngủ/thức theo nhịp sinh hoạt trong ngày.'
+        ]
+      },
+      {
+        title: 'Activity, mood & location',
+        summary: 'Quản lý hoạt động hiện tại, mood hiện tại và vị trí của Méo.',
+        details: [
+          'Thêm, chọn và đổi icon cho activity hoặc mood.',
+          'Đánh dấu activity/mood hiện tại để đưa lên đầu danh sách.',
+          'Lưu current activity, current mood và location vào status data.',
+          'Hiển thị location hiện tại ngay trên nameplate của Méo.'
+        ]
+      },
+      {
+        title: 'Camera pet',
+        summary: 'Chụp ảnh pet để lưu vào album hoặc gallery.',
+        details: [
+          'Bấm vào pet để mở camera control khi điều kiện cho phép.',
+          'Có pose cầm camera, hiệu ứng flash và modal lưu ảnh.',
+          'Cho phép chọn lưu ảnh vào Photo Album hoặc Gallery.',
+          'Chặn chụp khi pet đang ngủ, đang thức dậy hoặc trạng thái quá nguy cấp.'
+        ]
+      },
+      {
+        title: 'Tabs nội dung',
+        summary: 'Hiển thị journal, history, album, gallery và status trong bottom tabs.',
+        details: [
+          'Bottom sheet gom các nhóm Food, Care, Activity, Moods, Album, Gallery, Journal, History, Status và Changelogs.',
+          'Tab được phân trang để giữ giao diện gọn trên mobile.',
+          'Các tab media dùng lại PhotoAlbum, Gallery, Journal và History hiện có.',
+          'Status tab tóm tắt trạng thái pet trong cùng trải nghiệm.'
+        ]
+      },
+      {
+        title: 'Changelogs tab',
+        summary: 'Hiển thị nhiều version, mặc định collapse và expand để xem change.',
+        details: [
+          'Tab Changelogs hiển thị danh sách version theo thứ tự mới nhất trước.',
+          'Mỗi version mặc định chỉ hiện số version để dễ scan.',
+          'Bấm vào version để expand hoặc collapse danh sách change bên trong.',
+          'Bấm vào từng change để mở popup mô tả chi tiết.'
+        ]
+      },
+      {
+        title: 'Thời tiết',
+        summary: 'Lấy thời tiết thật để đồng bộ bối cảnh pet.',
+        details: [
+          'Pet Page gọi Open-Meteo để lấy dữ liệu thời tiết hiện tại.',
+          'Dữ liệu mưa được chuẩn hóa thành drizzle, light hoặc heavy.',
+          'Khi có mưa, sân khấu chuyển sang nền mưa grayscale và bật lớp rain effects.',
+          'Nếu API lỗi, giao diện vẫn dùng fallback an toàn để pet page tiếp tục hoạt động.'
+        ]
+      },
+      {
+        title: 'Nhiệt độ',
+        summary: 'Hiển thị nhiệt độ và mức nhiệt theo thời điểm/thời tiết.',
+        details: [
+          'Ưu tiên nhiệt độ thật từ weather API khi có dữ liệu.',
+          'Khi chưa có dữ liệu thật, dùng nhiệt độ fallback theo khung giờ trong ngày.',
+          'Thermometer trên sân khấu phản ánh mức nóng/lạnh bằng fill percentage.',
+          'Debug mode có thể chỉnh vị trí và kích thước thermometer khi cần tinh chỉnh UI.'
+        ]
+      },
+      {
+        title: 'Mosquito event',
+        summary: 'Sự kiện muỗi bay vào sân khấu và ảnh hưởng tới pet.',
+        details: [
+          'Mosquito event có nhiều wave, trạng thái spawned/completed và lưu trong pet events.',
+          'Muỗi bay theo path, có hit area để người dùng tap diệt.',
+          'Nếu muỗi cắn pet, hệ thống trừ status theo tick và lưu nền trong background.',
+          'Có debug panel để kiểm tra boundary, path, wave và cấu hình event khi phát triển.'
+        ]
+      },
+      {
+        title: 'Thời gian trong ngày',
+        summary: 'Thời gian thay đổi trong ngày ảnh hưởng tới background.',
+        details: [
+          'Pet Page chia ngày thành dawn, morning, noon, afternoon, dusk, evening, night và midnight.',
+          'Mỗi khung giờ đổi background sân khấu để phản ánh bối cảnh hiện tại.',
+          'Thời gian cũng ảnh hưởng bedtime, meal time, trạng thái đói/ngủ và biểu cảm của pet.',
+          'Debug mode có thể ép khung giờ để kiểm tra background và behavior nhanh hơn.'
+        ]
+      }
+    ]
+  }
+];
+
+const PET_PAGE_CURRENT_VERSION = PET_PAGE_CHANGELOGS[0].version;
 
 const PET_STATUS_ROWS = [
   { key: 'level', label: 'LV.0', value: 10, Icon: LuTrophy },
@@ -2378,6 +2489,8 @@ const PetPage = ({ onBack }) => {
   const [isPetPhotoModalOpen, setIsPetPhotoModalOpen] = useState(false);
   const [isSavingPetPhoto, setIsSavingPetPhoto] = useState(false);
   const [petPhotoSaveError, setPetPhotoSaveError] = useState('');
+  const [expandedChangelogVersion, setExpandedChangelogVersion] = useState(null);
+  const [activeVersionFeature, setActiveVersionFeature] = useState(null);
   const [petItems, setPetItems] = useState(() => ({
     food: DEFAULT_PET_ITEMS.food,
     care: DEFAULT_PET_ITEMS.care
@@ -6035,6 +6148,55 @@ useEffect(() => {
                   </LanguageProvider>
                 </CharacterProvider>
               </div>
+            ) : activeTab === 'changelogs' ? (
+              <section className="pet-version-panel" aria-labelledby="pet-changelog-title">
+                <div className="pet-version-panel__header">
+                  <span className="pet-version-panel__eyebrow">Pet Page Changelogs</span>
+                  <h2 id="pet-changelog-title" className="pet-version-panel__title">Changelogs</h2>
+                  <span className="pet-version-panel__current">Current {PET_PAGE_CURRENT_VERSION}</span>
+                </div>
+                <ul className="pet-version-panel__list">
+                  {PET_PAGE_CHANGELOGS.map((entry) => {
+                    const isExpanded = expandedChangelogVersion === entry.version;
+                    const changesId = `pet-changelog-${entry.version.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+                    return (
+                      <li
+                        key={entry.version}
+                        className={`pet-version-panel__entry ${isExpanded ? 'pet-version-panel__entry--expanded' : ''}`}
+                      >
+                      <button
+                        type="button"
+                        className="pet-version-panel__version-button"
+                        onClick={() => setExpandedChangelogVersion(isExpanded ? null : entry.version)}
+                        aria-expanded={isExpanded}
+                        aria-controls={changesId}
+                      >
+                        <span className="pet-version-panel__version-label">{entry.version}</span>
+                        <span className="pet-version-panel__version-count">{entry.changes.length} changes</span>
+                      </button>
+                      {isExpanded && (
+                        <ul id={changesId} className="pet-version-panel__changes">
+                          {entry.changes.map((change) => (
+                            <li key={change.title}>
+                              <button
+                                type="button"
+                                className="pet-version-panel__option"
+                                onClick={() => setActiveVersionFeature({ ...change, version: entry.version })}
+                                aria-label={`Xem chi tiết ${change.title}`}
+                              >
+                                <span className="pet-version-panel__option-title">{change.title}</span>
+                                <span className="pet-version-panel__option-summary">{change.summary}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                    );
+                  })}
+                </ul>
+              </section>
             ) : (
               <div className="pet-item-grid">
                 {PET_ITEM_CATEGORIES.includes(activeTab) && (
@@ -6141,6 +6303,41 @@ useEffect(() => {
           </div>
         </section>
       </section>
+
+      {activeVersionFeature && (
+        <div
+          className="pet-version-modal"
+          role="presentation"
+          onMouseDown={() => setActiveVersionFeature(null)}
+        >
+          <div
+            className="pet-version-modal__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pet-version-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="pet-version-modal__close"
+              onClick={() => setActiveVersionFeature(null)}
+              aria-label="Đóng chi tiết version feature"
+            >
+              <LuX aria-hidden="true" />
+            </button>
+            <span className="pet-version-modal__version">{activeVersionFeature.version}</span>
+            <h2 id="pet-version-modal-title" className="pet-version-modal__title">
+              {activeVersionFeature.title}
+            </h2>
+            <p className="pet-version-modal__summary">{activeVersionFeature.summary}</p>
+            <ul className="pet-version-modal__details">
+              {activeVersionFeature.details.map((detail) => (
+                <li key={detail}>{detail}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <ChooseActivityModal
         isOpen={isChooseActivityModalOpen}
