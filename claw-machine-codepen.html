@@ -477,164 +477,6 @@ button {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAeCAYAAAA2Lt7lAAAAAXNSR0IArs4c6QAAATVJREFUSEvtVsutwkAMTMQZQQPvDj3QBoIGqOo1AKINeoA7DYA4I9CsNCuv5f2FhQvkkpC1ZxyPbdx34lrNJg/+3J2uvTzLPcd8PQgM7v9njzPa/HWlJClfR2AZ5CK2zq0AAwJEjWt7vAzB79bzqfMDETMQpGgosI4GREyv/4JW4CQjyfsJIHDr6OVX9BYBxSoljtnj/ZcRLA83l979YhxUZnWKBnWZ4eQ04KhICQpD6zz2HpjVfcA0yEBzQaGbPzMqGFWLppNzCLheA05B3DlVa8XmuKa/S5H+L6gFTdmDKEnAemf9a7DceZbAaipNEiNnqotSpDuXJClwT8BGkyK/qkMgsgRrIbjeRoLd50dAYeXCVpUiiicXLF0QSQ1YURaAdIxpZa2b5oIrF1lGqPfUEhv4PgFUUwiwSYZ9UgAAAABJRU5ErkJggg==);
 }
 
-.toy.petTeddy {
-  --w: 27px;
-  --h: 27px;
-  --pet-teddy-fur: #b9793d;
-  --pet-teddy-fur-dark: #845326;
-  --pet-teddy-fur-light: #f0bd78;
-  filter: drop-shadow(2px 2px 0 #000000);
-}
-
-.toy.petTeddy::after {
-  display: none;
-}
-
-.toy.petTeddy span {
-  position: absolute;
-  box-sizing: border-box;
-}
-
-.toy.petTeddy .pet-teddy-ear {
-  top: 2px;
-  width: 17px;
-  height: 17px;
-  border: 2px solid #000000;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 52%, var(--pet-teddy-fur-light) 0 36%, transparent 38%),
-    var(--pet-teddy-fur-dark);
-}
-
-.toy.petTeddy .pet-teddy-ear--left {
-  left: 8px;
-}
-
-.toy.petTeddy .pet-teddy-ear--right {
-  right: 8px;
-}
-
-.toy.petTeddy .pet-teddy-head {
-  left: 13px;
-  top: 6px;
-  z-index: 2;
-  width: 29px;
-  height: 28px;
-  border: 2px solid #000000;
-  border-radius: 48% 48% 44% 44%;
-  background: var(--pet-teddy-fur);
-}
-
-.toy.petTeddy .pet-teddy-body {
-  left: 14px;
-  bottom: 8px;
-  z-index: 1;
-  width: 28px;
-  height: 27px;
-  border: 2px solid #000000;
-  border-radius: 50% 50% 45% 45%;
-  background:
-    radial-gradient(ellipse at 50% 60%, var(--pet-teddy-fur-light) 0 42%, transparent 45%),
-    var(--pet-teddy-fur);
-}
-
-.toy.petTeddy .pet-teddy-arm {
-  top: 25px;
-  z-index: 0;
-  width: 13px;
-  height: 19px;
-  border: 2px solid #000000;
-  border-radius: 50%;
-  background: var(--pet-teddy-fur-dark);
-}
-
-.toy.petTeddy .pet-teddy-arm--left {
-  left: 8px;
-  transform: rotate(28deg);
-}
-
-.toy.petTeddy .pet-teddy-arm--right {
-  right: 8px;
-  transform: rotate(-28deg);
-}
-
-.toy.petTeddy .pet-teddy-leg {
-  bottom: 2px;
-  z-index: 0;
-  width: 16px;
-  height: 13px;
-  border: 2px solid #000000;
-  border-radius: 50%;
-  background: var(--pet-teddy-fur-dark);
-}
-
-.toy.petTeddy .pet-teddy-leg--left {
-  left: 12px;
-  transform: rotate(-14deg);
-}
-
-.toy.petTeddy .pet-teddy-leg--right {
-  right: 12px;
-  transform: rotate(14deg);
-}
-
-.toy.petTeddy .pet-teddy-eye {
-  top: 17px;
-  z-index: 3;
-  width: 4px;
-  height: 5px;
-  border-radius: 50%;
-  background: #000000;
-}
-
-.toy.petTeddy .pet-teddy-eye--left {
-  left: 22px;
-}
-
-.toy.petTeddy .pet-teddy-eye--right {
-  right: 22px;
-}
-
-.toy.petTeddy .pet-teddy-muzzle {
-  left: 20px;
-  top: 21px;
-  z-index: 3;
-  width: 15px;
-  height: 10px;
-  border: 2px solid #000000;
-  border-radius: 50%;
-  background: var(--pet-teddy-fur-light);
-}
-
-.toy.petTeddy .pet-teddy-muzzle::before,
-.toy.petTeddy .pet-teddy-muzzle::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  width: 5px;
-  height: 5px;
-  border-bottom: 1px solid #000000;
-  border-radius: 50%;
-}
-
-.toy.petTeddy .pet-teddy-muzzle::before {
-  left: 2px;
-}
-
-.toy.petTeddy .pet-teddy-muzzle::after {
-  right: 2px;
-}
-
-.toy.petTeddy .pet-teddy-nose {
-  left: 25px;
-  top: 22px;
-  z-index: 4;
-  width: 6px;
-  height: 5px;
-  border-radius: 50% 50% 45% 45%;
-  background: #000000;
-}
-
 .toy.bunny {
   --w: 20px;
   --h: 29px;
@@ -861,35 +703,12 @@ const toys = {
 
   robot: {
     w: 20 * m,
-    h: 30 * m },
-
-  petTeddy: {
-    w: 27 * m,
-    h: 27 * m } };
+    h: 30 * m } };
 
 
 
-const randomToyTypes = Object.keys(toys).filter(toyType => toyType !== 'petTeddy');
-const sortedToys = [...randomToyTypes, ...randomToyTypes].sort(
+const sortedToys = [...Object.keys(toys), ...Object.keys(toys)].sort(
 () => 0.5 - Math.random());
-
-const getToyMarkup = toyType =>
-toyType === 'petTeddy' ?
-`
-      <span class="pet-teddy-ear pet-teddy-ear--left"></span>
-      <span class="pet-teddy-ear pet-teddy-ear--right"></span>
-      <span class="pet-teddy-body"></span>
-      <span class="pet-teddy-arm pet-teddy-arm--left"></span>
-      <span class="pet-teddy-arm pet-teddy-arm--right"></span>
-      <span class="pet-teddy-leg pet-teddy-leg--left"></span>
-      <span class="pet-teddy-leg pet-teddy-leg--right"></span>
-      <span class="pet-teddy-head"></span>
-      <span class="pet-teddy-eye pet-teddy-eye--left"></span>
-      <span class="pet-teddy-eye pet-teddy-eye--right"></span>
-      <span class="pet-teddy-muzzle"></span>
-      <span class="pet-teddy-nose"></span>
-    ` :
-'';
 
 
 const cornerBuffer = 16;
@@ -1055,12 +874,11 @@ class WorldObject {
 
 class Toy extends WorldObject {
   constructor(props) {
-    const toyType = props.toyType || sortedToys[props.index];
+    const toyType = sortedToys[props.index];
     const size = toys[toyType];
     super({
       el: Object.assign(document.createElement('div'), {
-        className: `toy pix ${toyType}`,
-        innerHTML: getToyMarkup(toyType) }),
+        className: `toy pix ${toyType}` }),
 
       x:
       cornerBuffer +
@@ -1101,7 +919,7 @@ class Toy extends WorldObject {
       className: `toy-wrapper ${
       settings.collectedNumber > 6 ? 'squeeze-in' : ''
       }`,
-      innerHTML: `<div class="toy pix ${toy.toyType}">${getToyMarkup(toy.toyType)}</div>` }));
+      innerHTML: `<div class="toy pix ${toy.toyType}"></div>` }));
 
 
     setTimeout(() => {
@@ -1198,8 +1016,6 @@ new Array(12).fill('').forEach((_, i) => {
   if (i === 8) return;
   new Toy({ index: i });
 });
-
-new Toy({ index: 8, toyType: 'petTeddy' });
 
 const stopHoriBtnAndActivateVertBtn = () => {
   armJoint.interval = null;
