@@ -40,6 +40,12 @@ import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
 import ConfirmActivityModal from './ConfirmActivityModal';
 import UpdateLocationModal from './UpdateLocationModal';
+import PetBirthdayClawMachine, {
+  DEFAULT_BIRTHDAY_GIFT_TOY,
+  PetBirthdayToy,
+  getBirthdayGiftToyLabel,
+  normalizeBirthdayGiftToy
+} from './PetBirthdayClawMachine';
 import '../styles/pet.css';
 
 const IS_PRODUCTION_MODE = import.meta.env.MODE === 'production';
@@ -256,6 +262,22 @@ const TABS = [
 ];
 
 const PET_PAGE_CHANGELOGS = [
+  {
+    version: 'v1.2.0',
+    changes: [
+      {
+        title: 'Birthday claw machine',
+        summary: 'Thêm bước gắp thú bông trước khi birthday gift mở quà.',
+        details: [
+          'Sau popup Happy Birthday đếm ngược 3-2-1, sân khấu mở overlay gắp thú bông ngay trong Pet Page.',
+          'Con thú bông gắp thành công đầu tiên sẽ thay gấu teddy bay ra khỏi hộp quà.',
+          'Sau khi gắp xong, gift box tiếp tục rung lắc, mở bung, confetti, pháo hoa và mũ sinh nhật như trước.',
+          'Thú bông được chọn vẫn có thể tap để nhảy quanh pet giống teddy birthday cũ.',
+          'Kết quả chỉ giữ trong phiên birthday hiện tại và reset khi birthday event kết thúc hoặc reload.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.1.0',
     changes: [
@@ -2448,6 +2470,8 @@ const PetPage = ({ onBack }) => {
   const [isBirthdayGiftOpened, setIsBirthdayGiftOpened] = useState(false);
   const [isBirthdayGiftPopupOpen, setIsBirthdayGiftPopupOpen] = useState(false);
   const [isBirthdaySurpriseRevealed, setIsBirthdaySurpriseRevealed] = useState(false);
+  const [isBirthdayClawMachineOpen, setIsBirthdayClawMachineOpen] = useState(false);
+  const [birthdaySelectedGiftToy, setBirthdaySelectedGiftToy] = useState(DEFAULT_BIRTHDAY_GIFT_TOY);
   const [isBirthdayTeddyVisible, setIsBirthdayTeddyVisible] = useState(false);
   const [isBirthdayTeddyReadyForTap, setIsBirthdayTeddyReadyForTap] = useState(false);
   const [birthdayTeddyOffset, setBirthdayTeddyOffset] = useState({ x: 0, y: 0 });
@@ -2819,6 +2843,7 @@ const PetPage = ({ onBack }) => {
   ].filter(Boolean).join(' ');
   const birthdayTeddyClassName = [
     'pet-birthday-event__teddy',
+    `pet-birthday-event__teddy--${normalizeBirthdayGiftToy(birthdaySelectedGiftToy)}`,
     isBirthdayTeddyReadyForTap ? 'pet-birthday-event__teddy--tap-ready' : '',
     isBirthdayTeddyReadyForTap && !birthdayTeddyWander.active ? 'pet-birthday-event__teddy--settled' : '',
     birthdayTeddyWander.active ? 'pet-birthday-event__teddy--wandering' : '',
@@ -2837,6 +2862,7 @@ const PetPage = ({ onBack }) => {
       '--pet-teddy-wander-mid-y': `${birthdayTeddyWander.midY}px`
     }
     : undefined;
+  const birthdaySelectedGiftToyLabel = getBirthdayGiftToyLabel(birthdaySelectedGiftToy);
   const normalizedDebugStageRainVariant = normalizeStageRainDebugVariant(debugStageRainVariant);
   const debugStageRainOverride = isPetCharacterDebugEnabled && normalizedDebugStageRainVariant !== STAGE_RAIN_DEBUG_AUTO_VALUE
     ? normalizedDebugStageRainVariant
@@ -3913,10 +3939,12 @@ const PetPage = ({ onBack }) => {
     }
   }, [isBirthdayActive, isBirthdayToday]);
   useEffect(() => {
-    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayTeddyVisible || isBirthdayTeddyReadyForTap || birthdayGiftRevealPhase !== 'idle')) {
+    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayClawMachineOpen || isBirthdayTeddyVisible || isBirthdayTeddyReadyForTap || birthdaySelectedGiftToy !== DEFAULT_BIRTHDAY_GIFT_TOY || birthdayGiftRevealPhase !== 'idle')) {
       setIsBirthdayGiftOpened(false);
       setIsBirthdayGiftPopupOpen(false);
       setIsBirthdaySurpriseRevealed(false);
+      setIsBirthdayClawMachineOpen(false);
+      setBirthdaySelectedGiftToy(DEFAULT_BIRTHDAY_GIFT_TOY);
       setIsBirthdayTeddyVisible(false);
       setIsBirthdayTeddyReadyForTap(false);
       setBirthdayTeddyOffset({ x: 0, y: 0 });
@@ -3937,7 +3965,7 @@ const PetPage = ({ onBack }) => {
       setBirthdayGiftRevealPhase('idle');
       setBirthdayGiftCountdown(3);
     }
-  }, [birthdayGiftRevealPhase, isBirthdayActive, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyReadyForTap, isBirthdayTeddyVisible]);
+  }, [birthdayGiftRevealPhase, birthdaySelectedGiftToy, isBirthdayActive, isBirthdayClawMachineOpen, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyReadyForTap, isBirthdayTeddyVisible]);
   useEffect(() => {
     if (!isBirthdayGiftPopupOpen) {
       return undefined;
@@ -3946,7 +3974,8 @@ const PetPage = ({ onBack }) => {
     const countdownTimer = window.setTimeout(() => {
       if (birthdayGiftCountdown <= 1) {
         setIsBirthdayGiftPopupOpen(false);
-        setBirthdayGiftRevealPhase('shaking');
+        setIsBirthdayClawMachineOpen(true);
+        setBirthdayGiftRevealPhase('clawMachine');
         return;
       }
 
@@ -5574,6 +5603,8 @@ useEffect(() => {
 
     setIsBirthdayGiftOpened(true);
     setIsBirthdaySurpriseRevealed(false);
+    setIsBirthdayClawMachineOpen(false);
+    setBirthdaySelectedGiftToy(DEFAULT_BIRTHDAY_GIFT_TOY);
     setIsBirthdayTeddyVisible(false);
     setIsBirthdayTeddyReadyForTap(false);
     setBirthdayTeddyOffset({ x: 0, y: 0 });
@@ -5595,6 +5626,12 @@ useEffect(() => {
     setBirthdayGiftCountdown(3);
     setIsBirthdayGiftPopupOpen(true);
   };
+
+  const handleBirthdayClawToyCollected = useCallback((toyType) => {
+    setBirthdaySelectedGiftToy(normalizeBirthdayGiftToy(toyType));
+    setIsBirthdayClawMachineOpen(false);
+    setBirthdayGiftRevealPhase('shaking');
+  }, []);
 
   const handleBirthdayTeddyTap = (event) => {
     event.stopPropagation();
@@ -5892,20 +5929,12 @@ useEffect(() => {
                   style={birthdayTeddyStyle}
                   onClick={handleBirthdayTeddyTap}
                   disabled={!isBirthdayTeddyReadyForTap || birthdayTeddyWander.active}
-                  aria-label="Move birthday teddy"
+                  aria-label={`Move ${birthdaySelectedGiftToyLabel}`}
                 >
-                  <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--left" />
-                  <span className="pet-birthday-event__teddy-ear pet-birthday-event__teddy-ear--right" />
-                  <span className="pet-birthday-event__teddy-body" />
-                  <span className="pet-birthday-event__teddy-arm pet-birthday-event__teddy-arm--left" />
-                  <span className="pet-birthday-event__teddy-arm pet-birthday-event__teddy-arm--right" />
-                  <span className="pet-birthday-event__teddy-leg pet-birthday-event__teddy-leg--left" />
-                  <span className="pet-birthday-event__teddy-leg pet-birthday-event__teddy-leg--right" />
-                  <span className="pet-birthday-event__teddy-head" />
-                  <span className="pet-birthday-event__teddy-eye pet-birthday-event__teddy-eye--left" />
-                  <span className="pet-birthday-event__teddy-eye pet-birthday-event__teddy-eye--right" />
-                  <span className="pet-birthday-event__teddy-muzzle" />
-                  <span className="pet-birthday-event__teddy-nose" />
+                  <PetBirthdayToy
+                    toyType={birthdaySelectedGiftToy}
+                    className="pet-birthday-event__selected-toy"
+                  />
                 </button>
               )}
               {isBirthdayCelebrationUnlocked && (
@@ -6848,6 +6877,11 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      <PetBirthdayClawMachine
+        isOpen={isBirthdayClawMachineOpen}
+        onToyCollected={handleBirthdayClawToyCollected}
+      />
 
       <ChooseActivityModal
         isOpen={isChooseActivityModalOpen}

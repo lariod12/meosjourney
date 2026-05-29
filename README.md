@@ -45,6 +45,14 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.2.0
+
+- Sau popup Happy Birthday đếm ngược 3-2-1, sân khấu mở overlay gắp thú bông ngay trong Pet Page.
+- Con thú bông gắp thành công đầu tiên sẽ thay gấu teddy bay ra khỏi hộp quà.
+- Sau khi gắp xong, gift box tiếp tục rung lắc, mở bung, confetti, pháo hoa và mũ sinh nhật như trước.
+- Thú bông được chọn vẫn có thể tap để nhảy quanh pet giống teddy birthday cũ.
+- Kết quả chỉ giữ trong phiên birthday hiện tại và reset khi birthday event kết thúc hoặc reload.
+
 ### v1.1.0
 
 - Có birthday event đọc từ `events.birthday` với format `MM-DD` và `enabled`.
