@@ -95,6 +95,124 @@ body {
   content: '';
 }
 
+/* Debug Overlay Styles */
+.debug-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+  border: 2px dashed red;
+  background-color: rgba(255, 0, 0, 0.15);
+}
+
+.debug-claw {
+  border: 3px solid #00ff00;
+  background-color: rgba(0, 255, 0, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.debug-collection {
+  border: 3px solid #0066ff;
+  background-color: rgba(0, 102, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.5);
+}
+
+.debug-collection::before,
+.debug-collection::after {
+  content: '';
+  position: absolute;
+  background-color: #0066ff;
+  pointer-events: none;
+}
+
+.debug-collection::before {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.debug-collection::after {
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.debug-drop {
+  border: 3px solid #ff7a00;
+  background-color: rgba(255, 122, 0, 0.25);
+  box-shadow: 0 0 10px rgba(255, 122, 0, 0.5);
+}
+
+.debug-label {
+  position: absolute;
+  top: -25px;
+  left: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.debug-trajectory {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9998;
+  border-left: 3px dashed #ff00ff;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.debug-trajectory.active {
+  opacity: 0.8;
+}
+
+.debug-info-panel {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #00ff00;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  border: 2px solid #00ff00;
+  border-radius: 5px;
+  z-index: 10000;
+  min-width: 250px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.debug-info-panel .title {
+  color: #ffff00;
+  font-weight: bold;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 4px;
+}
+
+.debug-info-panel .row {
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.debug-info-panel .label {
+  color: #00ffff;
+}
+
+.debug-info-panel .value {
+  color: #ffffff;
+  font-weight: bold;
+}
+
 .claw-machine {
   display: flex;
   flex-direction: column;
@@ -670,6 +788,7 @@ const elements = {
   clawMachine: document.querySelector('.claw-machine'),
   box: document.querySelector('.box'),
   collectionBox: document.querySelector('.collection-box'),
+  dropZone: document.querySelector('.machine-bottom .collection-point'),
   collectionPoint: document.querySelector('.control .collection-point'),
   collectionArrow: document.querySelector('.collection-arrow'),
   toys: [] };
@@ -708,7 +827,7 @@ const toys = {
 
 
 
-const sortedToys = [...Object.keys(toys), ...Object.keys(toys)].sort(
+const sortedToys = Object.keys(toys).sort(
 () => 0.5 - Math.random());
 
 
@@ -746,6 +865,126 @@ const adjustAngle = angle => {
 
 const randomN = (min, max) => {
   return Math.round(min - 0.5 + Math.random() * (max - min + 1));
+};
+
+const getDropZoneBounds = () => {
+  const dropRect = elements.dropZone.getBoundingClientRect();
+  const boxRect = elements.box.getBoundingClientRect();
+
+  return {
+    x: dropRect.left - boxRect.left,
+    y: dropRect.top - boxRect.top,
+    w: dropRect.width,
+    h: dropRect.height
+  };
+};
+
+const doRectsOverlap = (a, b, padding = 0) => {
+  return (
+  a.x < b.x + b.w + padding &&
+  a.x + a.w > b.x - padding &&
+  a.y < b.y + b.h + padding &&
+  a.y + a.h > b.y - padding);
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getOverlapArea = (a, b) => {
+  const overlapWidth = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const overlapHeight = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return overlapWidth * overlapHeight;
+};
+
+const getClawReachBounds = () => {
+  const clawXMin = machineBuffer.x + 7;
+  const clawXMax = machineWidth - armJoint.w - machineBuffer.x + 7;
+  const clawYMin = machineBuffer.y + maxArmLength + machineBuffer.y + 7;
+  const clawYMax = machineTopHeight - machineBuffer.y + maxArmLength + machineBuffer.y + 7;
+
+  return {
+    xMin: clawXMin,
+    xMax: clawXMax,
+    yMin: clawYMin,
+    yMax: clawYMax
+  };
+};
+
+const getToySpawnPosition = (index, size) => {
+  const baseX =
+  cornerBuffer +
+  calcX(index, 4) * ((machineWidth - cornerBuffer * 3) / 4) +
+  size.w / 2 +
+  randomN(-6, 6);
+  const baseY =
+  machineBottomTop -
+  machineTop +
+  cornerBuffer +
+  calcY(index, 4) * (
+  (machineBottomHeight - cornerBuffer * 2) / 3) -
+  size.h / 2 +
+  randomN(-2, 2);
+  const dropZone = getDropZoneBounds();
+  const spawnBuffer = m * 2;
+  const reachPadding = m * 2;
+  const reachBounds = getClawReachBounds();
+  const visibleMinX = spawnBuffer;
+  const visibleMaxX = machineWidth - size.w - spawnBuffer;
+  const visibleMinY = machineBottomTop - machineTop + spawnBuffer;
+  const visibleMaxY = machineBottomTop - machineTop + machineBottomHeight - size.h - spawnBuffer;
+  const minX = clamp(reachBounds.xMin - size.w + reachPadding, visibleMinX, visibleMaxX);
+  const maxX = clamp(reachBounds.xMax - reachPadding, minX, visibleMaxX);
+  const minY = clamp(reachBounds.yMin - size.h + reachPadding, visibleMinY, visibleMaxY);
+  const maxY = clamp(reachBounds.yMax - reachPadding, minY, visibleMaxY);
+  const dropPadding = m * 4;
+  let bestPosition = null;
+  let bestScore = Infinity;
+
+  for (let attempt = 0; attempt < 5000; attempt++) {
+    const position = {
+      x: randomN(minX, maxX),
+      y: randomN(minY, maxY)
+    };
+    const toyRect = { ...position, w: size.w, h: size.h };
+    const overlapsDropZone = doRectsOverlap(toyRect, dropZone, dropPadding);
+    const overlapScore = elements.toys.reduce(
+    (total, toy) => total + getOverlapArea(toyRect, toy),
+    0);
+
+    if (!overlapsDropZone && overlapScore === 0) {
+      return position;
+    }
+
+    if (!overlapsDropZone && overlapScore < bestScore) {
+      bestPosition = position;
+      bestScore = overlapScore;
+    }
+  }
+
+  const candidates = [
+  { x: baseX, y: baseY },
+  { x: dropZone.x + dropZone.w + cornerBuffer, y: baseY },
+  { x: baseX, y: dropZone.y - size.h - cornerBuffer },
+  { x: maxX, y: baseY },
+  { x: machineWidth / 2 - size.w / 2, y: minY }];
+
+  const safeCandidates = candidates.
+  map(({ x, y }) => ({
+    x: clamp(x, minX, maxX),
+    y: clamp(y, minY, maxY)
+  }));
+  const avoidsDropAndToys = safeCandidates.find(position => {
+    const toyRect = { ...position, w: size.w, h: size.h };
+    const overlapsDropZone = doRectsOverlap(toyRect, dropZone, dropPadding);
+    const overlapsToy = elements.toys.some(toy =>
+    doRectsOverlap(toyRect, toy));
+    return !overlapsDropZone && !overlapsToy;
+  });
+
+  return avoidsDropAndToys ||
+  bestPosition ||
+  safeCandidates.find(position =>
+  !doRectsOverlap({ ...position, w: size.w, h: size.h }, dropZone, dropPadding)) ||
+  safeCandidates[0];
 };
 
 //* classes *//
@@ -877,23 +1116,13 @@ class Toy extends WorldObject {
   constructor(props) {
     const toyType = sortedToys[props.index];
     const size = toys[toyType];
+    const spawnPosition = getToySpawnPosition(props.index, size);
     super({
       el: Object.assign(document.createElement('div'), {
         className: `toy pix ${toyType}` }),
 
-      x:
-      cornerBuffer +
-      calcX(props.index, 4) * ((machineWidth - cornerBuffer * 3) / 4) +
-      size.w / 2 +
-      randomN(-6, 6),
-      y:
-      machineBottomTop -
-      machineTop +
-      cornerBuffer +
-      calcY(props.index, 4) * (
-      (machineBottomHeight - cornerBuffer * 2) / 3) -
-      size.h / 2 +
-      randomN(-2, 2),
+      x: spawnPosition.x,
+      y: spawnPosition.y,
       z: 0,
       toyType,
       ...size,
@@ -1026,8 +1255,7 @@ const getClosestToy = () => {
   }
 };
 
-new Array(12).fill('').forEach((_, i) => {
-  if (i === 8) return;
+new Array(sortedToys.length).fill('').forEach((_, i) => {
   new Toy({ index: i });
 });
 
@@ -1146,6 +1374,194 @@ const vertBtn = new Button({
 
     }, 500);
   } });
+
+// ============================================
+// DEBUG VISUALIZATION
+// ============================================
+
+// Create debug overlay elements
+const debugOverlays = {
+  claw: null,
+  dropZone: null,
+  collection: null,
+  trajectory: null,
+  infoPanel: null
+};
+
+const debugState = {
+  clawPos: { x: 0, y: 0 },
+  dropZonePos: { x: 0, y: 0, w: 0, h: 0 },
+  collectionPos: { x: 0, y: 0, w: 0, h: 0 },
+  distance: 0,
+  targetToy: null,
+  isGrabbing: false
+};
+
+function createDebugOverlay(id, label, className) {
+  const overlay = document.createElement('div');
+  overlay.id = id;
+  overlay.className = `debug-overlay ${className}`;
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'debug-label';
+  labelEl.textContent = label;
+  overlay.appendChild(labelEl);
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function createTrajectoryLine() {
+  const line = document.createElement('div');
+  line.className = 'debug-trajectory';
+  document.body.appendChild(line);
+  return line;
+}
+
+function createInfoPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'debug-info-panel';
+  panel.innerHTML = `
+    <div class="title">🎮 DEBUG INFO</div>
+    <div class="row"><span class="label">Claw X:</span> <span class="value" id="debug-claw-x">0</span></div>
+    <div class="row"><span class="label">Claw Y:</span> <span class="value" id="debug-claw-y">0</span></div>
+    <div class="row"><span class="label">Drop X:</span> <span class="value" id="debug-drop-x">0</span></div>
+    <div class="row"><span class="label">Drop Y:</span> <span class="value" id="debug-drop-y">0</span></div>
+    <div class="row"><span class="label">Collection X:</span> <span class="value" id="debug-col-x">0</span></div>
+    <div class="row"><span class="label">Collection Y:</span> <span class="value" id="debug-col-y">0</span></div>
+    <div class="row"><span class="label">Distance:</span> <span class="value" id="debug-distance">0px</span></div>
+    <div class="row"><span class="label">Target Toy:</span> <span class="value" id="debug-toy">None</span></div>
+    <div class="row"><span class="label">Status:</span> <span class="value" id="debug-status">Idle</span></div>
+  `;
+  document.body.appendChild(panel);
+  return panel;
+}
+
+function updateDebugOverlays() {
+  const machineRect = elements.clawMachine.getBoundingClientRect();
+  const armJointRect = armJoint.el.getBoundingClientRect();
+  const clawShadowStyle = getComputedStyle(armJoint.el, '::before');
+  const shadowOffsetX = parseFloat(clawShadowStyle.marginLeft) || 0;
+  const shadowOffsetY = parseFloat(clawShadowStyle.marginTop) || 0;
+  const claw = {
+    x: armJointRect.left + shadowOffsetX - machineRect.left,
+    y: armJointRect.top + shadowOffsetY - machineRect.top,
+    w: parseFloat(clawShadowStyle.width) || 40,
+    h: parseFloat(clawShadowStyle.height) || 32
+  };
+
+  // Update claw debug overlay
+  if (debugOverlays.claw) {
+    const clawScreenX = machineRect.left + claw.x;
+    const clawScreenY = machineRect.top + claw.y;
+
+    debugOverlays.claw.style.left = `${clawScreenX}px`;
+    debugOverlays.claw.style.top = `${clawScreenY}px`;
+    debugOverlays.claw.style.width = `${claw.w}px`;
+    debugOverlays.claw.style.height = `${claw.h}px`;
+
+    debugState.clawPos = { x: Math.round(claw.x), y: Math.round(claw.y) };
+  }
+
+  const dropRect = elements.dropZone.getBoundingClientRect();
+
+  if (debugOverlays.dropZone) {
+    debugOverlays.dropZone.style.left = `${dropRect.left}px`;
+    debugOverlays.dropZone.style.top = `${dropRect.top}px`;
+    debugOverlays.dropZone.style.width = `${dropRect.width}px`;
+    debugOverlays.dropZone.style.height = `${dropRect.height}px`;
+
+    debugState.dropZonePos = {
+      x: Math.round(dropRect.left - machineRect.left),
+      y: Math.round(dropRect.top - machineRect.top),
+      w: Math.round(dropRect.width),
+      h: Math.round(dropRect.height)
+    };
+  }
+
+  // The collection check uses the toy bottom-center point inside this zone.
+  const pointRect = elements.collectionPoint.getBoundingClientRect();
+  const bottomTolerance = m * 3; // m = 2, so tolerance = 6px
+
+  if (debugOverlays.collection) {
+    debugOverlays.collection.style.left = `${pointRect.left}px`;
+    debugOverlays.collection.style.top = `${pointRect.top}px`;
+    debugOverlays.collection.style.width = `${pointRect.width}px`;
+    debugOverlays.collection.style.height = `${pointRect.height + bottomTolerance}px`;
+
+    debugState.collectionPos = {
+      x: Math.round(pointRect.left - machineRect.left),
+      y: Math.round(pointRect.top - machineRect.top),
+      w: Math.round(pointRect.width),
+      h: Math.round(pointRect.height + bottomTolerance)
+    };
+  }
+
+  // Update trajectory line
+  if (debugOverlays.trajectory && settings.targetToy) {
+    const clawCenterX = machineRect.left + claw.x + claw.w / 2;
+    const clawBottomY = machineRect.top + claw.y + claw.h;
+    const collectionCenterX = pointRect.left + pointRect.width / 2;
+
+    debugOverlays.trajectory.style.left = `${clawCenterX}px`;
+    debugOverlays.trajectory.style.top = `${clawBottomY}px`;
+    debugOverlays.trajectory.style.height = `${pointRect.top - clawBottomY}px`;
+    debugOverlays.trajectory.classList.add('active');
+  } else if (debugOverlays.trajectory) {
+    debugOverlays.trajectory.classList.remove('active');
+  }
+
+  // Calculate distance
+  const clawCenterX = claw.x + claw.w / 2;
+  const clawCenterY = claw.y + claw.h / 2;
+  const colCenterX = debugState.collectionPos.x + debugState.collectionPos.w / 2;
+  const colCenterY = debugState.collectionPos.y + debugState.collectionPos.h / 2;
+  debugState.distance = Math.round(
+    Math.sqrt(Math.pow(clawCenterX - colCenterX, 2) + Math.pow(clawCenterY - colCenterY, 2))
+  );
+
+  // Update info panel
+  if (debugOverlays.infoPanel) {
+    document.getElementById('debug-claw-x').textContent = debugState.clawPos.x + 'px';
+    document.getElementById('debug-claw-y').textContent = debugState.clawPos.y + 'px';
+    document.getElementById('debug-drop-x').textContent = debugState.dropZonePos.x + 'px';
+    document.getElementById('debug-drop-y').textContent = debugState.dropZonePos.y + 'px';
+    document.getElementById('debug-col-x').textContent = debugState.collectionPos.x + 'px';
+    document.getElementById('debug-col-y').textContent = debugState.collectionPos.y + 'px';
+    document.getElementById('debug-distance').textContent = debugState.distance + 'px';
+
+    const toyName = settings.targetToy ? settings.targetToy.toyType : 'None';
+    document.getElementById('debug-toy').textContent = toyName;
+
+    let status = 'Idle';
+    if (settings.targetToy) {
+      if (settings.targetToy.el.classList.contains('grabbed')) {
+        status = 'Grabbed';
+      } else if (settings.targetToy.el.classList.contains('selected')) {
+        status = 'Collected';
+      } else {
+        status = 'Targeting';
+      }
+    }
+    document.getElementById('debug-status').textContent = status;
+  }
+}
+
+// Initialize debug overlays
+debugOverlays.claw = createDebugOverlay('debug-claw', 'CLAW ZONE (40x32px)', 'debug-claw');
+debugOverlays.dropZone = createDebugOverlay('debug-drop-zone', 'DROP ZONE', 'debug-drop');
+debugOverlays.collection = createDebugOverlay('debug-collection', 'COLLECT CENTER (6px)', 'debug-collection');
+debugOverlays.trajectory = createTrajectoryLine();
+debugOverlays.infoPanel = createInfoPanel();
+
+// Update overlays on animation frame
+function animateDebug() {
+  updateDebugOverlays();
+  requestAnimationFrame(animateDebug);
+}
+
+animateDebug();
+
 //# sourceURL=pen.js
   </script>
 
