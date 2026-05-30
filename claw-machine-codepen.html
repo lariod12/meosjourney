@@ -670,6 +670,7 @@ const elements = {
   clawMachine: document.querySelector('.claw-machine'),
   box: document.querySelector('.box'),
   collectionBox: document.querySelector('.collection-box'),
+  collectionPoint: document.querySelector('.control .collection-point'),
   collectionArrow: document.querySelector('.collection-arrow'),
   toys: [] };
 
@@ -987,6 +988,19 @@ const doOverlap = (a, b) => {
   return b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h;
 };
 
+const isToyInCollectionPoint = toy => {
+  const toyRect = toy.el.getBoundingClientRect();
+  const pointRect = elements.collectionPoint.getBoundingClientRect();
+  const toyCenterX = toyRect.left + toyRect.width / 2;
+  const bottomTolerance = m * 3;
+
+  return (
+  toyCenterX >= pointRect.left &&
+  toyCenterX <= pointRect.right &&
+  toyRect.bottom >= pointRect.top &&
+  toyRect.bottom <= pointRect.bottom + bottomTolerance);
+};
+
 const getClosestToy = () => {
   const claw = {
     y: armJoint.y + maxArmLength + machineBuffer.y + 7,
@@ -1030,23 +1044,35 @@ const activateHoriBtn = () => {
 
 const dropToy = () => {
   arm.el.classList.add('open');
-  if (settings.targetToy) {
-    settings.targetToy.z = 3;
-    settings.targetToy.move({
+  const droppedToy = settings.targetToy;
+  settings.targetToy = null;
+
+  if (droppedToy) {
+    droppedToy.z = 3;
+    droppedToy.move({
       moveKey: 'y',
-      target: machineHeight - settings.targetToy.h - 30,
-      moveTime: 50 });
+      target: machineHeight - droppedToy.h - 30,
+      moveTime: 50,
+      next: () => {
+        droppedToy.el.classList.remove('grabbed');
+        arm.el.classList.remove('open');
+        activateHoriBtn();
+
+        if (isToyInCollectionPoint(droppedToy)) {
+          droppedToy.el.classList.add('selected');
+          elements.collectionArrow.classList.add('active');
+        } else if (!document.querySelector('.selected')) {
+          elements.collectionArrow.classList.remove('active');
+        }
+      } });
 
     [vertRail, armJoint, arm].forEach(obj => obj.moveWith[0] = null);
+    return;
   }
+
   setTimeout(() => {
     arm.el.classList.remove('open');
     activateHoriBtn();
-    if (settings.targetToy) {
-      settings.targetToy.el.classList.add('selected');
-      elements.collectionArrow.classList.add('active');
-      settings.targetToy = null;
-    }
   }, 700);
 };
 
