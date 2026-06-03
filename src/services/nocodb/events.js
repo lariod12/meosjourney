@@ -58,6 +58,56 @@ const normalizeBirthdayEvent = (value) => {
     : { date: '', enabled: false };
 };
 
+const normalizeStinkyEventObject = (value = {}) => ({
+  ...value,
+  enabled: typeof value.enabled === 'boolean' ? value.enabled : true,
+  dateKey: typeof value.dateKey === 'string' ? value.dateKey.trim() : '',
+  dailyTriggers: Number.isFinite(Number(value.dailyTriggers)) ? Number(value.dailyTriggers) : 2,
+  sanityPenalty: Number.isFinite(Number(value.sanityPenalty)) ? Number(value.sanityPenalty) : 15,
+  requiredCareItem: typeof value.requiredCareItem === 'string' ? value.requiredCareItem.trim() : 'Shower',
+  scheduleStartHour: Number.isFinite(Number(value.scheduleStartHour)) ? Number(value.scheduleStartHour) : 8,
+  scheduleEndHour: Number.isFinite(Number(value.scheduleEndHour)) ? Number(value.scheduleEndHour) : 24,
+  active: value.active === true,
+  activeTriggerId: typeof value.activeTriggerId === 'string' ? value.activeTriggerId : null,
+  schedule: Array.isArray(value.schedule) ? value.schedule : [],
+  lastTriggeredAt: value.lastTriggeredAt ?? null,
+  lastClearedAt: value.lastClearedAt ?? null
+});
+
+const normalizeStinkyEvent = (value) => {
+  if (!value) {
+    return {
+      enabled: true,
+      dateKey: '',
+      dailyTriggers: 2,
+      sanityPenalty: 15,
+      requiredCareItem: 'Shower',
+      scheduleStartHour: 8,
+      scheduleEndHour: 24,
+      active: false,
+      activeTriggerId: null,
+      schedule: [],
+      lastTriggeredAt: null,
+      lastClearedAt: null
+    };
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? normalizeStinkyEventObject(parsed)
+        : normalizeStinkyEvent();
+    } catch {
+      return normalizeStinkyEvent();
+    }
+  }
+
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? normalizeStinkyEventObject(value)
+    : normalizeStinkyEvent();
+};
+
 const getPetEventsRecord = async () => {
   if (!TABLE_IDS.EVENTS) {
     return null;
@@ -79,14 +129,16 @@ export const fetchPetEvents = async () => (
       if (!TABLE_IDS.EVENTS) {
         return {
           mosquito: { completedAt: null },
-          birthday: { date: '', enabled: false }
+          birthday: { date: '', enabled: false },
+          stinky: normalizeStinkyEvent()
         };
       }
 
       const record = await getPetEventsRecord();
       return {
         mosquito: normalizeMosquitoEvent(record?.mosquito),
-        birthday: normalizeBirthdayEvent(record?.birthday)
+        birthday: normalizeBirthdayEvent(record?.birthday),
+        stinky: normalizeStinkyEvent(record?.stinky)
       };
     } catch (error) {
       console.error('❌ Error fetching pet events from NocoDB:', error);
@@ -102,16 +154,26 @@ export const savePetEvents = async (events = {}) => {
     }
 
     const currentRecord = await getPetEventsRecord();
-    const mosquitoEvent = normalizeMosquitoEvent(events?.mosquito);
+    const mosquitoEvent = normalizeMosquitoEvent(
+      Object.prototype.hasOwnProperty.call(events, 'mosquito')
+        ? events.mosquito
+        : currentRecord?.mosquito
+    );
     const birthdayEvent = normalizeBirthdayEvent(
       Object.prototype.hasOwnProperty.call(events, 'birthday')
         ? events.birthday
         : currentRecord?.birthday
     );
+    const stinkyEvent = normalizeStinkyEvent(
+      Object.prototype.hasOwnProperty.call(events, 'stinky')
+        ? events.stinky
+        : currentRecord?.stinky
+    );
     const payload = {
       title: PET_EVENTS_TITLE,
       mosquito: mosquitoEvent,
-      birthday: birthdayEvent
+      birthday: birthdayEvent,
+      stinky: stinkyEvent
     };
 
     const response = currentRecord?.Id

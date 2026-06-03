@@ -3788,6 +3788,221 @@
   border-radius: 16px;
 }
 
+.pet-stink-effect {
+  /* Tune these variables to reposition the whole stinky preview around the pet. */
+  --pet-stink-x: 3px;
+  --pet-stink-y: 0px;
+  --pet-stink-scale: 1;
+  --pet-stink-center-x: 70px;
+  --pet-stink-center-y: 90px;
+  --pet-stink-steam-one-x: -24px;
+  --pet-stink-steam-one-y: 0px;
+  --pet-stink-steam-two-x: 0px;
+  --pet-stink-steam-two-y: 0px;
+  --pet-stink-steam-three-x: 24px;
+  --pet-stink-steam-three-y: 0px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 168px;
+  height: 210px;
+  z-index: 45;
+  pointer-events: none;
+  transform: translate3d(var(--pet-stink-x), var(--pet-stink-y), 0) scale(var(--pet-stink-scale));
+  transform-origin: 50% 50%;
+}
+
+.pet-stink-effect__steam {
+  --pet-stink-steam-x: 0px;
+  --pet-stink-steam-y: 0px;
+  --pet-stink-steam-rotate: -4deg;
+  position: absolute;
+  left: var(--pet-stink-center-x);
+  top: var(--pet-stink-center-y);
+  width: 12px;
+  height: 42px;
+  border-left: 3px solid #000000;
+  border-radius: 50%;
+  opacity: 0;
+  filter: drop-shadow(2px 2px 0 #d8d8d8);
+  animation: pet-stink-steam-rise 2.15s ease-in-out infinite;
+}
+
+.pet-stink-effect__steam::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 14px;
+  height: 34px;
+  border-right: 3px solid #555555;
+  border-radius: 50%;
+}
+
+.pet-stink-effect__steam--one {
+  --pet-stink-steam-x: var(--pet-stink-steam-one-x);
+  --pet-stink-steam-y: var(--pet-stink-steam-one-y);
+  animation-delay: 0s;
+}
+
+.pet-stink-effect__steam--two {
+  --pet-stink-steam-x: var(--pet-stink-steam-two-x);
+  --pet-stink-steam-y: var(--pet-stink-steam-two-y);
+  animation-delay: 0.42s;
+}
+
+.pet-stink-effect__steam--three {
+  --pet-stink-steam-x: var(--pet-stink-steam-three-x);
+  --pet-stink-steam-y: var(--pet-stink-steam-three-y);
+  animation-delay: 0.82s;
+}
+
+.pet-stink-effect__fly {
+  --pet-stink-fly-x: 0px;
+  --pet-stink-fly-y: 0px;
+  --pet-stink-fly-scale: 1;
+  position: absolute;
+  left: var(--pet-stink-center-x);
+  top: var(--pet-stink-center-y);
+  width: 12px;
+  height: 8px;
+  animation: pet-stink-fly-orbit 1.75s linear infinite;
+}
+
+.pet-stink-effect__fly::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #000000;
+  box-shadow: 8px -3px 0 -2px #ffffff, 8px -3px 0 0 #000000;
+}
+
+.pet-stink-effect__fly::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 6px;
+  height: 5px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 8px 1px 0 -1px #ffffff, 8px 1px 0 1px #000000;
+  animation: pet-stink-fly-wings 0.12s steps(2, end) infinite;
+}
+
+.pet-stink-effect__fly--one {
+  --pet-stink-fly-x: -58px;
+  --pet-stink-fly-y: -46px;
+  animation-duration: 1.55s;
+}
+
+.pet-stink-effect__fly--two {
+  --pet-stink-fly-x: 56px;
+  --pet-stink-fly-y: -34px;
+  --pet-stink-fly-scale: 0.88;
+  animation-duration: 1.9s;
+  animation-delay: -0.28s;
+}
+
+.pet-stink-effect__fly--three {
+  --pet-stink-fly-x: -44px;
+  --pet-stink-fly-y: 34px;
+  --pet-stink-fly-scale: 0.82;
+  animation-duration: 2.1s;
+  animation-delay: -0.62s;
+}
+
+.pet-stink-effect__fly--four {
+  --pet-stink-fly-x: 48px;
+  --pet-stink-fly-y: 42px;
+  --pet-stink-fly-scale: 0.78;
+  animation-duration: 1.72s;
+  animation-delay: -1s;
+}
+
+.pet-stink-effect__fly--five {
+  --pet-stink-fly-x: 2px;
+  --pet-stink-fly-y: -70px;
+  --pet-stink-fly-scale: 0.72;
+  animation-duration: 2.3s;
+  animation-delay: -1.28s;
+}
+
+@keyframes pet-stink-steam-rise {
+  0% {
+    opacity: 0;
+    transform:
+      translate3d(var(--pet-stink-steam-x), calc(var(--pet-stink-steam-y) + 14px), 0)
+      rotate(var(--pet-stink-steam-rotate))
+      scale(0.72);
+  }
+
+  20% {
+    opacity: 0.84;
+  }
+
+  72% {
+    opacity: 0.62;
+    transform:
+      translate3d(calc(var(--pet-stink-steam-x) + 8px), calc(var(--pet-stink-steam-y) - 28px), 0)
+      rotate(7deg)
+      scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate3d(calc(var(--pet-stink-steam-x) - 6px), calc(var(--pet-stink-steam-y) - 48px), 0)
+      rotate(-9deg)
+      scale(0.9);
+  }
+}
+
+@keyframes pet-stink-fly-orbit {
+  0% {
+    transform:
+      translate3d(var(--pet-stink-fly-x), var(--pet-stink-fly-y), 0)
+      rotate(0deg)
+      translateX(18px)
+      rotate(0deg)
+      scale(var(--pet-stink-fly-scale));
+  }
+
+  50% {
+    transform:
+      translate3d(var(--pet-stink-fly-x), var(--pet-stink-fly-y), 0)
+      rotate(180deg)
+      translateX(24px)
+      rotate(-180deg)
+      scale(var(--pet-stink-fly-scale));
+  }
+
+  100% {
+    transform:
+      translate3d(var(--pet-stink-fly-x), var(--pet-stink-fly-y), 0)
+      rotate(360deg)
+      translateX(18px)
+      rotate(-360deg)
+      scale(var(--pet-stink-fly-scale));
+  }
+}
+
+@keyframes pet-stink-fly-wings {
+  0% {
+    transform: translateY(0) scaleY(1);
+  }
+
+  100% {
+    transform: translateY(1px) scaleY(0.56);
+  }
+}
+
 /* Đầu vuông đơn giản */
 .pet-character__head {
   position: absolute;

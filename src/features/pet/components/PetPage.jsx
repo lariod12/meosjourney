@@ -40,7 +40,7 @@ import ChooseActivityModal from './ChooseActivityModal';
 import UpdateIconModal from './UpdateIconModal';
 import ConfirmActivityModal from './ConfirmActivityModal';
 import UpdateLocationModal from './UpdateLocationModal';
-import PetBirthdayClawMachine, {
+import {
   DEFAULT_BIRTHDAY_GIFT_TOY,
   PetBirthdayToy,
   getBirthdayGiftToyLabel,
@@ -269,6 +269,15 @@ const PET_PAGE_CHANGELOGS = [
           'Danh sách Care mặc định không còn Shower, Towel, Bed, Brush, Soap, Comb, Bandage và Care Kit.',
           'Nếu các item này vẫn còn trong database care inventory thì cần xóa trực tiếp trong DB để không hiện lại.'
         ]
+      },
+      {
+        title: 'Stinky care event',
+        summary: 'Thêm event bốc mùi theo lịch ngẫu nhiên từ database.',
+        details: [
+          'Events table có column stinky để cấu hình 2 lần trigger ngẫu nhiên mỗi ngày.',
+          'Khi stinky xảy ra, Sanity giảm và hiệu ứng mùi bốc lên quanh pet cho tới khi dùng Care item Shower.',
+          'Debug panel vẫn có nút Stinky preview để xem nhanh hiệu ứng mà không cần chờ event.'
+        ]
       }
     ]
   },
@@ -276,14 +285,12 @@ const PET_PAGE_CHANGELOGS = [
     version: 'v1.2.0',
     changes: [
       {
-        title: 'Birthday claw machine',
-        summary: 'Thêm bước gắp thú bông trước khi birthday gift mở quà.',
+        title: 'Birthday teddy gift',
+        summary: 'Birthday gift quay lại flow mở quà ra một teddy.',
         details: [
-          'Sau popup Happy Birthday đếm ngược 3-2-1, sân khấu mở overlay gắp thú bông ngay trong Pet Page.',
-          'Con thú bông gắp thành công đầu tiên sẽ thay gấu teddy bay ra khỏi hộp quà.',
-          'Sau khi gắp xong, gift box tiếp tục rung lắc, mở bung, confetti, pháo hoa và mũ sinh nhật như trước.',
-          'Thú bông được chọn vẫn có thể tap để nhảy quanh pet giống teddy birthday cũ.',
-          'Kết quả chỉ giữ trong phiên birthday hiện tại và reset khi birthday event kết thúc hoặc reload.'
+          'Sau popup Happy Birthday đếm ngược 3-2-1, hộp quà rung rồi mở ra teddy ngay trên sân khấu.',
+          'Không còn mini game gắp thú trong birthday event; claw machine chỉ còn nằm ở Care item Game.',
+          'Teddy birthday vẫn có thể tap để nhảy quanh pet như flow cũ.'
         ]
       }
     ]
@@ -603,6 +610,22 @@ const PET_CLAW_GAME_REWARDS = {
   caught: 10,
   missed: 3
 };
+const STINKY_EVENT_DEFAULTS = {
+  enabled: true,
+  dailyTriggers: 2,
+  sanityPenalty: 15,
+  requiredCareItem: 'Shower',
+  scheduleStartHour: 8,
+  scheduleEndHour: 24
+};
+const STINKY_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
+const STINKY_SHOWER_CARE_ITEM = {
+  name: 'Shower',
+  count: 1,
+  shape: 'careSelf',
+  icon: '',
+  desc: PET_ITEM_DESCRIPTIONS.shower
+};
 const PET_CAMERA_RAISE_DURATION_MS = 400;
 const PET_CAMERA_FLASH_DURATION_MS = 500;
 const PET_CAMERA_POST_FLASH_HOLD_MS = 500;
@@ -754,10 +777,13 @@ const PET_BIRTHDAY_FULL_STATUS = {
   sanity: 100
 };
 
-const DEFAULT_PET_SHAPES = [...DEFAULT_PET_ITEMS.food, ...DEFAULT_PET_ITEMS.care].reduce((shapes, item) => {
-  shapes[item.name.toLowerCase()] = item.shape;
-  return shapes;
-}, {});
+const DEFAULT_PET_SHAPES = {
+  ...[...DEFAULT_PET_ITEMS.food, ...DEFAULT_PET_ITEMS.care].reduce((shapes, item) => {
+    shapes[item.name.toLowerCase()] = item.shape;
+    return shapes;
+  }, {}),
+  shower: 'careSelf'
+};
 
 const clampPetStatusValue = (value, options = {}) => {
   const { round = true } = options;
@@ -778,6 +804,10 @@ const clampPetStatus = (status = {}) => ({
 
 const isGameCareItem = (category, item = {}) => (
   category === 'care' && String(item.name || '').trim().toLowerCase() === 'game'
+);
+
+const isShowerCareItem = (category, item = {}) => (
+  category === 'care' && String(item.name || '').trim().toLowerCase() === 'shower'
 );
 
 const isFullPetStatus = (status = {}) => (
@@ -1237,6 +1267,96 @@ const getMosquitoEventDateKey = (date = new Date()) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+const createStinkyEventSchedule = (date = new Date(), stinky = {}) => {
+  const dateKey = getMosquitoEventDateKey(date);
+  const triggerCount = Math.max(1, Math.min(4, Math.round(Number(stinky.dailyTriggers) || STINKY_EVENT_DEFAULTS.dailyTriggers)));
+  const startHour = Math.max(0, Math.min(23, Math.round(Number(stinky.scheduleStartHour) || STINKY_EVENT_DEFAULTS.scheduleStartHour)));
+  const endHour = Math.max(startHour + 1, Math.min(24, Math.round(Number(stinky.scheduleEndHour) || STINKY_EVENT_DEFAULTS.scheduleEndHour)));
+  const endMinute = endHour * 60;
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const safeCurrentMinute = getMosquitoEventDateKey(now) === dateKey ? currentMinute + 5 : startHour * 60;
+  const latestStartMinute = Math.max(startHour * 60, endMinute - triggerCount);
+  const startMinute = Math.min(latestStartMinute, Math.max(startHour * 60, safeCurrentMinute));
+  const span = Math.max(triggerCount, endMinute - startMinute);
+  const slotSize = span / triggerCount;
+
+  return Array.from({ length: triggerCount }, (_, index) => {
+    const slotStart = startMinute + Math.floor(slotSize * index);
+    const slotEnd = startMinute + Math.floor(slotSize * (index + 1));
+    const minuteOfDay = Math.min(endMinute - 1, randomBetween(slotStart, Math.max(slotStart, slotEnd - 1)));
+    const triggerDate = new Date(date);
+    triggerDate.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+
+    return {
+      id: `${dateKey}-${index + 1}`,
+      status: 'pending',
+      scheduledAt: formatVietnamTimestamp(triggerDate),
+      triggeredAt: null,
+      clearedAt: null
+    };
+  }).sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime());
+};
+
+const normalizeStinkyEventForRuntime = (stinky = {}, date = new Date()) => {
+  const dateKey = getMosquitoEventDateKey(date);
+  const baseEvent = {
+    ...STINKY_EVENT_DEFAULTS,
+    ...stinky,
+    enabled: stinky.enabled !== false,
+    dailyTriggers: Math.max(1, Math.min(4, Math.round(Number(stinky.dailyTriggers) || STINKY_EVENT_DEFAULTS.dailyTriggers))),
+    sanityPenalty: Math.max(0, Math.min(100, Math.round(Number(stinky.sanityPenalty) || STINKY_EVENT_DEFAULTS.sanityPenalty))),
+    requiredCareItem: typeof stinky.requiredCareItem === 'string' && stinky.requiredCareItem.trim()
+      ? stinky.requiredCareItem.trim()
+      : STINKY_EVENT_DEFAULTS.requiredCareItem
+  };
+  const scheduleMatchesToday = baseEvent.dateKey === dateKey
+    && Array.isArray(baseEvent.schedule)
+    && baseEvent.schedule.length === baseEvent.dailyTriggers;
+  const hasLegacyPastActiveSchedule = baseEvent.active === true
+    && Number(baseEvent.scheduleEndHour) < STINKY_EVENT_DEFAULTS.scheduleEndHour;
+
+  if (!baseEvent.enabled) {
+    return {
+      ...baseEvent,
+      dateKey,
+      active: false,
+      activeTriggerId: null,
+      schedule: []
+    };
+  }
+
+  if (scheduleMatchesToday && !hasLegacyPastActiveSchedule) {
+    return {
+      ...baseEvent,
+      schedule: baseEvent.schedule
+    };
+  }
+
+  return {
+    ...baseEvent,
+    dateKey,
+    active: false,
+    activeTriggerId: null,
+    schedule: createStinkyEventSchedule(date, baseEvent),
+    lastTriggeredAt: null,
+    lastClearedAt: null
+  };
+};
+
+const getDueStinkyTrigger = (stinky = {}, date = new Date()) => {
+  if (stinky.enabled === false || stinky.active || !Array.isArray(stinky.schedule)) {
+    return null;
+  }
+
+  const nowTime = date.getTime();
+  return stinky.schedule.find((trigger) => (
+    trigger?.status === 'pending' &&
+    !trigger.triggeredAt &&
+    new Date(trigger.scheduledAt).getTime() <= nowTime
+  )) || null;
 };
 
 const isMosquitoEventWindow = (date = new Date()) => {
@@ -2497,11 +2617,11 @@ const PetPage = ({ onBack }) => {
   const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
   const [isCharacterDebugOpen, setIsCharacterDebugOpen] = useState(false);
   const [debugCharacterPresentation, setDebugCharacterPresentation] = useState(null);
+  const [debugStinkyPreview, setDebugStinkyPreview] = useState(false);
   const [debugCssStatus, setDebugCssStatus] = useState('');
   const [isBirthdayGiftOpened, setIsBirthdayGiftOpened] = useState(false);
   const [isBirthdayGiftPopupOpen, setIsBirthdayGiftPopupOpen] = useState(false);
   const [isBirthdaySurpriseRevealed, setIsBirthdaySurpriseRevealed] = useState(false);
-  const [isBirthdayClawMachineOpen, setIsBirthdayClawMachineOpen] = useState(false);
   const [birthdaySelectedGiftToy, setBirthdaySelectedGiftToy] = useState(DEFAULT_BIRTHDAY_GIFT_TOY);
   const [isBirthdayTeddyVisible, setIsBirthdayTeddyVisible] = useState(false);
   const [isBirthdayTeddyReadyForTap, setIsBirthdayTeddyReadyForTap] = useState(false);
@@ -2680,6 +2800,9 @@ const PetPage = ({ onBack }) => {
   const [mosquitoEventTick, setMosquitoEventTick] = useState(0);
   const [petEvents, setPetEvents] = useState({});
   const petEventsRef = useRef({});
+  const [hasPetEventsLoaded, setHasPetEventsLoaded] = useState(false);
+  const [isStinkyEventActive, setIsStinkyEventActive] = useState(false);
+  const stinkyEventActiveRef = useRef(false);
   const [isMosquitoEventCompletedToday, setIsMosquitoEventCompletedToday] = useState(false);
   const [isMosquitoEventForced, setIsMosquitoEventForced] = useState(false);
   const mosquitoEventCompletedRef = useRef(isMosquitoEventCompletedToday);
@@ -2713,6 +2836,7 @@ const PetPage = ({ onBack }) => {
   });
   const isPetCharacterDebugEnabled = !IS_PRODUCTION_MODE;
   const debugAwakeningModeActive = isPetCharacterDebugEnabled ? debugAwakeningMode : 'auto';
+  const isStinkyPreviewActive = isStinkyEventActive || (isPetCharacterDebugEnabled && debugStinkyPreview);
   const activeIsSleeping = debugAwakeningModeActive === 'sleep' || debugAwakeningModeActive === 'awakening' || isSleeping;
   const activeIsAwakening = debugAwakeningModeActive === 'awakening' || isAwakening;
   const items = useMemo(() => {
@@ -2723,6 +2847,11 @@ const PetPage = ({ onBack }) => {
         : PET_ITEM_CATEGORIES.includes(activeTab)
           ? petItems[activeTab]
           : (TAB_ITEMS[activeTab] ?? TAB_ITEMS.food);
+
+    if (isStinkyEventActive && activeTab === 'care' && Array.isArray(itemList)) {
+      const hasShowerItem = itemList.some((item) => isShowerCareItem('care', item));
+      itemList = hasShowerItem ? itemList : [STINKY_SHOWER_CARE_ITEM, ...itemList];
+    }
 
     // When sleeping, move Bed item to the top of Care tab
     if (activeIsSleeping && activeTab === 'care' && Array.isArray(itemList)) {
@@ -2764,7 +2893,7 @@ const PetPage = ({ onBack }) => {
     }
 
     return itemList;
-  }, [activeIsSleeping, activeTab, activityItems, moodItems, petItems, currentActivityName, currentMoodName]);
+  }, [activeIsSleeping, activeTab, activityItems, moodItems, petItems, currentActivityName, currentMoodName, isStinkyEventActive]);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
     return getPetReaction(petStatus, biologicalClock);
@@ -3972,11 +4101,10 @@ const PetPage = ({ onBack }) => {
     }
   }, [isBirthdayActive, isBirthdayToday]);
   useEffect(() => {
-    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayClawMachineOpen || isBirthdayTeddyVisible || isBirthdayTeddyReadyForTap || birthdaySelectedGiftToy !== DEFAULT_BIRTHDAY_GIFT_TOY || birthdayGiftRevealPhase !== 'idle')) {
+    if (!isBirthdayActive && (isBirthdayGiftOpened || isBirthdayGiftPopupOpen || isBirthdaySurpriseRevealed || isBirthdayTeddyVisible || isBirthdayTeddyReadyForTap || birthdaySelectedGiftToy !== DEFAULT_BIRTHDAY_GIFT_TOY || birthdayGiftRevealPhase !== 'idle')) {
       setIsBirthdayGiftOpened(false);
       setIsBirthdayGiftPopupOpen(false);
       setIsBirthdaySurpriseRevealed(false);
-      setIsBirthdayClawMachineOpen(false);
       setBirthdaySelectedGiftToy(DEFAULT_BIRTHDAY_GIFT_TOY);
       setIsBirthdayTeddyVisible(false);
       setIsBirthdayTeddyReadyForTap(false);
@@ -3998,7 +4126,7 @@ const PetPage = ({ onBack }) => {
       setBirthdayGiftRevealPhase('idle');
       setBirthdayGiftCountdown(3);
     }
-  }, [birthdayGiftRevealPhase, birthdaySelectedGiftToy, isBirthdayActive, isBirthdayClawMachineOpen, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyReadyForTap, isBirthdayTeddyVisible]);
+  }, [birthdayGiftRevealPhase, birthdaySelectedGiftToy, isBirthdayActive, isBirthdayGiftOpened, isBirthdayGiftPopupOpen, isBirthdaySurpriseRevealed, isBirthdayTeddyReadyForTap, isBirthdayTeddyVisible]);
   useEffect(() => {
     if (!isBirthdayGiftPopupOpen) {
       return undefined;
@@ -4007,8 +4135,8 @@ const PetPage = ({ onBack }) => {
     const countdownTimer = window.setTimeout(() => {
       if (birthdayGiftCountdown <= 1) {
         setIsBirthdayGiftPopupOpen(false);
-        setIsBirthdayClawMachineOpen(true);
-        setBirthdayGiftRevealPhase('clawMachine');
+        setBirthdaySelectedGiftToy(DEFAULT_BIRTHDAY_GIFT_TOY);
+        setBirthdayGiftRevealPhase('shaking');
         return;
       }
 
@@ -4131,16 +4259,25 @@ useEffect(() => {
       const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object'
         ? loadedPetEvents
         : {};
-      const isBirthdayTodayOnLoad = isBirthdayEventToday(normalizedPetEvents?.birthday);
+      const runtimePetEvents = {
+        ...normalizedPetEvents,
+        stinky: normalizeStinkyEventForRuntime(normalizedPetEvents?.stinky)
+      };
+      const isBirthdayTodayOnLoad = isBirthdayEventToday(runtimePetEvents?.birthday);
       const isBirthdayActiveOnLoad = isBirthdayForced || isBirthdayTodayOnLoad;
 
       if (loadedPetEvents) {
-        petEventsRef.current = normalizedPetEvents;
-        setPetEvents(normalizedPetEvents);
-        const mosquitoCompletedToday = isMosquitoEventClearedToday(normalizedPetEvents);
+        petEventsRef.current = runtimePetEvents;
+        setPetEvents(runtimePetEvents);
+        const mosquitoCompletedToday = isMosquitoEventClearedToday(runtimePetEvents);
+        const stinkyActiveToday = runtimePetEvents?.stinky?.active === true
+          && runtimePetEvents?.stinky?.dateKey === getMosquitoEventDateKey();
         mosquitoEventCompletedRef.current = mosquitoCompletedToday;
         setIsMosquitoEventCompletedToday(mosquitoCompletedToday);
+        stinkyEventActiveRef.current = stinkyActiveToday;
+        setIsStinkyEventActive(stinkyActiveToday);
       }
+      setHasPetEventsLoaded(true);
 
       // Fetch pet data (food, care inventory, and status)
       if (petData) {
@@ -4266,6 +4403,7 @@ useEffect(() => {
     } catch (error) {
       console.error('❌ Error loading pet page data:', error);
       // Even on error, mark as loaded to show UI
+      setHasPetEventsLoaded(true);
       setIsWeatherLoading(false);
       setIsDataLoaded(true);
       setIsPetReady(true);
@@ -4910,6 +5048,134 @@ useEffect(() => {
       });
   };
 
+  const updateStinkyEventRecord = useCallback((stinkyUpdates) => {
+    const currentStinkyEvent = petEventsRef.current.stinky || {};
+    const nextEvents = {
+      ...petEventsRef.current,
+      stinky: {
+        ...currentStinkyEvent,
+        ...stinkyUpdates
+      }
+    };
+
+    petEventsRef.current = nextEvents;
+    setPetEvents(nextEvents);
+    const isActiveToday = nextEvents.stinky?.active === true
+      && nextEvents.stinky?.dateKey === getMosquitoEventDateKey();
+    stinkyEventActiveRef.current = isActiveToday;
+    setIsStinkyEventActive(isActiveToday);
+    savePetEventsInBackground(nextEvents);
+  }, [savePetEventsInBackground]);
+
+  const activateStinkyEvent = useCallback((stinkyEvent, trigger) => {
+    if (!trigger || stinkyEventActiveRef.current || isBirthdayActiveRef.current) {
+      return;
+    }
+
+    const triggeredAt = formatVietnamTimestamp();
+    const sanityPenalty = Math.max(0, Math.min(100, Number(stinkyEvent.sanityPenalty) || STINKY_EVENT_DEFAULTS.sanityPenalty));
+    const currentStatus = clampPetStatus(petStatusRef.current);
+    const nextStatus = {
+      ...currentStatus,
+      sanity: clampPetStatusValue(currentStatus.sanity - sanityPenalty)
+    };
+    const nextSchedule = stinkyEvent.schedule.map((scheduleItem) => (
+      scheduleItem.id === trigger.id
+        ? {
+          ...scheduleItem,
+          status: 'active',
+          triggeredAt,
+          clearedAt: null
+        }
+        : scheduleItem
+    ));
+
+    petStatusRef.current = nextStatus;
+    lastStatusTickAtRef.current = triggeredAt;
+    setPetStatus(nextStatus);
+    setLastStatusTickAt(triggeredAt);
+    updateStinkyEventRecord({
+      ...stinkyEvent,
+      active: true,
+      activeTriggerId: trigger.id,
+      schedule: nextSchedule,
+      lastTriggeredAt: triggeredAt
+    });
+    enqueuePetSave({
+      status: nextStatus,
+      lastStatusTickAt: triggeredAt
+    });
+  }, [updateStinkyEventRecord]);
+
+  const clearActiveStinkyEvent = useCallback(() => {
+    const currentStinkyEvent = petEventsRef.current.stinky || {};
+    if (currentStinkyEvent.active !== true) {
+      return;
+    }
+
+    const clearedAt = formatVietnamTimestamp();
+    const clearedTime = new Date(clearedAt).getTime();
+    const activeTriggerId = currentStinkyEvent.activeTriggerId;
+    const nextSchedule = Array.isArray(currentStinkyEvent.schedule)
+      ? currentStinkyEvent.schedule.map((scheduleItem) => (
+        scheduleItem.id === activeTriggerId
+          ? {
+            ...scheduleItem,
+            status: 'cleared',
+            clearedAt
+          }
+          : scheduleItem.status === 'pending' && new Date(scheduleItem.scheduledAt).getTime() <= clearedTime
+            ? {
+              ...scheduleItem,
+              status: 'skipped',
+              clearedAt
+            }
+          : scheduleItem
+      ))
+      : [];
+
+    updateStinkyEventRecord({
+      ...currentStinkyEvent,
+      active: false,
+      activeTriggerId: null,
+      schedule: nextSchedule,
+      lastClearedAt: clearedAt
+    });
+  }, [updateStinkyEventRecord]);
+
+  useEffect(() => {
+    if (!hasPetEventsLoaded || !isPetReady || !isPageVisible) {
+      return undefined;
+    }
+
+    const checkStinkyEvent = () => {
+      const currentStinkyEvent = petEventsRef.current.stinky || {};
+      const normalizedStinkyEvent = normalizeStinkyEventForRuntime(currentStinkyEvent);
+      const shouldSyncSchedule = JSON.stringify(currentStinkyEvent) !== JSON.stringify(normalizedStinkyEvent);
+
+      if (shouldSyncSchedule) {
+        updateStinkyEventRecord(normalizedStinkyEvent);
+      }
+
+      const dueTrigger = getDueStinkyTrigger(normalizedStinkyEvent);
+      if (dueTrigger) {
+        activateStinkyEvent(normalizedStinkyEvent, dueTrigger);
+      }
+    };
+
+    checkStinkyEvent();
+    const intervalId = window.setInterval(checkStinkyEvent, STINKY_EVENT_CHECK_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [
+    activateStinkyEvent,
+    hasPetEventsLoaded,
+    isPageVisible,
+    isPetReady,
+    petEvents,
+    updateStinkyEventRecord
+  ]);
+
   const handleAddPetItem = async (newItem) => {
     if (!petItemModalCategory || isSavingPet) return;
 
@@ -4945,9 +5211,12 @@ useEffect(() => {
   };
 
   const handlePetItemClick = (item, category) => {
+    const isStinkyShowerClick = isShowerCareItem(category, item)
+      && stinkyEventActiveRef.current;
+
     if (isSavingPet) return;
     if (category === 'food' && isFoodUseAnimating) return;
-    if (category === 'care' && isCareUseAnimating) return;
+    if (category === 'care' && isCareUseAnimating && !isStinkyShowerClick) return;
     if (category === 'care' && isPetClawGameOpen) return;
 
     if (isGameCareItem(category, item)) {
@@ -4958,6 +5227,39 @@ useEffect(() => {
     }
 
     const preview = getPetItemUsePreview(category, petStatus, item.shape, item.name);
+    if (isStinkyShowerClick) {
+      const nextStatus = isBirthdayActiveRef.current
+        ? { ...PET_BIRTHDAY_FULL_STATUS }
+        : preview.nextStatus;
+      const nextTickAt = formatVietnamTimestamp();
+      const effectId = `${Date.now()}-${Math.random()}`;
+
+      lastInteractionRef.current = Date.now();
+      petStatusRef.current = nextStatus;
+      lastStatusTickAtRef.current = nextTickAt;
+      setPetStatus(nextStatus);
+      setLastStatusTickAt(nextTickAt);
+      setSelectedPetUseItem(null);
+      clearActiveStinkyEvent();
+      setIsCareUseAnimating(true);
+      setCareEffects([{
+        id: effectId,
+        item
+      }]);
+
+      const timeoutId = window.setTimeout(() => {
+        handleCareEffectDone(effectId);
+        careEffectTimeoutsRef.current.delete(timeoutId);
+      }, PET_CARE_EFFECT_DURATION_MS);
+      careEffectTimeoutsRef.current.add(timeoutId);
+
+      enqueuePetSave({
+        status: nextStatus,
+        lastStatusTickAt: nextTickAt
+      });
+      return;
+    }
+
     if (!preview.canUse) return;
 
     setSelectedPetUseItem({ item, category });
@@ -5023,6 +5325,8 @@ useEffect(() => {
       : selectedPetUsePreview.nextStatus;
     const nextTickAt = formatVietnamTimestamp();
     const usedPetItem = selectedPetUseItem;
+    const isStinkyShowerUse = isShowerCareItem(usedPetItem.category, usedPetItem.item)
+      && stinkyEventActiveRef.current;
 
     petStatusRef.current = nextStatus;
     lastStatusTickAtRef.current = nextTickAt;
@@ -5123,6 +5427,10 @@ useEffect(() => {
         careEffectTimeoutsRef.current.delete(timeoutId);
       }, PET_CARE_EFFECT_DURATION_MS);
       careEffectTimeoutsRef.current.add(timeoutId);
+    }
+
+    if (isStinkyShowerUse) {
+      clearActiveStinkyEvent();
     }
 
     enqueuePetSave({
@@ -5695,7 +6003,6 @@ useEffect(() => {
 
     setIsBirthdayGiftOpened(true);
     setIsBirthdaySurpriseRevealed(false);
-    setIsBirthdayClawMachineOpen(false);
     setBirthdaySelectedGiftToy(DEFAULT_BIRTHDAY_GIFT_TOY);
     setIsBirthdayTeddyVisible(false);
     setIsBirthdayTeddyReadyForTap(false);
@@ -5718,12 +6025,6 @@ useEffect(() => {
     setBirthdayGiftCountdown(3);
     setIsBirthdayGiftPopupOpen(true);
   };
-
-  const handleBirthdayClawToyCollected = useCallback((toyType) => {
-    setBirthdaySelectedGiftToy(normalizeBirthdayGiftToy(toyType));
-    setIsBirthdayClawMachineOpen(false);
-    setBirthdayGiftRevealPhase('shaking');
-  }, []);
 
   const handleBirthdayTeddyTap = (event) => {
     event.stopPropagation();
@@ -5878,7 +6179,7 @@ useEffect(() => {
 
         <div
           ref={petStageRef}
-          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${activeTimePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${isRainWeatherActive ? ' pet-stage--rain-weather-active' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}${isBirthdayActive ? ' pet-stage--birthday' : ''}`}
+          className={`pet-stage pet-stage--${petReaction.level} pet-stage--${activeTimePeriod} pet-stage--rain-${activeStageRainVariant || 'none'}${isRainWeatherActive ? ' pet-stage--rain-weather-active' : ''}${mosquitoes.some((mosquito) => mosquito.isDying) ? ' pet-stage--mosquito-dying' : ''}${isBirthdayActive ? ' pet-stage--birthday' : ''}${isStinkyPreviewActive ? ' pet-stage--stinky-preview' : ''}`}
           style={petStageStyle}
           onPointerDownCapture={handlePetStagePointerDownCapture}
         >
@@ -6078,6 +6379,7 @@ useEffect(() => {
                     <span>Time: {activeTimePeriod}{normalizedDebugStageTimePeriod === STAGE_TIME_DEBUG_AUTO_VALUE ? ' (auto)' : ' (debug)'}</span>
                     <span>Rain: {activeStageRainLabel}</span>
                     <span>Birthday: {birthdayEventStatus}{isBirthdayForced ? ' (debug)' : ''}</span>
+                    <span>Stinky preview: {isStinkyPreviewActive ? 'on' : 'off'}</span>
                     <div className="pet-character-debug__actions">
                       <button
                         type="button"
@@ -6219,6 +6521,18 @@ useEffect(() => {
                     >
                       <span>Force awakening</span>
                       <small>Show tap-to-wake overlay</small>
+                    </button>
+                    </div>
+                    <div className="pet-character-debug__controls" aria-label="Care event preview controls">
+                    <span className="pet-character-debug__controls-title">Care event preview</span>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${debugStinkyPreview ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={() => setDebugStinkyPreview(value => !value)}
+                      aria-pressed={debugStinkyPreview}
+                    >
+                      <span>Stinky preview</span>
+                      <small>{debugStinkyPreview ? 'Showing smell + buzzing around pet' : 'Preview not showered state'}</small>
                     </button>
                     </div>
                   </details>
@@ -6604,6 +6918,18 @@ useEffect(() => {
               onKeyDown={handlePetCharacterCameraKeyDown}
             />
             <MeoBoxPetCharacter state={activePetCharacterPresentation.state} />
+            {isStinkyPreviewActive && (
+              <span className="pet-stink-effect" aria-hidden="true">
+                <span className="pet-stink-effect__steam pet-stink-effect__steam--one" />
+                <span className="pet-stink-effect__steam pet-stink-effect__steam--two" />
+                <span className="pet-stink-effect__steam pet-stink-effect__steam--three" />
+                <span className="pet-stink-effect__fly pet-stink-effect__fly--one" />
+                <span className="pet-stink-effect__fly pet-stink-effect__fly--two" />
+                <span className="pet-stink-effect__fly pet-stink-effect__fly--three" />
+                <span className="pet-stink-effect__fly pet-stink-effect__fly--four" />
+                <span className="pet-stink-effect__fly pet-stink-effect__fly--five" />
+              </span>
+            )}
             {isBirthdayCelebrationUnlocked && (
               <span className="pet-character__birthday-hat" aria-hidden="true">
                 <span className="pet-character__birthday-hat-tip" />
@@ -6972,11 +7298,6 @@ useEffect(() => {
           </div>
         </div>
       )}
-
-      <PetBirthdayClawMachine
-        isOpen={isBirthdayClawMachineOpen}
-        onToyCollected={handleBirthdayClawToyCollected}
-      />
 
       <PetClawMachineGame
         isOpen={isPetClawGameOpen}

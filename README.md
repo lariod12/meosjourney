@@ -51,6 +51,7 @@ Agents must update this section whenever Pet Page behavior, UI, data flow, or us
 - Each game round ends after one grab attempt; catching a plush gives a larger Sanity reward, while missing still gives a smaller reward.
 - After completion, the game closes automatically and the Pet Page shows the Sanity increase animation.
 - The default Care tab list now only keeps Game; existing saved care inventory should be cleaned in the database if old care items should disappear.
+- Debug mode includes a stinky preview for the not-showered state with smell wisps and small buzzing particles around the pet.
 
 ### v1.2.0
 
