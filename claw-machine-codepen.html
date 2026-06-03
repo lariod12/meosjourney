@@ -674,7 +674,10 @@ button {
 
 .toy {
   position: absolute;
-  transition: transform 1s, left 0.3s, top 0.3s;
+  transition:
+  transform 1s,
+  left var(--wander-duration, 1.6s) linear,
+  top var(--wander-duration, 1.6s) linear;
   --m: 2;
   --w: 20px;
   --h: 27px;
@@ -682,8 +685,71 @@ button {
   pointer-events: none;
 }
 
+.toy-debug-path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: calc(var(--m) * 1px);
+  background-image: repeating-linear-gradient(
+    to right,
+    #ff00ff 0,
+    #ff00ff calc(var(--m) * 3px),
+    transparent calc(var(--m) * 3px),
+    transparent calc(var(--m) * 5px));
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  transition: opacity 0.15s;
+  z-index: 4;
+}
+
+.toy-debug-path.is-visible {
+  opacity: 0.9;
+}
+
+.toy-debug-path::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--m) * -2px);
+  right: calc(var(--m) * -2px);
+  width: calc(var(--m) * 5px);
+  height: calc(var(--m) * 5px);
+  background-color: #ff00ff;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
 .toy::after {
   content: '';
+}
+
+.box > .toy:not(.grabbed):not(.display)::after {
+  animation: toy-run-idle 0.42s steps(2, end) infinite;
+  transform-origin: 50% 100%;
+}
+
+.box > .toy:nth-of-type(2n):not(.grabbed):not(.display)::after {
+  animation-delay: 0.12s;
+}
+
+.box > .toy:nth-of-type(3n):not(.grabbed):not(.display)::after {
+  animation-duration: 0.48s;
+}
+
+@keyframes toy-run-idle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg) scaleX(1);
+  }
+  50% {
+    transform: translateY(calc(var(--m) * -1px)) rotate(2deg) scaleX(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box > .toy:not(.grabbed):not(.display)::after {
+    animation: none;
+  }
 }
 
 .toy.bear::after {
@@ -1409,12 +1475,126 @@ class Toy extends WorldObject {
       ...props });
 
     elements.box.append(this.el);
+    this.debugPathEl = Object.assign(document.createElement('div'), {
+      className: 'toy-debug-path'
+    });
+    elements.box.append(this.debugPathEl);
     const toy = this;
 
     this.el.addEventListener('click', () => this.collectToy(toy));
     elements.toys.push(this);
+    this.startWander();
+  }
+  getWanderBounds() {
+    const reachBounds = getClawReachBounds();
+    const visibleMinX = m * 2;
+    const visibleMaxX = machineWidth - this.w - m * 2;
+    const visibleMinY = machineBottomTop - machineTop + m * 2;
+    const visibleMaxY = machineBottomTop - machineTop + machineBottomHeight - this.h - m * 2;
+
+    return {
+      xMin: clamp(reachBounds.xMin - this.w + m * 2, visibleMinX, visibleMaxX),
+      xMax: clamp(reachBounds.xMax - m * 2, visibleMinX, visibleMaxX),
+      yMin: clamp(reachBounds.yMin - this.h + m * 2, visibleMinY, visibleMaxY),
+      yMax: clamp(reachBounds.yMax - m * 2, visibleMinY, visibleMaxY)
+    };
+  }
+  getRandomWanderTarget(bounds) {
+    const dropZone = getDropZoneBounds();
+    const dropPadding = m * 6;
+    let target = {
+      x: this.x,
+      y: this.y
+    };
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+      target = {
+        x: randomN(bounds.xMin, bounds.xMax),
+        y: randomN(bounds.yMin, bounds.yMax)
+      };
+
+      if (!doRectsOverlap({ ...target, w: this.w, h: this.h }, dropZone, dropPadding)) {
+        return target;
+      }
+    }
+
+    return target;
+  }
+  canWander() {
+    return (
+    !this.el.classList.contains('grabbed') &&
+    !this.el.classList.contains('selected') &&
+    !this.el.classList.contains('display'));
+  }
+  updateDebugPath(target) {
+    if (!this.debugPathEl || !target) {
+      this.clearDebugPath();
+      return;
+    }
+
+    const startX = this.x + this.w / 2;
+    const startY = this.y + this.h / 2;
+    const endX = target.x + this.w / 2;
+    const endY = target.y + this.h / 2;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    this.debugPathEl.style.left = `${startX}px`;
+    this.debugPathEl.style.top = `${startY}px`;
+    this.debugPathEl.style.width = `${length}px`;
+    this.debugPathEl.style.transform = `rotate(${angle}deg)`;
+    this.debugPathEl.classList.add('is-visible');
+  }
+  clearDebugPath() {
+    if (this.debugPathEl) {
+      this.debugPathEl.classList.remove('is-visible');
+    }
+  }
+  startWander() {
+    this.stopWander();
+
+    const moveToNextTarget = () => {
+      if (!this.canWander()) {
+        this.clearDebugPath();
+        this.wanderTimeout = setTimeout(moveToNextTarget, 500);
+        return;
+      }
+
+      const bounds = this.getWanderBounds();
+      if (this.x < bounds.xMin) {
+        this.el.style.setProperty('--wander-duration', '0ms');
+        this.x = bounds.xMin;
+        this.setStyles();
+      }
+
+      const target = this.getRandomWanderTarget(bounds);
+      const distance = Math.sqrt(
+      Math.pow(target.x - this.x, 2) + Math.pow(target.y - this.y, 2));
+      const duration = clamp(distance * 48, 1600, 3800);
+
+      this.el.style.setProperty('--wander-duration', `${duration}ms`);
+      this.el.style.setProperty('--rotate-angle', `${target.x < this.x ? -3 : 3}deg`);
+      this.updateDebugPath(target);
+      this.x = target.x;
+      this.y = target.y;
+      this.setStyles();
+
+      this.wanderTimeout = setTimeout(moveToNextTarget, duration + randomN(1000, 5000));
+    };
+
+    this.wanderTimeout = setTimeout(moveToNextTarget, randomN(1000, 5000));
+  }
+  stopWander() {
+    clearTimeout(this.wanderTimeout);
+    clearInterval(this.wanderInterval);
+    this.wanderTimeout = null;
+    this.wanderInterval = null;
+    this.clearDebugPath();
   }
   collectToy(toy) {
+    toy.stopWander();
     toy.el.classList.remove('selected');
     toy.x = machineWidth / 2 - toy.w / 2;
     toy.y = machineHeight / 2 - toy.h / 2;
@@ -1552,6 +1732,7 @@ const dropToy = () => {
   settings.targetToy = null;
 
   if (droppedToy) {
+    droppedToy.stopWander();
     droppedToy.z = 3;
     droppedToy.move({
       moveKey: 'y',
@@ -1566,7 +1747,10 @@ const dropToy = () => {
           droppedToy.el.classList.add('selected');
           elements.collectionArrow.classList.add('active');
         } else if (!document.querySelector('.selected')) {
+          droppedToy.startWander();
           elements.collectionArrow.classList.remove('active');
+        } else {
+          droppedToy.startWander();
         }
       } });
 
@@ -1586,6 +1770,7 @@ const grabToy = () => {
     obj => obj.moveWith[0] = settings.targetToy);
 
     settings.targetToy.setRotateAngle();
+    settings.targetToy.stopWander();
     settings.targetToy.el.classList.add('grabbed');
   } else {
     arm.el.classList.add('missed');
