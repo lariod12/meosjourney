@@ -295,6 +295,34 @@ body.debug-off .debug-info-panel {
   pointer-events: none;
 }
 
+.result-popup {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 10;
+  min-width: calc(var(--m) * 58px);
+  padding: calc(var(--m) * 6px) calc(var(--m) * 8px);
+  border: calc(var(--m) * 2px) solid var(--brown);
+  background: var(--white);
+  color: var(--brown);
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(var(--m) * 5px);
+  line-height: 1.7;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow:
+  calc(var(--m) * 3px) calc(var(--m) * 3px) 0 var(--brown);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.result-popup.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .box {
   position: relative;
   background-color: #7fcfed;
@@ -761,16 +789,16 @@ button {
   content: '';
 }
 
-.box > .toy:not(.grabbed):not(.display)::after {
+.box > .toy:not(.grabbed):not(.display):not(.wander-paused)::after {
   animation: toy-run-idle 0.42s steps(2, end) infinite;
   transform-origin: 50% 100%;
 }
 
-.box > .toy:nth-of-type(2n):not(.grabbed):not(.display)::after {
+.box > .toy:nth-of-type(2n):not(.grabbed):not(.display):not(.wander-paused)::after {
   animation-delay: 0.12s;
 }
 
-.box > .toy:nth-of-type(3n):not(.grabbed):not(.display)::after {
+.box > .toy:nth-of-type(3n):not(.grabbed):not(.display):not(.wander-paused)::after {
   animation-duration: 0.48s;
 }
 
@@ -785,7 +813,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .box > .toy:not(.grabbed):not(.display)::after {
+  .box > .toy:not(.grabbed):not(.display):not(.wander-paused)::after {
     animation: none;
   }
 }
@@ -927,14 +955,13 @@ button {
 .control .collection-point {
   filter: brightness(0.8);
   bottom: calc(var(--m) * 8px);
+  cursor: pointer;
+  pointer-events: none;
 }
 
-.sign {
-  position: absolute;
-  color: var(--brown);
-  bottom: 10px;
-  right: 10px;
-  font-size: 10px;
+.control .collection-point.collectable {
+  filter: sepia(1) brightness(1);
+  pointer-events: all;
 }
 
 a {
@@ -985,14 +1012,12 @@ a:hover {
         <div class="cover top">
           <div class="collection-arrow pix"></div>
         </div>
-        <div class="collection-point pix"></div>
+        <div class="collection-point pix" role="button" tabindex="0" aria-label="Collect grabbed toy"></div>
       </div>
+      <div class="result-popup pix" role="status" aria-live="polite" hidden></div>
     </div>
   </div>
   <button class="debug-toggle-btn pix" aria-label="Toggle debug view" aria-pressed="true">DBG</button>
-  <div class="sign">
-    by Developer Rahul / <a href="http://www.developerrahul.com/">developerrahul.com</a>
-  </div>
 </body>
 <!-- partial -->
   
@@ -1004,6 +1029,7 @@ const elements = {
   dropZone: document.querySelector('.machine-bottom .collection-point'),
   collectionPoint: document.querySelector('.control .collection-point'),
   collectionArrow: document.querySelector('.collection-arrow'),
+  resultPopup: document.querySelector('.result-popup'),
   debugToggleBtn: document.querySelector('.debug-toggle-btn'),
   toys: [] };
 
@@ -1011,7 +1037,9 @@ const elements = {
 const settings = {
   targetToy: null,
   collectedNumber: 0,
-  debugEnabled: true,
+  isPetGameMode: new URLSearchParams(window.location.search).get('petGame') === '1',
+  debugEnabled: new URLSearchParams(window.location.search).get('petGame') !== '1',
+  petGameResultSent: false,
   isGrabInProgress: false };
 
 
@@ -1595,6 +1623,7 @@ class Toy extends WorldObject {
   }
   startWander() {
     this.stopWander();
+    this.el.classList.remove('wander-paused');
 
     const moveToNextTarget = () => {
       if (!this.canWander()) {
@@ -1634,9 +1663,33 @@ class Toy extends WorldObject {
     this.wanderInterval = null;
     this.clearDebugPath();
   }
+  pauseWander() {
+    const currentStyle = getComputedStyle(this.el);
+    const currentX = parseFloat(currentStyle.left);
+    const currentY = parseFloat(currentStyle.top);
+
+    this.stopWander();
+    this.el.classList.add('wander-paused');
+    this.el.style.setProperty('--wander-duration', '0ms');
+    this.el.style.setProperty('--rotate-angle', '0deg');
+    if (Number.isFinite(currentX)) this.x = currentX;
+    if (Number.isFinite(currentY)) this.y = currentY;
+    this.setStyles();
+  }
+  resumeWander() {
+    this.el.classList.remove('wander-paused');
+    this.el.style.setProperty('--rotate-angle', '0deg');
+    if (this.canWander()) {
+      this.startWander();
+    }
+  }
   collectToy(toy) {
+    if (!toy || !toy.el.classList.contains('selected')) return;
+
     toy.stopWander();
     toy.el.classList.remove('selected');
+    toy.el.classList.remove('wander-paused');
+    elements.collectionPoint.classList.remove('collectable');
     toy.x = machineWidth / 2 - toy.w / 2;
     toy.y = machineHeight / 2 - toy.h / 2;
     toy.z = 7;
@@ -1657,7 +1710,14 @@ class Toy extends WorldObject {
       elements.clawMachine.classList.remove('show-overlay');
       if (!document.querySelector('.selected'))
       elements.collectionArrow.classList.remove('active');
-    }, 1000);
+      if (!settings.isPetGameMode) {
+        activateHoriBtn();
+      }
+      showResultPopup({
+        caught: true,
+        toyType: toy.toyType
+      });
+    }, 2200);
   }
   setRotateAngle() {
     const angle =
@@ -1718,6 +1778,36 @@ const doOverlap = (a, b) => {
   return b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h;
 };
 
+const notifyPetClawGameComplete = ({ caught, toyType = null, delayMs = 0 }) => {
+  if (settings.petGameResultSent) return;
+  settings.petGameResultSent = true;
+
+  setTimeout(() => {
+    window.parent.postMessage({
+      type: 'meosjourney:pet-claw-game-complete',
+      caught,
+      toyType
+    }, window.location.origin);
+  }, delayMs);
+};
+
+const showResultPopup = ({ caught, toyType = null, delayMs = 1300 }) => {
+  elements.resultPopup.textContent = caught ? 'Success!' : 'Fail!';
+  elements.resultPopup.hidden = false;
+  elements.resultPopup.classList.toggle('success', caught);
+  elements.resultPopup.classList.toggle('fail', !caught);
+
+  requestAnimationFrame(() => {
+    elements.resultPopup.classList.add('is-visible');
+  });
+
+  notifyPetClawGameComplete({
+    caught,
+    toyType,
+    delayMs
+  });
+};
+
 const isToyInCollectionPoint = toy => {
   const toyRect = toy.el.getBoundingClientRect();
   const pointRect = elements.collectionPoint.getBoundingClientRect();
@@ -1756,6 +1846,13 @@ const getClosestToy = () => {
   }
 };
 
+const collectSelectedToy = () => {
+  const selectedToy = elements.toys.find(toy => toy.el.classList.contains('selected'));
+  if (selectedToy) {
+    selectedToy.collectToy(selectedToy);
+  }
+};
+
 new Array(sortedToys.length).fill('').forEach((_, i) => {
   new Toy({ index: i });
 });
@@ -1782,16 +1879,31 @@ const dropToy = () => {
       next: () => {
         droppedToy.el.classList.remove('grabbed');
         arm.el.classList.remove('open');
-        activateHoriBtn();
 
         if (isToyInCollectionPoint(droppedToy)) {
           droppedToy.el.classList.add('selected');
           elements.collectionArrow.classList.add('active');
+          elements.collectionPoint.classList.add('collectable');
         } else if (!document.querySelector('.selected')) {
-          droppedToy.startWander();
           elements.collectionArrow.classList.remove('active');
+          elements.collectionPoint.classList.remove('collectable');
+          if (!settings.isPetGameMode) {
+            activateHoriBtn();
+          }
+          droppedToy.resumeWander();
+          showResultPopup({
+            caught: false,
+            toyType: droppedToy.toyType
+          });
         } else {
-          droppedToy.startWander();
+          if (!settings.isPetGameMode) {
+            activateHoriBtn();
+          }
+          droppedToy.resumeWander();
+          showResultPopup({
+            caught: false,
+            toyType: droppedToy.toyType
+          });
         }
       } });
 
@@ -1801,7 +1913,12 @@ const dropToy = () => {
 
   setTimeout(() => {
     arm.el.classList.remove('open');
-    activateHoriBtn();
+    if (!settings.isPetGameMode) {
+      activateHoriBtn();
+    }
+    showResultPopup({
+      caught: false
+    });
   }, 700);
 };
 
@@ -1827,6 +1944,9 @@ const startGrabSequence = () => {
   grabBtn.deactivate();
   settings.targetToy = null;
   getClosestToy();
+  if (settings.targetToy) {
+    settings.targetToy.pauseWander();
+  }
 
   setTimeout(() => {
     arm.el.classList.add('open');
@@ -1864,6 +1984,14 @@ const grabBtn = new Button({
   isLocked: true,
   action: startGrabSequence });
 
+elements.collectionPoint.addEventListener('click', collectSelectedToy);
+elements.collectionPoint.addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    collectSelectedToy();
+  }
+});
+
 // ============================================
 // DEBUG VISUALIZATION
 // ============================================
@@ -1893,9 +2021,14 @@ function setDebugEnabled(isEnabled) {
   elements.debugToggleBtn.setAttribute('aria-pressed', String(isEnabled));
 }
 
-elements.debugToggleBtn.addEventListener('click', () => {
-  setDebugEnabled(!settings.debugEnabled);
-});
+if (settings.isPetGameMode) {
+  elements.debugToggleBtn.hidden = true;
+  setDebugEnabled(false);
+} else {
+  elements.debugToggleBtn.addEventListener('click', () => {
+    setDebugEnabled(!settings.debugEnabled);
+  });
+}
 
 function createDebugOverlay(id, label, className) {
   const overlay = document.createElement('div');

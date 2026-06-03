@@ -45,6 +45,12 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.3.0
+
+- Care item Game opens the full `claw-machine.html` screen from the Pet Page.
+- Each game round ends after one grab attempt; catching a plush gives a larger Sanity reward, while missing still gives a smaller reward.
+- After completion, the game closes automatically and the Pet Page shows the Sanity increase animation.
+
 ### v1.2.0
 
 - Sau popup Happy Birthday đếm ngược 3-2-1, sân khấu mở overlay gắp thú bông ngay trong Pet Page.

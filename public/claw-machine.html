@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<!--
+  Claw Machine CodePen copy
+  Original Pen: https://codepen.io/rahul-sahni/pen/QwWbLgM
+  Author: Developer Rahul (https://codepen.io/rahul-sahni)
+
+  Public CodePen Pens are MIT Licensed by default:
+  https://blog.codepen.io/documentation/licensing/
+
+  MIT License
+
+  Copyright (c) Developer Rahul
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+-->
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  
+
+    <link rel="apple-touch-icon" type="image/png" href="https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png" />
+
+    <meta name="apple-mobile-web-app-title" content="CodePen">
+
+    <link rel="icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico" />
+
+    <link rel="mask-icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg" color="#111" />
+
+
+  <title>Claw Machine - CodePen Copy</title>
+
+    <link rel="canonical" href="https://codepen.io/rahul-sahni/pen/QwWbLgM">
+  
+  
+  
+  
+<style>
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #84dfe2;
+  --brown: #57280f;
+  --blue: #33a5da;
+  --dark-blue: #3a94b7;
+  --machine-color: #32c2db;
+  --machine-width: 160px;
+  --m: 2;
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  min-height: 600px;
+  flex-direction: column;
+}
+
+.pix,
+.pix::before,
+.pix::after {
+  width: calc(var(--w) * var(--m));
+  height: calc(var(--h) * var(--m));
+  image-rendering: pixelated;
+  background-size: calc(var(--w) * var(--m)) calc(var(--h) * var(--m));
+}
+
+.pix::before,
+.pix::after {
+  position: absolute;
+  content: '';
+}
+
+/* Debug Overlay Styles */
+.debug-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+  border: 2px dashed red;
+  background-color: rgba(255, 0, 0, 0.15);
+}
+
+.debug-claw {
+  border: 3px solid #00ff00;
+  background-color: rgba(0, 255, 0, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.debug-collection {
+  border: 3px solid #0066ff;
+  background-color: rgba(0, 102, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 102, 255, 0.5);
+}
+
+.debug-collection::before,
+.debug-collection::after {
+  content: '';
+  position: absolute;
+  background-color: #0066ff;
+  pointer-events: none;
+}
+
+.debug-collection::before {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.debug-collection::after {
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.debug-drop {
+  border: 3px solid #ff7a00;
+  background-color: rgba(255, 122, 0, 0.25);
+  box-shadow: 0 0 10px rgba(255, 122, 0, 0.5);
+}
+
+.debug-label {
+  position: absolute;
+  top: -25px;
+  left: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.debug-trajectory {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9998;
+  border-left: 3px dashed #ff00ff;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.debug-trajectory.active {
+  opacity: 0.8;
+}
+
+.debug-info-panel {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #00ff00;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  border: 2px solid #00ff00;
+  border-radius: 5px;
+  z-index: 10000;
+  min-width: 250px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.debug-info-panel .title {
+  color: #ffff00;
+  font-weight: bold;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 4px;
+}
+
+.debug-info-panel .row {
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.debug-info-panel .label {
+  color: #00ffff;
+}
+
+.debug-info-panel .value {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.claw-machine.debug-off .toy-debug-path,
+body.debug-off .debug-overlay,
+body.debug-off .debug-trajectory,
+body.debug-off .debug-info-panel {
+  display: none;
+}
+
+.claw-machine {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--brown);
+  overflow: hidden;
+}
+
+.collection-box {
+  --h: 32px;
+  width: calc(var(--m) * var(--machine-width));
+  margin: calc(var(--m) * var(--h) * -1 - 10px) 0 24px;
+  display: flex;
+  align-items: bottom;
+  justify-content: start;
+}
+
+.collection-box .toy-wrapper {
+  position: relative;
+  width: calc(100% / 6);
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+
+.collection-box .toy-wrapper .toy::after {
+  top: auto;
+  bottom: 0;
+}
+
+.toy-wrapper.squeeze-in {
+  width: 0;
+  animation: squeeze-in forwards 0.4s;
+  animation-delay: 1.4s;
+}
+
+@keyframes squeeze-in {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: calc(100% / 6);
+  }
+}
+
+@keyframes show-toy-2 {
+  0% {
+    opacity: 0;
+    transform: translateY(-100vh);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toy-wrapper .toy {
+  opacity: 0;
+  transform: translateY(-100vh);
+  animation: forwards show-toy-2 0.8s;
+  animation-delay: 1s;
+}
+
+.claw-machine.show-overlay::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background-color: var(--machine-color);
+  opacity: 0.6;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.result-popup {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 10;
+  min-width: calc(var(--m) * 58px);
+  padding: calc(var(--m) * 6px) calc(var(--m) * 8px);
+  border: calc(var(--m) * 2px) solid var(--brown);
+  background: var(--white);
+  color: var(--brown);
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(var(--m) * 5px);
+  line-height: 1.7;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow:
+  calc(var(--m) * 3px) calc(var(--m) * 3px) 0 var(--brown);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.result-popup.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.box {
+  position: relative;
+  background-color: #7fcfed;
+  --w: var(--machine-width);
+  --h: 180px;
+}
+
+.box::before {
+  background-color: var(--brown);
+  top: calc(70px * var(--m));
+  width: 100%;
+  height: calc(var(--m) * 8px);
+  z-index: 5;
+}
+
+.box::after {
+  background-color: var(--machine-color);
+  top: calc(70px * var(--m));
+  right: 0px;
+  width: calc(var(--m) * 8px);
+  height: calc(var(--m) * 170px);
+  z-index: 2;
+}
+
+.machine-top,
+.machine-bottom {
+  position: absolute;
+  width: 100%;
+  --h: 70px;
+  height: calc(var(--h) * var(--m));
+}
+
+.machine-top {
+  top: 0;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.machine-top::after {
+  content: '';
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #70f7f372;
+}
+
+.machine-bottom {
+  bottom: 0;
+  background-color: #def7f6;
+}
+
+.collection-point {
+  position: absolute;
+  bottom: 0;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAMCAYAAABm+U3GAAAAAXNSR0IArs4c6QAAADBJREFUOE9jtJqy/T8DFcGxHE9GkHGM1DYYZCjIcJoYTDMXjxqMkrZGIw8eHEMvKADnSiE1EAXSagAAAABJRU5ErkJggg==);
+  --w: 44px;
+  --h: 24px;
+  /* z-index: 2; */
+  z-index: 0;
+}
+
+.rail {
+  top: 0;
+  left: 0;
+  transition: 0.3s;
+  border: solid var(--blue);
+}
+
+.rail.hori {
+  --h: 5px;
+  width: 100%;
+  background-color: #fff;
+  border-width: 2px 0;
+}
+
+.rail.vert {
+  position: absolute;
+  --h: 70px;
+  --w: 5px;
+  background-color: #fff;
+  border-width: 0 2px;
+}
+
+.arm-joint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  --w: 5px;
+  --h: 5px;
+  transition: 0.3s;
+  z-index: -1;
+}
+
+.arm-joint::after {
+  position: absolute;
+  border: solid var(--blue) 2px;
+  background-color: #fff;
+  --w: 10px;
+  --h: 10px;
+  top: calc(var(--m) * var(--h) * -0.25);
+  left: calc(var(--m) * var(--w) * -0.25);
+}
+
+.arm::after {
+  position: absolute;
+  --w: 13px;
+  --h: 7px;
+  bottom: calc(var(--m) * -1px);
+  left: calc(var(--m) * -3px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAHCAYAAADTcMcaAAAAAXNSR0IArs4c6QAAAElJREFUKFNjZGBgYDBeeus/iCYGnI1WY2QEaTgTpUqMerAak2W3GVA0RWgKMKy4/gHDAGRx6miCWQEyGQbQbcawiRiPgTWRE3oA5mIzfZr3jVYAAAAASUVORK5CYII=);
+}
+
+.arm.missed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAHCAYAAADTcMcaAAAAAXNSR0IArs4c6QAAAENJREFUKFNjZGBgYDBeeus/iCYGnI1WY2QEaTgTpUqMerAak2W3GSjTFKEpADZpxfUPGLYiy+G0CaYImyHkO4+c0AMAWBctfQPWfVQAAAAASUVORK5CYII=);
+}
+
+.control {
+  position: relative;
+  --h: 60px;
+  width: 100%;
+  text-align: right;
+  background-color: var(--dark-blue);
+}
+
+.cover {
+  position: absolute;
+  background-color: var(--machine-color);
+  --top-size: calc(var(--m) * 20px);
+  --bottom-size: calc(var(--m) * 10px);
+  z-index: 4;
+}
+
+.top {
+  top: 0;
+  width: 100%;
+  height: calc(var(--m) * 16px);
+}
+
+.collection-arrow {
+  position: absolute;
+  left: calc(var(--m) * 21px);
+  top: calc(var(--m) * 9px);
+  --w: 8px;
+  --h: 4px;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAECAYAAACzzX7wAAAAAXNSR0IArs4c6QAAAClJREFUGFdjDDn86T8DHsAIksOlaI0tHyNYATZFIEmQOFwBsiKYJEgMAPTvDw1xBcM+AAAAAElFTkSuQmCC);
+  filter: sepia(1) brightness(0.5);
+}
+
+.bottom {
+  bottom: 0px;
+  width: 100%;
+  height: calc(var(--m) * 8px);
+  background-color: var(--brown);
+}
+
+.left {
+  bottom: 0px;
+  left: 0px;
+  height: calc(var(--m) * 170px);
+  width: calc(var(--m) * 8px);
+}
+
+.right {
+  top: 0;
+  right: 0px;
+  height: 100%;
+  width: calc(var(--m) * 116px);
+}
+
+.arm {
+  position: absolute;
+  --w: 7px;
+  --h: 28px;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px var(--blue);
+  transition: 0.3s;
+  margin-top: calc(var(--m) * -1px);
+  margin-left: calc(var(--m) * -1px);
+}
+
+.claws {
+  position: absolute;
+  --w: 3px;
+  --h: 10px;
+  bottom: calc(var(--m) * -5px);
+  left: calc(var(--m) * 2.5px);
+}
+
+.claws::before,
+.claws::after {
+  top: 0;
+  --w: 10px;
+  --h: 16px;
+  transition: 0.2s;
+}
+
+.claws::before {
+  left: calc(var(--m) * -10px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAQCAYAAAAvf+5AAAAAAXNSR0IArs4c6QAAAGRJREFUKFNjZMADwjX4/6+88ZERpARMYAMgRSuuf2CI0BRgACnGqhCmCGYASDGGQmyKMEzEpQjFjfgUwRUSUgRWSIwi0hSCVBNjKjx4CClGCUeiggcWC0QFOD7FlCUKZJNhyQwAi8VlK14hrsQAAAAASUVORK5CYII=);
+  --close-angle: 45deg;
+  transform-origin: top right;
+}
+
+.claws::after {
+  left: calc(var(--m) * 2.5px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAQCAYAAAAvf+5AAAAAAXNSR0IArs4c6QAAAFxJREFUKFNjZICCcA3+/ytvfGSE8dFpsARI0YrrHxgiNAUYcClmhCmCmYBLMYqJ+BTD3UTIZBTH41OM4UtcirEGBzbF5CskymqiPENU8BBSBIoI8qIQb6IgNpkBAEPjZSuK8jVuAAAAAElFTkSuQmCC);
+  --close-angle: -45deg;
+  transform-origin: top left;
+}
+
+.arm.open .claws::before,
+.arm.open .claws::after {
+  rotate: var(--close-angle);
+}
+
+.arm-joint::before {
+  --w: 20px;
+  --h: 16px;
+  transform: scale(var(--scale));
+  margin-left: -15px;
+  margin-top: var(--shadow-pos);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAQCAYAAAAWGF8bAAAAAXNSR0IArs4c6QAAAF5JREFUOE9jZMABXmQc+49LDiQuMcOKEZs8iiAhQ3BZgGw43EByDYNZAjMUbCClhiEbSn0DqeU6mCsZRw3El5aJkqN+GA7+dAgLGEqTD0rWo9RQrIUDehQScjGu4gsANVo6j8xbO6QAAAAASUVORK5CYII=);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAQCAYAAAAWGF8bAAAAAXNSR0IArs4c6QAAAF5JREFUOE9jZMABrKZs/49LDiR+LMeTEZs8iiAhQ3BZgGw43EByDYNZAjMUbCClhiEbSn0DqeU6mCsZRw3El5aJkqN+GA7+dAgLGEqTD0rWo9RQrIUDehQScjGu4gsAxKQ3Ke4v44gAAAAASUVORK5CYII=);
+  z-index: -1;
+  opacity: 0.5;
+}
+
+button {
+  position: relative;
+  z-index: 5;
+  --w: 24px;
+  --h: 24px;
+  margin: 12px 12px 0 0;
+  border: 0;
+  background-color: transparent;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAAXNSR0IArs4c6QAAAFRJREFUKFNjZICC/////4exsdGMjIyMIHEwQUgxzACQJkZsikOPfAarWW3Di2EZhgaYYphKdE0oGtAVY9ME14BLMbomypwEMo0kP9BGA8kRR2rSAACHREftd0fKPgAAAABJRU5ErkJggg==);
+  filter: sepia(1) brightness(0.4);
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.grab-btn {
+  position: absolute;
+  top: 40px;
+  right: 12px;
+  --w: 24px;
+  --h: 24px;
+  margin: 0;
+  background-image: none;
+  background-color: #fff;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue),
+  0 calc(var(--m) * 2px) 0 var(--brown);
+  filter: sepia(1) brightness(0.95);
+}
+
+.grab-btn::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--m) * 10px);
+  top: calc(var(--m) * 6px);
+  width: calc(var(--m) * 2px);
+  height: calc(var(--m) * 2px);
+  background-color: var(--dark-blue);
+  box-shadow:
+  0 calc(var(--m) * 2px) 0 var(--dark-blue),
+  0 calc(var(--m) * 4px) 0 var(--dark-blue),
+  calc(var(--m) * -4px) calc(var(--m) * 4px) 0 var(--dark-blue),
+  calc(var(--m) * -2px) calc(var(--m) * 6px) 0 var(--dark-blue),
+  0 calc(var(--m) * 6px) 0 var(--dark-blue),
+  calc(var(--m) * 2px) calc(var(--m) * 6px) 0 var(--dark-blue),
+  calc(var(--m) * 4px) calc(var(--m) * 4px) 0 var(--dark-blue);
+}
+
+.grab-btn.active:active {
+  top: 32px;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue),
+  0 calc(var(--m) * 1px) 0 var(--brown);
+}
+
+.debug-toggle-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  --w: 24px;
+  --h: 14px;
+  margin: 0;
+  z-index: 10001;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  background-image: none;
+  background-color: #fff;
+  color: var(--brown);
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(var(--m) * 3px);
+  line-height: calc(var(--m) * 10px);
+  text-align: center;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 1px) var(--machine-color),
+  0 calc(var(--m) * 2px) 0 var(--brown);
+  filter: sepia(1) brightness(0.95);
+  pointer-events: all;
+}
+
+.debug-toggle-btn[aria-pressed="false"] {
+  background-color: var(--dark-blue);
+  color: #fff;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 1px) var(--brown),
+  0 calc(var(--m) * 2px) 0 var(--brown);
+}
+
+.joystick-control {
+  position: absolute;
+  top: 7px;
+  right: calc(var(--m) * 36px);
+  z-index: 5;
+  --w: 34px;
+  --h: 34px;
+  display: block;
+  margin: 0;
+  touch-action: none;
+  pointer-events: none;
+  cursor: grab;
+  filter: sepia(1) brightness(0.42);
+}
+
+.joystick-control.active {
+  pointer-events: all;
+}
+
+.joystick-control:focus-visible {
+  outline: calc(var(--m) * 1px) solid #fff;
+  outline-offset: calc(var(--m) * 2px);
+}
+
+.joystick-base {
+  position: absolute;
+  left: calc(var(--m) * 6px);
+  top: calc(var(--m) * 20px);
+  width: calc(var(--m) * 22px);
+  height: calc(var(--m) * 20px);
+  background-color: var(--brown);
+  border: calc(var(--m) * 2px) solid #fff;
+  box-shadow: inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue);
+}
+
+
+.joystick-stick {
+  position: absolute;
+  left: calc(var(--m) * 14px);
+  top: 20px;
+  width: calc(var(--m) * 6px);
+  height: calc(var(--m) * 19px);
+  background-color: var(--brown);
+  transform-origin: 50% 100%;
+  transition: transform 0.12s ease;
+}
+
+.joystick-stick::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--m) * -4px);
+  top: calc(var(--m) * -9px);
+  width: calc(var(--m) * 14px);
+  height: calc(var(--m) * 14px);
+  background-color: #fff;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  box-shadow: inset 0 0 0 calc(var(--m) * 2px) var(--machine-color);
+}
+
+.joystick-control.pushed-right .joystick-stick {
+  animation: none;
+  transform: rotate(28deg) translateX(calc(var(--m) * 3px));
+}
+
+.joystick-control.pushed-left .joystick-stick {
+  animation: none;
+  transform: rotate(-28deg) translateX(calc(var(--m) * -3px));
+}
+
+.joystick-control.pushed-up .joystick-stick {
+  animation: none;
+  transform: rotate(-28deg) translateY(calc(var(--m) * -4px));
+}
+
+.joystick-control.pushed-down .joystick-stick {
+  animation: none;
+  transform: rotate(28deg) translateY(calc(var(--m) * 4px));
+}
+
+.active {
+  animation: pulse infinite 1s;
+  pointer-events: all;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    filter: sepia(0);
+  }
+  50% {
+    filter: sepia(1);
+  }
+}
+
+.toy.display {
+  transform: scale(3);
+  animation: forwards show-toy-1 0.8s;
+  animation-delay: 1s;
+}
+
+.toy {
+  position: absolute;
+  transition:
+  transform 1s,
+  left var(--wander-duration, 1.6s) linear,
+  top var(--wander-duration, 1.6s) linear;
+  --m: 2;
+  --w: 20px;
+  --h: 27px;
+  transform: rotate(var(--rotate-angle));
+  pointer-events: none;
+}
+
+.toy-debug-path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: calc(var(--m) * 1px);
+  background-image: repeating-linear-gradient(
+    to right,
+    #ff00ff 0,
+    #ff00ff calc(var(--m) * 3px),
+    transparent calc(var(--m) * 3px),
+    transparent calc(var(--m) * 5px));
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  transition: opacity 0.15s;
+  z-index: 4;
+}
+
+.toy-debug-path.is-visible {
+  opacity: 0.9;
+}
+
+.toy-debug-path::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--m) * -2px);
+  right: calc(var(--m) * -2px);
+  width: calc(var(--m) * 5px);
+  height: calc(var(--m) * 5px);
+  background-color: #ff00ff;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.toy::after {
+  content: '';
+}
+
+.box > .toy:not(.grabbed):not(.display):not(.wander-paused)::after {
+  animation: toy-run-idle 0.42s steps(2, end) infinite;
+  transform-origin: 50% 100%;
+}
+
+.box > .toy:nth-of-type(2n):not(.grabbed):not(.display):not(.wander-paused)::after {
+  animation-delay: 0.12s;
+}
+
+.box > .toy:nth-of-type(3n):not(.grabbed):not(.display):not(.wander-paused)::after {
+  animation-duration: 0.48s;
+}
+
+@keyframes toy-run-idle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg) scaleX(1);
+  }
+  50% {
+    transform: translateY(calc(var(--m) * -1px)) rotate(2deg) scaleX(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box > .toy:not(.grabbed):not(.display):not(.wander-paused)::after {
+    animation: none;
+  }
+}
+
+.toy.bear::after {
+  --w: 24px;
+  --h: 30px;
+  top: calc(var(--m) * -2px);
+  left: calc(var(--m) * -2px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAeCAYAAAA2Lt7lAAAAAXNSR0IArs4c6QAAATNJREFUSEvtVssNwjAMbcUZwQLcYQfWQLAAU7FAEWuwA9xZAMQZgRzpRY7rOEkbTtALtLHfc54/ctuwZ7ucvfF6vD5afpb6H/P1IGTwOtw8zmS/aHJJLF9HoBmkItbOtQADAoqanu5yH4Lf7FZz50dEUCCQaCiwjIaIIK+/QS1wkIHk+wSU4NrR81u0GgGSlUscs6fvP0awOT+dvKf1NKjMYokGdZni5HKAUWEllAzlufaNcxT3AWQASKrCAoKcW5TI1hsVcK7RdByccH0OMAXpF1O1JGrNnwaeazQ+x0tBLXsK1CRAvaP+JVjqPEmgNZUkiZFD6iyJZOeCxAL3BChRnqSxeUCRuCRzsBoJl9vIn6CXrlESIXlWY5oEqCgNgDvGikFbN9UFly+y0EDuqTk25PsBag8IsJphwl4AAAAASUVORK5CYII=);
+}
+
+.toy.bear.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAeCAYAAAA2Lt7lAAAAAXNSR0IArs4c6QAAAUNJREFUSEvllr0NAjEMhe9EjWABetiBNRAswFQsAGINdoCeBUDUCORIL3KM48RHqLiGn8T+bD87l75jz3o+eeHn4XLv+Vrpe842OqENz901+hltZ10txLINAG1DKWJtXQswAVDU9OzPtyH+u81iGuwIhAokJRrqWEZDIJQ3ZtDKOWCA/B5AAreOnmfRawBKzwvVbOg/FUAReCC5vSagFmIF4s5gdXqE8h6X46Qz3Rl4ysMFlbqFDHBUWKLmBCzZ0LBVAaAHr0upy5JBq8nCczh9HBUwbjF03Dn5jSXCKUifOFU9UWv2QQP5LvA6tfZToCYA/Y7+l85K60WANlQSkoOj1FUlkpMLiOU8AtCiXKRvdUCTxEHjbcpf3ENA8jaS3H1adNSfAyCepZNZInSU5oAb5rTSrpvqBZdfZNFJ8p5as4ds30LPDrDvwGtOAAAAAElFTkSuQmCC);
+}
+
+.toy-wrapper .toy.bear::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAeCAYAAAA2Lt7lAAAAAXNSR0IArs4c6QAAATVJREFUSEvtVsutwkAMTMQZQQPvDj3QBoIGqOo1AKINeoA7DYA4I9CsNCuv5f2FhQvkkpC1ZxyPbdx34lrNJg/+3J2uvTzLPcd8PQgM7v9njzPa/HWlJClfR2AZ5CK2zq0AAwJEjWt7vAzB79bzqfMDETMQpGgosI4GREyv/4JW4CQjyfsJIHDr6OVX9BYBxSoljtnj/ZcRLA83l979YhxUZnWKBnWZ4eQ04KhICQpD6zz2HpjVfcA0yEBzQaGbPzMqGFWLppNzCLheA05B3DlVa8XmuKa/S5H+L6gFTdmDKEnAemf9a7DceZbAaipNEiNnqotSpDuXJClwT8BGkyK/qkMgsgRrIbjeRoLd50dAYeXCVpUiiicXLF0QSQ1YURaAdIxpZa2b5oIrF1lGqPfUEhv4PgFUUwiwSYZ9UgAAAABJRU5ErkJggg==);
+}
+
+.toy.bunny {
+  --w: 20px;
+  --h: 29px;
+}
+
+.toy.bunny::after {
+  --w: 24px;
+  --h: 32px;
+  top: calc(var(--m) * -2px);
+  left: calc(var(--m) * -2px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAN1JREFUSEvtVtsNgzAMTCYoY9CJ2hHpRDBGO0Grq2TkOg4+KlAfSv4wjs+cH1xO5pz6w93aLtMtWxueGd+Xi7gwjNci1vnYJQvC+s4AtQuCpkHW+DYAr/ZJ09ko2o4iRAK3ON6saKSiBlFfu2kGRgHJewTXw/kZAJZrnalXG8Rxv6ABrC4yKLO979ls51Zr4LW41EXeRcMmg/lcdnvMwjxoktGWIH+8KpjOiBafjlF00W8CWIXG9PcSTXpeINYoZRfxXvubwf5dAMwatzq2UM2MqGV8hLa3ZTkj3QHyACJNPMzl3sUuAAAAAElFTkSuQmCC);
+}
+
+.toy.bunny.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAOxJREFUSEvtVsENwjAMTCaAMWAiGBEmgjFgAqpDcmUcp76UVAWpfbVR7LMv5/RyMs/psHvZtev9me0avpm9H4EIuNweRa7zcZ8sCLt3BKgFCJoGadm7AXhnnzSdG0X9KEImcIvHmxWNVJxBpGu3zGBRQPISyfVwrgPAch1RhzxuB60Atf1dAJBEVKXfRXVdOqhRVe3ABtjKpDpmHmgVCc8CHiUfKZJfHxMQqcabZvo2nZMcMW+AJaZ5navCU0sLNVZdhUz/E8A6tG/lqucFZo1ydi3nYF3gbwEw1/hkB1NDx3hTzyTPtuWMdUfBA5gROcxJDOyoAAAAAElFTkSuQmCC);
+}
+
+.toy-wrapper .toy.bunny::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAOZJREFUSEvtVtsNgzAMTCZox6ATtSO2E5Ux2gmorpKRcZz4QCC1CL7Asn3J+cHlZJ5rdxqs7dG/s7Xhm/GdBCLg/nwVuW6Xc7IgrO8IUAsQNA0yx/cA8GqfNJ0HRetRhEzgFo83KxqpqEHU1+4xA6OA5C2S6+HcKQBbTE2FV3zkKSiCUbpEv9dq2vJ3AZZ0TAucKrJ3E/Z2FIAeMjltNGwS8112W8zCOGhyojVBdrwqmM6I2tjOxaSL/hPAKjSmv1s0yR6DD8Qapewi3mt/M9h/C4BZ41bHFqqZEbWMj9C2WJYz0h0gH33VNsxxz+QWAAAAAElFTkSuQmCC);
+}
+
+.toy.golem::after {
+  --w: 26px;
+  --h: 30px;
+  top: calc(var(--m) * -1px);
+  left: calc(var(--m) * -3px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAeCAYAAAAy2w7YAAAAAXNSR0IArs4c6QAAAQpJREFUSEtjZEAC4Rr8/5H5K298ZKSWPNwgkCVFtRXI5jL0NXcwwCyjVB7FooXbVqFYFO8VhmIRJfJgi0CuRTcEZiPIMhCgRB4UKoz4LEHxHgUckGNHiEWE4gVXKOLShzPoRi0ilBUGZ6qDxRt6QsCVkZHV0ddHhIogCgoEsFZYeYm3UKWWJSBzMOob9KqCXMuQqxi4RbAKj5iIJcViWAIiWHpfPH4ObK6+pRHcfGLFSEp1xBqKTd3gtIiU+MCnFpxhYfkIX3VNroUoiQG9OUWtlIfcsMGaj0aeRcTWvhQFHaEGJXreQW5So5R1sBSIq7wj1ESGWYRezmEkBphC9MY+TJxQox+XOpA4AFO+HuQ4QuSjAAAAAElFTkSuQmCC);
+}
+
+.toy.golem.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAeCAYAAAAy2w7YAAAAAXNSR0IArs4c6QAAARhJREFUSEtjZEAC4Rr8/5H5K298ZKSWPNwgkCVFtRXI5jL0NXcwwCyjVB7FooXbVqFYFO8VhmIRJfJgi0CuRTcEZiPIMhCgRB4UKoz4LEHxHgUckGNHgEWwOIGFFK64QQ9JfPqwBt2oRejZAFuQk5zqKAlWkpL30LCIUBFEQYEA1gorL/EWqtSyBGQORn2DXlWQaxlyFQO3CFbhEVsKEGs5LPEQLL0vHj8HNlPf0ghuNrFiyI4hmI+INRSbusFpEbFxQUgdOOhg+QhfdU3IIFzyKIkBWRE1q3Xkhg3WfEStJD50LCLU/EKun5BbuhhFEL6gI9SgRM87OC2CpUBc5R2hJjLMIvRyDiMxwBSiN/Zh4oQa/bjUgcQBMesk5BS8p3gAAAAASUVORK5CYII=);
+}
+
+.toy-wrapper .toy.golem::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAeCAYAAAAy2w7YAAAAAXNSR0IArs4c6QAAAR1JREFUSEtjZEAC4Rr8/5H5K298ZKSWPNwgkCVFtRXI5jL0NXcwwCyjVB7FooXbVqFYFO8VhmIRJfJgi0CuRTcEZiPIMhCgRB4UKoz4LEHxHgUckGNHLSIrALEGHSzyYSbiSgToNuLTN7AWkRU2BDSRlOpAirFlWGKCliSLQI6mJP7ol48IFUGUxhmsvMRbqFLLEpA5GPUNelVBrmXIVQzcIliFR0wKIsViWOIhWHpfPH4ObK6+pRHcfGLFkB1EMHkTayg2dYPTIlLiA59acNDB8hG+6ppcC1ESA3pzilopD7lhgzUfjTyLCDW/kJtpyC1djCIIX9ARalCi5x2cFsFSIK7yjlATGWYRejmHkRhgCtEb+zBxQo1+XOpA4gCEWBjkRLE8iwAAAABJRU5ErkJggg==);
+}
+
+.toy.cucumber {
+  --w: 16px;
+  --h: 28px;
+}
+
+.toy.cucumber::after {
+  --w: 16px;
+  --h: 30px;
+  top: calc(var(--m) * 1px);
+  left: 0;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAeCAYAAAAl+Z4RAAAAAXNSR0IArs4c6QAAAIVJREFUSEtjZEAD4Rr8/9HFkPkrb3xkRObDOTCNzFvP4NPP8NfbBCwPMwhsAEgzIY3opoIMAhnCSI5mmGEgQ1AMgDkPl2vQ5QehAXiDH4skhheQ1cD8CxPDFi54DSDGNaMGMIDzBXWTMjEhjx7Voy4YjYXhkhIprlhgmYOiqg05h5FauQIAKIamV0t/KUgAAAAASUVORK5CYII=);
+}
+
+.toy.cucumber.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAeCAYAAAAl+Z4RAAAAAXNSR0IArs4c6QAAAIdJREFUSEtjZEAD4Rr8/9HFkPkrb3xkRObDOTCNzFvP4NPP8NfbBCwPMwhsAEgzIY3opoIMAhnCSI5mmGEgQ1AMgDkPl2vQ5QehAbiCH+RUbN7C8AKyATD/gsTwhQl1YwFvCsIiidcLxBg2agADOGeORuNoGAyXdEBxxQIrOCiq2pBLH1IrVwA8halXrQxpsQAAAABJRU5ErkJggg==);
+}
+
+.toy-wrapper .toy.cucumber::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAeCAYAAAAl+Z4RAAAAAXNSR0IArs4c6QAAAIVJREFUSEtjZEAD4Rr8/9HFkPkrb3xkRObDOTCNzFvP4NPP8NfbBCwPMwhsAEgzIY3opoIMAhnCSI5mmGEgQ1AMgDkPl2vQ5QehAcgBBXIezCvIbHQ1eAORmDChbizgTUFYJDFiYdQAUkOAAZwzR6NxNAyGSzqguGKBZSGKqjbkfEhq5QoAaISsV8DV840AAAAASUVORK5CYII=);
+}
+
+.toy.penguin {
+  --w: 24px;
+  --h: 22px;
+}
+
+.toy.penguin::after {
+  --w: 26px;
+  --h: 24px;
+  top: calc(var(--m) * -1px);
+  left: calc(var(--m) * -1px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAYCAYAAADkgu3FAAAAAXNSR0IArs4c6QAAAPBJREFUSEtjZMACwjX4/2MTJ1Zs5Y2PjOhqUQRgFvyd/ZhYM7GqY06VBYsjWwi3CGQJpRag2wqyEGYZ2CJaWAKzFGYZIy0tQbYMq0WwMCY1KHHpA4mPYItgwYKespCDl+Sgw5ZMF25bhTXPxHuFMRCKS5xxNGAWgSwmJuhwFScEfbTahpekoij0yGecRRJK8kZ29YrrH0iyBKY4QlMArg8Wd3h9BJIk1TKQJdgSxqhFBOOM6KCja2IgNUnj8iZyUgcnBmwVH6WWoVsCqmXpV8PCvA6qaXEVnDA1oAIU1gYgVT3WVhCucEdvRhFqliGrBwDOBdzprDO9jAAAAABJRU5ErkJggg==);
+}
+
+.toy.penguin.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAYCAYAAADkgu3FAAAAAXNSR0IArs4c6QAAAP9JREFUSEtjZMACwjX4/2MTJ1Zs5Y2PjOhqUQRgFvyd/ZhYM7GqY06VBYsjWwi3CGQJpRag2wqyEGYZ2CJaWAKzFGYZIy0tQbZsYC2CRSapcYZLH0gcw0cgQZgFyGxCyRCfPqwW4TIQ5lp0eWJ8TbRFIIULt63C6oZ4rzB4COBzJFGJgW4WgVxK06BbbcNLKA2gyIce+YyzSEIJOmRXr7j+gSRLYIojNAXg+pBTL844AllKqmUgS7ClQrypbtQiUMQQHXR0TQykJmlcSRM5qYMTA7aKj1LL0C0B1bL0q2FhXgfVtLgKTpgaUAEKawOQqh5rKwhXuKM3owg1y5DVAwDi4Nbp/c5ePwAAAABJRU5ErkJggg==);
+}
+
+.toy-wrapper .toy.penguin::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAYCAYAAADkgu3FAAAAAXNSR0IArs4c6QAAAPxJREFUSEtjZMACwjX4/2MTJ1Zs5Y2PjOhqUQRgFvyd/ZhYM7GqY06VBYsjWwi3CGQJpRag2wqyEGYZ2CJaWAKzFGYZIy0tQbZsBFgEClNYokBmE0qG+PSB5LAGHSx5IqdCmBi6hdjUoKdenBZhS6YLt63C6ql4rzB4CODy9eCzCORSYoKObB+ttuEllAZQ5EOPfMZZJKEkBmRXr7j+gSRLYIojNAXg+pBTL84MC7KUVMtAlmArL/EmhlGLQBFDdNDRNTGQmqRxJU3kpA5ODNgqPkotQ7cEVMvSr4aFeR1U0+IqOGFqQAUorA1AqnqsrSBc4Y7ejCLULENWDwD2ldbpo7PPMQAAAABJRU5ErkJggg==);
+}
+
+.toy.robot {
+  --w: 20px;
+  --h: 30px;
+}
+
+.toy.robot::after {
+  --w: 24px;
+  --h: 32px;
+  top: calc(var(--m) * -1px);
+  left: calc(var(--m) * -2px);
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAO5JREFUSEtjZMADwjX4/+OTh8mtvPGREZc6nBIgw1dc/0CM+QwRmgIMuCwBW0CsS4myDUkRyFJGkOFFtRWk6iVKfV9zB8OoBXiDamCCCGQrCJAa8dj0YfXBqAXIQTswkYye7mBxgis94ksMg8MHRBU6OBSBfUDz0hRmOTVLVZDLYfUDvMKhqQWwCgeWIsyiyKsfTi2DFDOwlAevcEBVI6jao6YFMDPBFc6oBbCUiBwH8CBCzgfUjAOQueBIHh75ABZMpFaTuMop+udk5HigpPTE1hjGaPziavQiN3CJUQOzDGvrGltjGL31TIwakCUAkfj3fsmx0PsAAAAASUVORK5CYII=);
+}
+
+.toy.robot.grabbed::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAPtJREFUSEtjZMADwjX4/+OTh8mtvPGREZc6nBIgw1dc/0CM+QwRmgIMuCwBW0CsS4myDUkRyFJGkOFFtRWk6iVKfV9zB8OoBXiDahgGEchLyIDY1IVLH0YQ0dwCohI3CYqIimSQIlxBhU8O5A6iLIApxOZwQnFEtAUkhAqKUvpYQPPSFOYnapaqoKCB1Q/wCoemFsAqHFiqMIsir344tQxSEsAyLLzCAVWNoGqPmhbAzARXOKMWwFIichzAgwg5H1AzDkDmgiN5eOQDWDARKh2JLfTon5OR44FYV+JTh9xOxWj84mr0IjdwiVEDcwDW1jW2xjB665kYNSBLAOSw8X4zbpm3AAAAAElFTkSuQmCC);
+}
+
+.toy-wrapper .toy.robot::after {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAPlJREFUSEtjZMADwjX4/+OTh8mtvPGREZc6nBIgw1dc/0CM+QwRmgIMuCwBW0CsS4myDUkRyFJGkOFFtRWk6iVKfV9zB8OoBXiDamCCCGQrCJAa8dj0YfXBqAXIQUtUJIMU4YoPfHKgeCTKAphCbOmRUEIg2gKiygUsiuhjAc1LU5jPqFmqgoIGVj/AKxyaWgCrcGCpwiyKvPrh1DJIMQMrDeAVDqhqBFV71LQAZia4whm1AJYSkeMAHkTI+YCacQAyFxzJwyMfwIKJUOlIbKFH/5yMHA/EuhKfOuR2KkbjF1ejF7mBS4wamAOwtq6xNYbRW8/EqAFZAgDgjP1+jrGWQwAAAABJRU5ErkJggg==);
+}
+
+.toy.selected {
+  pointer-events: all;
+}
+
+@keyframes show-toy-1 {
+  0% {
+    opacity: 1;
+    transform: scale(3) translateY(0);
+  }
+  30% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) translateY(-100vh);
+  }
+}
+
+.control .collection-point {
+  filter: brightness(0.8);
+  bottom: calc(var(--m) * 8px);
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.control .collection-point.collectable {
+  filter: sepia(1) brightness(1);
+  pointer-events: all;
+}
+
+a {
+  color: var(--brown);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+</style>
+
+  <script>
+  window.console = window.console || function(t) {};
+</script>
+
+  
+  
+</head>
+
+<body translate="no">
+  <div class="wrapper">
+    <div class="collection-box pix"></div>
+    <div class="claw-machine">
+      <div class="box pix">
+        <div class="machine-top pix">
+          <div class="arm-joint pix">
+            <div class="arm pix">
+              <div class="claws pix"></div>
+            </div>
+          </div>
+          <div class="rail hori pix"></div>
+          <div class="rail vert pix"></div>
+        </div>
+        <div class="machine-bottom pix">
+          <div class="collection-point pix"></div>
+        </div>
+      </div>
+      <div class="control pix">
+        <div class="cover left"></div>
+        <div class="joystick-control pix" role="button" tabindex="0" aria-label="Move claw">
+          <div class="joystick-base"></div>
+          <div class="joystick-stick"></div>
+        </div>
+        <button class="grab-btn pix" aria-label="Grab toy"></button>
+        <div class="cover right"></div>
+        <div class="cover bottom"></div>
+        <div class="cover top">
+          <div class="collection-arrow pix"></div>
+        </div>
+        <div class="collection-point pix" role="button" tabindex="0" aria-label="Collect grabbed toy"></div>
+      </div>
+      <div class="result-popup pix" role="status" aria-live="polite" hidden></div>
+    </div>
+  </div>
+  <button class="debug-toggle-btn pix" aria-label="Toggle debug view" aria-pressed="true">DBG</button>
+</body>
+<!-- partial -->
+  
+    <script id="rendered-js" >
+const elements = {
+  clawMachine: document.querySelector('.claw-machine'),
+  box: document.querySelector('.box'),
+  collectionBox: document.querySelector('.collection-box'),
+  dropZone: document.querySelector('.machine-bottom .collection-point'),
+  collectionPoint: document.querySelector('.control .collection-point'),
+  collectionArrow: document.querySelector('.collection-arrow'),
+  resultPopup: document.querySelector('.result-popup'),
+  debugToggleBtn: document.querySelector('.debug-toggle-btn'),
+  toys: [] };
+
+
+const settings = {
+  targetToy: null,
+  collectedNumber: 0,
+  isPetGameMode: new URLSearchParams(window.location.search).get('petGame') === '1',
+  debugEnabled: new URLSearchParams(window.location.search).get('petGame') !== '1',
+  petGameResultSent: false,
+  isGrabInProgress: false };
+
+
+const m = 2;
+const toys = {
+  bear: {
+    w: 20 * m,
+    h: 27 * m },
+
+  bunny: {
+    w: 20 * m,
+    h: 29 * m },
+
+  golem: {
+    w: 20 * m,
+    h: 27 * m },
+
+  cucumber: {
+    w: 16 * m,
+    h: 28 * m },
+
+  penguin: {
+    w: 24 * m,
+    h: 22 * m },
+
+  robot: {
+    w: 20 * m,
+    h: 30 * m } };
+
+
+
+const sortedToys = Object.keys(toys).sort(
+() => 0.5 - Math.random());
+
+
+const cornerBuffer = 16;
+
+const machineBuffer = {
+  x: 36,
+  y: 16 };
+
+
+const radToDeg = rad => Math.round(rad * (180 / Math.PI));
+const calcX = (i, n) => i % n;
+const calcY = (i, n) => Math.floor(i / n);
+
+const {
+  width: machineWidth,
+  height: machineHeight,
+  top: machineTop } =
+document.querySelector('.claw-machine').getBoundingClientRect();
+
+const { height: machineTopHeight } = document.
+querySelector('.machine-top').
+getBoundingClientRect();
+
+const { height: machineBottomHeight, top: machineBottomTop } = document.
+querySelector('.machine-bottom').
+getBoundingClientRect();
+
+const maxArmLength = machineBottomTop - machineTop - machineBuffer.y;
+
+const adjustAngle = angle => {
+  const adjustedAngle = angle % 360;
+  return adjustedAngle < 0 ? adjustedAngle + 360 : adjustedAngle;
+};
+
+const randomN = (min, max) => {
+  return Math.round(min - 0.5 + Math.random() * (max - min + 1));
+};
+
+const getDropZoneBounds = () => {
+  const dropRect = elements.dropZone.getBoundingClientRect();
+  const boxRect = elements.box.getBoundingClientRect();
+
+  return {
+    x: dropRect.left - boxRect.left,
+    y: dropRect.top - boxRect.top,
+    w: dropRect.width,
+    h: dropRect.height
+  };
+};
+
+const doRectsOverlap = (a, b, padding = 0) => {
+  return (
+  a.x < b.x + b.w + padding &&
+  a.x + a.w > b.x - padding &&
+  a.y < b.y + b.h + padding &&
+  a.y + a.h > b.y - padding);
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getOverlapArea = (a, b) => {
+  const overlapWidth = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const overlapHeight = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return overlapWidth * overlapHeight;
+};
+
+const getClawReachBounds = () => {
+  const clawXMin = machineBuffer.x + 7;
+  const clawXMax = machineWidth - armJoint.w - machineBuffer.x + 7;
+  const clawYMin = machineBuffer.y + maxArmLength + machineBuffer.y + 7;
+  const clawYMax = machineTopHeight - machineBuffer.y + maxArmLength + machineBuffer.y + 7;
+
+  return {
+    xMin: clawXMin,
+    xMax: clawXMax,
+    yMin: clawYMin,
+    yMax: clawYMax
+  };
+};
+
+const getToySpawnPosition = (index, size) => {
+  const baseX =
+  cornerBuffer +
+  calcX(index, 4) * ((machineWidth - cornerBuffer * 3) / 4) +
+  size.w / 2 +
+  randomN(-6, 6);
+  const baseY =
+  machineBottomTop -
+  machineTop +
+  cornerBuffer +
+  calcY(index, 4) * (
+  (machineBottomHeight - cornerBuffer * 2) / 3) -
+  size.h / 2 +
+  randomN(-2, 2);
+  const dropZone = getDropZoneBounds();
+  const spawnBuffer = m * 2;
+  const reachPadding = m * 2;
+  const reachBounds = getClawReachBounds();
+  const visibleMinX = spawnBuffer;
+  const visibleMaxX = machineWidth - size.w - spawnBuffer;
+  const visibleMinY = machineBottomTop - machineTop + spawnBuffer;
+  const visibleMaxY = machineBottomTop - machineTop + machineBottomHeight - size.h - spawnBuffer;
+  const minX = clamp(reachBounds.xMin - size.w + reachPadding, visibleMinX, visibleMaxX);
+  const maxX = clamp(reachBounds.xMax - reachPadding, minX, visibleMaxX);
+  const minY = clamp(reachBounds.yMin - size.h + reachPadding, visibleMinY, visibleMaxY);
+  const maxY = clamp(reachBounds.yMax - reachPadding, minY, visibleMaxY);
+  const dropPadding = m * 4;
+  let bestPosition = null;
+  let bestScore = Infinity;
+
+  for (let attempt = 0; attempt < 20000; attempt++) {
+    const position = {
+      x: randomN(minX, maxX),
+      y: randomN(minY, maxY)
+    };
+    const toyRect = { ...position, w: size.w, h: size.h };
+    const overlapsDropZone = doRectsOverlap(toyRect, dropZone, dropPadding);
+    const overlapScore = elements.toys.reduce(
+    (total, toy) => total + getOverlapArea(toyRect, toy),
+    0);
+
+    if (!overlapsDropZone && overlapScore === 0) {
+      return position;
+    }
+
+    if (!overlapsDropZone && overlapScore < bestScore) {
+      bestPosition = position;
+      bestScore = overlapScore;
+    }
+  }
+
+  const candidates = [
+  { x: baseX, y: baseY },
+  { x: dropZone.x + dropZone.w + cornerBuffer, y: baseY },
+  { x: baseX, y: dropZone.y - size.h - cornerBuffer },
+  { x: maxX, y: baseY },
+  { x: machineWidth / 2 - size.w / 2, y: minY }];
+
+  const safeCandidates = candidates.
+  map(({ x, y }) => ({
+    x: clamp(x, minX, maxX),
+    y: clamp(y, minY, maxY)
+  }));
+  const avoidsDropAndToys = safeCandidates.find(position => {
+    const toyRect = { ...position, w: size.w, h: size.h };
+    const overlapsDropZone = doRectsOverlap(toyRect, dropZone, dropPadding);
+    const overlapsToy = elements.toys.some(toy =>
+    doRectsOverlap(toyRect, toy));
+    return !overlapsDropZone && !overlapsToy;
+  });
+
+  return avoidsDropAndToys ||
+  bestPosition ||
+  safeCandidates.find(position =>
+  !doRectsOverlap({ ...position, w: size.w, h: size.h }, dropZone, dropPadding)) ||
+  safeCandidates[0];
+};
+
+//* classes *//
+
+class Button {
+  constructor({
+    className,
+    action = () => {},
+    isLocked,
+    pressAction = () => {},
+    releaseAction = () => {}
+  }) {
+    Object.assign(this, {
+      el: document.querySelector(`.${className}`),
+      isLocked });
+
+    this.el.addEventListener('click', action);
+    ['mousedown', 'touchstart'].forEach((action) =>
+    this.el.addEventListener(action, pressAction));
+
+    ['mouseup', 'touchend'].forEach((action) =>
+    this.el.addEventListener(action, releaseAction));
+
+
+    if (!isLocked) this.activate();
+  }
+  activate() {
+    this.isLocked = false;
+    this.el.classList.add('active');
+  }
+  deactivate() {
+    this.isLocked = true;
+    this.el.classList.remove('active');
+  }}
+
+class JoystickControl {
+  constructor({ className }) {
+    Object.assign(this, {
+      el: document.querySelector(`.${className}`),
+      stick: document.querySelector(`.${className} .joystick-stick`),
+      isLocked: true,
+      isPressed: false,
+      activeKeys: new Set(),
+      vectorKey: '0,0'
+    });
+
+    this.el.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      this.el.setPointerCapture?.(event.pointerId);
+      this.press(event);
+    });
+    this.el.addEventListener('pointermove', event => {
+      if (!this.isPressed) return;
+      event.preventDefault();
+      this.moveFromPointer(event);
+    });
+    ['pointerup', 'pointercancel'].forEach(action =>
+    this.el.addEventListener(action, () => this.release()));
+    this.el.addEventListener('keydown', event => {
+      const direction = this.getDirectionFromKey(event.key);
+      if (!direction) return;
+      event.preventDefault();
+      this.activeKeys.add(direction);
+      this.moveVector(this.getVectorFromKeys());
+    });
+    this.el.addEventListener('keyup', event => {
+      const direction = this.getDirectionFromKey(event.key);
+      if (!direction) return;
+      event.preventDefault();
+      this.activeKeys.delete(direction);
+      if (!this.activeKeys.size) {
+        this.release();
+        return;
+      }
+      this.moveVector(this.getVectorFromKeys());
+    });
+  }
+  activate() {
+    this.isLocked = false;
+    this.el.classList.add('active');
+    this.el.setAttribute('aria-label', 'Move claw');
+  }
+  deactivate() {
+    this.isLocked = true;
+    this.isPressed = false;
+    this.activeKeys.clear();
+    this.vectorKey = '0,0';
+    this.stick.style.transform = '';
+    this.el.classList.remove(
+    'active',
+    'pushed-left',
+    'pushed-right',
+    'pushed-up',
+    'pushed-down');
+  }
+  press(event) {
+    if (this.isLocked || this.isPressed || settings.isGrabInProgress) return;
+
+    this.isPressed = true;
+    this.moveFromPointer(event);
+  }
+  release() {
+    if (!this.isPressed) return;
+
+    this.isPressed = false;
+    this.activeKeys.clear();
+    this.vectorKey = '0,0';
+    this.stick.style.transform = '';
+    this.el.classList.remove('pushed-left', 'pushed-right', 'pushed-up', 'pushed-down');
+    this.stopMovement();
+    grabBtn.activate();
+  }
+  getDirectionFromKey(key) {
+    return {
+      ArrowLeft: 'left',
+      ArrowRight: 'right',
+      ArrowUp: 'up',
+      ArrowDown: 'down'
+    }[key];
+  }
+  getVectorFromKeys() {
+    return {
+      x:
+      (this.activeKeys.has('right') ? 1 : 0) -
+      (this.activeKeys.has('left') ? 1 : 0),
+      y:
+      (this.activeKeys.has('down') ? 1 : 0) -
+      (this.activeKeys.has('up') ? 1 : 0)
+    };
+  }
+  getVectorFromPointer(event) {
+    const rect = this.el.getBoundingClientRect();
+    const x = event.clientX - rect.left - rect.width / 2;
+    const y = event.clientY - rect.top - rect.height / 2;
+    const deadZone = rect.width * 0.12;
+
+    return {
+      x: Math.abs(x) < deadZone ? 0 : Math.sign(x),
+      y: Math.abs(y) < deadZone ? 0 : Math.sign(y)
+    };
+  }
+  moveFromPointer(event) {
+    this.moveVector(this.getVectorFromPointer(event));
+  }
+  moveVector(vector) {
+    if (this.isLocked || settings.isGrabInProgress) return;
+    const normalizedVector = {
+      x: Math.max(-1, Math.min(1, vector.x || 0)),
+      y: Math.max(-1, Math.min(1, vector.y || 0))
+    };
+    const vectorKey = `${normalizedVector.x},${normalizedVector.y}`;
+    if (this.vectorKey === vectorKey && this.isPressed) return;
+
+    this.isPressed = true;
+    this.stopMovement();
+    this.vectorKey = vectorKey;
+    this.el.classList.remove('pushed-left', 'pushed-right', 'pushed-up', 'pushed-down');
+
+    if (!normalizedVector.x && !normalizedVector.y) {
+      this.stick.style.transform = '';
+      return;
+    }
+
+    if (normalizedVector.x < 0) this.el.classList.add('pushed-left');
+    if (normalizedVector.x > 0) this.el.classList.add('pushed-right');
+    if (normalizedVector.y < 0) this.el.classList.add('pushed-up');
+    if (normalizedVector.y > 0) this.el.classList.add('pushed-down');
+    this.setStickVector(normalizedVector);
+    arm.el.classList.remove('missed');
+
+    if (normalizedVector.x) {
+      vertRail.move({
+        moveKey: 'x',
+        target: normalizedVector.x > 0 ?
+        machineWidth - armJoint.w - machineBuffer.x :
+        machineBuffer.x });
+    }
+
+    if (normalizedVector.y) {
+      armJoint.move({
+        moveKey: 'y',
+        target: normalizedVector.y < 0 ?
+        machineBuffer.y :
+        machineTopHeight - machineBuffer.y });
+    }
+  }
+  setStickVector(vector) {
+    const offsetX = vector.x * m * 3;
+    const offsetY = vector.y * m * 4;
+    const rotate = (vector.x + vector.y) * 12;
+    this.stick.style.transform =
+    `translate(${offsetX}px, ${offsetY}px) rotate(${rotate}deg)`;
+  }
+  stopMovement() {
+    [vertRail, armJoint].forEach(obj => {
+      clearInterval(obj.interval);
+      obj.interval = null;
+    });
+  }}
+
+
+class WorldObject {
+  constructor(props) {
+    Object.assign(this, {
+      x: 0,
+      y: 0,
+      z: 0,
+      angle: 0,
+      transformOrigin: { x: 0, y: 0 },
+      interval: null,
+      default: {},
+      moveWith: [],
+      el: props.className && document.querySelector(`.${props.className}`),
+      ...props });
+
+    this.setStyles();
+    if (props.className) {
+      const { width, height } = this.el.getBoundingClientRect();
+      this.w = width;
+      this.h = height;
+    }
+    ;['x', 'y', 'w', 'h'].forEach(key => {
+      this.default[key] = this[key];
+    });
+  }
+  setStyles() {
+    Object.assign(this.el.style, {
+      left: `${this.x}px`,
+      top: !this.bottom && `${this.y}px`,
+      bottom: this.bottom,
+      width: `${this.w}px`,
+      height: `${this.h}px`,
+      transformOrigin: this.transformOrigin });
+
+    this.el.style.zIndex = this.z;
+  }
+  setClawPos(clawPos) {
+    this.clawPos = clawPos;
+  }
+  setTransformOrigin(transformOrigin) {
+    this.transformOrigin =
+    transformOrigin === 'center' ?
+    'center' :
+    `${transformOrigin.x}px ${transformOrigin.y}px`;
+    this.setStyles();
+  }
+  handleNext(next) {
+    clearInterval(this.interval);
+    if (next) next();
+  }
+  resumeMove({ moveKey, target, moveTime, next }) {
+    this.interval = null;
+    this.move({ moveKey, target, moveTime, next });
+  }
+  resizeShadow() {
+    elements.box.style.setProperty('--scale', 0.5 + this.h / maxArmLength / 2);
+  }
+  move({ moveKey, target, moveTime, next }) {
+    if (this.interval) {
+      this.handleNext(next);
+    } else {
+      const moveTarget = target || this.default[moveKey];
+      this.interval = setInterval(() => {
+        const distance =
+        Math.abs(this[moveKey] - moveTarget) < 10 ?
+        Math.abs(this[moveKey] - moveTarget) :
+        10;
+        const increment = this[moveKey] > moveTarget ? -distance : distance;
+        if (
+        increment > 0 ?
+        this[moveKey] < moveTarget :
+        this[moveKey] > moveTarget)
+        {
+          this[moveKey] += increment;
+          this.setStyles();
+          if (moveKey === 'h') this.resizeShadow();
+          if (this.moveWith.length) {
+            this.moveWith.forEach(obj => {
+              if (!obj) return;
+              obj[moveKey === 'h' ? 'y' : moveKey] += increment;
+              obj.setStyles();
+            });
+          }
+        } else {
+          this.handleNext(next);
+        }
+      }, moveTime || 100);
+    }
+  }
+  distanceBetween(target) {
+    return Math.round(
+    Math.sqrt(
+    Math.pow(this.x - target.x, 2) + Math.pow(this.y - target.y, 2)));
+
+
+  }}
+
+
+class Toy extends WorldObject {
+  constructor(props) {
+    const toyType = sortedToys[props.index];
+    const size = toys[toyType];
+    const spawnPosition = getToySpawnPosition(props.index, size);
+    super({
+      el: Object.assign(document.createElement('div'), {
+        className: `toy pix ${toyType}` }),
+
+      x: spawnPosition.x,
+      y: spawnPosition.y,
+      z: 0,
+      toyType,
+      ...size,
+      ...props });
+
+    elements.box.append(this.el);
+    this.debugPathEl = Object.assign(document.createElement('div'), {
+      className: 'toy-debug-path'
+    });
+    elements.box.append(this.debugPathEl);
+    const toy = this;
+
+    this.el.addEventListener('click', () => this.collectToy(toy));
+    elements.toys.push(this);
+    this.startWander();
+  }
+  getWanderBounds() {
+    const reachBounds = getClawReachBounds();
+    const visibleMinX = m * 2;
+    const visibleMaxX = machineWidth - this.w - m * 2;
+    const visibleMinY = machineBottomTop - machineTop + m * 2;
+    const visibleMaxY = machineBottomTop - machineTop + machineBottomHeight - this.h - m * 2;
+
+    return {
+      xMin: clamp(reachBounds.xMin - this.w + m * 2, visibleMinX, visibleMaxX),
+      xMax: clamp(reachBounds.xMax - m * 2, visibleMinX, visibleMaxX),
+      yMin: clamp(reachBounds.yMin - this.h + m * 2, visibleMinY, visibleMaxY),
+      yMax: clamp(reachBounds.yMax - m * 2, visibleMinY, visibleMaxY)
+    };
+  }
+  getRandomWanderTarget(bounds) {
+    const dropZone = getDropZoneBounds();
+    const dropPadding = m * 6;
+    let target = {
+      x: this.x,
+      y: this.y
+    };
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+      target = {
+        x: randomN(bounds.xMin, bounds.xMax),
+        y: randomN(bounds.yMin, bounds.yMax)
+      };
+
+      if (!doRectsOverlap({ ...target, w: this.w, h: this.h }, dropZone, dropPadding)) {
+        return target;
+      }
+    }
+
+    return target;
+  }
+  canWander() {
+    return (
+    !this.el.classList.contains('grabbed') &&
+    !this.el.classList.contains('selected') &&
+    !this.el.classList.contains('display'));
+  }
+  updateDebugPath(target) {
+    if (!this.debugPathEl || !target) {
+      this.clearDebugPath();
+      return;
+    }
+
+    const startX = this.x + this.w / 2;
+    const startY = this.y + this.h / 2;
+    const endX = target.x + this.w / 2;
+    const endY = target.y + this.h / 2;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+    this.debugPathEl.style.left = `${startX}px`;
+    this.debugPathEl.style.top = `${startY}px`;
+    this.debugPathEl.style.width = `${length}px`;
+    this.debugPathEl.style.transform = `rotate(${angle}deg)`;
+    this.debugPathEl.classList.add('is-visible');
+  }
+  clearDebugPath() {
+    if (this.debugPathEl) {
+      this.debugPathEl.classList.remove('is-visible');
+    }
+  }
+  startWander() {
+    this.stopWander();
+    this.el.classList.remove('wander-paused');
+
+    const moveToNextTarget = () => {
+      if (!this.canWander()) {
+        this.clearDebugPath();
+        this.wanderTimeout = setTimeout(moveToNextTarget, 500);
+        return;
+      }
+
+      const bounds = this.getWanderBounds();
+      if (this.x < bounds.xMin) {
+        this.el.style.setProperty('--wander-duration', '0ms');
+        this.x = bounds.xMin;
+        this.setStyles();
+      }
+
+      const target = this.getRandomWanderTarget(bounds);
+      const distance = Math.sqrt(
+      Math.pow(target.x - this.x, 2) + Math.pow(target.y - this.y, 2));
+      const duration = clamp(distance * 48, 1600, 3800);
+
+      this.el.style.setProperty('--wander-duration', `${duration}ms`);
+      this.el.style.setProperty('--rotate-angle', `${target.x < this.x ? -3 : 3}deg`);
+      this.updateDebugPath(target);
+      this.x = target.x;
+      this.y = target.y;
+      this.setStyles();
+
+      this.wanderTimeout = setTimeout(moveToNextTarget, duration + randomN(1000, 5000));
+    };
+
+    this.wanderTimeout = setTimeout(moveToNextTarget, randomN(1000, 5000));
+  }
+  stopWander() {
+    clearTimeout(this.wanderTimeout);
+    clearInterval(this.wanderInterval);
+    this.wanderTimeout = null;
+    this.wanderInterval = null;
+    this.clearDebugPath();
+  }
+  pauseWander() {
+    const currentStyle = getComputedStyle(this.el);
+    const currentX = parseFloat(currentStyle.left);
+    const currentY = parseFloat(currentStyle.top);
+
+    this.stopWander();
+    this.el.classList.add('wander-paused');
+    this.el.style.setProperty('--wander-duration', '0ms');
+    this.el.style.setProperty('--rotate-angle', '0deg');
+    if (Number.isFinite(currentX)) this.x = currentX;
+    if (Number.isFinite(currentY)) this.y = currentY;
+    this.setStyles();
+  }
+  resumeWander() {
+    this.el.classList.remove('wander-paused');
+    this.el.style.setProperty('--rotate-angle', '0deg');
+    if (this.canWander()) {
+      this.startWander();
+    }
+  }
+  collectToy(toy) {
+    if (!toy || !toy.el.classList.contains('selected')) return;
+
+    toy.stopWander();
+    toy.el.classList.remove('selected');
+    toy.el.classList.remove('wander-paused');
+    elements.collectionPoint.classList.remove('collectable');
+    toy.x = machineWidth / 2 - toy.w / 2;
+    toy.y = machineHeight / 2 - toy.h / 2;
+    toy.z = 7;
+    toy.el.style.setProperty('--rotate-angle', '0deg');
+    toy.setTransformOrigin('center');
+    toy.el.classList.add('display');
+    elements.clawMachine.classList.add('show-overlay');
+    settings.collectedNumber++;
+    elements.collectionBox.appendChild(
+    Object.assign(document.createElement('div'), {
+      className: `toy-wrapper ${
+      settings.collectedNumber > 6 ? 'squeeze-in' : ''
+      }`,
+      innerHTML: `<div class="toy pix ${toy.toyType}"></div>` }));
+
+
+    setTimeout(() => {
+      elements.clawMachine.classList.remove('show-overlay');
+      if (!document.querySelector('.selected'))
+      elements.collectionArrow.classList.remove('active');
+      if (!settings.isPetGameMode) {
+        activateHoriBtn();
+      }
+      showResultPopup({
+        caught: true,
+        toyType: toy.toyType
+      });
+    }, 2200);
+  }
+  setRotateAngle() {
+    const angle =
+    radToDeg(
+    Math.atan2(
+    this.y + this.h / 2 - this.clawPos.y,
+    this.x + this.w / 2 - this.clawPos.x)) -
+
+    90;
+    const adjustedAngle = Math.round(adjustAngle(angle));
+    this.angle =
+    adjustedAngle < 180 ? adjustedAngle * -1 : 360 - adjustedAngle;
+    this.el.style.setProperty('--rotate-angle', `${this.angle}deg`);
+  }}
+
+
+//* set up *//
+elements.box.style.setProperty('--shadow-pos', `${maxArmLength}px`);
+
+const armJoint = new WorldObject({
+  className: 'arm-joint' });
+
+
+const vertRail = new WorldObject({
+  className: 'vert',
+  moveWith: [null, armJoint] });
+
+
+const arm = new WorldObject({
+  className: 'arm' });
+
+
+armJoint.resizeShadow();
+
+armJoint.move({
+  moveKey: 'y',
+  target: machineTopHeight - machineBuffer.y,
+  moveTime: 50,
+  next: () =>
+  vertRail.resumeMove({
+    moveKey: 'x',
+    target: machineBuffer.x,
+    moveTime: 50,
+    next: () => {
+      Object.assign(armJoint.default, {
+        y: machineTopHeight - machineBuffer.y,
+        x: machineBuffer.x });
+
+      Object.assign(vertRail.default, {
+        x: machineBuffer.x });
+
+      activateHoriBtn();
+    } }) });
+
+
+
+const doOverlap = (a, b) => {
+  return b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h;
+};
+
+const notifyPetClawGameComplete = ({ caught, toyType = null, delayMs = 0 }) => {
+  if (settings.petGameResultSent) return;
+  settings.petGameResultSent = true;
+
+  setTimeout(() => {
+    window.parent.postMessage({
+      type: 'meosjourney:pet-claw-game-complete',
+      caught,
+      toyType
+    }, window.location.origin);
+  }, delayMs);
+};
+
+const showResultPopup = ({ caught, toyType = null, delayMs = 1300 }) => {
+  elements.resultPopup.textContent = caught ? 'Success!' : 'Fail!';
+  elements.resultPopup.hidden = false;
+  elements.resultPopup.classList.toggle('success', caught);
+  elements.resultPopup.classList.toggle('fail', !caught);
+
+  requestAnimationFrame(() => {
+    elements.resultPopup.classList.add('is-visible');
+  });
+
+  notifyPetClawGameComplete({
+    caught,
+    toyType,
+    delayMs
+  });
+};
+
+const isToyInCollectionPoint = toy => {
+  const toyRect = toy.el.getBoundingClientRect();
+  const pointRect = elements.collectionPoint.getBoundingClientRect();
+  const toyCenterX = toyRect.left + toyRect.width / 2;
+  const bottomTolerance = m * 3;
+
+  return (
+  toyCenterX >= pointRect.left &&
+  toyCenterX <= pointRect.right &&
+  toyRect.bottom >= pointRect.top &&
+  toyRect.bottom <= pointRect.bottom + bottomTolerance);
+};
+
+const getClosestToy = () => {
+  const claw = {
+    y: armJoint.y + maxArmLength + machineBuffer.y + 7,
+    x: armJoint.x + 7,
+    w: 40,
+    h: 32 };
+
+  const overlappedToys = elements.toys.filter(t => {
+    return doOverlap(t, claw);
+  });
+
+  if (overlappedToys.length) {
+    const toy = overlappedToys.sort((a, b) => b.index - a.index)[0];
+    toy.setTransformOrigin({
+      x: claw.x - toy.x,
+      y: claw.y - toy.y });
+
+    toy.setClawPos({
+      x: claw.x,
+      y: claw.y });
+
+    settings.targetToy = toy;
+  }
+};
+
+const collectSelectedToy = () => {
+  const selectedToy = elements.toys.find(toy => toy.el.classList.contains('selected'));
+  if (selectedToy) {
+    selectedToy.collectToy(selectedToy);
+  }
+};
+
+new Array(sortedToys.length).fill('').forEach((_, i) => {
+  new Toy({ index: i });
+});
+
+const activateHoriBtn = () => {
+  settings.isGrabInProgress = false;
+  joystick.activate();
+  grabBtn.activate();
+  [vertRail, armJoint, arm].forEach(c => c.interval = null);
+};
+
+const dropToy = () => {
+  arm.el.classList.add('open');
+  const droppedToy = settings.targetToy;
+  settings.targetToy = null;
+
+  if (droppedToy) {
+    droppedToy.stopWander();
+    droppedToy.z = 3;
+    droppedToy.move({
+      moveKey: 'y',
+      target: machineHeight - droppedToy.h - 30,
+      moveTime: 50,
+      next: () => {
+        droppedToy.el.classList.remove('grabbed');
+        arm.el.classList.remove('open');
+
+        if (isToyInCollectionPoint(droppedToy)) {
+          droppedToy.el.classList.add('selected');
+          elements.collectionArrow.classList.add('active');
+          elements.collectionPoint.classList.add('collectable');
+        } else if (!document.querySelector('.selected')) {
+          elements.collectionArrow.classList.remove('active');
+          elements.collectionPoint.classList.remove('collectable');
+          if (!settings.isPetGameMode) {
+            activateHoriBtn();
+          }
+          droppedToy.resumeWander();
+          showResultPopup({
+            caught: false,
+            toyType: droppedToy.toyType
+          });
+        } else {
+          if (!settings.isPetGameMode) {
+            activateHoriBtn();
+          }
+          droppedToy.resumeWander();
+          showResultPopup({
+            caught: false,
+            toyType: droppedToy.toyType
+          });
+        }
+      } });
+
+    [vertRail, armJoint, arm].forEach(obj => obj.moveWith[0] = null);
+    return;
+  }
+
+  setTimeout(() => {
+    arm.el.classList.remove('open');
+    if (!settings.isPetGameMode) {
+      activateHoriBtn();
+    }
+    showResultPopup({
+      caught: false
+    });
+  }, 700);
+};
+
+const grabToy = () => {
+  if (settings.targetToy) {
+    ;[vertRail, armJoint, arm].forEach(
+    obj => obj.moveWith[0] = settings.targetToy);
+
+    settings.targetToy.setRotateAngle();
+    settings.targetToy.stopWander();
+    settings.targetToy.el.classList.add('grabbed');
+  } else {
+    arm.el.classList.add('missed');
+  }
+};
+
+const startGrabSequence = () => {
+  if (grabBtn.isLocked || settings.isGrabInProgress) return;
+
+  settings.isGrabInProgress = true;
+  joystick.stopMovement();
+  joystick.deactivate();
+  grabBtn.deactivate();
+  settings.targetToy = null;
+  getClosestToy();
+  if (settings.targetToy) {
+    settings.targetToy.pauseWander();
+  }
+
+  setTimeout(() => {
+    arm.el.classList.add('open');
+    arm.move({
+      moveKey: 'h',
+      target: maxArmLength,
+      next: () =>
+      setTimeout(() => {
+        arm.el.classList.remove('open');
+        grabToy();
+        arm.resumeMove({
+          moveKey: 'h',
+          next: () => {
+            vertRail.resumeMove({
+              moveKey: 'x',
+              next: () => {
+                armJoint.resumeMove({
+                  moveKey: 'y',
+                  next: dropToy });
+
+              } });
+
+          } });
+
+      }, 500) });
+
+  }, 500);
+};
+
+const joystick = new JoystickControl({
+  className: 'joystick-control' });
+
+const grabBtn = new Button({
+  className: 'grab-btn',
+  isLocked: true,
+  action: startGrabSequence });
+
+elements.collectionPoint.addEventListener('click', collectSelectedToy);
+elements.collectionPoint.addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    collectSelectedToy();
+  }
+});
+
+// ============================================
+// DEBUG VISUALIZATION
+// ============================================
+
+// Create debug overlay elements
+const debugOverlays = {
+  claw: null,
+  dropZone: null,
+  collection: null,
+  trajectory: null,
+  infoPanel: null
+};
+
+const debugState = {
+  clawPos: { x: 0, y: 0 },
+  dropZonePos: { x: 0, y: 0, w: 0, h: 0 },
+  collectionPos: { x: 0, y: 0, w: 0, h: 0 },
+  distance: 0,
+  targetToy: null,
+  isGrabbing: false
+};
+
+function setDebugEnabled(isEnabled) {
+  settings.debugEnabled = isEnabled;
+  document.body.classList.toggle('debug-off', !isEnabled);
+  elements.clawMachine.classList.toggle('debug-off', !isEnabled);
+  elements.debugToggleBtn.setAttribute('aria-pressed', String(isEnabled));
+}
+
+if (settings.isPetGameMode) {
+  elements.debugToggleBtn.hidden = true;
+  setDebugEnabled(false);
+} else {
+  elements.debugToggleBtn.addEventListener('click', () => {
+    setDebugEnabled(!settings.debugEnabled);
+  });
+}
+
+function createDebugOverlay(id, label, className) {
+  const overlay = document.createElement('div');
+  overlay.id = id;
+  overlay.className = `debug-overlay ${className}`;
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'debug-label';
+  labelEl.textContent = label;
+  overlay.appendChild(labelEl);
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function createTrajectoryLine() {
+  const line = document.createElement('div');
+  line.className = 'debug-trajectory';
+  document.body.appendChild(line);
+  return line;
+}
+
+function createInfoPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'debug-info-panel';
+  panel.innerHTML = `
+    <div class="title">🎮 DEBUG INFO</div>
+    <div class="row"><span class="label">Claw X:</span> <span class="value" id="debug-claw-x">0</span></div>
+    <div class="row"><span class="label">Claw Y:</span> <span class="value" id="debug-claw-y">0</span></div>
+    <div class="row"><span class="label">Drop X:</span> <span class="value" id="debug-drop-x">0</span></div>
+    <div class="row"><span class="label">Drop Y:</span> <span class="value" id="debug-drop-y">0</span></div>
+    <div class="row"><span class="label">Collection X:</span> <span class="value" id="debug-col-x">0</span></div>
+    <div class="row"><span class="label">Collection Y:</span> <span class="value" id="debug-col-y">0</span></div>
+    <div class="row"><span class="label">Distance:</span> <span class="value" id="debug-distance">0px</span></div>
+    <div class="row"><span class="label">Target Toy:</span> <span class="value" id="debug-toy">None</span></div>
+    <div class="row"><span class="label">Status:</span> <span class="value" id="debug-status">Idle</span></div>
+  `;
+  document.body.appendChild(panel);
+  return panel;
+}
+
+function updateDebugOverlays() {
+  if (!settings.debugEnabled) {
+    return;
+  }
+
+  const machineRect = elements.clawMachine.getBoundingClientRect();
+  const armJointRect = armJoint.el.getBoundingClientRect();
+  const clawShadowStyle = getComputedStyle(armJoint.el, '::before');
+  const shadowOffsetX = parseFloat(clawShadowStyle.marginLeft) || 0;
+  const shadowOffsetY = parseFloat(clawShadowStyle.marginTop) || 0;
+  const claw = {
+    x: armJointRect.left + shadowOffsetX - machineRect.left,
+    y: armJointRect.top + shadowOffsetY - machineRect.top,
+    w: parseFloat(clawShadowStyle.width) || 40,
+    h: parseFloat(clawShadowStyle.height) || 32
+  };
+
+  // Update claw debug overlay
+  if (debugOverlays.claw) {
+    const clawScreenX = machineRect.left + claw.x;
+    const clawScreenY = machineRect.top + claw.y;
+
+    debugOverlays.claw.style.left = `${clawScreenX}px`;
+    debugOverlays.claw.style.top = `${clawScreenY}px`;
+    debugOverlays.claw.style.width = `${claw.w}px`;
+    debugOverlays.claw.style.height = `${claw.h}px`;
+
+    debugState.clawPos = { x: Math.round(claw.x), y: Math.round(claw.y) };
+  }
+
+  const dropRect = elements.dropZone.getBoundingClientRect();
+
+  if (debugOverlays.dropZone) {
+    debugOverlays.dropZone.style.left = `${dropRect.left}px`;
+    debugOverlays.dropZone.style.top = `${dropRect.top}px`;
+    debugOverlays.dropZone.style.width = `${dropRect.width}px`;
+    debugOverlays.dropZone.style.height = `${dropRect.height}px`;
+
+    debugState.dropZonePos = {
+      x: Math.round(dropRect.left - machineRect.left),
+      y: Math.round(dropRect.top - machineRect.top),
+      w: Math.round(dropRect.width),
+      h: Math.round(dropRect.height)
+    };
+  }
+
+  // The collection check uses the toy bottom-center point inside this zone.
+  const pointRect = elements.collectionPoint.getBoundingClientRect();
+  const bottomTolerance = m * 3; // m = 2, so tolerance = 6px
+
+  if (debugOverlays.collection) {
+    debugOverlays.collection.style.left = `${pointRect.left}px`;
+    debugOverlays.collection.style.top = `${pointRect.top}px`;
+    debugOverlays.collection.style.width = `${pointRect.width}px`;
+    debugOverlays.collection.style.height = `${pointRect.height + bottomTolerance}px`;
+
+    debugState.collectionPos = {
+      x: Math.round(pointRect.left - machineRect.left),
+      y: Math.round(pointRect.top - machineRect.top),
+      w: Math.round(pointRect.width),
+      h: Math.round(pointRect.height + bottomTolerance)
+    };
+  }
+
+  // Update trajectory line
+  if (debugOverlays.trajectory && settings.targetToy) {
+    const clawCenterX = machineRect.left + claw.x + claw.w / 2;
+    const clawBottomY = machineRect.top + claw.y + claw.h;
+    const collectionCenterX = pointRect.left + pointRect.width / 2;
+
+    debugOverlays.trajectory.style.left = `${clawCenterX}px`;
+    debugOverlays.trajectory.style.top = `${clawBottomY}px`;
+    debugOverlays.trajectory.style.height = `${pointRect.top - clawBottomY}px`;
+    debugOverlays.trajectory.classList.add('active');
+  } else if (debugOverlays.trajectory) {
+    debugOverlays.trajectory.classList.remove('active');
+  }
+
+  // Calculate distance
+  const clawCenterX = claw.x + claw.w / 2;
+  const clawCenterY = claw.y + claw.h / 2;
+  const colCenterX = debugState.collectionPos.x + debugState.collectionPos.w / 2;
+  const colCenterY = debugState.collectionPos.y + debugState.collectionPos.h / 2;
+  debugState.distance = Math.round(
+    Math.sqrt(Math.pow(clawCenterX - colCenterX, 2) + Math.pow(clawCenterY - colCenterY, 2))
+  );
+
+  // Update info panel
+  if (debugOverlays.infoPanel) {
+    document.getElementById('debug-claw-x').textContent = debugState.clawPos.x + 'px';
+    document.getElementById('debug-claw-y').textContent = debugState.clawPos.y + 'px';
+    document.getElementById('debug-drop-x').textContent = debugState.dropZonePos.x + 'px';
+    document.getElementById('debug-drop-y').textContent = debugState.dropZonePos.y + 'px';
+    document.getElementById('debug-col-x').textContent = debugState.collectionPos.x + 'px';
+    document.getElementById('debug-col-y').textContent = debugState.collectionPos.y + 'px';
+    document.getElementById('debug-distance').textContent = debugState.distance + 'px';
+
+    const toyName = settings.targetToy ? settings.targetToy.toyType : 'None';
+    document.getElementById('debug-toy').textContent = toyName;
+
+    let status = 'Idle';
+    if (settings.targetToy) {
+      if (settings.targetToy.el.classList.contains('grabbed')) {
+        status = 'Grabbed';
+      } else if (settings.targetToy.el.classList.contains('selected')) {
+        status = 'Collected';
+      } else {
+        status = 'Targeting';
+      }
+    }
+    document.getElementById('debug-status').textContent = status;
+  }
+}
+
+// Initialize debug overlays
+debugOverlays.claw = createDebugOverlay('debug-claw', 'CLAW ZONE (40x32px)', 'debug-claw');
+debugOverlays.dropZone = createDebugOverlay('debug-drop-zone', 'DROP ZONE', 'debug-drop');
+debugOverlays.collection = createDebugOverlay('debug-collection', 'COLLECT CENTER (6px)', 'debug-collection');
+debugOverlays.trajectory = createTrajectoryLine();
+debugOverlays.infoPanel = createInfoPanel();
+
+// Update overlays on animation frame
+function animateDebug() {
+  updateDebugOverlays();
+  requestAnimationFrame(animateDebug);
+}
+
+animateDebug();
+
+//# sourceURL=pen.js
+  </script>
+
+  
+</body>
+
+</html>

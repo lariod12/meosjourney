@@ -46,6 +46,7 @@ import PetBirthdayClawMachine, {
   getBirthdayGiftToyLabel,
   normalizeBirthdayGiftToy
 } from './PetBirthdayClawMachine';
+import PetClawMachineGame from './PetClawMachineGame';
 import '../styles/pet.css';
 
 const IS_PRODUCTION_MODE = import.meta.env.MODE === 'production';
@@ -140,6 +141,7 @@ const ITEM_ICONS = {
   towel: LuShirt,
   mat: LuBedSingle,
   bed: LuBedSingle,
+  game: LuGamepad2,
   brush: LuBrush,
   soap: LuBath,
   bandage: LuBandage,
@@ -231,6 +233,7 @@ const TAB_ITEMS = {
     { name: 'Brush', count: 1, shape: 'brush' },
     { name: 'Soap', count: 0, shape: 'soap' },
     { name: 'Bandage', count: 2, shape: 'bandage' },
+    { name: 'Game', count: 1, shape: 'game' },
     { name: 'Comb', count: 1, shape: 'brush' },
     { name: 'Care Kit', count: 1, shape: 'bandage' }
   ],
@@ -262,6 +265,20 @@ const TABS = [
 ];
 
 const PET_PAGE_CHANGELOGS = [
+  {
+    version: 'v1.3.0',
+    changes: [
+      {
+        title: 'Care claw machine game',
+        summary: 'Care item Game mở màn hình claw-machine để tăng Sanity.',
+        details: [
+          'Bấm item Game trong tab Care sẽ mở toàn màn hình claw-machine.html với joystick, nút gắp và thú bông di chuyển.',
+          'Mỗi lượt kết thúc sau một lần gắp; gắp trúng tăng Sanity nhiều hơn, gắp hụt vẫn tăng một ít.',
+          'Sau khi hoàn thành lượt chơi, game tự đóng và Pet Page hiển thị animation tăng chỉ số tinh thần.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.2.0',
     changes: [
@@ -523,7 +540,8 @@ const PET_ITEM_DESCRIPTIONS = {
   bandage: 'Dán nhẹ một miếng để vết đau bớt nhăn nhó.',
   comb: 'Chải một lượt là lông vào nếp đáng yêu.',
   cushion: 'Gối êm để pet cuộn tròn nghỉ một chút.',
-  'care kit': 'Bộ chăm sóc nhỏ nhưng hồi phục rất ra gì.'
+  'care kit': 'Bộ chăm sóc nhỏ nhưng hồi phục rất ra gì.',
+  game: 'Một lượt gắp thú nhỏ để tinh thần vui lên.'
 };
 
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
@@ -588,6 +606,10 @@ const BIOLOGICAL_CLOCK_MESSAGES = {
 
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
+const PET_CLAW_GAME_REWARDS = {
+  caught: 10,
+  missed: 3
+};
 const PET_CAMERA_RAISE_DURATION_MS = 400;
 const PET_CAMERA_FLASH_DURATION_MS = 500;
 const PET_CAMERA_POST_FLASH_HOLD_MS = 500;
@@ -760,6 +782,10 @@ const clampPetStatus = (status = {}) => ({
   hunger: clampPetStatusValue(status.hunger ?? DEFAULT_PET_STATUS.hunger, { round: false }),
   sanity: clampPetStatusValue(status.sanity ?? DEFAULT_PET_STATUS.sanity, { round: false })
 });
+
+const isGameCareItem = (category, item = {}) => (
+  category === 'care' && String(item.name || '').trim().toLowerCase() === 'game'
+);
 
 const isFullPetStatus = (status = {}) => (
   PET_STATUS_KEYS.every((key) => clampPetStatusValue(status[key]) === PET_BIRTHDAY_FULL_STATUS[key])
@@ -1535,6 +1561,18 @@ const normalizePetInventoryItems = (items, fallbackItems = []) => {
       } : null;
     })
     .filter(Boolean);
+};
+
+const ensurePetGameCareItem = (items = []) => {
+  const normalizedItems = normalizePetInventoryItems(items, DEFAULT_PET_ITEMS.care);
+  const hasGameItem = normalizedItems.some((item) => isGameCareItem('care', item));
+
+  if (hasGameItem) {
+    return normalizedItems;
+  }
+
+  const gameItem = DEFAULT_PET_ITEMS.care.find((item) => isGameCareItem('care', item));
+  return gameItem ? [...normalizedItems, gameItem] : normalizedItems;
 };
 
 const serializePetItems = (items) => (
@@ -2665,6 +2703,8 @@ const PetPage = ({ onBack }) => {
   const birthdayStatusSyncedKeyRef = useRef(null);
   const [petItemModalCategory, setPetItemModalCategory] = useState(null);
   const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
+  const [isPetClawGameOpen, setIsPetClawGameOpen] = useState(false);
+  const [petClawGameItem, setPetClawGameItem] = useState(null);
   const [foodEffects, setFoodEffects] = useState([]);
   const [isFoodUseAnimating, setIsFoodUseAnimating] = useState(false);
   const [careEffects, setCareEffects] = useState([]);
@@ -4116,8 +4156,8 @@ useEffect(() => {
           setPetItems(prev => ({
             food: petData.food && petData.food.length > 0 ? petData.food : prev.food,
             care: petData.care && petData.care.length > 0
-              ? petData.care.filter(item => item.name !== 'Cushion' && item.name !== 'Nap Mat') // Filter out old items
-              : prev.care
+              ? ensurePetGameCareItem(petData.care.filter(item => item.name !== 'Cushion' && item.name !== 'Nap Mat')) // Filter out old items
+              : ensurePetGameCareItem(prev.care)
           }));
         }
 
@@ -4911,11 +4951,60 @@ useEffect(() => {
     if (isSavingPet) return;
     if (category === 'food' && isFoodUseAnimating) return;
     if (category === 'care' && isCareUseAnimating) return;
+    if (category === 'care' && isPetClawGameOpen) return;
+
+    if (isGameCareItem(category, item)) {
+      lastInteractionRef.current = Date.now();
+      setPetClawGameItem(item);
+      setIsPetClawGameOpen(true);
+      return;
+    }
 
     const preview = getPetItemUsePreview(category, petStatus, item.shape, item.name);
     if (!preview.canUse) return;
 
     setSelectedPetUseItem({ item, category });
+  };
+
+  const handlePetClawGameComplete = ({ caught }) => {
+    const usedPetItem = petClawGameItem || {
+      name: 'Game',
+      shape: 'game',
+      icon: '',
+      desc: PET_ITEM_DESCRIPTIONS.game
+    };
+    const reward = caught ? PET_CLAW_GAME_REWARDS.caught : PET_CLAW_GAME_REWARDS.missed;
+    const currentStatus = clampPetStatus(petStatusRef.current);
+    const nextStatus = {
+      ...currentStatus,
+      sanity: clampPetStatusValue(currentStatus.sanity + reward)
+    };
+    const nextTickAt = formatVietnamTimestamp();
+    const effectId = `${Date.now()}-${Math.random()}`;
+
+    lastInteractionRef.current = Date.now();
+    petStatusRef.current = nextStatus;
+    lastStatusTickAtRef.current = nextTickAt;
+    setPetStatus(nextStatus);
+    setLastStatusTickAt(nextTickAt);
+    setIsPetClawGameOpen(false);
+    setPetClawGameItem(null);
+    setIsCareUseAnimating(true);
+    setCareEffects([{
+      id: effectId,
+      item: usedPetItem
+    }]);
+
+    const timeoutId = window.setTimeout(() => {
+      handleCareEffectDone(effectId);
+      careEffectTimeoutsRef.current.delete(timeoutId);
+    }, PET_CARE_EFFECT_DURATION_MS);
+    careEffectTimeoutsRef.current.add(timeoutId);
+
+    enqueuePetSave({
+      status: nextStatus,
+      lastStatusTickAt: nextTickAt
+    });
   };
 
     const handleConfirmUsePetItem = () => {
@@ -6777,15 +6866,18 @@ useEffect(() => {
                     ? getPetItemUsePreview(activeTab, petStatus, item.shape, item.name)
                     : null;
                   console.log('📊 Preview for', item.name, ':', petUsePreview);
+                  const isGameCare = isGameCareItem(activeTab, item);
                   const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || activeIsSleeping);
-                  const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping);
-                  const isPetItemDisabled = Boolean(petUsePreview && (!petUsePreview.canUse || isSavingPet || isFoodLocked || isCareLocked));
+                  const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping || isPetClawGameOpen);
+                  const isPetItemDisabled = Boolean(petUsePreview && (
+                    (!isGameCare && !petUsePreview.canUse) || isSavingPet || isFoodLocked || isCareLocked
+                  ));
                   const disabledReason = activeIsSleeping
                     ? 'Pet đang ngủ, đợi sáng mai nhé! 💤'
                     : isFoodLocked
                       ? 'Đợi món trước tan hết đã nha.'
                       : isCareLocked
-                        ? 'Đợi chăm sóc xong rồi dùng món tiếp theo nha.'
+                        ? (isPetClawGameOpen ? 'Đang chơi gắp thú rồi nha.' : 'Đợi chăm sóc xong rồi dùng món tiếp theo nha.')
                         : petUsePreview?.reason;
 
                   return (
@@ -6881,6 +6973,11 @@ useEffect(() => {
       <PetBirthdayClawMachine
         isOpen={isBirthdayClawMachineOpen}
         onToyCollected={handleBirthdayClawToyCollected}
+      />
+
+      <PetClawMachineGame
+        isOpen={isPetClawGameOpen}
+        onComplete={handlePetClawGameComplete}
       />
 
       <ChooseActivityModal
