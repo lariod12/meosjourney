@@ -459,15 +459,6 @@ body {
   width: calc(var(--m) * 116px);
 }
 
-.instruction {
-  position: absolute;
-  --w: 51px;
-  --h: 12px;
-  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADMAAAAMCAYAAADPjYVSAAAAAXNSR0IArs4c6QAAAPRJREFUSEvdVkESwkAIs0d9hv9/k8/Qow4d6aSZBKjjRfdSdltYIBC63B735+m9rufLkvuQ4/joHnVCRjsp531hG89w7+S0r3xdnc8X1RONOGfynL/lO1A/A8akOZ/4Xk7GhoQy6pBx2fwkmKOJZMQQ/Q0ZFzVHP0VIlUlVVlw+GKR6p/wYBTNFzSGjLu6SMk3iDhl04NfllbH+ZZUEUDWbqn9XjkgkWBaqlJh0eHQopkwwLDU7eu0a1fWHs9eRQqeHNF4OSYfMNFvVkHSzZ0oMqP9VZBytcy9O6JptTZGJ72SZqdrvJjT3Au6VgxVds+70t+cFkvdjifIP/BkAAAAASUVORK5CYII=);
-  top: calc(var(--m) * 34px);
-  right: calc(var(--m) * 11px);
-}
-
 .arm {
   position: absolute;
   --w: 7px;
@@ -540,8 +531,124 @@ button {
   cursor: pointer;
 }
 
-.hori-btn {
-  transform: rotate(90deg);
+.grab-btn {
+  position: absolute;
+  top: 40px;
+  right: 12px;
+  --w: 24px;
+  --h: 24px;
+  margin: 0;
+  background-image: none;
+  background-color: #fff;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue),
+  0 calc(var(--m) * 2px) 0 var(--brown);
+  filter: sepia(1) brightness(0.95);
+}
+
+.grab-btn::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--m) * 10px);
+  top: calc(var(--m) * 6px);
+  width: calc(var(--m) * 2px);
+  height: calc(var(--m) * 2px);
+  background-color: var(--dark-blue);
+  box-shadow:
+  0 calc(var(--m) * 2px) 0 var(--dark-blue),
+  0 calc(var(--m) * 4px) 0 var(--dark-blue),
+  calc(var(--m) * -4px) calc(var(--m) * 4px) 0 var(--dark-blue),
+  calc(var(--m) * -2px) calc(var(--m) * 6px) 0 var(--dark-blue),
+  0 calc(var(--m) * 6px) 0 var(--dark-blue),
+  calc(var(--m) * 2px) calc(var(--m) * 6px) 0 var(--dark-blue),
+  calc(var(--m) * 4px) calc(var(--m) * 4px) 0 var(--dark-blue);
+}
+
+.grab-btn.active:active {
+  top: 32px;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue),
+  0 calc(var(--m) * 1px) 0 var(--brown);
+}
+
+.joystick-control {
+  position: absolute;
+  top: 7px;
+  right: calc(var(--m) * 36px);
+  z-index: 5;
+  --w: 34px;
+  --h: 34px;
+  display: block;
+  margin: 0;
+  touch-action: none;
+  pointer-events: none;
+  cursor: grab;
+  filter: sepia(1) brightness(0.42);
+}
+
+.joystick-control.active {
+  pointer-events: all;
+}
+
+.joystick-control:focus-visible {
+  outline: calc(var(--m) * 1px) solid #fff;
+  outline-offset: calc(var(--m) * 2px);
+}
+
+.joystick-base {
+  position: absolute;
+  left: calc(var(--m) * 6px);
+  top: calc(var(--m) * 20px);
+  width: calc(var(--m) * 22px);
+  height: calc(var(--m) * 20px);
+  background-color: var(--brown);
+  border: calc(var(--m) * 2px) solid #fff;
+  box-shadow: inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue);
+}
+
+
+.joystick-stick {
+  position: absolute;
+  left: calc(var(--m) * 14px);
+  top: 20px;
+  width: calc(var(--m) * 6px);
+  height: calc(var(--m) * 19px);
+  background-color: var(--brown);
+  transform-origin: 50% 100%;
+  transition: transform 0.12s ease;
+}
+
+.joystick-stick::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--m) * -4px);
+  top: calc(var(--m) * -9px);
+  width: calc(var(--m) * 14px);
+  height: calc(var(--m) * 14px);
+  background-color: #fff;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  box-shadow: inset 0 0 0 calc(var(--m) * 2px) var(--machine-color);
+}
+
+.joystick-control.pushed-right .joystick-stick {
+  animation: none;
+  transform: rotate(28deg) translateX(calc(var(--m) * 3px));
+}
+
+.joystick-control.pushed-left .joystick-stick {
+  animation: none;
+  transform: rotate(-28deg) translateX(calc(var(--m) * -3px));
+}
+
+.joystick-control.pushed-up .joystick-stick {
+  animation: none;
+  transform: rotate(-28deg) translateY(calc(var(--m) * -4px));
+}
+
+.joystick-control.pushed-down .joystick-stick {
+  animation: none;
+  transform: rotate(28deg) translateY(calc(var(--m) * 4px));
 }
 
 .active {
@@ -764,11 +871,12 @@ a:hover {
       </div>
       <div class="control pix">
         <div class="cover left"></div>
-        <button class="hori-btn pix"></button>
-        <button class="vert-btn pix"></button>
-        <div class="cover right">
-          <div class="instruction pix"></div>
+        <div class="joystick-control pix" role="button" tabindex="0" aria-label="Move claw">
+          <div class="joystick-base"></div>
+          <div class="joystick-stick"></div>
         </div>
+        <button class="grab-btn pix" aria-label="Grab toy"></button>
+        <div class="cover right"></div>
         <div class="cover bottom"></div>
         <div class="cover top">
           <div class="collection-arrow pix"></div>
@@ -796,7 +904,8 @@ const elements = {
 
 const settings = {
   targetToy: null,
-  collectedNumber: 0 };
+  collectedNumber: 0,
+  isGrabInProgress: false };
 
 
 const m = 2;
@@ -939,7 +1048,7 @@ const getToySpawnPosition = (index, size) => {
   let bestPosition = null;
   let bestScore = Infinity;
 
-  for (let attempt = 0; attempt < 5000; attempt++) {
+  for (let attempt = 0; attempt < 20000; attempt++) {
     const position = {
       x: randomN(minX, maxX),
       y: randomN(minY, maxY)
@@ -990,7 +1099,13 @@ const getToySpawnPosition = (index, size) => {
 //* classes *//
 
 class Button {
-  constructor({ className, action, isLocked, pressAction, releaseAction }) {
+  constructor({
+    className,
+    action = () => {},
+    isLocked,
+    pressAction = () => {},
+    releaseAction = () => {}
+  }) {
     Object.assign(this, {
       el: document.querySelector(`.${className}`),
       isLocked });
@@ -1012,6 +1127,171 @@ class Button {
   deactivate() {
     this.isLocked = true;
     this.el.classList.remove('active');
+  }}
+
+class JoystickControl {
+  constructor({ className }) {
+    Object.assign(this, {
+      el: document.querySelector(`.${className}`),
+      stick: document.querySelector(`.${className} .joystick-stick`),
+      isLocked: true,
+      isPressed: false,
+      activeKeys: new Set(),
+      vectorKey: '0,0'
+    });
+
+    this.el.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      this.el.setPointerCapture?.(event.pointerId);
+      this.press(event);
+    });
+    this.el.addEventListener('pointermove', event => {
+      if (!this.isPressed) return;
+      event.preventDefault();
+      this.moveFromPointer(event);
+    });
+    ['pointerup', 'pointercancel'].forEach(action =>
+    this.el.addEventListener(action, () => this.release()));
+    this.el.addEventListener('keydown', event => {
+      const direction = this.getDirectionFromKey(event.key);
+      if (!direction) return;
+      event.preventDefault();
+      this.activeKeys.add(direction);
+      this.moveVector(this.getVectorFromKeys());
+    });
+    this.el.addEventListener('keyup', event => {
+      const direction = this.getDirectionFromKey(event.key);
+      if (!direction) return;
+      event.preventDefault();
+      this.activeKeys.delete(direction);
+      if (!this.activeKeys.size) {
+        this.release();
+        return;
+      }
+      this.moveVector(this.getVectorFromKeys());
+    });
+  }
+  activate() {
+    this.isLocked = false;
+    this.el.classList.add('active');
+    this.el.setAttribute('aria-label', 'Move claw');
+  }
+  deactivate() {
+    this.isLocked = true;
+    this.isPressed = false;
+    this.activeKeys.clear();
+    this.vectorKey = '0,0';
+    this.stick.style.transform = '';
+    this.el.classList.remove(
+    'active',
+    'pushed-left',
+    'pushed-right',
+    'pushed-up',
+    'pushed-down');
+  }
+  press(event) {
+    if (this.isLocked || this.isPressed || settings.isGrabInProgress) return;
+
+    this.isPressed = true;
+    this.moveFromPointer(event);
+  }
+  release() {
+    if (!this.isPressed) return;
+
+    this.isPressed = false;
+    this.activeKeys.clear();
+    this.vectorKey = '0,0';
+    this.stick.style.transform = '';
+    this.el.classList.remove('pushed-left', 'pushed-right', 'pushed-up', 'pushed-down');
+    this.stopMovement();
+    grabBtn.activate();
+  }
+  getDirectionFromKey(key) {
+    return {
+      ArrowLeft: 'left',
+      ArrowRight: 'right',
+      ArrowUp: 'up',
+      ArrowDown: 'down'
+    }[key];
+  }
+  getVectorFromKeys() {
+    return {
+      x:
+      (this.activeKeys.has('right') ? 1 : 0) -
+      (this.activeKeys.has('left') ? 1 : 0),
+      y:
+      (this.activeKeys.has('down') ? 1 : 0) -
+      (this.activeKeys.has('up') ? 1 : 0)
+    };
+  }
+  getVectorFromPointer(event) {
+    const rect = this.el.getBoundingClientRect();
+    const x = event.clientX - rect.left - rect.width / 2;
+    const y = event.clientY - rect.top - rect.height / 2;
+    const deadZone = rect.width * 0.12;
+
+    return {
+      x: Math.abs(x) < deadZone ? 0 : Math.sign(x),
+      y: Math.abs(y) < deadZone ? 0 : Math.sign(y)
+    };
+  }
+  moveFromPointer(event) {
+    this.moveVector(this.getVectorFromPointer(event));
+  }
+  moveVector(vector) {
+    if (this.isLocked || settings.isGrabInProgress) return;
+    const normalizedVector = {
+      x: Math.max(-1, Math.min(1, vector.x || 0)),
+      y: Math.max(-1, Math.min(1, vector.y || 0))
+    };
+    const vectorKey = `${normalizedVector.x},${normalizedVector.y}`;
+    if (this.vectorKey === vectorKey && this.isPressed) return;
+
+    this.isPressed = true;
+    this.stopMovement();
+    this.vectorKey = vectorKey;
+    this.el.classList.remove('pushed-left', 'pushed-right', 'pushed-up', 'pushed-down');
+
+    if (!normalizedVector.x && !normalizedVector.y) {
+      this.stick.style.transform = '';
+      return;
+    }
+
+    if (normalizedVector.x < 0) this.el.classList.add('pushed-left');
+    if (normalizedVector.x > 0) this.el.classList.add('pushed-right');
+    if (normalizedVector.y < 0) this.el.classList.add('pushed-up');
+    if (normalizedVector.y > 0) this.el.classList.add('pushed-down');
+    this.setStickVector(normalizedVector);
+    arm.el.classList.remove('missed');
+
+    if (normalizedVector.x) {
+      vertRail.move({
+        moveKey: 'x',
+        target: normalizedVector.x > 0 ?
+        machineWidth - armJoint.w - machineBuffer.x :
+        machineBuffer.x });
+    }
+
+    if (normalizedVector.y) {
+      armJoint.move({
+        moveKey: 'y',
+        target: normalizedVector.y < 0 ?
+        machineBuffer.y :
+        machineTopHeight - machineBuffer.y });
+    }
+  }
+  setStickVector(vector) {
+    const offsetX = vector.x * m * 3;
+    const offsetY = vector.y * m * 4;
+    const rotate = (vector.x + vector.y) * 12;
+    this.stick.style.transform =
+    `translate(${offsetX}px, ${offsetY}px) rotate(${rotate}deg)`;
+  }
+  stopMovement() {
+    [vertRail, armJoint].forEach(obj => {
+      clearInterval(obj.interval);
+      obj.interval = null;
+    });
   }}
 
 
@@ -1259,14 +1539,10 @@ new Array(sortedToys.length).fill('').forEach((_, i) => {
   new Toy({ index: i });
 });
 
-const stopHoriBtnAndActivateVertBtn = () => {
-  armJoint.interval = null;
-  horiBtn.deactivate();
-  vertBtn.activate();
-};
-
 const activateHoriBtn = () => {
-  horiBtn.activate();
+  settings.isGrabInProgress = false;
+  joystick.activate();
+  grabBtn.activate();
   [vertRail, armJoint, arm].forEach(c => c.interval = null);
 };
 
@@ -1316,64 +1592,51 @@ const grabToy = () => {
   }
 };
 
-const horiBtn = new Button({
-  className: 'hori-btn',
+const startGrabSequence = () => {
+  if (grabBtn.isLocked || settings.isGrabInProgress) return;
+
+  settings.isGrabInProgress = true;
+  joystick.stopMovement();
+  joystick.deactivate();
+  grabBtn.deactivate();
+  settings.targetToy = null;
+  getClosestToy();
+
+  setTimeout(() => {
+    arm.el.classList.add('open');
+    arm.move({
+      moveKey: 'h',
+      target: maxArmLength,
+      next: () =>
+      setTimeout(() => {
+        arm.el.classList.remove('open');
+        grabToy();
+        arm.resumeMove({
+          moveKey: 'h',
+          next: () => {
+            vertRail.resumeMove({
+              moveKey: 'x',
+              next: () => {
+                armJoint.resumeMove({
+                  moveKey: 'y',
+                  next: dropToy });
+
+              } });
+
+          } });
+
+      }, 500) });
+
+  }, 500);
+};
+
+const joystick = new JoystickControl({
+  className: 'joystick-control' });
+
+const grabBtn = new Button({
+  className: 'grab-btn',
   isLocked: true,
-  pressAction: () => {
-    arm.el.classList.remove('missed');
-    vertRail.move({
-      moveKey: 'x',
-      target: machineWidth - armJoint.w - machineBuffer.x,
-      next: stopHoriBtnAndActivateVertBtn });
-
-  },
-  releaseAction: () => {
-    clearInterval(vertRail.interval);
-    stopHoriBtnAndActivateVertBtn();
-  } });
-
-
-const vertBtn = new Button({
-  className: 'vert-btn',
-  isLocked: true,
-  pressAction: () => {
-    if (vertBtn.isLocked) return;
-    armJoint.move({
-      moveKey: 'y',
-      target: machineBuffer.y });
-
-  },
-  releaseAction: () => {
-    clearInterval(armJoint.interval);
-    vertBtn.deactivate();
-    getClosestToy();
-    setTimeout(() => {
-      arm.el.classList.add('open');
-      arm.move({
-        moveKey: 'h',
-        target: maxArmLength,
-        next: () =>
-        setTimeout(() => {
-          arm.el.classList.remove('open');
-          grabToy();
-          arm.resumeMove({
-            moveKey: 'h',
-            next: () => {
-              vertRail.resumeMove({
-                moveKey: 'x',
-                next: () => {
-                  armJoint.resumeMove({
-                    moveKey: 'y',
-                    next: dropToy });
-
-                } });
-
-            } });
-
-        }, 500) });
-
-    }, 500);
-  } });
+  action: startGrabSequence });
 
 // ============================================
 // DEBUG VISUALIZATION
