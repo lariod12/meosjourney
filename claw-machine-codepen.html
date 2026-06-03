@@ -213,6 +213,13 @@ body {
   font-weight: bold;
 }
 
+.claw-machine.debug-off .toy-debug-path,
+body.debug-off .debug-overlay,
+body.debug-off .debug-trajectory,
+body.debug-off .debug-info-panel {
+  display: none;
+}
+
 .claw-machine {
   display: flex;
   flex-direction: column;
@@ -570,6 +577,37 @@ button {
   box-shadow:
   inset 0 0 0 calc(var(--m) * 2px) var(--dark-blue),
   0 calc(var(--m) * 1px) 0 var(--brown);
+}
+
+.debug-toggle-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  --w: 24px;
+  --h: 14px;
+  margin: 0;
+  z-index: 10001;
+  border: calc(var(--m) * 2px) solid var(--brown);
+  background-image: none;
+  background-color: #fff;
+  color: var(--brown);
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(var(--m) * 3px);
+  line-height: calc(var(--m) * 10px);
+  text-align: center;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 1px) var(--machine-color),
+  0 calc(var(--m) * 2px) 0 var(--brown);
+  filter: sepia(1) brightness(0.95);
+  pointer-events: all;
+}
+
+.debug-toggle-btn[aria-pressed="false"] {
+  background-color: var(--dark-blue);
+  color: #fff;
+  box-shadow:
+  inset 0 0 0 calc(var(--m) * 1px) var(--brown),
+  0 calc(var(--m) * 2px) 0 var(--brown);
 }
 
 .joystick-control {
@@ -951,6 +989,7 @@ a:hover {
       </div>
     </div>
   </div>
+  <button class="debug-toggle-btn pix" aria-label="Toggle debug view" aria-pressed="true">DBG</button>
   <div class="sign">
     by Developer Rahul / <a href="http://www.developerrahul.com/">developerrahul.com</a>
   </div>
@@ -965,12 +1004,14 @@ const elements = {
   dropZone: document.querySelector('.machine-bottom .collection-point'),
   collectionPoint: document.querySelector('.control .collection-point'),
   collectionArrow: document.querySelector('.collection-arrow'),
+  debugToggleBtn: document.querySelector('.debug-toggle-btn'),
   toys: [] };
 
 
 const settings = {
   targetToy: null,
   collectedNumber: 0,
+  debugEnabled: true,
   isGrabInProgress: false };
 
 
@@ -1845,6 +1886,17 @@ const debugState = {
   isGrabbing: false
 };
 
+function setDebugEnabled(isEnabled) {
+  settings.debugEnabled = isEnabled;
+  document.body.classList.toggle('debug-off', !isEnabled);
+  elements.clawMachine.classList.toggle('debug-off', !isEnabled);
+  elements.debugToggleBtn.setAttribute('aria-pressed', String(isEnabled));
+}
+
+elements.debugToggleBtn.addEventListener('click', () => {
+  setDebugEnabled(!settings.debugEnabled);
+});
+
 function createDebugOverlay(id, label, className) {
   const overlay = document.createElement('div');
   overlay.id = id;
@@ -1886,6 +1938,10 @@ function createInfoPanel() {
 }
 
 function updateDebugOverlays() {
+  if (!settings.debugEnabled) {
+    return;
+  }
+
   const machineRect = elements.clawMachine.getBoundingClientRect();
   const armJointRect = armJoint.el.getBoundingClientRect();
   const clawShadowStyle = getComputedStyle(armJoint.el, '::before');
