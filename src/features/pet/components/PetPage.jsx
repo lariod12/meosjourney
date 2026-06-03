@@ -5,7 +5,7 @@ import {
   LuUtensils, LuHeart, LuActivity, LuGauge,
   LuTrophy, LuHeartPulse, LuSoup, LuBrain,
   LuCake, LuBeef, LuApple, LuMilk, LuFish, LuCookie,
-  LuShowerHead, LuShirt, LuBedSingle, LuBrush, LuBath, LuBandage,
+  LuBath,
   LuPackage2, LuCarFront, LuPlane, LuGamepad2, LuBookOpen, LuFootprints, LuPuzzle,
   LuSmile, LuLaugh, LuMeh, LuFrown, LuSparkles, LuMoon, LuSun, LuCloudSun, LuCloudRain,
   LuUtensilsCrossed, LuChefHat, LuCupSoda, LuIceCreamCone,
@@ -137,14 +137,7 @@ const ITEM_ICONS = {
   milk: LuMilk,
   fish: LuFish,
   cookie: LuCookie,
-  shower: LuShowerHead,
-  towel: LuShirt,
-  mat: LuBedSingle,
-  bed: LuBedSingle,
   game: LuGamepad2,
-  brush: LuBrush,
-  soap: LuBath,
-  bandage: LuBandage,
   box: LuPackage2,
   car: LuCarFront,
   plane: LuPlane,
@@ -227,15 +220,7 @@ const TAB_ITEMS = {
     { name: 'Biscuit', count: 0, shape: 'cookie' }
   ],
   care: [
-    { name: 'Shower', count: 1, shape: 'shower' },
-    { name: 'Towel', count: 2, shape: 'towel' },
-    { name: 'Bed', count: 1, shape: 'bed' },
-    { name: 'Brush', count: 1, shape: 'brush' },
-    { name: 'Soap', count: 0, shape: 'soap' },
-    { name: 'Bandage', count: 2, shape: 'bandage' },
-    { name: 'Game', count: 1, shape: 'game' },
-    { name: 'Comb', count: 1, shape: 'brush' },
-    { name: 'Care Kit', count: 1, shape: 'bandage' }
+    { name: 'Game', count: 1, shape: 'game' }
   ],
   activity: [],
   moods: [
@@ -275,6 +260,14 @@ const PET_PAGE_CHANGELOGS = [
           'Bấm item Game trong tab Care sẽ mở toàn màn hình claw-machine.html với joystick, nút gắp và thú bông di chuyển.',
           'Mỗi lượt kết thúc sau một lần gắp; gắp trúng tăng Sanity nhiều hơn, gắp hụt vẫn tăng một ít.',
           'Sau khi hoàn thành lượt chơi, game tự đóng và Pet Page hiển thị animation tăng chỉ số tinh thần.'
+        ]
+      },
+      {
+        title: 'Care tab cleanup',
+        summary: 'Care tab mặc định chỉ giữ lại item Game.',
+        details: [
+          'Danh sách Care mặc định không còn Shower, Towel, Bed, Brush, Soap, Comb, Bandage và Care Kit.',
+          'Nếu các item này vẫn còn trong database care inventory thì cần xóa trực tiếp trong DB để không hiện lại.'
         ]
       }
     ]
@@ -4930,9 +4923,13 @@ useEffect(() => {
       });
 
       if (result.success) {
+        const visibleItems = category === 'care'
+          ? ensurePetGameCareItem(nextItems)
+          : normalizePetInventoryItems(nextItems, DEFAULT_PET_ITEMS[category]);
+
         setPetItems(prev => ({
           ...prev,
-          [category]: normalizePetInventoryItems(nextItems, DEFAULT_PET_ITEMS[category])
+          [category]: visibleItems
         }));
         setPetItemModalCategory(null);
       } else {
@@ -5005,6 +5002,12 @@ useEffect(() => {
       status: nextStatus,
       lastStatusTickAt: nextTickAt
     });
+  };
+
+  const handlePetClawGameExit = () => {
+    lastInteractionRef.current = Date.now();
+    setIsPetClawGameOpen(false);
+    setPetClawGameItem(null);
   };
 
     const handleConfirmUsePetItem = () => {
@@ -6978,6 +6981,7 @@ useEffect(() => {
       <PetClawMachineGame
         isOpen={isPetClawGameOpen}
         onComplete={handlePetClawGameComplete}
+        onExit={handlePetClawGameExit}
       />
 
       <ChooseActivityModal

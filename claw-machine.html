@@ -300,27 +300,52 @@ body.debug-off .debug-info-panel {
   left: 50%;
   top: 42%;
   z-index: 10;
-  min-width: calc(var(--m) * 58px);
-  padding: calc(var(--m) * 6px) calc(var(--m) * 8px);
+  box-sizing: border-box;
+  min-width: calc(var(--m) * 86px);
+  max-width: calc(var(--m) * 128px);
+  padding: calc(var(--m) * 8px) calc(var(--m) * 10px);
   border: calc(var(--m) * 2px) solid var(--brown);
   background: var(--white);
   color: var(--brown);
   font-family: 'Press Start 2P', monospace;
-  font-size: calc(var(--m) * 5px);
-  line-height: 1.7;
+  font-size: calc(var(--m) * 4px);
+  line-height: 1.55;
   text-align: center;
   text-transform: uppercase;
   transform: translate(-50%, -50%) scale(0.92);
   opacity: 0;
   pointer-events: none;
+  isolation: isolate;
   box-shadow:
-  calc(var(--m) * 3px) calc(var(--m) * 3px) 0 var(--brown);
+  0 0 0 calc(var(--m) * 2px) var(--white),
+  calc(var(--m) * 4px) calc(var(--m) * 4px) 0 var(--brown);
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .result-popup.is-visible {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+}
+
+.result-popup__icon {
+  display: block;
+  margin-bottom: calc(var(--m) * 3px);
+  font-size: calc(var(--m) * 9px);
+  line-height: 1;
+}
+
+.result-popup__title {
+  display: block;
+  font-size: calc(var(--m) * 7px);
+  line-height: 1.25;
+}
+
+.result-popup.success {
+  background: #ffffff;
+}
+
+.result-popup.fail {
+  background: #e8e8e8;
 }
 
 .box {
@@ -960,7 +985,7 @@ button {
 }
 
 .control .collection-point.collectable {
-  filter: sepia(1) brightness(1);
+  filter: brightness(0.8);
   pointer-events: all;
 }
 
@@ -1014,7 +1039,7 @@ a:hover {
         </div>
         <div class="collection-point pix" role="button" tabindex="0" aria-label="Collect grabbed toy"></div>
       </div>
-      <div class="result-popup pix" role="status" aria-live="polite" hidden></div>
+      <div class="result-popup" role="status" aria-live="polite" hidden></div>
     </div>
   </div>
   <button class="debug-toggle-btn pix" aria-label="Toggle debug view" aria-pressed="true">DBG</button>
@@ -1792,7 +1817,10 @@ const notifyPetClawGameComplete = ({ caught, toyType = null, delayMs = 0 }) => {
 };
 
 const showResultPopup = ({ caught, toyType = null, delayMs = 1300 }) => {
-  elements.resultPopup.textContent = caught ? 'Success!' : 'Fail!';
+  elements.resultPopup.innerHTML = `
+    <span class="result-popup__icon" aria-hidden="true">${caught ? 'OK' : 'X'}</span>
+    <strong class="result-popup__title">${caught ? 'Success!' : 'Fail!'}</strong>
+  `;
   elements.resultPopup.hidden = false;
   elements.resultPopup.classList.toggle('success', caught);
   elements.resultPopup.classList.toggle('fail', !caught);

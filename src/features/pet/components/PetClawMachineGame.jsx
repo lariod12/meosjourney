@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
+import { LuX } from 'react-icons/lu';
 
 const CLAW_GAME_MESSAGE_TYPE = 'meosjourney:pet-claw-game-complete';
 
-const PetClawMachineGame = ({ isOpen, onComplete }) => {
+const PetClawMachineGame = ({ isOpen, onComplete, onExit }) => {
   const gameUrl = useMemo(() => (
     `/claw-machine.html?petGame=1&round=${Date.now()}`
   ), [isOpen]);
@@ -40,6 +41,14 @@ const PetClawMachineGame = ({ isOpen, onComplete }) => {
 
   return (
     <div className="pet-claw-game-screen" role="dialog" aria-modal="true" aria-label="Claw machine game">
+      <button
+        type="button"
+        className="pet-claw-game-screen__exit"
+        onClick={onExit}
+        aria-label="Exit claw machine game"
+      >
+        <LuX aria-hidden="true" />
+      </button>
       <iframe
         title="Claw machine game"
         className="pet-claw-game-screen__frame"
