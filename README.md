@@ -45,6 +45,33 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.3
+
+- Claiming a claw machine coin now makes the coin disappear and shows a floating `+1` from the claimed position.
+- The `+1` feedback fades out automatically without blocking stage interactions.
+
+### v1.4.2
+
+- Claw machine coins now spawn only on the ground area of the Pet stage.
+- Existing saved coin positions are normalized back onto the ground when Pet events load.
+
+### v1.4.1
+
+- Added a debug action that spawns a claw machine coin immediately on the Pet stage.
+- Moved the Game care card coin count into a compact top badge so it no longer crowds the card footer.
+
+### v1.4.0
+
+- Added daily claw machine coins stored in the `events.clawmachine` JSON field.
+- Each day schedules three random coin spawn times; due coins appear on the Pet stage and can be tapped to claim.
+- Care item Game now shows the available coin count and requires one claimed coin before opening the claw machine.
+
+### v1.3.1
+
+- Care item Game now treats every grabbed plush as a success, even if it lands outside the collection point.
+- Successful claw machine rounds now increase Sanity by 25%.
+- Fully missed grabs still end as failed attempts with the smaller Sanity reward.
+
 ### v1.3.0
 
 - Care item Game opens the full `claw-machine.html` screen from the Pet Page.

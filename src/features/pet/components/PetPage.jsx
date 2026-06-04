@@ -251,6 +251,73 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.3',
+    changes: [
+      {
+        title: 'Claw coin claim feedback',
+        summary: 'Claiming a claw machine coin now shows a floating +1 feedback text.',
+        details: [
+          'After tapping a stage coin, the coin disappears and a +1 label rises from the claimed position.',
+          'The feedback fades out automatically without blocking other stage interactions.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.2',
+    changes: [
+      {
+        title: 'Ground-only claw coins',
+        summary: 'Claw machine coins now appear only on the ground area of the pet stage.',
+        details: [
+          'Daily scheduled coins and debug-spawned coins now use a lower stage position range.',
+          'Existing saved coin positions are normalized back onto the ground when pet events load.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.1',
+    changes: [
+      {
+        title: 'Claw coin debug and badge polish',
+        summary: 'Debug mode can spawn a claw coin immediately, and the Game card coin badge is easier to read.',
+        details: [
+          'Care event preview now has a debug action that makes a claw coin visible on the pet stage right away.',
+          'The Game care card coin count moved into a compact top badge so it no longer crowds the card footer.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.0',
+    changes: [
+      {
+        title: 'Daily claw machine coins',
+        summary: 'Care item Game now requires claimable daily coins from the pet stage.',
+        details: [
+          'Each day creates three random claw coin spawn times stored in pet events.',
+          'A due coin appears on the pet stage with a sparkling black-and-white coin animation and can be tapped to claim.',
+          'Care item Game shows the available coin count and requires one coin before opening the claw machine.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.3.1',
+    changes: [
+      {
+        title: 'Care claw machine success fix',
+        summary: 'Care item Game now always succeeds when the claw grabs a plush.',
+        details: [
+          'A plush caught by the claw no longer turns into a failed result when it lands outside the collection point.',
+          'Successful claw machine rounds now increase Sanity by 25%.',
+          'Missing every plush still ends the round as a failed attempt with the smaller Sanity reward.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.3.0',
     changes: [
       {
@@ -607,7 +674,7 @@ const BIOLOGICAL_CLOCK_MESSAGES = {
 const PET_FOOD_EFFECT_DURATION_MS = 3000;
 const PET_CARE_EFFECT_DURATION_MS = 3000;
 const PET_CLAW_GAME_REWARDS = {
-  caught: 10,
+  caught: 25,
   missed: 3
 };
 const STINKY_EVENT_DEFAULTS = {
@@ -619,6 +686,20 @@ const STINKY_EVENT_DEFAULTS = {
   scheduleEndHour: 24
 };
 const STINKY_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
+const CLAW_MACHINE_EVENT_DEFAULTS = {
+  enabled: true,
+  dailyCoins: 3,
+  scheduleStartHour: 8,
+  scheduleEndHour: 23
+};
+const CLAW_MACHINE_COIN_GROUND_POSITION = {
+  xMin: 18,
+  xMax: 82,
+  yMin: 76,
+  yMax: 84
+};
+const CLAW_MACHINE_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
+const CLAW_MACHINE_NO_COIN_MESSAGE = 'Cần 1 coin để chơi máy gắp thú nha.';
 const STINKY_SHOWER_CARE_ITEM = {
   name: 'Shower',
   count: 1,
@@ -1359,6 +1440,140 @@ const getDueStinkyTrigger = (stinky = {}, date = new Date()) => {
   )) || null;
 };
 
+const createClawMachineCoinGroundPosition = () => ({
+  x: randomBetween(CLAW_MACHINE_COIN_GROUND_POSITION.xMin, CLAW_MACHINE_COIN_GROUND_POSITION.xMax),
+  y: randomBetween(CLAW_MACHINE_COIN_GROUND_POSITION.yMin, CLAW_MACHINE_COIN_GROUND_POSITION.yMax)
+});
+
+const normalizeClawMachineCoinGroundPosition = (position = {}) => ({
+  x: Math.max(
+    CLAW_MACHINE_COIN_GROUND_POSITION.xMin,
+    Math.min(CLAW_MACHINE_COIN_GROUND_POSITION.xMax, Math.round(Number(position.x) || 50))
+  ),
+  y: Math.max(
+    CLAW_MACHINE_COIN_GROUND_POSITION.yMin,
+    Math.min(CLAW_MACHINE_COIN_GROUND_POSITION.yMax, Math.round(Number(position.y) || CLAW_MACHINE_COIN_GROUND_POSITION.yMin))
+  )
+});
+
+const createClawMachineCoinSchedule = (date = new Date(), clawmachine = {}) => {
+  const dateKey = getMosquitoEventDateKey(date);
+  const coinCount = Math.max(1, Math.min(3, Math.round(Number(clawmachine.dailyCoins) || CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins)));
+  const startHour = Math.max(0, Math.min(23, Math.round(Number(clawmachine.scheduleStartHour) || CLAW_MACHINE_EVENT_DEFAULTS.scheduleStartHour)));
+  const endHour = Math.max(startHour + 1, Math.min(24, Math.round(Number(clawmachine.scheduleEndHour) || CLAW_MACHINE_EVENT_DEFAULTS.scheduleEndHour)));
+  const endMinute = endHour * 60;
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const safeCurrentMinute = getMosquitoEventDateKey(now) === dateKey ? currentMinute + 5 : startHour * 60;
+  const latestStartMinute = Math.max(startHour * 60, endMinute - coinCount);
+  const startMinute = Math.min(latestStartMinute, Math.max(startHour * 60, safeCurrentMinute));
+  const span = Math.max(coinCount, endMinute - startMinute);
+  const slotSize = span / coinCount;
+
+  return Array.from({ length: coinCount }, (_, index) => {
+    const slotStart = startMinute + Math.floor(slotSize * index);
+    const slotEnd = startMinute + Math.floor(slotSize * (index + 1));
+    const minuteOfDay = Math.min(endMinute - 1, randomBetween(slotStart, Math.max(slotStart, slotEnd - 1)));
+    const triggerDate = new Date(date);
+    triggerDate.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+
+    return {
+      id: `${dateKey}-${index + 1}`,
+      status: 'pending',
+      scheduledAt: formatVietnamTimestamp(triggerDate),
+      spawnedAt: null,
+      claimedAt: null,
+      usedAt: null,
+      position: createClawMachineCoinGroundPosition(),
+      sparkleSeed: randomBetween(1, 999)
+    };
+  }).sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime());
+};
+
+const normalizeClawMachineEventForRuntime = (clawmachine = {}, date = new Date()) => {
+  const dateKey = getMosquitoEventDateKey(date);
+  const dailyCoins = Math.max(1, Math.min(3, Math.round(Number(clawmachine.dailyCoins) || CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins)));
+  const baseEvent = {
+    ...CLAW_MACHINE_EVENT_DEFAULTS,
+    ...clawmachine,
+    enabled: clawmachine.enabled !== false,
+    dailyCoins,
+    scheduleStartHour: Math.max(0, Math.min(23, Math.round(Number(clawmachine.scheduleStartHour) || CLAW_MACHINE_EVENT_DEFAULTS.scheduleStartHour))),
+    scheduleEndHour: Math.max(1, Math.min(24, Math.round(Number(clawmachine.scheduleEndHour) || CLAW_MACHINE_EVENT_DEFAULTS.scheduleEndHour))),
+    coinBalance: Math.max(0, Math.min(dailyCoins, Math.round(Number(clawmachine.coinBalance) || 0))),
+    playsUsed: Math.max(0, Math.min(dailyCoins, Math.round(Number(clawmachine.playsUsed) || 0))),
+    activeCoinId: typeof clawmachine.activeCoinId === 'string' ? clawmachine.activeCoinId : null,
+    schedule: Array.isArray(clawmachine.schedule) ? clawmachine.schedule : []
+  };
+  const normalizedSchedule = baseEvent.schedule.map((coin, index) => {
+    const position = coin?.position && typeof coin.position === 'object' ? coin.position : {};
+
+    return {
+      id: typeof coin?.id === 'string' ? coin.id : `${dateKey}-${index + 1}`,
+      status: ['pending', 'visible', 'claimed', 'used', 'expired'].includes(coin?.status) ? coin.status : 'pending',
+      scheduledAt: coin?.scheduledAt || formatVietnamTimestamp(date),
+      spawnedAt: coin?.spawnedAt ?? null,
+      claimedAt: coin?.claimedAt ?? null,
+      usedAt: coin?.usedAt ?? null,
+      position: normalizeClawMachineCoinGroundPosition(position),
+      sparkleSeed: Math.max(1, Math.min(999, Math.round(Number(coin?.sparkleSeed) || index + 1)))
+    };
+  });
+  const scheduleMatchesToday = baseEvent.dateKey === dateKey && normalizedSchedule.length === dailyCoins;
+
+  if (!baseEvent.enabled) {
+    return {
+      ...baseEvent,
+      dateKey,
+      coinBalance: 0,
+      playsUsed: 0,
+      activeCoinId: null,
+      schedule: []
+    };
+  }
+
+  if (scheduleMatchesToday) {
+    const activeCoin = normalizedSchedule.find((coin) => coin.status === 'visible');
+
+    return {
+      ...baseEvent,
+      dateKey,
+      activeCoinId: activeCoin ? activeCoin.id : null,
+      schedule: normalizedSchedule
+    };
+  }
+
+  return {
+    ...baseEvent,
+    dateKey,
+    coinBalance: 0,
+    playsUsed: 0,
+    activeCoinId: null,
+    schedule: createClawMachineCoinSchedule(date, baseEvent),
+    lastClaimedAt: null,
+    lastPlayedAt: null
+  };
+};
+
+const getDueClawMachineCoin = (clawmachine = {}, date = new Date()) => {
+  if (clawmachine.enabled === false || clawmachine.activeCoinId || !Array.isArray(clawmachine.schedule)) {
+    return null;
+  }
+
+  const nowTime = date.getTime();
+  return clawmachine.schedule.find((coin) => (
+    coin?.status === 'pending' &&
+    !coin.spawnedAt &&
+    new Date(coin.scheduledAt).getTime() <= nowTime
+  )) || null;
+};
+
+const getVisibleClawMachineCoin = (clawmachine = {}) => (
+  Array.isArray(clawmachine.schedule)
+    ? clawmachine.schedule.find((coin) => coin.status === 'visible' && coin.id === clawmachine.activeCoinId) || null
+    : null
+);
+
 const isMosquitoEventWindow = (date = new Date()) => {
   const hour = date.getHours();
   return (
@@ -1754,6 +1969,7 @@ const PetItemCard = ({
   showEmptyIcon = false,
   disabled = false,
   disabledReason = '',
+  metaBadge = '',
   onClick
 }) => {
   const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
@@ -1765,7 +1981,7 @@ const PetItemCard = ({
   return (
     <button
       type="button"
-      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${isCurrent ? 'pet-item-card--current' : ''} ${disabled ? 'pet-item-card--disabled' : ''}`}
+      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${metaBadge ? 'pet-item-card--with-meta' : ''} ${isCurrent ? 'pet-item-card--current' : ''} ${disabled ? 'pet-item-card--disabled' : ''}`}
       aria-label={ariaLabel}
       aria-disabled={disabled}
       disabled={disabled}
@@ -1786,6 +2002,7 @@ const PetItemCard = ({
         <span className="pet-item-card__count"><span className="pet-item-card__count-x">x</span>{item.count}</span>
       )}
       <span className="pet-item-card__name">{item.name}</span>
+      {metaBadge && <span className="pet-item-card__meta">{metaBadge}</span>}
       {isCurrent && <span className="pet-item-card__badge">Current</span>}
     </button>
   );
@@ -1893,6 +2110,32 @@ const PetStageMosquitoBiteEffect = ({ effect, onDone }) => {
       onAnimationEnd={() => onDone(effect.id)}
     >
       -1
+    </div>
+  );
+};
+
+const PetStageClawCoinClaimEffect = ({ effect, onDone }) => {
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      onDone(effect.id);
+    }, 1050);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [effect.id, onDone]);
+
+  return (
+    <div
+      className="pet-claw-coin-claim-effect"
+      style={{
+        '--pet-claw-coin-claim-x': `${effect.x}%`,
+        '--pet-claw-coin-claim-y': `${effect.y}%`
+      }}
+      aria-hidden="true"
+      onAnimationEnd={() => onDone(effect.id)}
+    >
+      +1
     </div>
   );
 };
@@ -2826,6 +3069,7 @@ const PetPage = ({ onBack }) => {
   const [careEffects, setCareEffects] = useState([]);
   const [isCareUseAnimating, setIsCareUseAnimating] = useState(false);
   const [mosquitoBiteEffects, setMosquitoBiteEffects] = useState([]);
+  const [clawCoinClaimEffects, setClawCoinClaimEffects] = useState([]);
   const [isSavingPet, setIsSavingPet] = useState(false);
   const [isMobileRainReduced, setIsMobileRainReduced] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -3416,6 +3660,21 @@ const PetPage = ({ onBack }) => {
     setPetEvents(nextEvents);
     mosquitoEventCompletedRef.current = isMosquitoEventClearedToday(nextEvents);
     setIsMosquitoEventCompletedToday(mosquitoEventCompletedRef.current);
+    savePetEventsInBackground(nextEvents);
+  }, [savePetEventsInBackground]);
+
+  const updateClawMachineEventRecord = useCallback((clawMachineUpdates) => {
+    const currentClawMachineEvent = petEventsRef.current.clawmachine || {};
+    const nextEvents = {
+      ...petEventsRef.current,
+      clawmachine: {
+        ...currentClawMachineEvent,
+        ...clawMachineUpdates
+      }
+    };
+
+    petEventsRef.current = nextEvents;
+    setPetEvents(nextEvents);
     savePetEventsInBackground(nextEvents);
   }, [savePetEventsInBackground]);
 
@@ -4059,6 +4318,15 @@ const PetPage = ({ onBack }) => {
   moodItems.find(item => item.name === currentMoodName) || moodItems[0] || null
 ), [currentMoodName, moodItems]);
   const birthdayEvent = petEvents?.birthday || {};
+  const clawMachineEvent = petEvents?.clawmachine || {};
+  const visibleClawMachineCoin = useMemo(
+    () => getVisibleClawMachineCoin(clawMachineEvent),
+    [clawMachineEvent]
+  );
+  const clawMachineCoinBalance = Math.max(0, Math.min(
+    CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins,
+    Math.round(Number(clawMachineEvent?.coinBalance) || 0)
+  ));
   const birthdayDisplayDate = getBirthdayDisplayDate(birthdayEvent?.date);
   const isBirthdayForced = isPetCharacterDebugEnabled && debugBirthdayMode === PET_BIRTHDAY_DEBUG_FORCE_VALUE;
   const isBirthdayToday = useMemo(
@@ -4261,14 +4529,19 @@ useEffect(() => {
         : {};
       const runtimePetEvents = {
         ...normalizedPetEvents,
-        stinky: normalizeStinkyEventForRuntime(normalizedPetEvents?.stinky)
+        stinky: normalizeStinkyEventForRuntime(normalizedPetEvents?.stinky),
+        clawmachine: normalizeClawMachineEventForRuntime(normalizedPetEvents?.clawmachine)
       };
+      const shouldSyncRuntimePetEvents = JSON.stringify(normalizedPetEvents) !== JSON.stringify(runtimePetEvents);
       const isBirthdayTodayOnLoad = isBirthdayEventToday(runtimePetEvents?.birthday);
       const isBirthdayActiveOnLoad = isBirthdayForced || isBirthdayTodayOnLoad;
 
       if (loadedPetEvents) {
         petEventsRef.current = runtimePetEvents;
         setPetEvents(runtimePetEvents);
+        if (shouldSyncRuntimePetEvents) {
+          savePetEventsInBackground(runtimePetEvents);
+        }
         const mosquitoCompletedToday = isMosquitoEventClearedToday(runtimePetEvents);
         const stinkyActiveToday = runtimePetEvents?.stinky?.active === true
           && runtimePetEvents?.stinky?.dateKey === getMosquitoEventDateKey();
@@ -5176,6 +5449,182 @@ useEffect(() => {
     updateStinkyEventRecord
   ]);
 
+  const showDueClawMachineCoin = useCallback((clawMachineEvent, dueCoin) => {
+    if (!dueCoin || clawMachineEvent.activeCoinId) {
+      return;
+    }
+
+    const spawnedAt = formatVietnamTimestamp();
+    const nextSchedule = clawMachineEvent.schedule.map((coin) => (
+      coin.id === dueCoin.id
+        ? {
+          ...coin,
+          status: 'visible',
+          spawnedAt
+        }
+        : coin
+    ));
+
+    updateClawMachineEventRecord({
+      ...clawMachineEvent,
+      activeCoinId: dueCoin.id,
+      schedule: nextSchedule
+    });
+  }, [updateClawMachineEventRecord]);
+
+  useEffect(() => {
+    if (!hasPetEventsLoaded || !isPetReady || !isPageVisible) {
+      return undefined;
+    }
+
+    const checkClawMachineCoinEvent = () => {
+      const currentClawMachineEvent = petEventsRef.current.clawmachine || {};
+      const normalizedClawMachineEvent = normalizeClawMachineEventForRuntime(currentClawMachineEvent);
+      const shouldSyncSchedule = JSON.stringify(currentClawMachineEvent) !== JSON.stringify(normalizedClawMachineEvent);
+
+      if (shouldSyncSchedule) {
+        updateClawMachineEventRecord(normalizedClawMachineEvent);
+      }
+
+      const dueCoin = getDueClawMachineCoin(normalizedClawMachineEvent);
+      if (dueCoin) {
+        showDueClawMachineCoin(normalizedClawMachineEvent, dueCoin);
+      }
+    };
+
+    checkClawMachineCoinEvent();
+    const intervalId = window.setInterval(checkClawMachineCoinEvent, CLAW_MACHINE_EVENT_CHECK_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [
+    hasPetEventsLoaded,
+    isPageVisible,
+    isPetReady,
+    petEvents,
+    showDueClawMachineCoin,
+    updateClawMachineEventRecord
+  ]);
+
+  const handleClaimClawMachineCoin = useCallback(() => {
+    const currentClawMachineEvent = normalizeClawMachineEventForRuntime(petEventsRef.current.clawmachine || {});
+    const visibleCoin = getVisibleClawMachineCoin(currentClawMachineEvent);
+
+    if (!visibleCoin) {
+      return;
+    }
+
+    const claimedAt = formatVietnamTimestamp();
+    setClawCoinClaimEffects((current) => ([
+      ...current,
+      {
+        id: `${visibleCoin.id}-${Date.now()}`,
+        x: visibleCoin.position.x,
+        y: visibleCoin.position.y
+      }
+    ]));
+    const nextCoinBalance = Math.min(
+      currentClawMachineEvent.dailyCoins,
+      Math.max(0, currentClawMachineEvent.coinBalance) + 1
+    );
+    const nextSchedule = currentClawMachineEvent.schedule.map((coin) => (
+      coin.id === visibleCoin.id
+        ? {
+          ...coin,
+          status: 'claimed',
+          claimedAt
+        }
+        : coin
+    ));
+
+    updateClawMachineEventRecord({
+      ...currentClawMachineEvent,
+      coinBalance: nextCoinBalance,
+      activeCoinId: null,
+      schedule: nextSchedule,
+      lastClaimedAt: claimedAt
+    });
+  }, [updateClawMachineEventRecord]);
+
+  const spawnClawMachineCoinNow = useCallback(() => {
+    if (!isPetCharacterDebugEnabled) {
+      return;
+    }
+
+    const currentClawMachineEvent = normalizeClawMachineEventForRuntime({
+      ...(petEventsRef.current.clawmachine || {}),
+      enabled: true
+    });
+    const visibleCoin = getVisibleClawMachineCoin(currentClawMachineEvent);
+
+    if (visibleCoin) {
+      return;
+    }
+
+    const spawnedAt = formatVietnamTimestamp();
+    const debugCoin = currentClawMachineEvent.schedule.find((coin) => coin.status === 'pending')
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'expired')
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'used')
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'claimed')
+      || currentClawMachineEvent.schedule[0];
+
+    if (!debugCoin) {
+      return;
+    }
+
+    const nextSchedule = currentClawMachineEvent.schedule.map((coin) => (
+      coin.id === debugCoin.id
+        ? {
+          ...coin,
+          status: 'visible',
+          scheduledAt: spawnedAt,
+          spawnedAt,
+          claimedAt: null,
+          usedAt: null,
+          position: createClawMachineCoinGroundPosition(),
+          sparkleSeed: randomBetween(1, 999)
+        }
+        : coin
+    ));
+
+    updateClawMachineEventRecord({
+      ...currentClawMachineEvent,
+      activeCoinId: debugCoin.id,
+      schedule: nextSchedule
+    });
+  }, [isPetCharacterDebugEnabled, updateClawMachineEventRecord]);
+
+  const spendClawMachineCoinForGame = useCallback(() => {
+    const currentClawMachineEvent = normalizeClawMachineEventForRuntime(petEventsRef.current.clawmachine || {});
+
+    if (currentClawMachineEvent.coinBalance <= 0) {
+      return false;
+    }
+
+    const usedAt = formatVietnamTimestamp();
+    const oldestClaimedCoin = currentClawMachineEvent.schedule
+      .filter((coin) => coin.status === 'claimed')
+      .sort((first, second) => new Date(first.claimedAt || first.scheduledAt).getTime() - new Date(second.claimedAt || second.scheduledAt).getTime())[0];
+    const nextSchedule = currentClawMachineEvent.schedule.map((coin) => (
+      coin.id === oldestClaimedCoin?.id
+        ? {
+          ...coin,
+          status: 'used',
+          usedAt
+        }
+        : coin
+    ));
+
+    updateClawMachineEventRecord({
+      ...currentClawMachineEvent,
+      coinBalance: Math.max(0, currentClawMachineEvent.coinBalance - 1),
+      playsUsed: Math.min(currentClawMachineEvent.dailyCoins, currentClawMachineEvent.playsUsed + 1),
+      schedule: nextSchedule,
+      lastPlayedAt: usedAt
+    });
+
+    return true;
+  }, [updateClawMachineEventRecord]);
+
   const handleAddPetItem = async (newItem) => {
     if (!petItemModalCategory || isSavingPet) return;
 
@@ -5220,6 +5669,11 @@ useEffect(() => {
     if (category === 'care' && isPetClawGameOpen) return;
 
     if (isGameCareItem(category, item)) {
+      if (!spendClawMachineCoinForGame()) {
+        alert(CLAW_MACHINE_NO_COIN_MESSAGE);
+        return;
+      }
+
       lastInteractionRef.current = Date.now();
       setPetClawGameItem(item);
       setIsPetClawGameOpen(true);
@@ -5447,6 +5901,10 @@ useEffect(() => {
   const handleCareEffectDone = (effectId) => {
     setCareEffects(prev => prev.filter(effect => effect.id !== effectId));
     setIsCareUseAnimating(false);
+  };
+
+  const handleClawCoinClaimEffectDone = (effectId) => {
+    setClawCoinClaimEffects(prev => prev.filter(effect => effect.id !== effectId));
   };
 
   const refreshStatusConsumers = () => {
@@ -6288,6 +6746,26 @@ useEffect(() => {
             aria-hidden="true"
           />
 
+          {visibleClawMachineCoin && (
+            <button
+              type="button"
+              className="pet-claw-coin"
+              style={{
+                '--pet-claw-coin-x': `${visibleClawMachineCoin.position.x}%`,
+                '--pet-claw-coin-y': `${visibleClawMachineCoin.position.y}%`,
+                '--pet-claw-coin-seed': visibleClawMachineCoin.sparkleSeed
+              }}
+              onClick={handleClaimClawMachineCoin}
+              aria-label="Claim claw machine coin"
+            >
+              <span className="pet-claw-coin__spark pet-claw-coin__spark--one" aria-hidden="true" />
+              <span className="pet-claw-coin__spark pet-claw-coin__spark--two" aria-hidden="true" />
+              <span className="pet-claw-coin__face" aria-hidden="true">
+                <span className="pet-claw-coin__mark">C</span>
+              </span>
+            </button>
+          )}
+
           {isBirthdayActive && (
             <div className={`pet-birthday-event ${isBirthdayCelebrationUnlocked ? 'pet-birthday-event--celebrating' : ''}`} aria-label="Birthday event is active">
               {isBirthdayCelebrationUnlocked && (
@@ -6534,6 +7012,15 @@ useEffect(() => {
                       <span>Stinky preview</span>
                       <small>{debugStinkyPreview ? 'Showing smell + buzzing around pet' : 'Preview not showered state'}</small>
                     </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${visibleClawMachineCoin ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={spawnClawMachineCoinNow}
+                      aria-pressed={Boolean(visibleClawMachineCoin)}
+                    >
+                      <span>Spawn claw coin</span>
+                      <small>{visibleClawMachineCoin ? 'Coin visible on stage' : `Balance: ${clawMachineCoinBalance}`}</small>
+                    </button>
                     </div>
                   </details>
                   <details className="pet-character-debug__group" open>
@@ -6767,6 +7254,16 @@ useEffect(() => {
                 key={effect.id}
                 effect={effect}
                 onDone={handleMosquitoBiteEffectDone}
+              />
+            ))}
+          </div>
+
+          <div className="pet-claw-coin-claim-effects" aria-hidden="true">
+            {clawCoinClaimEffects.map((effect) => (
+              <PetStageClawCoinClaimEffect
+                key={effect.id}
+                effect={effect}
+                onDone={handleClawCoinClaimEffectDone}
               />
             ))}
           </div>
@@ -7196,6 +7693,7 @@ useEffect(() => {
                     : null;
                   console.log('📊 Preview for', item.name, ':', petUsePreview);
                   const isGameCare = isGameCareItem(activeTab, item);
+                  const metaBadge = isGameCare ? `Coin x${clawMachineCoinBalance}` : '';
                   const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || activeIsSleeping);
                   const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping || isPetClawGameOpen);
                   const isPetItemDisabled = Boolean(petUsePreview && (
@@ -7221,6 +7719,7 @@ useEffect(() => {
                       }
                       disabled={isPetItemDisabled}
                       disabledReason={disabledReason}
+                      metaBadge={metaBadge}
                       onClick={
                         activeTab === 'activity'
                           ? () => handleActivityCardClick(item)

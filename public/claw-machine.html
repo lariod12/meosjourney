@@ -1908,7 +1908,14 @@ const dropToy = () => {
         droppedToy.el.classList.remove('grabbed');
         arm.el.classList.remove('open');
 
-        if (isToyInCollectionPoint(droppedToy)) {
+        if (settings.isPetGameMode) {
+          elements.collectionArrow.classList.remove('active');
+          elements.collectionPoint.classList.remove('collectable');
+          showResultPopup({
+            caught: true,
+            toyType: droppedToy.toyType
+          });
+        } else if (isToyInCollectionPoint(droppedToy)) {
           droppedToy.el.classList.add('selected');
           elements.collectionArrow.classList.add('active');
           elements.collectionPoint.classList.add('collectable');
