@@ -251,6 +251,19 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.4',
+    changes: [
+      {
+        title: 'Single active claw coin',
+        summary: 'Claw machine coins now wait their turn instead of stacking up on the Pet stage.',
+        details: [
+          'Only one claimable coin can be active on the Pet stage at a time.',
+          'After a coin is claimed, any overdue pending coins are rescheduled to later random times while the user is in the app.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.3',
     changes: [
       {
@@ -699,6 +712,8 @@ const CLAW_MACHINE_COIN_GROUND_POSITION = {
   yMax: 84
 };
 const CLAW_MACHINE_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
+const CLAW_MACHINE_COIN_RESPAWN_DELAY_MIN_MS = 5 * 60 * 1000;
+const CLAW_MACHINE_COIN_RESPAWN_DELAY_MAX_MS = 45 * 60 * 1000;
 const CLAW_MACHINE_NO_COIN_MESSAGE = 'Cần 1 coin để chơi máy gắp thú nha.';
 const STINKY_SHOWER_CARE_ITEM = {
   name: 'Shower',
@@ -1445,6 +1460,39 @@ const createClawMachineCoinGroundPosition = () => ({
   y: randomBetween(CLAW_MACHINE_COIN_GROUND_POSITION.yMin, CLAW_MACHINE_COIN_GROUND_POSITION.yMax)
 });
 
+const createClawMachineCoinRespawnDate = (date = new Date(), extraDelayMs = 0) => {
+  const delayMs = randomBetween(CLAW_MACHINE_COIN_RESPAWN_DELAY_MIN_MS, CLAW_MACHINE_COIN_RESPAWN_DELAY_MAX_MS);
+  return new Date(date.getTime() + delayMs + extraDelayMs);
+};
+
+const rescheduleDuePendingClawMachineCoins = (schedule = [], date = new Date()) => {
+  const nowTime = date.getTime();
+  let rescheduledCount = 0;
+
+  return schedule.map((coin) => {
+    if (
+      coin?.status !== 'pending' ||
+      coin.spawnedAt ||
+      new Date(coin.scheduledAt).getTime() > nowTime
+    ) {
+      return coin;
+    }
+
+    const extraDelayMs = rescheduledCount * randomBetween(
+      CLAW_MACHINE_COIN_RESPAWN_DELAY_MIN_MS,
+      CLAW_MACHINE_COIN_RESPAWN_DELAY_MAX_MS
+    );
+    rescheduledCount += 1;
+
+    return {
+      ...coin,
+      scheduledAt: formatVietnamTimestamp(createClawMachineCoinRespawnDate(date, extraDelayMs)),
+      position: createClawMachineCoinGroundPosition(),
+      sparkleSeed: randomBetween(1, 999)
+    };
+  }).sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime());
+};
+
 const normalizeClawMachineCoinGroundPosition = (position = {}) => ({
   x: Math.max(
     CLAW_MACHINE_COIN_GROUND_POSITION.xMin,
@@ -1505,17 +1553,26 @@ const normalizeClawMachineEventForRuntime = (clawmachine = {}, date = new Date()
     activeCoinId: typeof clawmachine.activeCoinId === 'string' ? clawmachine.activeCoinId : null,
     schedule: Array.isArray(clawmachine.schedule) ? clawmachine.schedule : []
   };
+  let hasNormalizedVisibleCoin = false;
   const normalizedSchedule = baseEvent.schedule.map((coin, index) => {
     const position = coin?.position && typeof coin.position === 'object' ? coin.position : {};
+    const status = ['pending', 'visible', 'claimed', 'used', 'expired'].includes(coin?.status) ? coin.status : 'pending';
+    const isExtraVisibleCoin = status === 'visible' && hasNormalizedVisibleCoin;
+
+    if (status === 'visible' && !hasNormalizedVisibleCoin) {
+      hasNormalizedVisibleCoin = true;
+    }
 
     return {
       id: typeof coin?.id === 'string' ? coin.id : `${dateKey}-${index + 1}`,
-      status: ['pending', 'visible', 'claimed', 'used', 'expired'].includes(coin?.status) ? coin.status : 'pending',
-      scheduledAt: coin?.scheduledAt || formatVietnamTimestamp(date),
-      spawnedAt: coin?.spawnedAt ?? null,
-      claimedAt: coin?.claimedAt ?? null,
-      usedAt: coin?.usedAt ?? null,
-      position: normalizeClawMachineCoinGroundPosition(position),
+      status: isExtraVisibleCoin ? 'pending' : status,
+      scheduledAt: isExtraVisibleCoin
+        ? formatVietnamTimestamp(createClawMachineCoinRespawnDate(date, index * CLAW_MACHINE_COIN_RESPAWN_DELAY_MIN_MS))
+        : coin?.scheduledAt || formatVietnamTimestamp(date),
+      spawnedAt: isExtraVisibleCoin ? null : coin?.spawnedAt ?? null,
+      claimedAt: isExtraVisibleCoin ? null : coin?.claimedAt ?? null,
+      usedAt: isExtraVisibleCoin ? null : coin?.usedAt ?? null,
+      position: isExtraVisibleCoin ? createClawMachineCoinGroundPosition() : normalizeClawMachineCoinGroundPosition(position),
       sparkleSeed: Math.max(1, Math.min(999, Math.round(Number(coin?.sparkleSeed) || index + 1)))
     };
   });
@@ -1556,7 +1613,11 @@ const normalizeClawMachineEventForRuntime = (clawmachine = {}, date = new Date()
 };
 
 const getDueClawMachineCoin = (clawmachine = {}, date = new Date()) => {
-  if (clawmachine.enabled === false || clawmachine.activeCoinId || !Array.isArray(clawmachine.schedule)) {
+  if (clawmachine.enabled === false || !Array.isArray(clawmachine.schedule)) {
+    return null;
+  }
+
+  if (clawmachine.schedule.some((coin) => coin?.status === 'visible')) {
     return null;
   }
 
@@ -5535,12 +5596,13 @@ useEffect(() => {
         }
         : coin
     ));
+    const rescheduledSchedule = rescheduleDuePendingClawMachineCoins(nextSchedule);
 
     updateClawMachineEventRecord({
       ...currentClawMachineEvent,
       coinBalance: nextCoinBalance,
       activeCoinId: null,
-      schedule: nextSchedule,
+      schedule: rescheduledSchedule,
       lastClaimedAt: claimedAt
     });
   }, [updateClawMachineEventRecord]);
@@ -5585,11 +5647,12 @@ useEffect(() => {
         }
         : coin
     ));
+    const rescheduledSchedule = rescheduleDuePendingClawMachineCoins(nextSchedule);
 
     updateClawMachineEventRecord({
       ...currentClawMachineEvent,
       activeCoinId: debugCoin.id,
-      schedule: nextSchedule
+      schedule: rescheduledSchedule
     });
   }, [isPetCharacterDebugEnabled, updateClawMachineEventRecord]);
 
