@@ -45,6 +45,12 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.5
+
+- Stinky events now schedule sequentially across morning (`06:00-12:00`) and evening (`17:00-23:00`) windows.
+- Clearing a morning stinky event with Shower schedules the evening event at least three hours later when enough time remains.
+- Extra overdue pending stinky triggers are skipped so stinky events no longer stack.
+
 ### v1.4.4
 
 - Claw machine coins now keep only one claimable coin active on the Pet stage at a time.

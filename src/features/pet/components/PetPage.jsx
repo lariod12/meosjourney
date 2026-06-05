@@ -251,6 +251,20 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.5',
+    changes: [
+      {
+        title: 'Sequential stinky events',
+        summary: 'Stinky events now use morning and evening windows without stacking overdue triggers.',
+        details: [
+          'The first daily stinky event uses the morning window before evening starts, or the evening window if the app is opened later.',
+          'After clearing a morning stinky event with Shower, the evening event is scheduled at least three hours later when the day still has enough time.',
+          'Legacy extra pending stinky triggers are skipped so only one stinky event can be active or pending at a time.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.4',
     changes: [
       {
@@ -699,6 +713,21 @@ const STINKY_EVENT_DEFAULTS = {
   scheduleEndHour: 24
 };
 const STINKY_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
+const STINKY_EVENT_PERIODS = {
+  MORNING: 'morning',
+  EVENING: 'evening'
+};
+const STINKY_EVENT_WINDOWS = {
+  [STINKY_EVENT_PERIODS.MORNING]: {
+    startHour: 6,
+    endHour: 12
+  },
+  [STINKY_EVENT_PERIODS.EVENING]: {
+    startHour: 17,
+    endHour: 23
+  }
+};
+const STINKY_EVENT_NEXT_GAP_MS = 3 * 60 * 60 * 1000;
 const CLAW_MACHINE_EVENT_DEFAULTS = {
   enabled: true,
   dailyCoins: 3,
@@ -1365,33 +1394,104 @@ const getMosquitoEventDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-const createStinkyEventSchedule = (date = new Date(), stinky = {}) => {
-  const dateKey = getMosquitoEventDateKey(date);
-  const triggerCount = Math.max(1, Math.min(4, Math.round(Number(stinky.dailyTriggers) || STINKY_EVENT_DEFAULTS.dailyTriggers)));
-  const startHour = Math.max(0, Math.min(23, Math.round(Number(stinky.scheduleStartHour) || STINKY_EVENT_DEFAULTS.scheduleStartHour)));
-  const endHour = Math.max(startHour + 1, Math.min(24, Math.round(Number(stinky.scheduleEndHour) || STINKY_EVENT_DEFAULTS.scheduleEndHour)));
-  const endMinute = endHour * 60;
-  const now = new Date();
-  const currentMinute = now.getHours() * 60 + now.getMinutes();
-  const safeCurrentMinute = getMosquitoEventDateKey(now) === dateKey ? currentMinute + 5 : startHour * 60;
-  const latestStartMinute = Math.max(startHour * 60, endMinute - triggerCount);
-  const startMinute = Math.min(latestStartMinute, Math.max(startHour * 60, safeCurrentMinute));
-  const span = Math.max(triggerCount, endMinute - startMinute);
-  const slotSize = span / triggerCount;
+const createStinkyDateAtHour = (date = new Date(), hour = 0) => {
+  const targetDate = new Date(date);
+  targetDate.setHours(hour, 0, 0, 0);
+  return targetDate;
+};
 
-  return Array.from({ length: triggerCount }, (_, index) => {
-    const slotStart = startMinute + Math.floor(slotSize * index);
-    const slotEnd = startMinute + Math.floor(slotSize * (index + 1));
-    const minuteOfDay = Math.min(endMinute - 1, randomBetween(slotStart, Math.max(slotStart, slotEnd - 1)));
-    const triggerDate = new Date(date);
-    triggerDate.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+const getInitialStinkyPeriodForDate = (date = new Date()) => (
+  date.getHours() >= STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.EVENING].startHour
+    ? STINKY_EVENT_PERIODS.EVENING
+    : STINKY_EVENT_PERIODS.MORNING
+);
+
+const getStinkyPeriodFromTimestamp = (timestamp, fallback = STINKY_EVENT_PERIODS.MORNING) => {
+  const timestampDate = timestamp ? new Date(timestamp) : null;
+
+  if (!timestampDate || Number.isNaN(timestampDate.getTime())) {
+    return fallback;
+  }
+
+  return timestampDate.getHours() >= STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.EVENING].startHour
+    ? STINKY_EVENT_PERIODS.EVENING
+    : STINKY_EVENT_PERIODS.MORNING;
+};
+
+const createStinkyEventTrigger = (date = new Date(), period = getInitialStinkyPeriodForDate(date), earliestDate = null) => {
+  const dateKey = getMosquitoEventDateKey(date);
+  const windowConfig = STINKY_EVENT_WINDOWS[period] || STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.MORNING];
+  const windowStartDate = createStinkyDateAtHour(date, windowConfig.startHour);
+  const windowEndDate = createStinkyDateAtHour(date, windowConfig.endHour);
+
+  if (!earliestDate && period === STINKY_EVENT_PERIODS.EVENING && date.getTime() > windowEndDate.getTime()) {
+    return null;
+  }
+
+  const earliestTime = earliestDate instanceof Date && !Number.isNaN(earliestDate.getTime())
+    ? Math.max(windowStartDate.getTime(), earliestDate.getTime())
+    : windowStartDate.getTime();
+
+  if (earliestTime > windowEndDate.getTime()) {
+    return null;
+  }
+
+  const earliestScheduleDate = new Date(earliestTime);
+  const startMinute = earliestScheduleDate.getHours() * 60 + earliestScheduleDate.getMinutes();
+  const endMinute = windowConfig.endHour * 60;
+  const minuteOfDay = randomBetween(startMinute, endMinute);
+  const triggerDate = new Date(date);
+  triggerDate.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+
+  return {
+    id: `${dateKey}-${period}`,
+    period,
+    status: 'pending',
+    scheduledAt: formatVietnamTimestamp(triggerDate),
+    triggeredAt: null,
+    clearedAt: null
+  };
+};
+
+const createStinkyEventSchedule = (date = new Date(), stinky = {}, options = {}) => {
+  const period = options.period || getInitialStinkyPeriodForDate(date);
+  const trigger = createStinkyEventTrigger(date, period, options.earliestDate || null);
+
+  return trigger ? [trigger] : [];
+};
+
+const createNextStinkyEventScheduleAfterClear = (stinkyEvent = {}, activeTrigger = {}, clearedDate = new Date()) => {
+  const activePeriod = activeTrigger.period || getStinkyPeriodFromTimestamp(activeTrigger.scheduledAt);
+
+  if (activePeriod !== STINKY_EVENT_PERIODS.MORNING) {
+    return [];
+  }
+
+  return createStinkyEventSchedule(clearedDate, stinkyEvent, {
+    period: STINKY_EVENT_PERIODS.EVENING,
+    earliestDate: new Date(clearedDate.getTime() + STINKY_EVENT_NEXT_GAP_MS)
+  });
+};
+
+const normalizeStinkyScheduleItems = (schedule = [], date = new Date()) => {
+  const dateKey = getMosquitoEventDateKey(date);
+
+  return schedule.map((trigger, index) => {
+    const status = ['pending', 'active', 'cleared', 'skipped'].includes(trigger?.status)
+      ? trigger.status
+      : 'pending';
+    const scheduledAt = trigger?.scheduledAt || formatVietnamTimestamp(date);
+    const period = [STINKY_EVENT_PERIODS.MORNING, STINKY_EVENT_PERIODS.EVENING].includes(trigger?.period)
+      ? trigger.period
+      : getStinkyPeriodFromTimestamp(scheduledAt, index === 0 ? STINKY_EVENT_PERIODS.MORNING : STINKY_EVENT_PERIODS.EVENING);
 
     return {
-      id: `${dateKey}-${index + 1}`,
-      status: 'pending',
-      scheduledAt: formatVietnamTimestamp(triggerDate),
-      triggeredAt: null,
-      clearedAt: null
+      id: typeof trigger?.id === 'string' ? trigger.id : `${dateKey}-${period}-${index + 1}`,
+      period,
+      status,
+      scheduledAt,
+      triggeredAt: trigger?.triggeredAt ?? null,
+      clearedAt: trigger?.clearedAt ?? null
     };
   }).sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime());
 };
@@ -1408,11 +1508,6 @@ const normalizeStinkyEventForRuntime = (stinky = {}, date = new Date()) => {
       ? stinky.requiredCareItem.trim()
       : STINKY_EVENT_DEFAULTS.requiredCareItem
   };
-  const scheduleMatchesToday = baseEvent.dateKey === dateKey
-    && Array.isArray(baseEvent.schedule)
-    && baseEvent.schedule.length === baseEvent.dailyTriggers;
-  const hasLegacyPastActiveSchedule = baseEvent.active === true
-    && Number(baseEvent.scheduleEndHour) < STINKY_EVENT_DEFAULTS.scheduleEndHour;
 
   if (!baseEvent.enabled) {
     return {
@@ -1424,10 +1519,78 @@ const normalizeStinkyEventForRuntime = (stinky = {}, date = new Date()) => {
     };
   }
 
-  if (scheduleMatchesToday && !hasLegacyPastActiveSchedule) {
+  const scheduleMatchesToday = baseEvent.dateKey === dateKey && Array.isArray(baseEvent.schedule);
+
+  if (scheduleMatchesToday) {
+    const normalizedSchedule = normalizeStinkyScheduleItems(baseEvent.schedule, date);
+    const activeTrigger = normalizedSchedule.find((trigger) => (
+      trigger.status === 'active' &&
+      (!baseEvent.activeTriggerId || trigger.id === baseEvent.activeTriggerId)
+    )) || normalizedSchedule.find((trigger) => trigger.status === 'active');
+
+    if (activeTrigger) {
+      return {
+        ...baseEvent,
+        dateKey,
+        active: true,
+        activeTriggerId: activeTrigger.id,
+        schedule: normalizedSchedule.map((trigger) => (
+          trigger.id === activeTrigger.id
+            ? trigger
+            : trigger.status === 'pending' || trigger.status === 'active'
+              ? {
+                ...trigger,
+                status: 'skipped',
+                clearedAt: trigger.clearedAt || activeTrigger.triggeredAt || formatVietnamTimestamp(date)
+              }
+              : trigger
+        ))
+      };
+    }
+
+    const nowHour = date.getHours();
+    const pendingTriggers = normalizedSchedule.filter((trigger) => trigger.status === 'pending');
+    let selectedPendingTrigger = null;
+    let generatedPendingTrigger = null;
+
+    if (pendingTriggers.length > 0) {
+      selectedPendingTrigger = nowHour >= STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.EVENING].startHour
+        ? pendingTriggers.find((trigger) => trigger.period === STINKY_EVENT_PERIODS.EVENING) || null
+        : pendingTriggers.find((trigger) => trigger.period === STINKY_EVENT_PERIODS.MORNING)
+          || pendingTriggers.find((trigger) => trigger.period === STINKY_EVENT_PERIODS.EVENING)
+          || null;
+
+      if (
+        !selectedPendingTrigger &&
+        nowHour >= STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.EVENING].startHour &&
+        !normalizedSchedule.some((trigger) => trigger.period === STINKY_EVENT_PERIODS.EVENING)
+      ) {
+        generatedPendingTrigger = createStinkyEventTrigger(date, STINKY_EVENT_PERIODS.EVENING);
+        selectedPendingTrigger = generatedPendingTrigger;
+      }
+    } else if (normalizedSchedule.length === 0) {
+      generatedPendingTrigger = createStinkyEventTrigger(date, getInitialStinkyPeriodForDate(date));
+      selectedPendingTrigger = generatedPendingTrigger;
+    }
+
+    const scheduleWithGeneratedTrigger = generatedPendingTrigger
+      ? [...normalizedSchedule, generatedPendingTrigger]
+      : normalizedSchedule;
+
     return {
       ...baseEvent,
-      schedule: baseEvent.schedule
+      dateKey,
+      active: false,
+      activeTriggerId: null,
+      schedule: scheduleWithGeneratedTrigger.map((trigger) => (
+        trigger.status === 'pending' && selectedPendingTrigger && trigger.id !== selectedPendingTrigger.id
+          ? {
+            ...trigger,
+            status: 'skipped',
+            clearedAt: trigger.clearedAt || formatVietnamTimestamp(date)
+          }
+          : trigger
+      )).sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime())
     };
   }
 
@@ -1448,8 +1611,11 @@ const getDueStinkyTrigger = (stinky = {}, date = new Date()) => {
   }
 
   const nowTime = date.getTime();
+  const isEveningWindowStarted = date.getHours() >= STINKY_EVENT_WINDOWS[STINKY_EVENT_PERIODS.EVENING].startHour;
+
   return stinky.schedule.find((trigger) => (
     trigger?.status === 'pending' &&
+    !(trigger?.period === STINKY_EVENT_PERIODS.MORNING && isEveningWindowStarted) &&
     !trigger.triggeredAt &&
     new Date(trigger.scheduledAt).getTime() <= nowTime
   )) || null;
@@ -5448,17 +5614,23 @@ useEffect(() => {
     }
 
     const clearedAt = formatVietnamTimestamp();
-    const clearedTime = new Date(clearedAt).getTime();
+    const clearedDate = new Date(clearedAt);
     const activeTriggerId = currentStinkyEvent.activeTriggerId;
+    const normalizedCurrentStinkySchedule = Array.isArray(currentStinkyEvent.schedule)
+      ? normalizeStinkyScheduleItems(currentStinkyEvent.schedule)
+      : [];
+    const activeTrigger = normalizedCurrentStinkySchedule.find((scheduleItem) => scheduleItem.id === activeTriggerId)
+      || normalizedCurrentStinkySchedule.find((scheduleItem) => scheduleItem.status === 'active')
+      || null;
     const nextSchedule = Array.isArray(currentStinkyEvent.schedule)
-      ? currentStinkyEvent.schedule.map((scheduleItem) => (
-        scheduleItem.id === activeTriggerId
+      ? normalizedCurrentStinkySchedule.map((scheduleItem) => (
+        scheduleItem.id === (activeTrigger?.id || activeTriggerId)
           ? {
             ...scheduleItem,
             status: 'cleared',
             clearedAt
           }
-          : scheduleItem.status === 'pending' && new Date(scheduleItem.scheduledAt).getTime() <= clearedTime
+          : scheduleItem.status === 'pending'
             ? {
               ...scheduleItem,
               status: 'skipped',
@@ -5467,12 +5639,18 @@ useEffect(() => {
           : scheduleItem
       ))
       : [];
+    const nextPendingSchedule = createNextStinkyEventScheduleAfterClear(
+      currentStinkyEvent,
+      activeTrigger || {},
+      clearedDate
+    );
 
     updateStinkyEventRecord({
       ...currentStinkyEvent,
       active: false,
       activeTriggerId: null,
-      schedule: nextSchedule,
+      schedule: [...nextSchedule, ...nextPendingSchedule]
+        .sort((first, second) => new Date(first.scheduledAt).getTime() - new Date(second.scheduledAt).getTime()),
       lastClearedAt: clearedAt
     });
   }, [updateStinkyEventRecord]);
