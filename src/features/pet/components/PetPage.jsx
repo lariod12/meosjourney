@@ -220,7 +220,8 @@ const TAB_ITEMS = {
     { name: 'Biscuit', count: 0, shape: 'cookie' }
   ],
   care: [
-    { name: 'Game', count: 1, shape: 'game' }
+    { name: 'Game', count: 1, shape: 'game' },
+    { name: 'Head Pat', count: 1, shape: 'headPat', icon: 'FaHandPaper' }
   ],
   activity: [],
   moods: [
@@ -250,6 +251,20 @@ const TABS = [
 ];
 
 const PET_PAGE_CHANGELOGS = [
+  {
+    version: 'v1.4.6',
+    changes: [
+      {
+        title: 'Head Pat care item',
+        summary: 'Added a gentle Head Pat care item that restores Sanity.',
+        details: [
+          'Care tab now keeps Head Pat as a required item alongside Game.',
+          'Using Head Pat increases Sanity by 12% without changing Health.',
+          'The staging pet care inventory includes Head Pat with a hand icon and description.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.4.5',
     changes: [
@@ -606,6 +621,16 @@ const PET_ITEM_EFFECTS = {
     }
   }
 };
+const PET_ITEM_EFFECT_OVERRIDES = {
+  care: {
+    'head pat': {
+      label: 'Care',
+      stats: {
+        sanity: 12
+      }
+    }
+  }
+};
 const PET_REACTION_LEVELS = {
   stable: 'stable',
   needsCare: 'needs-care',
@@ -635,7 +660,8 @@ const PET_ITEM_DESCRIPTIONS = {
   comb: 'Chải một lượt là lông vào nếp đáng yêu.',
   cushion: 'Gối êm để pet cuộn tròn nghỉ một chút.',
   'care kit': 'Bộ chăm sóc nhỏ nhưng hồi phục rất ra gì.',
-  game: 'Một lượt gắp thú nhỏ để tinh thần vui lên.'
+  game: 'Một lượt gắp thú nhỏ để tinh thần vui lên.',
+  'head pat': 'Xoa đầu dịu dàng, pet yên tâm và tinh thần sáng lên.'
 };
 
 const PET_CURRENT_MOOD = { label: 'Happy', Icon: LuSmile };
@@ -884,9 +910,9 @@ const DEFAULT_PET_ITEMS = {
     desc: PET_ITEM_DESCRIPTIONS[name.toLowerCase()] || '',
     shape
   })),
-  care: TAB_ITEMS.care.map(({ name, shape }) => ({
+  care: TAB_ITEMS.care.map(({ name, shape, icon = '' }) => ({
     name,
-    icon: '',
+    icon,
     desc: PET_ITEM_DESCRIPTIONS[name.toLowerCase()] || '',
     shape
   }))
@@ -933,6 +959,11 @@ const isGameCareItem = (category, item = {}) => (
 
 const isShowerCareItem = (category, item = {}) => (
   category === 'care' && String(item.name || '').trim().toLowerCase() === 'shower'
+);
+
+const getPetItemEffect = (category, itemName = '') => (
+  PET_ITEM_EFFECT_OVERRIDES[category]?.[String(itemName || '').trim().toLowerCase()]
+  || PET_ITEM_EFFECTS[category]
 );
 
 const isFullPetStatus = (status = {}) => (
@@ -2056,7 +2087,7 @@ const calculatePetStatusDecay = (status = {}, lastStatusTickAt, now = new Date()
 };
 
 const getPetItemUsePreview = (category, status = {}, itemShape = null, itemName = null) => {
-  const effect = PET_ITEM_EFFECTS[category];
+  const effect = getPetItemEffect(category, itemName);
   const currentStatus = clampPetStatus(status);
 
   if (!effect) {
@@ -2085,9 +2116,7 @@ const getPetItemUsePreview = (category, status = {}, itemShape = null, itemName 
 
   // Bed item is always usable (for sleep animation)
   const isBedItem = itemShape === 'bed' || itemShape === 'mat' || (itemName && itemName.toLowerCase() === 'bed');
-  const canUse = isBedItem || (category === 'food'
-    ? currentStatus.hunger < 100 || currentStatus.health < 100
-    : currentStatus.health < 100 || currentStatus.sanity < 100);
+  const canUse = isBedItem || rows.some(({ before, after }) => after > before);
 
   return {
     canUse,
@@ -2120,14 +2149,12 @@ const normalizePetInventoryItems = (items, fallbackItems = []) => {
 
 const ensurePetGameCareItem = (items = []) => {
   const normalizedItems = normalizePetInventoryItems(items, DEFAULT_PET_ITEMS.care);
-  const hasGameItem = normalizedItems.some((item) => isGameCareItem('care', item));
+  const existingNames = new Set(normalizedItems.map((item) => item.name.toLowerCase()));
+  const missingRequiredItems = DEFAULT_PET_ITEMS.care.filter((item) => !existingNames.has(item.name.toLowerCase()));
 
-  if (hasGameItem) {
-    return normalizedItems;
-  }
-
-  const gameItem = DEFAULT_PET_ITEMS.care.find((item) => isGameCareItem('care', item));
-  return gameItem ? [...normalizedItems, gameItem] : normalizedItems;
+  return missingRequiredItems.length > 0
+    ? [...normalizedItems, ...missingRequiredItems]
+    : normalizedItems;
 };
 
 const serializePetItems = (items) => (
