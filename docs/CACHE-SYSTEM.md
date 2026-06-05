@@ -16,7 +16,17 @@ The goal is to prevent duplicate concurrent requests and NocoDB rate-limit spike
 - `deduplicateRequest`: returns the existing promise when the same request is already running.
 - `clearNocoDBCache`: clears all in-flight request entries.
 - `clearCachedRequest`: clears one in-flight request key.
-- `nocoRequest`: applies request throttling, retry handling, and rate-limit backoff.
+- `nocoRequest`: applies request throttling, retry handling, rate-limit backoff, and `cache: 'no-store'` by default so browser HTTP cache does not reuse old NocoDB responses.
+
+### Pet Page Refresh Cache Clear
+
+`src/features/pet/components/PetPage.jsx` clears Pet Page runtime cache before loading pet data:
+
+- Calls `clearNocoDBCache` before `fetchPet` and `fetchPetEvents`.
+- Deletes related Cache Storage entries in browsers that support the Cache API.
+- Then requests fresh pet, event, weather, and status data.
+
+This is intentionally scoped to the Pet Page load/refresh path so mobile browsers are less likely to keep stale pet inventory, status, or event data.
 
 ### Persisted Timing Guards
 

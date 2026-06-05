@@ -5,6 +5,7 @@
 Hiện tại dự án không còn dùng cache dữ liệu home page kiểu cũ (`meo_journey_home_cache`). NocoDB service chỉ giữ cache tạm trong bộ nhớ cho các request đang chạy, cộng thêm hai timestamp trong localStorage để chống spam request và giảm lỗi rate limit.
 
 Vì vậy "xóa cache" trong code hiện tại chủ yếu có nghĩa là gọi `clearNocoDBCache` để xóa danh sách request đang pending, rồi fetch lại dữ liệu.
+Riêng NocoDB API request dùng `cache: 'no-store'` mặc định để browser không tái sử dụng response cũ.
 
 ## Các Loại Cache Hiện Có
 
@@ -13,6 +14,7 @@ Vì vậy "xóa cache" trong code hiện tại chủ yếu có nghĩa là gọi 
 | `pendingRequests` | Bộ nhớ runtime | Có, khi request xong | Tránh gọi trùng request cùng key |
 | `meo_noco_last_request_time` | localStorage | Không tự xóa | Ghi nhớ lần request gần nhất để throttle |
 | `meo_noco_penalty_until` | localStorage | Bị bỏ qua khi thời gian đã qua | Ghi nhớ thời điểm hết penalty sau rate limit |
+| Pet Page Cache Storage | Browser Cache API | Xóa khi mở/refresh Pet Page | Giảm tình trạng mobile browser giữ dữ liệu/asset Pet Page cũ |
 
 Không có cache dữ liệu 5 phút cho toàn bộ home page trong source hiện tại.
 
@@ -48,6 +50,11 @@ localStorage.removeItem('meo_noco_penalty_until');
 ```
 
 Không cần xóa `meo_journey_home_cache` vì key đó không còn được dùng.
+
+### 4. Khi Mở Hoặc Refresh Pet Page
+
+Pet Page gọi `clearNocoDBCache` trước khi load `pet` và `events`, đồng thời xóa các Cache Storage entry liên quan app/pet nếu browser hỗ trợ Cache API.
+Sau đó Pet Page mới fetch lại dữ liệu để giảm tình trạng F5 hoặc refresh trên điện thoại vẫn dính cache cũ.
 
 ## Refresh Event Hiện Tại
 

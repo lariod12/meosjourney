@@ -252,6 +252,160 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.17',
+    changes: [
+      {
+        title: 'Game coin badge corner',
+        summary: 'The Game coin badge now anchors to the card corner.',
+        details: [
+          'The coin count badge renders outside the Game card front face.',
+          'The badge now stays at the top-right corner instead of beside the icon.',
+          'The Game icon remains centered on the card.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.16',
+    changes: [
+      {
+        title: 'Game coin count badge',
+        summary: 'The Game card shows a small coin count badge without replacing the icon.',
+        details: [
+          'The Game icon remains centered on the card front face.',
+          'A small numeric coin badge appears in the top-right corner.',
+          'The badge does not change the card front layout.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.15',
+    changes: [
+      {
+        title: 'Game icon only front',
+        summary: 'The Game card front face now shows the game console icon without a coin badge.',
+        details: [
+          'The Coin badge is removed from the Game card front face.',
+          'The Game console icon stays visible and centered like other care item icons.',
+          'The missing coin warning still appears on the card back face when Game is tapped without coins.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.14',
+    changes: [
+      {
+        title: 'Game icon alignment',
+        summary: 'The Game card icon is centered consistently with other care items.',
+        details: [
+          'The Game icon now uses the same centered front-face grid as other item icons.',
+          'The Coin badge stays pinned to the top-right corner of the card.',
+          'The Game card back face still shows only the short coin message.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.13',
+    changes: [
+      {
+        title: 'Game card front icon fix',
+        summary: 'The Game card icon stays visible on the front face.',
+        details: [
+          'The front face keeps the game console icon while still showing the coin badge.',
+          'The coin badge no longer overlaps the Game icon.',
+          'The short coin warning remains on the back face only.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.12',
+    changes: [
+      {
+        title: 'Short Game coin flip text',
+        summary: 'The Game card back face now shows a shorter centered coin message.',
+        details: [
+          'The Game card front face still keeps its normal icon, label, and coin badge.',
+          'The card back face now shows only the text Cần thêm coin.',
+          'The back-face text is smaller, centered, and wraps inside the card.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.11',
+    changes: [
+      {
+        title: 'Game no-coin card flip',
+        summary: 'The Game card now flips to show the missing coin message.',
+        details: [
+          'Tapping Game without a claw coin flips the Game card to its back face.',
+          'The back face shows the missing coin message directly inside the card.',
+          'The card returns automatically when the notice timeout ends.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.10',
+    changes: [
+      {
+        title: 'Visible Game coin notice',
+        summary: 'Fixed the Game card no-coin notice so it is no longer clipped by the card button.',
+        details: [
+          'Care items now render inside an item slot that can show a notice above the card.',
+          'The Game no-coin notice remains anchored to the Game card but sits outside the button element.',
+          'This keeps the message visible inside the Care tab after tapping Game without coins.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.9',
+    changes: [
+      {
+        title: 'Game card coin notice',
+        summary: 'The missing coin notice now appears from the Game card in Care.',
+        details: [
+          'The claw machine no-coin message is anchored to the Game item instead of the Pet stage.',
+          'The notice points at the Game card so the user can see which care item needs a coin.',
+          'The message still closes automatically after a short delay.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.8',
+    changes: [
+      {
+        title: 'Fresh Pet Page reload',
+        summary: 'Pet Page now clears runtime caches before loading data.',
+        details: [
+          'Opening or refreshing the Pet Page clears the NocoDB request cache before pet data is fetched.',
+          'Supported mobile browsers also clear Cache Storage entries so old Pet Page assets/data are less likely to stick after F5 or page refresh.',
+          'Fresh pet and event data is requested after the cache clear step finishes.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.7',
+    changes: [
+      {
+        title: 'Claw coin notice',
+        summary: 'The no-coin claw machine warning now uses an in-page Pet notice.',
+        details: [
+          'Trying to open Game without a claw coin no longer triggers the browser alert.',
+          'The message appears as a black-and-white sketch notification on the Pet stage.',
+          'The notice closes automatically after a short delay.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.6',
     changes: [
       {
@@ -542,6 +696,7 @@ const PET_STATUS_ROWS = [
 
 const PET_STATUS_KEYS = ['health', 'hunger', 'sanity'];
 const PET_ITEM_CATEGORIES = ['food', 'care'];
+const PET_PAGE_BROWSER_CACHE_KEYWORDS = ['meo', 'pet', 'noco', 'vite', 'workbox'];
 const STAGE_TIME_DEBUG_STORAGE_KEY = 'meo-stage-time-debug-v1';
 const STAGE_TIME_DEBUG_AUTO_VALUE = 'auto';
 const STAGE_RAIN_DEBUG_STORAGE_KEY = 'meo-stage-rain-debug-v2';
@@ -769,7 +924,7 @@ const CLAW_MACHINE_COIN_GROUND_POSITION = {
 const CLAW_MACHINE_EVENT_CHECK_INTERVAL_MS = 60 * 1000;
 const CLAW_MACHINE_COIN_RESPAWN_DELAY_MIN_MS = 5 * 60 * 1000;
 const CLAW_MACHINE_COIN_RESPAWN_DELAY_MAX_MS = 45 * 60 * 1000;
-const CLAW_MACHINE_NO_COIN_MESSAGE = 'Cần 1 coin để chơi máy gắp thú nha.';
+const CLAW_MACHINE_NO_COIN_MESSAGE = 'Cần thêm coin';
 const STINKY_SHOWER_CARE_ITEM = {
   name: 'Shower',
   count: 1,
@@ -969,6 +1124,26 @@ const getPetItemEffect = (category, itemName = '') => (
 const isFullPetStatus = (status = {}) => (
   PET_STATUS_KEYS.every((key) => clampPetStatusValue(status[key]) === PET_BIRTHDAY_FULL_STATUS[key])
 );
+
+const clearPetPageBrowserCache = async () => {
+  clearNocoDBCache();
+
+  if (typeof window === 'undefined' || !window.caches) {
+    return;
+  }
+
+  try {
+    const cacheNames = await window.caches.keys();
+    const petCacheNames = cacheNames.filter((cacheName) => {
+      const normalizedCacheName = cacheName.toLowerCase();
+      return PET_PAGE_BROWSER_CACHE_KEYWORDS.some((keyword) => normalizedCacheName.includes(keyword));
+    });
+
+    await Promise.all(petCacheNames.map((cacheName) => window.caches.delete(cacheName)));
+  } catch (error) {
+    console.warn('Failed to clear Pet Page browser cache:', error);
+  }
+};
 
 const getPetStatusLevel = (value) => {
   if (value <= 20) return 'critical';
@@ -2224,40 +2399,49 @@ const PetItemCard = ({
   disabled = false,
   disabledReason = '',
   metaBadge = '',
+  noticeMessage = '',
   onClick
 }) => {
   const Icon = ACTIVITY_ICONS[item.shape] ?? ITEM_ICONS[item.shape] ?? LuPackage2;
   const ariaLabel = [
     showCount ? `${item.name}, quantity ${item.count}` : item.name,
+    noticeMessage,
     disabled && disabledReason ? disabledReason : ''
   ].filter(Boolean).join('. ');
 
   return (
     <button
       type="button"
-      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${metaBadge ? 'pet-item-card--with-meta' : ''} ${isCurrent ? 'pet-item-card--current' : ''} ${disabled ? 'pet-item-card--disabled' : ''}`}
+      className={`pet-item-card ${showCount ? '' : 'pet-item-card--activity'} ${metaBadge ? 'pet-item-card--with-meta' : ''} ${isCurrent ? 'pet-item-card--current' : ''} ${disabled ? 'pet-item-card--disabled' : ''} ${noticeMessage ? 'pet-item-card--notice-flipped' : ''}`}
       aria-label={ariaLabel}
       aria-disabled={disabled}
       disabled={disabled}
       onClick={onClick}
     >
-      {!showCount ? (
-        item.icon ? (
-          <IconRenderer iconName={item.icon} size={44} className="pet-item-icon" />
-        ) : showEmptyIcon ? (
-          <span className="pet-item-card__empty">&#60;&#62;</span>
+      <span className="pet-item-card__face pet-item-card__face--front">
+        {!showCount ? (
+          item.icon ? (
+            <IconRenderer iconName={item.icon} size={44} className="pet-item-icon" />
+          ) : showEmptyIcon ? (
+            <span className="pet-item-card__empty">&#60;&#62;</span>
+          ) : (
+            <Icon className="pet-item-icon" aria-hidden="true" />
+          )
         ) : (
           <Icon className="pet-item-icon" aria-hidden="true" />
-        )
-      ) : (
-        <Icon className="pet-item-icon" aria-hidden="true" />
-      )}
-      {showCount && (
-        <span className="pet-item-card__count"><span className="pet-item-card__count-x">x</span>{item.count}</span>
-      )}
-      <span className="pet-item-card__name">{item.name}</span>
+        )}
+        {showCount && (
+          <span className="pet-item-card__count"><span className="pet-item-card__count-x">x</span>{item.count}</span>
+        )}
+        <span className="pet-item-card__name">{item.name}</span>
+        {isCurrent && <span className="pet-item-card__badge">Current</span>}
+      </span>
       {metaBadge && <span className="pet-item-card__meta">{metaBadge}</span>}
-      {isCurrent && <span className="pet-item-card__badge">Current</span>}
+      {noticeMessage && (
+        <span className="pet-item-card__face pet-item-card__face--back">
+          <span className="pet-item-card__back-message">{noticeMessage}</span>
+        </span>
+      )}
     </button>
   );
 };
@@ -3059,6 +3243,7 @@ const PetPage = ({ onBack }) => {
   const petSaveQueueRef = useRef(Promise.resolve());
   const statusSaveQueueRef = useRef(Promise.resolve());
   const petPhotoSaveQueueRef = useRef(Promise.resolve());
+  const petNoticeTimerRef = useRef(null);
   const foodEffectTimeoutsRef = useRef(new Set());
   const careEffectTimeoutsRef = useRef(new Set());
   const mosquitoBiteSaveTimerRef = useRef(null);
@@ -3318,6 +3503,7 @@ const PetPage = ({ onBack }) => {
   const [selectedPetUseItem, setSelectedPetUseItem] = useState(null);
   const [isPetClawGameOpen, setIsPetClawGameOpen] = useState(false);
   const [petClawGameItem, setPetClawGameItem] = useState(null);
+  const [petNotice, setPetNotice] = useState(null);
   const [foodEffects, setFoodEffects] = useState([]);
   const [isFoodUseAnimating, setIsFoodUseAnimating] = useState(false);
   const [careEffects, setCareEffects] = useState([]);
@@ -4759,6 +4945,7 @@ useEffect(() => {
   const loadInitialData = async () => {
     try {
       setIsWeatherLoading(true);
+      await clearPetPageBrowserCache();
 
       const petPromise = fetchPet().catch((error) => {
         console.warn('Failed to fetch pet data:', error);
@@ -5473,6 +5660,10 @@ useEffect(() => {
   }, []);
 
   useEffect(() => () => {
+    if (petNoticeTimerRef.current) {
+      window.clearTimeout(petNoticeTimerRef.current);
+      petNoticeTimerRef.current = null;
+    }
     foodEffectTimeoutsRef.current.forEach((timeoutId) => {
       window.clearTimeout(timeoutId);
     });
@@ -5927,6 +6118,24 @@ useEffect(() => {
     }
   };
 
+  const showPetNotice = (message, target = {}) => {
+    if (petNoticeTimerRef.current) {
+      window.clearTimeout(petNoticeTimerRef.current);
+    }
+
+    setPetNotice({
+      id: `${Date.now()}-${Math.random()}`,
+      message,
+      targetName: String(target.name || '').trim().toLowerCase(),
+      targetCategory: target.category || ''
+    });
+
+    petNoticeTimerRef.current = window.setTimeout(() => {
+      setPetNotice(null);
+      petNoticeTimerRef.current = null;
+    }, 2800);
+  };
+
   const handlePetItemClick = (item, category) => {
     const isStinkyShowerClick = isShowerCareItem(category, item)
       && stinkyEventActiveRef.current;
@@ -5938,7 +6147,7 @@ useEffect(() => {
 
     if (isGameCareItem(category, item)) {
       if (!spendClawMachineCoinForGame()) {
-        alert(CLAW_MACHINE_NO_COIN_MESSAGE);
+        showPetNotice(CLAW_MACHINE_NO_COIN_MESSAGE, { name: item.name, category });
         return;
       }
 
@@ -7961,7 +8170,12 @@ useEffect(() => {
                     : null;
                   console.log('📊 Preview for', item.name, ':', petUsePreview);
                   const isGameCare = isGameCareItem(activeTab, item);
-                  const metaBadge = isGameCare ? `Coin x${clawMachineCoinBalance}` : '';
+                  const itemNoticeMessage = petNotice
+                    && petNotice.targetCategory === activeTab
+                    && petNotice.targetName === item.name.toLowerCase()
+                    ? petNotice.message
+                    : '';
+                  const metaBadge = isGameCare ? String(clawMachineCoinBalance) : '';
                   const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || activeIsSleeping);
                   const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping || isPetClawGameOpen);
                   const isPetItemDisabled = Boolean(petUsePreview && (
@@ -7976,28 +8190,33 @@ useEffect(() => {
                         : petUsePreview?.reason;
 
                   return (
-                    <PetItemCard
+                    <div
                       key={`${item.name}-${item.shape}-${index}`}
-                      item={item}
-                      showCount={false}
-                      showEmptyIcon={activeTab === 'activity' || activeTab === 'moods'}
-                      isCurrent={
-                        (activeTab === 'activity' && item.name === currentActivityName)
-                        || (activeTab === 'moods' && item.name === currentMoodName)
-                      }
-                      disabled={isPetItemDisabled}
-                      disabledReason={disabledReason}
-                      metaBadge={metaBadge}
-                      onClick={
-                        activeTab === 'activity'
-                          ? () => handleActivityCardClick(item)
-                          : activeTab === 'moods'
-                            ? () => handleMoodCardClick(item)
-                            : PET_ITEM_CATEGORIES.includes(activeTab)
-                              ? () => handlePetItemClick(item, activeTab)
-                              : undefined
-                      }
-                    />
+                      className={`pet-item-slot ${itemNoticeMessage ? 'pet-item-slot--with-notice' : ''}`}
+                    >
+                      <PetItemCard
+                        item={item}
+                        showCount={false}
+                        showEmptyIcon={activeTab === 'activity' || activeTab === 'moods'}
+                        isCurrent={
+                          (activeTab === 'activity' && item.name === currentActivityName)
+                          || (activeTab === 'moods' && item.name === currentMoodName)
+                        }
+                        disabled={isPetItemDisabled}
+                        disabledReason={disabledReason}
+                        metaBadge={metaBadge}
+                        noticeMessage={itemNoticeMessage}
+                        onClick={
+                          activeTab === 'activity'
+                            ? () => handleActivityCardClick(item)
+                            : activeTab === 'moods'
+                              ? () => handleMoodCardClick(item)
+                              : PET_ITEM_CATEGORIES.includes(activeTab)
+                                ? () => handlePetItemClick(item, activeTab)
+                                : undefined
+                        }
+                      />
+                    </div>
                   );
                 })}
               </div>

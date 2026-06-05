@@ -45,6 +45,72 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.17
+
+- The Game coin count badge now anchors to the top-right card corner.
+- The badge no longer appears beside the Game icon.
+- The Game icon remains centered on the card.
+
+### v1.4.16
+
+- The Game card now shows a small numeric coin count badge in the top-right corner.
+- The Game icon remains centered and visible on the card front face.
+- The coin badge no longer changes the front card layout.
+
+### v1.4.15
+
+- The Game card front face now shows only the game console icon and label.
+- The `Coin x0` badge was removed from the Game card front face.
+- The missing coin warning still appears on the Game card back face when tapped without coins.
+
+### v1.4.14
+
+- The Game card icon is centered consistently with other care item icons.
+- The Game card badge layout was adjusted before the badge was later removed from the front face.
+- The Game card back face still shows only the short coin warning.
+
+### v1.4.13
+
+- The Game card front face keeps the game console icon visible with the coin badge.
+- The coin badge no longer overlaps the Game icon.
+- The short coin warning remains on the Game card back face only.
+
+### v1.4.12
+
+- The Game card front face keeps its normal icon, label, and coin badge.
+- The Game card back face now shows only the shorter `Cần thêm coin` message.
+- The back-face text is smaller, centered, and wraps inside the card.
+
+### v1.4.11
+
+- Tapping Game without a claw coin now flips the Game card to its back face.
+- The missing coin message appears directly inside the card for better visibility.
+- The Game card returns automatically when the notice timeout ends.
+
+### v1.4.10
+
+- Fixed the Game card no-coin notice so it is no longer clipped by the card button.
+- Care items now use an item slot that can show a notice above the card.
+- The missing coin message remains anchored to the Game card in the Care tab.
+
+### v1.4.9
+
+- The missing claw machine coin notice now appears from the Game card in the Care tab.
+- The notice points at the item that needs a coin instead of floating on the Pet stage.
+- The message still closes automatically after a short delay.
+
+### v1.4.8
+
+- Pet Page now clears runtime NocoDB request cache before loading pet data.
+- Supported mobile browsers also clear related Cache Storage entries on Pet Page open or refresh.
+- NocoDB API requests now use `no-store` fetch options to reduce stale mobile browser data.
+
+### v1.4.7
+
+- Replaced the browser alert for missing claw machine coins with an in-page Pet notice.
+- The no-coin message now appears as a black-and-white sketch notification on the Pet stage.
+- The notice closes automatically after a short delay.
+
 ### v1.4.6
 
 - Added Head Pat as a required Care tab item with a hand icon and description.

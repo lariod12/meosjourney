@@ -292,9 +292,12 @@ export const nocoRequest = async (endpoint, options = {}, retries = 3) => {
       try {
         const response = await fetch(url, {
           ...options,
+          cache: options.cache ?? 'no-store',
           headers: {
             'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
             ...options.headers,
           },
         });
