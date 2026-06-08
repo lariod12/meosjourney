@@ -252,6 +252,20 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.20',
+    changes: [
+      {
+        title: 'Birthday mosquito pause',
+        summary: 'Birthday mode now stops mosquitoes from appearing.',
+        details: [
+          'Mosquito events no longer start while the birthday celebration is active.',
+          'Any active mosquito wave is cleared as soon as birthday mode turns on.',
+          'Forced debug mosquito mode also stays paused during birthday mode.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.19',
     changes: [
       {
@@ -5245,6 +5259,7 @@ useEffect(() => {
     isPetReady &&
     isPageVisible &&
     mosquitoDebugConfig.isEnabled &&
+    !isBirthdayActive &&
     !isMosquitoEventCompletedToday &&
     (isMosquitoEventForced || isMosquitoEventWindow())
   );
@@ -5276,6 +5291,7 @@ useEffect(() => {
   return undefined;
 }, [
   isMosquitoEventCompletedToday,
+  isBirthdayActive,
   isPageVisible,
   isPetReady,
   mosquitoDebugConfig.isEnabled,
@@ -5289,6 +5305,7 @@ useEffect(() => {
   if (
     !mosquitoEventActiveRef.current ||
     isMosquitoEventCompletedToday ||
+    isBirthdayActive ||
     !isPetReady ||
     !isPageVisible ||
     !mosquitoDebugConfig.isEnabled ||
@@ -5311,6 +5328,7 @@ useEffect(() => {
 }, [
   completeMosquitoEventToday,
   isMosquitoEventCompletedToday,
+  isBirthdayActive,
   isPageVisible,
   isPetReady,
   isMosquitoEventForced,

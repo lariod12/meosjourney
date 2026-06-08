@@ -45,6 +45,12 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.20
+
+- Birthday mode now stops mosquito events from starting.
+- Any visible mosquito wave is cleared when birthday mode turns on.
+- Forced debug mosquito mode stays paused while birthday mode is active.
+
 ### v1.4.19
 
 - The birthday teddy now keeps visible black pupils inside the white eyes.
