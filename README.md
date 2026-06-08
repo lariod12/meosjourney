@@ -45,6 +45,18 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.19
+
+- The birthday teddy now keeps visible black pupils inside the white eyes.
+- The teddy eye shadow no longer inherits the transparent toy text color.
+- The birthday teddy size and gift-box animation remain unchanged.
+
+### v1.4.18
+
+- The birthday teddy now appears smaller after jumping from the gift box.
+- The teddy root keeps relative positioning so the full bear remains visible.
+- The claw machine teddy preview keeps a separate compact scale.
+
 ### v1.4.17
 
 - The Game coin count badge now anchors to the top-right card corner.

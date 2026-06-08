@@ -33,32 +33,33 @@ export const PetBirthdayToy = ({ toyType, className = '', ariaHidden = true }) =
   if (normalizedToyType === DEFAULT_BIRTHDAY_GIFT_TOY) {
     return (
       <span className={classes} aria-hidden={ariaHidden}>
-        <span className="pet-birthday-toy__teddy-ear pet-birthday-toy__teddy-ear--left" />
         <span className="pet-birthday-toy__teddy-ear pet-birthday-toy__teddy-ear--right" />
-        <span className="pet-birthday-toy__teddy-body" />
-        <span className="pet-birthday-toy__teddy-arm pet-birthday-toy__teddy-arm--left">
-          <span className="pet-birthday-toy__teddy-arm-inner" />
-          <span className="pet-birthday-toy__teddy-paw" />
+        <span className="pet-birthday-toy__teddy-ear pet-birthday-toy__teddy-ear--left" />
+        <span className="pet-birthday-toy__teddy-head">
+          <span className="pet-birthday-toy__teddy-eye pet-birthday-toy__teddy-eye--right" />
+          <span className="pet-birthday-toy__teddy-eye pet-birthday-toy__teddy-eye--left" />
+          <span className="pet-birthday-toy__teddy-mouth-area">
+            <span className="pet-birthday-toy__teddy-cheek pet-birthday-toy__teddy-cheek--right" />
+            <span className="pet-birthday-toy__teddy-cheek pet-birthday-toy__teddy-cheek--left" />
+            <span className="pet-birthday-toy__teddy-nose">
+              <span className="pet-birthday-toy__teddy-nose-shine" />
+            </span>
+          </span>
         </span>
+        <span className="pet-birthday-toy__teddy-body" />
         <span className="pet-birthday-toy__teddy-arm pet-birthday-toy__teddy-arm--right">
           <span className="pet-birthday-toy__teddy-arm-inner" />
           <span className="pet-birthday-toy__teddy-paw" />
         </span>
-        <span className="pet-birthday-toy__teddy-leg pet-birthday-toy__teddy-leg--left">
-          <span className="pet-birthday-toy__teddy-foot" />
+        <span className="pet-birthday-toy__teddy-arm pet-birthday-toy__teddy-arm--left">
+          <span className="pet-birthday-toy__teddy-arm-inner" />
+          <span className="pet-birthday-toy__teddy-paw" />
         </span>
         <span className="pet-birthday-toy__teddy-leg pet-birthday-toy__teddy-leg--right">
           <span className="pet-birthday-toy__teddy-foot" />
         </span>
-        <span className="pet-birthday-toy__teddy-head" />
-        <span className="pet-birthday-toy__teddy-eye pet-birthday-toy__teddy-eye--left" />
-        <span className="pet-birthday-toy__teddy-eye pet-birthday-toy__teddy-eye--right" />
-        <span className="pet-birthday-toy__teddy-muzzle">
-          <span className="pet-birthday-toy__teddy-cheek pet-birthday-toy__teddy-cheek--left" />
-          <span className="pet-birthday-toy__teddy-cheek pet-birthday-toy__teddy-cheek--right" />
-        </span>
-        <span className="pet-birthday-toy__teddy-nose">
-          <span className="pet-birthday-toy__teddy-nose-shine" />
+        <span className="pet-birthday-toy__teddy-leg pet-birthday-toy__teddy-leg--left">
+          <span className="pet-birthday-toy__teddy-foot" />
         </span>
       </span>
     );

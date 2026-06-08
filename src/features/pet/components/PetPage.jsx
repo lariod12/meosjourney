@@ -252,6 +252,34 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.19',
+    changes: [
+      {
+        title: 'Birthday teddy eye pupils',
+        summary: 'The birthday teddy now keeps visible black pupils inside the white eyes.',
+        details: [
+          'The teddy eye inset shadow now uses an explicit black color.',
+          'The pupil no longer inherits the transparent toy text color.',
+          'The birthday teddy size and gift-box animation remain unchanged.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.18',
+    changes: [
+      {
+        title: 'Birthday teddy sizing fix',
+        summary: 'The birthday teddy now appears smaller and fully visible after jumping from the gift box.',
+        details: [
+          'The birthday teddy root now keeps its own relative positioning inside the animation button.',
+          'The teddy is scaled down for desktop and mobile Pet stages.',
+          'The claw machine teddy preview keeps a separate compact scale.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.17',
     changes: [
       {
