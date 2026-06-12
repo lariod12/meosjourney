@@ -252,6 +252,20 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.21',
+    changes: [
+      {
+        title: 'Single daily stinky event',
+        summary: 'Stinky events now only require one Shower per day.',
+        details: [
+          'The stinky event default now uses one daily trigger instead of two.',
+          'Clearing the daily stinky event with Shower no longer schedules a second evening stinky event.',
+          'Existing event data with a higher daily trigger count is normalized back to one trigger at runtime.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.20',
     changes: [
       {
@@ -579,7 +593,7 @@ const PET_PAGE_CHANGELOGS = [
         title: 'Stinky care event',
         summary: 'Thêm event bốc mùi theo lịch ngẫu nhiên từ database.',
         details: [
-          'Events table có column stinky để cấu hình 2 lần trigger ngẫu nhiên mỗi ngày.',
+          'Events table có column stinky để cấu hình một lần trigger ngẫu nhiên mỗi ngày.',
           'Khi stinky xảy ra, Sanity giảm và hiệu ứng mùi bốc lên quanh pet cho tới khi dùng Care item Shower.',
           'Debug panel vẫn có nút Stinky preview để xem nhanh hiệu ứng mà không cần chờ event.'
         ]
@@ -929,7 +943,7 @@ const PET_CLAW_GAME_REWARDS = {
 };
 const STINKY_EVENT_DEFAULTS = {
   enabled: true,
-  dailyTriggers: 2,
+  dailyTriggers: 1,
   sanityPenalty: 15,
   requiredCareItem: 'Shower',
   scheduleStartHour: 8,
@@ -1709,6 +1723,10 @@ const createStinkyEventSchedule = (date = new Date(), stinky = {}, options = {})
 };
 
 const createNextStinkyEventScheduleAfterClear = (stinkyEvent = {}, activeTrigger = {}, clearedDate = new Date()) => {
+  if (Number(stinkyEvent.dailyTriggers) < 2) {
+    return [];
+  }
+
   const activePeriod = activeTrigger.period || getStinkyPeriodFromTimestamp(activeTrigger.scheduledAt);
 
   if (activePeriod !== STINKY_EVENT_PERIODS.MORNING) {
@@ -1750,7 +1768,7 @@ const normalizeStinkyEventForRuntime = (stinky = {}, date = new Date()) => {
     ...STINKY_EVENT_DEFAULTS,
     ...stinky,
     enabled: stinky.enabled !== false,
-    dailyTriggers: Math.max(1, Math.min(4, Math.round(Number(stinky.dailyTriggers) || STINKY_EVENT_DEFAULTS.dailyTriggers))),
+    dailyTriggers: Math.max(1, Math.min(1, Math.round(Number(stinky.dailyTriggers) || STINKY_EVENT_DEFAULTS.dailyTriggers))),
     sanityPenalty: Math.max(0, Math.min(100, Math.round(Number(stinky.sanityPenalty) || STINKY_EVENT_DEFAULTS.sanityPenalty))),
     requiredCareItem: typeof stinky.requiredCareItem === 'string' && stinky.requiredCareItem.trim()
       ? stinky.requiredCareItem.trim()

@@ -62,7 +62,7 @@ const normalizeStinkyEventObject = (value = {}) => ({
   ...value,
   enabled: typeof value.enabled === 'boolean' ? value.enabled : true,
   dateKey: typeof value.dateKey === 'string' ? value.dateKey.trim() : '',
-  dailyTriggers: Number.isFinite(Number(value.dailyTriggers)) ? Number(value.dailyTriggers) : 2,
+  dailyTriggers: Number.isFinite(Number(value.dailyTriggers)) ? Math.max(1, Math.min(1, Math.round(Number(value.dailyTriggers)))) : 1,
   sanityPenalty: Number.isFinite(Number(value.sanityPenalty)) ? Number(value.sanityPenalty) : 15,
   requiredCareItem: typeof value.requiredCareItem === 'string' ? value.requiredCareItem.trim() : 'Shower',
   scheduleStartHour: Number.isFinite(Number(value.scheduleStartHour)) ? Number(value.scheduleStartHour) : 8,
@@ -79,7 +79,7 @@ const normalizeStinkyEvent = (value) => {
     return {
       enabled: true,
       dateKey: '',
-      dailyTriggers: 2,
+      dailyTriggers: 1,
       sanityPenalty: 15,
       requiredCareItem: 'Shower',
       scheduleStartHour: 8,
