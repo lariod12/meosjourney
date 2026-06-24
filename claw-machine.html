@@ -1799,8 +1799,97 @@ armJoint.move({
 
 
 
-const doOverlap = (a, b) => {
-  return b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h;
+const getClawGrabPoint = claw => ({
+  x: claw.x + claw.w / 2,
+  y: claw.y + claw.h / 2
+});
+
+const getToyCenterPoint = toy => ({
+  x: toy.x + toy.w / 2,
+  y: toy.y + toy.h / 2
+});
+
+const getPointDistance = (first, second) => Math.sqrt(
+Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2));
+
+const getToyGrabHitbox = toy => {
+  const insetX = Math.min(toy.w * 0.24, m * 3);
+  const insetY = Math.min(toy.h * 0.22, m * 3);
+
+  return {
+    x: toy.x + insetX,
+    y: toy.y + insetY,
+    w: toy.w - insetX * 2,
+    h: toy.h - insetY * 2
+  };
+};
+
+const getToySnapRadius = toy => Math.max(
+m * 20,
+Math.min(Math.max(toy.w, toy.h) * 0.85, m * 30));
+
+const getClawGripHitbox = claw => {
+  const insetX = Math.min(claw.w * 0.08, m * 2);
+  const insetTop = 0;
+  const insetBottom = 0;
+
+  return {
+    x: claw.x + insetX,
+    y: claw.y + insetTop,
+    w: claw.w - insetX * 2,
+    h: claw.h - insetTop - insetBottom
+  };
+};
+
+const getClawToyGrabCandidate = (toy, claw) => {
+  const grabPoint = getClawGrabPoint(claw);
+  const hitbox = getToyGrabHitbox(toy);
+  const toyCenter = getToyCenterPoint(toy);
+  const distanceToCenter = getPointDistance(grabPoint, toyCenter);
+  const snapRadius = getToySnapRadius(toy);
+  const isCenterInsideHitbox =
+  grabPoint.x >= hitbox.x &&
+  grabPoint.x <= hitbox.x + hitbox.w &&
+  grabPoint.y >= hitbox.y &&
+  grabPoint.y <= hitbox.y + hitbox.h;
+
+  if (isCenterInsideHitbox) {
+    return {
+      toy,
+      grabPoint,
+      score: distanceToCenter
+    };
+  }
+
+  const clawGripHitbox = getClawGripHitbox(claw);
+  const overlapArea = getOverlapArea(clawGripHitbox, hitbox);
+  const minimumGripOverlap = m * m * 24;
+  const isNearToy =
+  grabPoint.x >= toy.x - snapRadius &&
+  grabPoint.x <= toy.x + toy.w + snapRadius &&
+  grabPoint.y >= toy.y - snapRadius &&
+  grabPoint.y <= toy.y + toy.h + snapRadius &&
+  distanceToCenter <= snapRadius;
+
+  if (!isNearToy && overlapArea < minimumGripOverlap) {
+    return null;
+  }
+
+  return {
+    toy,
+    grabPoint,
+    score: distanceToCenter - Math.min(overlapArea, minimumGripOverlap * 2) / 16
+  };
+};
+
+const isClawAlignedWithToy = (toy, claw) => Boolean(getClawToyGrabCandidate(toy, claw));
+
+const snapToyToClaw = toy => {
+  if (!toy?.clawPos) return;
+
+  toy.x = clamp(toy.clawPos.x - toy.w / 2, 0, machineWidth - toy.w);
+  toy.y = clamp(toy.clawPos.y - toy.h * 0.38, 0, machineHeight - toy.h);
+  toy.setStyles();
 };
 
 const notifyPetClawGameComplete = ({ caught, toyType = null, delayMs = 0 }) => {
@@ -1857,18 +1946,23 @@ const getClosestToy = () => {
     h: 32 };
 
   const overlappedToys = elements.toys.filter(t => {
-    return doOverlap(t, claw);
+    return isClawAlignedWithToy(t, claw);
   });
 
   if (overlappedToys.length) {
-    const toy = overlappedToys.sort((a, b) => b.index - a.index)[0];
+    const grabCandidate = overlappedToys
+    .map(toy => getClawToyGrabCandidate(toy, claw))
+    .filter(Boolean)
+    .sort((a, b) => a.score - b.score || b.toy.index - a.toy.index)[0];
+    const toy = grabCandidate.toy;
+    const grabPoint = grabCandidate.grabPoint;
     toy.setTransformOrigin({
-      x: claw.x - toy.x,
-      y: claw.y - toy.y });
+      x: grabPoint.x - toy.x,
+      y: grabPoint.y - toy.y });
 
     toy.setClawPos({
-      x: claw.x,
-      y: claw.y });
+      x: grabPoint.x,
+      y: grabPoint.y });
 
     settings.targetToy = toy;
   }
@@ -1955,6 +2049,7 @@ const grabToy = () => {
     ;[vertRail, armJoint, arm].forEach(
     obj => obj.moveWith[0] = settings.targetToy);
 
+    snapToyToClaw(settings.targetToy);
     settings.targetToy.setRotateAngle();
     settings.targetToy.stopWander();
     settings.targetToy.el.classList.add('grabbed');

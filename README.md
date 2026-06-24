@@ -45,6 +45,30 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.25
+
+- The claw machine now grabs the nearest plush when the claw is close enough.
+- Nearby grabs snap the plush under the claw before lifting.
+- The nearest valid plush is preferred so clustered toys are easier to catch.
+
+### v1.4.24
+
+- The claw machine now accepts strong claw-to-toy grip overlap, not only the exact claw center point.
+- Grabs like a claw wrapped around a plush can lift the toy consistently.
+- Far edge-only claw contact still fails so inaccurate grabs do not count.
+
+### v1.4.23
+
+- Debug mode can now add a usable claw machine coin directly for Game.
+- The debug claim marks a coin as claimed so the Game care item can open without tapping the stage coin.
+- The existing Spawn claw coin action remains available for testing coin placement.
+
+### v1.4.22
+
+- The claw machine now requires the claw center to land on the plush.
+- Edge-only misaligned grabs no longer count as successful catches.
+- Centered grabs now work consistently for smaller plush toys.
+
 ### v1.4.21
 
 - Stinky events now only require one Shower per day.

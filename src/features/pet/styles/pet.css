@@ -145,7 +145,7 @@
   --pet-debug-panel-offset: 58px;
   --pet-debug-bottom-clearance: 50px;
   position: fixed;
-  z-index: 1000;
+  z-index: 2147483000;
   right: max(14px, calc((100vw - 520px) / 2 + 14px));
   top: var(--pet-debug-top);
   display: grid;
@@ -400,7 +400,6 @@
     right: 12px;
     top: 84px;
     bottom: auto;
-    z-index: 2147483000;
     justify-items: end;
     max-width: none;
   }

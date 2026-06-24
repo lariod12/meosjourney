@@ -252,6 +252,62 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.25',
+    changes: [
+      {
+        title: 'Easy snap claw catches',
+        summary: 'The claw machine now snaps nearby plush toys into the claw.',
+        details: [
+          'The claw now grabs the nearest plush when it is close enough, even without perfect alignment.',
+          'Nearby catches snap the plush under the claw before lifting so the grab feels immediate.',
+          'Clustered toys prefer the nearest valid plush instead of requiring exact center overlap.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.24',
+    changes: [
+      {
+        title: 'Reliable claw grip catches',
+        summary: 'The claw machine now lifts toys when the claw visibly wraps around them.',
+        details: [
+          'The grab check now accepts strong claw-to-toy grip overlap, not only the exact claw center point.',
+          'Claw placements like a wrapped grip around a plush now lift the toy consistently.',
+          'Far edge-only claw contact still fails so inaccurate grabs do not count.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.23',
+    changes: [
+      {
+        title: 'Debug game coin claim',
+        summary: 'Debug mode can now claim a claw machine coin directly for Game.',
+        details: [
+          'Care event preview now has a debug action that adds a usable Game coin immediately.',
+          'The debug claim marks a claw coin as claimed so the Game care item can open without tapping the stage coin.',
+          'The existing Spawn claw coin action remains available for testing coin placement on the Pet stage.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.22',
+    changes: [
+      {
+        title: 'Accurate claw machine grabs',
+        summary: 'The claw machine now requires a centered grab point on the plush.',
+        details: [
+          'The grab check now uses the claw center instead of the claw corner.',
+          'Edge-only misaligned grabs no longer count as successful catches.',
+          'Centered grabs now work consistently for smaller plush toys.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.21',
     changes: [
       {
@@ -4827,6 +4883,13 @@ const PetPage = ({ onBack }) => {
     CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins,
     Math.round(Number(clawMachineEvent?.coinBalance) || 0)
   ));
+  const clawMachineDailyCoinLimit = Math.max(
+    1,
+    Math.min(
+      CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins,
+      Math.round(Number(clawMachineEvent?.dailyCoins) || CLAW_MACHINE_EVENT_DEFAULTS.dailyCoins)
+    )
+  );
   const birthdayDisplayDate = getBirthdayDisplayDate(birthdayEvent?.date);
   const isBirthdayForced = isPetCharacterDebugEnabled && debugBirthdayMode === PET_BIRTHDAY_DEBUG_FORCE_VALUE;
   const isBirthdayToday = useMemo(
@@ -6113,6 +6176,59 @@ useEffect(() => {
       ...currentClawMachineEvent,
       activeCoinId: debugCoin.id,
       schedule: rescheduledSchedule
+    });
+  }, [isPetCharacterDebugEnabled, updateClawMachineEventRecord]);
+
+  const claimClawMachineCoinForDebug = useCallback(() => {
+    if (!isPetCharacterDebugEnabled) {
+      return;
+    }
+
+    const currentClawMachineEvent = normalizeClawMachineEventForRuntime({
+      ...(petEventsRef.current.clawmachine || {}),
+      enabled: true
+    });
+
+    if (currentClawMachineEvent.coinBalance >= currentClawMachineEvent.dailyCoins) {
+      return;
+    }
+
+    const claimedAt = formatVietnamTimestamp();
+    const visibleCoin = getVisibleClawMachineCoin(currentClawMachineEvent);
+    const debugCoin = visibleCoin
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'pending')
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'expired')
+      || currentClawMachineEvent.schedule.find((coin) => coin.status === 'used')
+      || currentClawMachineEvent.schedule[0];
+
+    if (!debugCoin) {
+      return;
+    }
+
+    const nextSchedule = currentClawMachineEvent.schedule.map((coin) => (
+      coin.id === debugCoin.id
+        ? {
+          ...coin,
+          status: 'claimed',
+          spawnedAt: coin.spawnedAt || claimedAt,
+          claimedAt,
+          usedAt: null,
+          position: coin.position || createClawMachineCoinGroundPosition(),
+          sparkleSeed: Math.max(1, Math.min(999, Math.round(Number(coin.sparkleSeed) || randomBetween(1, 999))))
+        }
+        : coin
+    ));
+    const rescheduledSchedule = rescheduleDuePendingClawMachineCoins(nextSchedule);
+
+    updateClawMachineEventRecord({
+      ...currentClawMachineEvent,
+      coinBalance: Math.min(
+        currentClawMachineEvent.dailyCoins,
+        Math.max(0, currentClawMachineEvent.coinBalance) + 1
+      ),
+      activeCoinId: null,
+      schedule: rescheduledSchedule,
+      lastClaimedAt: claimedAt
     });
   }, [isPetCharacterDebugEnabled, updateClawMachineEventRecord]);
 
@@ -7561,6 +7677,15 @@ useEffect(() => {
                     >
                       <span>Spawn claw coin</span>
                       <small>{visibleClawMachineCoin ? 'Coin visible on stage' : `Balance: ${clawMachineCoinBalance}`}</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pet-character-debug__option ${clawMachineCoinBalance > 0 ? 'pet-character-debug__option--active' : ''}`}
+                      onClick={claimClawMachineCoinForDebug}
+                      aria-pressed={clawMachineCoinBalance > 0}
+                    >
+                      <span>Claim game coin</span>
+                      <small>{clawMachineCoinBalance >= clawMachineDailyCoinLimit ? 'Coin balance full' : `Add usable coin: ${clawMachineCoinBalance}/${clawMachineDailyCoinLimit}`}</small>
                     </button>
                     </div>
                   </details>
