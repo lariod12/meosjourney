@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchHomePageGallery } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
+import LazyMediaImage from './LazyMediaImage';
 import './GalleryTab.css';
+import './LazyMediaImage.css';
 
 const getItemsPerView = (width) => {
   return 1;
@@ -20,9 +22,11 @@ const GalleryTab = ({ isActive = true }) => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
   const modalContentRef = useRef(null);
+  const tabRootRef = useRef(null);
   const galleriesRef = useRef([]);
   const optimisticGalleriesRef = useRef(new Map());
   const completedOptimisticIdsRef = useRef(new Set());
+  const [isNearViewport, setIsNearViewport] = useState(false);
 
   const revokeOptimisticGallery = (gallery) => {
     const previewUrl = gallery?.img?.[0]?.url;
@@ -51,6 +55,29 @@ const GalleryTab = ({ isActive = true }) => {
   useEffect(() => {
     galleriesRef.current = galleries;
   }, [galleries]);
+
+  useEffect(() => {
+    if (!isActive || isNearViewport) return undefined;
+
+    const element = tabRootRef.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setIsNearViewport(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        setIsNearViewport(true);
+      }
+    }, {
+      rootMargin: '300px 0px'
+    });
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [isActive, isNearViewport]);
 
   // Reset UI-only state when leaving the tab (keep loaded data)
   useEffect(() => {
@@ -108,11 +135,11 @@ const GalleryTab = ({ isActive = true }) => {
 
   // Lazy load: only fetch when tab becomes active for the first time
   useEffect(() => {
-    if (!isActive || hasLoadedOnce) return;
+    if (!isActive || !isNearViewport || hasLoadedOnce) return;
     
     setHasLoadedOnce(true);
     loadGallery();
-  }, [isActive, hasLoadedOnce]);
+  }, [isActive, isNearViewport, hasLoadedOnce]);
 
   // Refresh after camera/gallery uploads from other tabs.
   useEffect(() => {
@@ -261,7 +288,7 @@ const GalleryTab = ({ isActive = true }) => {
 
   if (loading && galleries.length === 0) {
     return (
-      <div className="gallery-content">
+      <div ref={tabRootRef} className="gallery-content">
         <div className="gallery-empty">{t('photoalbum.loading')}</div>
       </div>
     );
@@ -269,14 +296,14 @@ const GalleryTab = ({ isActive = true }) => {
 
   if (galleries.length === 0) {
     return (
-      <div className="gallery-content">
+      <div ref={tabRootRef} className="gallery-content">
         <div className="gallery-empty">{t('photoalbum.empty')}</div>
       </div>
     );
   }
 
   return (
-    <div className="gallery-content">
+    <div ref={tabRootRef} className="gallery-content">
       <div className="gallery-grid">
         {galleries.map((gallery) => {
           const images = gallery.img || [];
@@ -301,8 +328,8 @@ const GalleryTab = ({ isActive = true }) => {
               <div className="gallery-card-frame">
                 {firstImage ? (
                   <div className="gallery-card-image">
-                    <img
-                      src={firstImage.signedUrl || firstImage.url}
+                    <LazyMediaImage
+                      src={firstImage.previewUrl || firstImage.signedUrl || firstImage.url}
                       alt={gallery.desc || 'Gallery'}
                     />
                     {images.length > 1 && (
@@ -367,8 +394,10 @@ const GalleryTab = ({ isActive = true }) => {
                     onClick={() => handleImageClick(image, carouselIndex + index)}
                   >
                     <img
-                      src={image.signedUrl || image.url}
+                      src={image.fullUrl || image.signedUrl || image.url}
                       alt={`${selectedGallery.desc || 'Gallery'} ${carouselIndex + index + 1}`}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}
@@ -415,9 +444,11 @@ const GalleryTab = ({ isActive = true }) => {
                     ✕
                   </button>
                   <img
-                    src={zoomedImage.image.signedUrl || zoomedImage.image.url}
+                    src={zoomedImage.image.fullUrl || zoomedImage.image.signedUrl || zoomedImage.image.url}
                     alt={`${selectedGallery.desc || 'Gallery'} ${zoomedImage.index + 1}`}
                     className="gallery-zoom-image"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>

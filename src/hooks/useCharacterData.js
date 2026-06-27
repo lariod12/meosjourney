@@ -1,50 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchStatus, fetchProfile, fetchConfig, fetchTodayJournals, fetchQuests, fetchAchievements } from '../services';
+import {
+  fetchStatus,
+  fetchProfile,
+  fetchProfileAvatar,
+  fetchTodayJournals,
+  fetchQuests,
+  fetchAchievements
+} from '../services';
 
-const HOME_DATA_CACHE_KEY = 'meo_home_data_snapshot';
+const HOME_DATA_CACHE_KEY = 'meo_home_data_snapshot_v2';
 const HOME_DATA_CACHE_TTL = 15 * 60 * 1000;
+const HOME_AVATAR_METADATA_TIMEOUT_MS = 4000;
 
-/**
- * Preload image with reduced timeout for faster page load
- * Returns quickly if image loads, or after timeout (non-blocking)
- */
-const preloadImage = (url, timeoutMs = 5000) => {
-  if (!url) return Promise.resolve(false);
-
-  return new Promise((resolve) => {
-    let done = false;
-    let timer = null;
-    const img = new Image();
-
-    const finish = (ok) => {
-      if (done) return;
-      done = true;
-      if (timer) clearTimeout(timer);
-      resolve(ok);
-    };
-
-    // Reduced timeout from 12s to 5s for faster page load
-    timer = setTimeout(() => finish(false), timeoutMs);
-
-    img.onload = async () => {
-      try {
-        if (typeof img.decode === 'function') {
-          await img.decode();
-        }
-      } catch {
-        // Decode failed, but image loaded - still OK
-      }
-      finish(true);
-    };
-
-    img.onerror = () => finish(false);
-    img.src = url;
-
-    if (img.complete) {
-      img.onload?.();
-    }
-  });
+const logHomeDataTiming = (label, startedAt) => {
+  if (import.meta.env.MODE === 'production') return;
+  console.log(`⏱️ Home ${label} in ${Date.now() - startedAt}ms`);
 };
+
+const resolveAfter = (ms, value) => new Promise((resolve) => {
+  window.setTimeout(() => resolve(value), ms);
+});
 
 const createInitialHomeData = (defaultData) => ({
   ...defaultData,
@@ -57,7 +32,8 @@ const createInitialHomeData = (defaultData) => ({
 
 const reviveHomeData = (data) => ({
   ...data,
-  avatarLoading: false,
+  avatarUrl: null,
+  avatarLoading: true,
   status: {
     ...(data.status || {}),
     timestamp: data.status?.timestamp ? new Date(data.status.timestamp) : new Date()
@@ -81,7 +57,7 @@ const readHomeDataCache = () => {
 
 const writeHomeDataCache = (data) => {
   try {
-    const { config, ...cacheableData } = data;
+    const { config, avatarUrl, avatarLoading, ...cacheableData } = data;
     localStorage.setItem(HOME_DATA_CACHE_KEY, JSON.stringify({
       savedAt: Date.now(),
       data: cacheableData
@@ -101,8 +77,8 @@ const mergeProfileStatusData = (baseData, defaultData, profile, status) => ({
   hobbies: profile?.hobbies?.map(name => ({ name })) || baseData.hobbies || defaultData.hobbies || [],
   skills: profile?.skills?.map(name => ({ name })) || baseData.skills || defaultData.skills || [],
   social: profile?.social || baseData.social || defaultData.social || {},
-  avatarUrl: profile?.avatarUrl || baseData.avatarUrl || null,
-  avatarLoading: false,
+  avatarUrl: baseData.avatarUrl || null,
+  avatarLoading: baseData.avatarLoading ?? true,
   status: {
     doing: status?.doing || baseData.status?.doing || defaultData.status?.doing || [],
     location: status?.location || baseData.status?.location || defaultData.status?.location || [],
@@ -158,80 +134,139 @@ export const useCharacterData = (defaultData, options = {}) => {
       }
       setLoading(prev => prev || forceRefresh);
       setData(prev => {
-        if (prev?.avatarUrl || prev?.avatarLoading) return prev;
-        return { ...prev, avatarLoading: true };
+        if (prev?.avatarLoading && !forceRefresh) return prev;
+        return {
+          ...prev,
+          avatarUrl: forceRefresh ? null : prev?.avatarUrl || null,
+          avatarLoading: true
+        };
       });
 
-      // First paint only needs profile/status. Other data hydrates in the background.
-      const statusPromise = fetchStatus().catch((statusError) => {
-        console.warn('⚠️ Failed to fetch status:', statusError);
-        return null;
-      });
-
-      const profilePromise = fetchProfile({ includeAvatar: true }).catch((profileError) => {
+      const profileStartedAt = Date.now();
+      const profile = await fetchProfile({ includeAvatar: false }).catch((profileError) => {
         console.warn('⚠️ Failed to fetch profile:', profileError);
         return null;
       });
-
-      const [status, profile] = await Promise.all([
-        statusPromise,
-        profilePromise
-      ]);
+      logHomeDataTiming('profile hydrated', profileStartedAt);
 
       if (shouldUseResult()) {
-        if (profile?.avatarUrl) {
-          await preloadImage(profile.avatarUrl, 3000);
-        }
-        if (!shouldUseResult()) return;
-
         setData(prev => {
-          const nextData = mergeProfileStatusData(prev, defaultData, profile, status);
+          const nextData = mergeProfileStatusData(prev, defaultData, profile, null);
           writeHomeDataCache(nextData);
           return nextData;
         });
         setLoading(false);
         setError(null);
 
-        Promise.all([
-          fetchTodayJournals({ source: 'daily' }).catch((journalsError) => {
-            console.warn('⚠️ Failed to fetch journals:', journalsError);
-            return null;
-          }),
-          fetchConfig().catch((configError) => {
-            console.warn('⚠️ Failed to fetch config:', configError);
-            return null;
-          })
-        ])
-          .then(([journals, config]) => {
-            if (!shouldUseResult()) return;
-            setData(prev => {
-              const updated = {
-                ...prev,
-                journal: journals || [],
-                config: config || {}
-              };
-              writeHomeDataCache(updated);
-              return updated;
-            });
+        const hydrateAvatar = async () => {
+          const startedAt = Date.now();
+          const avatarPromise = profile?.id
+            ? fetchProfileAvatar(profile.id, { preferThumbnail: true })
+            : Promise.resolve(null);
+          const avatarUrl = await Promise.race([
+            avatarPromise,
+            resolveAfter(HOME_AVATAR_METADATA_TIMEOUT_MS, null)
+          ]);
+          logHomeDataTiming('avatar metadata hydrated', startedAt);
+          if (!shouldUseResult()) return;
+
+          setData(prev => {
+            const updated = {
+              ...prev,
+              avatarUrl: avatarUrl || null,
+              avatarLoading: false
+            };
+            writeHomeDataCache(updated);
+            return updated;
           });
 
-        Promise.all([fetchQuests(), fetchAchievements()])
-          .then(([quests, achievements]) => {
-            if (!shouldUseResult()) return;
-            setData(prev => {
-              const updated = {
-                ...prev,
-                quests: quests || [],
-                achievements: achievements || []
-              };
-              writeHomeDataCache(updated);
-              return updated;
+          if (!avatarUrl && profile?.id) {
+            avatarPromise.then((lateAvatarUrl) => {
+              if (!lateAvatarUrl || !shouldUseResult()) return;
+              logHomeDataTiming('avatar metadata hydrated late', startedAt);
+              setData(prev => {
+                const updated = {
+                  ...prev,
+                  avatarUrl: lateAvatarUrl,
+                  avatarLoading: false
+                };
+                writeHomeDataCache(updated);
+                return updated;
+              });
             });
-          })
-          .catch((bgError) => {
-            console.warn('⚠️ Background load failed (quests/achievements):', bgError);
+          }
+        };
+
+        const hydrateJournal = async () => {
+          const startedAt = Date.now();
+          const journals = await fetchTodayJournals({ source: 'daily' }).catch((journalsError) => {
+            console.warn('⚠️ Failed to fetch journals:', journalsError);
+            return null;
           });
-        
+          logHomeDataTiming('journal hydrated', startedAt);
+          if (!shouldUseResult()) return;
+
+          setData(prev => {
+            const updated = {
+              ...prev,
+              journal: journals || []
+            };
+            writeHomeDataCache(updated);
+            return updated;
+          });
+        };
+
+        const hydrateLists = async () => {
+          const startedAt = Date.now();
+          const [quests, achievements] = await Promise.all([
+            fetchQuests().catch((questsError) => {
+              console.warn('⚠️ Failed to fetch quests:', questsError);
+              return null;
+            }),
+            fetchAchievements().catch((achievementsError) => {
+              console.warn('⚠️ Failed to fetch achievements:', achievementsError);
+              return null;
+            })
+          ]);
+          logHomeDataTiming('quests/achievements hydrated', startedAt);
+          if (!shouldUseResult()) return;
+
+          setData(prev => {
+            const updated = {
+              ...prev,
+              quests: quests || [],
+              achievements: achievements || []
+            };
+            writeHomeDataCache(updated);
+            return updated;
+          });
+        };
+
+        const hydrateStatus = async () => {
+          const startedAt = Date.now();
+          const status = await fetchStatus().catch((statusError) => {
+            console.warn('⚠️ Failed to fetch status:', statusError);
+            return null;
+          });
+          logHomeDataTiming('status hydrated', startedAt);
+          if (!shouldUseResult()) return;
+
+          setData(prev => {
+            const nextData = mergeProfileStatusData(prev, defaultData, null, status);
+            writeHomeDataCache(nextData);
+            return nextData;
+          });
+        };
+
+        Promise.all([
+          hydrateAvatar(),
+          hydrateJournal()
+        ])
+          .then(hydrateLists)
+          .then(hydrateStatus)
+          .catch((bgError) => {
+            console.warn('⚠️ Background home hydration failed:', bgError);
+          });
       }
     } catch (err) {
       console.error('❌ Error fetching character data:', err);

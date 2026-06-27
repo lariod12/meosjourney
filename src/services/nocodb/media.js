@@ -42,6 +42,36 @@ const generateGalleryRecordTitle = (customTitle = '') => {
   return `gallery-${titlePart}${year}-${month}-${day}-${hours}${minutes}${seconds}-${randomDigits}`;
 };
 
+const getNocoImageUrl = (imageObj, options = {}) => {
+  const { preferThumbnail = false } = options;
+
+  if (!imageObj) return null;
+
+  if (import.meta.env.MODE === 'development') {
+    const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
+    if (!rawPath) return null;
+
+    const normalizedPath = rawPath.replace(/\\/g, '/');
+    const trimmedPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+    return `${NOCODB_BASE_URL}/${trimmedPath}`;
+  }
+
+  if (preferThumbnail) {
+    const thumbnails = imageObj.thumbnails || {};
+    return thumbnails.card_cover?.signedUrl
+      || thumbnails.card_cover?.url
+      || thumbnails.small?.signedUrl
+      || thumbnails.small?.url
+      || thumbnails.tiny?.signedUrl
+      || thumbnails.tiny?.url
+      || imageObj.signedUrl
+      || imageObj.url
+      || null;
+  }
+
+  return imageObj.signedUrl || imageObj.url || null;
+};
+
 /**
  * Upload a single profile gallery image to attachments_gallery and link to profile
  * Uses img_bw column and profile_id foreign key (production)
@@ -495,7 +525,7 @@ export const fetchPhotoAlbums = async () => {
       }
 
       const response = await nocoRequest(
-        `${TABLE_IDS.ATTACHMENTS_ALBUM}/records?sort=-created_time&limit=50`,
+        `${TABLE_IDS.ATTACHMENTS_ALBUM}/records?fields=Id,desc,img,created_time,CreatedAt&sort=-created_time&limit=50`,
         { method: 'GET' }
       );
 
@@ -505,42 +535,13 @@ export const fetchPhotoAlbums = async () => {
       const processedAlbums = albums.map(album => {
         if (album.img && Array.isArray(album.img)) {
           const processedImages = album.img.map(imageObj => {
-            // Handle different image URL formats
-            let imageUrl = null;
-
-            // Development mode: construct URL from path
-            // Production/Staging mode: use signedUrl directly
-            if (import.meta.env.MODE === 'development') {
-              // Debug: Log development mode URL handling (development only)
-              if (!isProductionMode()) {
-                console.log('🛠️ PhotoAlbum Development mode: resolving local path');
-              }
-              const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
-              if (rawPath) {
-                const normalizedPath = rawPath.replace(/\\/g, '/');
-                const trimmedPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
-                imageUrl = `${NOCODB_BASE_URL}/${trimmedPath}`;
-              } else {
-                imageUrl = null;
-              }
-            } else {
-              // Production/Staging mode: use signedUrl directly
-              if (!isProductionMode()) {
-                console.log('🏭 PhotoAlbum Production/Staging mode: using signedUrl');
-              }
-              imageUrl = imageObj.signedUrl || imageObj.url || null;
-            }
-
-            // Debug: Log image URL processing (development only)
-            if (!isProductionMode()) {
-              console.log('🖼️ Processing photo album image:', {
-                original: imageObj,
-                finalUrl: imageUrl
-              });
-            }
+            const imageUrl = getNocoImageUrl(imageObj);
+            const previewUrl = getNocoImageUrl(imageObj, { preferThumbnail: true });
 
             return {
               ...imageObj,
+              fullUrl: imageUrl,
+              previewUrl,
               signedUrl: imageUrl,
               url: imageUrl
             };
@@ -576,7 +577,7 @@ export const fetchHomePageGallery = async () => {
     try {
 
       const response = await nocoRequest(
-        `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?sort=-CreatedAt&limit=100`,
+        `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,desc,img_bw,CreatedAt&sort=-CreatedAt&limit=100`,
         { method: 'GET' }
       );
 
@@ -607,26 +608,13 @@ export const fetchHomePageGallery = async () => {
 
         // Process all images in the array
         const processedImages = imgBwArray.map(imageObj => {
-          let imageUrl = null;
-
-          // Development mode: construct URL from path
-          // Production/Staging mode: use signedUrl directly
-          if (import.meta.env.MODE === 'development') {
-            const rawPath = imageObj.path || imageObj.signedPath || imageObj.url || null;
-            if (rawPath) {
-              const normalizedPath = rawPath.replace(/\\/g, '/');
-              const trimmedPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
-              imageUrl = `${NOCODB_BASE_URL}/${trimmedPath}`;
-            } else {
-              imageUrl = null;
-            }
-          } else {
-            // Production/Staging mode: use signedUrl directly
-            imageUrl = imageObj.signedUrl || imageObj.url || null;
-          }
+          const imageUrl = getNocoImageUrl(imageObj);
+          const previewUrl = getNocoImageUrl(imageObj, { preferThumbnail: true });
 
           return {
             ...imageObj,
+            fullUrl: imageUrl,
+            previewUrl,
             signedUrl: imageUrl,
             url: imageUrl
           };

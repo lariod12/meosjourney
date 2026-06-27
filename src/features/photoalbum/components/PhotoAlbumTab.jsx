@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchPhotoAlbums } from '../../../services/nocodb';
 import { useLanguage } from '../../../contexts';
+import LazyMediaImage from './LazyMediaImage';
 import './PhotoAlbumTab.css';
+import './LazyMediaImage.css';
 
 const getItemsPerView = (width) => {
   return 1;
@@ -20,9 +22,11 @@ const PhotoAlbumTab = ({ isActive = true }) => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const { t, lang } = useLanguage();
   const modalContentRef = useRef(null);
+  const tabRootRef = useRef(null);
   const albumsRef = useRef([]);
   const optimisticAlbumsRef = useRef(new Map());
   const completedOptimisticIdsRef = useRef(new Set());
+  const [isNearViewport, setIsNearViewport] = useState(false);
 
   const revokeOptimisticAlbum = (album) => {
     const previewUrl = album?.img?.[0]?.url;
@@ -52,6 +56,29 @@ const PhotoAlbumTab = ({ isActive = true }) => {
   useEffect(() => {
     albumsRef.current = albums;
   }, [albums]);
+
+  useEffect(() => {
+    if (!isActive || isNearViewport) return undefined;
+
+    const element = tabRootRef.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setIsNearViewport(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        setIsNearViewport(true);
+      }
+    }, {
+      rootMargin: '300px 0px'
+    });
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [isActive, isNearViewport]);
 
   // Reset UI-only state when leaving the tab (keep loaded data)
   useEffect(() => {
@@ -163,11 +190,11 @@ const PhotoAlbumTab = ({ isActive = true }) => {
 
   // Lazy load: only fetch when tab becomes active for the first time
   useEffect(() => {
-    if (!isActive || hasLoadedOnce) return;
+    if (!isActive || !isNearViewport || hasLoadedOnce) return;
     
     setHasLoadedOnce(true);
     loadAlbums();
-  }, [isActive, hasLoadedOnce]);
+  }, [isActive, isNearViewport, hasLoadedOnce]);
 
   // Listen for photo album refresh events
   useEffect(() => {
@@ -265,7 +292,7 @@ const PhotoAlbumTab = ({ isActive = true }) => {
 
   if (loading && albums.length === 0) {
     return (
-      <div className="photoalbum-content">
+      <div ref={tabRootRef} className="photoalbum-content">
         <div className="photoalbum-empty">{t('photoalbum.loading')}</div>
       </div>
     );
@@ -273,14 +300,14 @@ const PhotoAlbumTab = ({ isActive = true }) => {
 
   if (albums.length === 0) {
     return (
-      <div className="photoalbum-content">
+      <div ref={tabRootRef} className="photoalbum-content">
         <div className="photoalbum-empty">{t('photoalbum.empty')}</div>
       </div>
     );
   }
 
   return (
-    <div className="photoalbum-content">
+    <div ref={tabRootRef} className="photoalbum-content">
       <div className="photoalbum-grid">
         {albums.map((album) => {
           const images = album.img || [];
@@ -301,8 +328,8 @@ const PhotoAlbumTab = ({ isActive = true }) => {
             >
               {firstImage ? (
                 <div className="photoalbum-card-image">
-                  <img
-                    src={firstImage.signedUrl || firstImage.url}
+                  <LazyMediaImage
+                    src={firstImage.previewUrl || firstImage.signedUrl || firstImage.url}
                     alt={album.desc || 'Album'}
                   />
                   {images.length > 1 && (
@@ -374,8 +401,10 @@ const PhotoAlbumTab = ({ isActive = true }) => {
                     onClick={() => handleImageClick(image, carouselIndex + index)}
                   >
                     <img
-                      src={image.signedUrl || image.url}
+                      src={image.fullUrl || image.signedUrl || image.url}
                       alt={`${selectedAlbum.desc || 'Album'} ${carouselIndex + index + 1}`}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}
@@ -429,9 +458,11 @@ const PhotoAlbumTab = ({ isActive = true }) => {
                     ✕
                   </button>
                   <img
-                    src={zoomedImage.image.signedUrl || zoomedImage.image.url}
+                    src={zoomedImage.image.fullUrl || zoomedImage.image.signedUrl || zoomedImage.image.url}
                     alt={`${selectedAlbum.desc || 'Album'} ${zoomedImage.index + 1}`}
                     className="photoalbum-zoom-image"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>

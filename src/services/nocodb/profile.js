@@ -54,6 +54,42 @@ const normalizeStringArray = (value) => (
 const STATUS_FIELDS_QUERY = 'fields=Id,current_activity,mood,location,UpdatedAt,CreatedAt&pageSize=1';
 const PET_PASSWORD_CONFIG_FIELDS_QUERY = 'fields=Id,pw_daily_update&pageSize=1';
 
+const getAttachmentUrl = (file) => file?.signedUrl || file?.url || null;
+
+const extractAvatarUrlFromAttachment = (attachment, options = {}) => {
+  const { preferThumbnail = false } = options;
+
+  if (!attachment?.img_bw) {
+    return null;
+  }
+
+  let imgBwArray = attachment.img_bw;
+  if (typeof imgBwArray === 'string') {
+    imgBwArray = JSON.parse(imgBwArray);
+  }
+
+  if (!Array.isArray(imgBwArray) || imgBwArray.length === 0) {
+    return null;
+  }
+
+  const imgBw = imgBwArray[0];
+  const thumbnails = imgBw.thumbnails || {};
+
+  if (import.meta.env.MODE === 'development') {
+    const avatarPath = imgBw.signedPath || imgBw.path || null;
+    return avatarPath ? `${NOCODB_BASE_URL}/${avatarPath}` : null;
+  }
+
+  if (preferThumbnail) {
+    return getAttachmentUrl(thumbnails.card_cover)
+      || getAttachmentUrl(thumbnails.small)
+      || getAttachmentUrl(thumbnails.tiny)
+      || getAttachmentUrl(imgBw);
+  }
+
+  return getAttachmentUrl(imgBw);
+};
+
 export const fetchStatus = async () => {
   const cacheKey = 'status';
 
@@ -145,6 +181,47 @@ export const fetchPetPagePasswordConfig = async () => {
   });
 };
 
+export const fetchProfileAvatar = async (profileId, options = {}) => {
+  const { preferThumbnail = false } = options;
+  const cacheKey = `profile_avatar_${profileId || 'default'}_${preferThumbnail ? 'thumb' : 'full'}`;
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      if (USE_STATIC_DATA) {
+        return null;
+      }
+
+      let attachmentsData;
+
+      if (import.meta.env.MODE === 'development') {
+        attachmentsData = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
+          { method: 'GET' }
+        );
+      } else if (import.meta.env.MODE === 'staging') {
+        attachmentsData = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw&where=(title,eq,profile)&limit=1`,
+          { method: 'GET' }
+        );
+      } else {
+        attachmentsData = await nocoRequest(
+          `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileId})`,
+          { method: 'GET' }
+        );
+      }
+
+      if (!attachmentsData.list || attachmentsData.list.length === 0) {
+        return null;
+      }
+
+      return extractAvatarUrlFromAttachment(attachmentsData.list[0], { preferThumbnail });
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch avatar image:', error);
+      return null;
+    }
+  });
+};
+
 /**
  * Fetch profile data from NocoDB
  */
@@ -213,110 +290,7 @@ export const fetchProfile = async (options = {}) => {
       // Step 2: Fetch avatar image from attachments_gallery (if linked)
       let avatarUrl = null;
       if (includeAvatar) {
-        try {
-          // Debug: Log avatar fetching (development only)
-          if (!isProductionMode()) {
-            console.log('🔍 Fetching avatar for profile ID:', profileRecord.Id);
-            console.log('🔍 Using ATTACHMENTS_GALLERY table ID:', TABLE_IDS.ATTACHMENTS_GALLERY);
-          }
-
-          let attachmentsData;
-
-          // Development mode: different schema (no profile_id field, use signedPath)
-          if (import.meta.env.MODE === 'development') {
-            // Debug: Log development mode query (development only)
-            if (!isProductionMode()) {
-              console.log('🛠️ Development mode: using simplified query');
-            }
-            attachmentsData = await nocoRequest(
-              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?limit=1`,
-              { method: 'GET' }
-            );
-          } else if (import.meta.env.MODE === 'staging') {
-            // Staging uses production-style signed URLs, but its profile avatar
-            // attachment is identified by title instead of profile_id.
-            attachmentsData = await nocoRequest(
-              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw&where=(title,eq,profile)&limit=1`,
-              { method: 'GET' }
-            );
-          } else {
-            // Production mode: original query with profile_id filtering
-            attachmentsData = await nocoRequest(
-              `${TABLE_IDS.ATTACHMENTS_GALLERY}/records?fields=Id,title,img_bw,profile_id&where=(profile_id,eq,${profileRecord.Id})`,
-              { method: 'GET' }
-            );
-          }
-
-          // Debug: Log attachments found (development only)
-          if (!isProductionMode()) {
-            console.log('📎 Avatar attachments found:', attachmentsData.list?.length || 0);
-          }
-
-          if (attachmentsData.list && attachmentsData.list.length > 0) {
-            const attachment = attachmentsData.list[0];
-            // Debug: Log attachment processing (development only)
-            if (!isProductionMode()) {
-              console.log('🖼️ Processing attachment:', attachment.Id);
-            }
-
-            if (attachment.img_bw) {
-              // Parse img_bw if it's a string (NocoDB returns it as JSON string)
-              let imgBwArray = attachment.img_bw;
-              if (typeof imgBwArray === 'string') {
-                imgBwArray = JSON.parse(imgBwArray);
-              }
-
-              // Get first image from array
-              if (Array.isArray(imgBwArray) && imgBwArray.length > 0) {
-                const imgBw = imgBwArray[0];
-
-                // Development mode: use signedPath, Production/Staging mode: use signedUrl
-                if (import.meta.env.MODE === 'development') {
-                  // Debug: Log development mode URL handling (development only)
-                  if (!isProductionMode()) {
-                    console.log('🛠️ Development mode: using signedPath');
-                  }
-                  avatarUrl = imgBw.signedPath || imgBw.path || null;
-                  // Construct full URL for signedPath
-                  if (avatarUrl) {
-                    avatarUrl = `${NOCODB_BASE_URL}/${avatarUrl}`;
-                  }
-                } else {
-                  // Debug: Log production mode URL handling (development only)
-                  if (!isProductionMode()) {
-                    console.log('🏭 Production mode: using signedUrl');
-                  }
-                  avatarUrl = imgBw.signedUrl || imgBw.url || null;
-                }
-
-                // Debug: Log URL extraction result (development only)
-                if (!isProductionMode()) {
-                  console.log('✅ Avatar URL extracted:', avatarUrl ? 'SUCCESS' : 'FAILED');
-                  if (avatarUrl) {
-                    console.log('🔗 Final avatar URL:', avatarUrl);
-                  }
-                }
-              } else {
-                // Debug: Log empty array (development only)
-                if (!isProductionMode()) {
-                  console.log('❌ No images in img_bw array');
-                }
-              }
-            } else {
-              // Debug: Log missing field (development only)
-              if (!isProductionMode()) {
-                console.log('❌ No img_bw field in attachment');
-              }
-            }
-          } else {
-            // Debug: Log no attachments (development only)
-            if (!isProductionMode()) {
-              console.log('❌ No attachments found for profile');
-            }
-          }
-        } catch (avatarError) {
-          console.warn('⚠️ Failed to fetch avatar image:', avatarError);
-        }
+        avatarUrl = await fetchProfileAvatar(profileRecord.Id);
       }
 
       // Parse JSON fields

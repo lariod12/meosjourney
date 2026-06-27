@@ -11,13 +11,22 @@ const Avatar = () => {
   const [avatarSrc, setAvatarSrc] = useState(data.avatarUrl || null);
   const [isFlipped, setIsFlipped] = useState(false);
   const imgRef = useRef(null);
+  const avatarLoadStartedAtRef = useRef(null);
   const showLoading = data.avatarLoading || (avatarSrc && !imageLoaded && !hasError);
   const showPlaceholder = !showLoading && (!avatarSrc || hasError);
+
+  const logAvatarTiming = (label) => {
+    if (import.meta.env.MODE === 'production') return;
+    const startedAt = avatarLoadStartedAtRef.current;
+    const duration = startedAt ? `${Date.now() - startedAt}ms` : 'unknown';
+    console.log(`⏱️ Home avatar ${label} in ${duration}`);
+  };
 
   useEffect(() => {
     setAvatarSrc(data.avatarUrl || null);
     setImageLoaded(false);
     setHasError(false);
+    avatarLoadStartedAtRef.current = data.avatarUrl ? Date.now() : null;
   }, [data.avatarUrl]);
 
   // If the image is already in cache (preloaded), onLoad may not fire reliably.
@@ -28,6 +37,7 @@ const Avatar = () => {
     if (!el) return;
     if (el.complete && el.naturalWidth > 0) {
       setImageLoaded(true);
+      logAvatarTiming('loaded from cache');
     }
   }, [avatarSrc, hasError]);
 
@@ -73,10 +83,14 @@ const Avatar = () => {
                 fetchPriority="high"
                 width="300"
                 height="300"
-                onLoad={() => setImageLoaded(true)}
+                onLoad={() => {
+                  setImageLoaded(true);
+                  logAvatarTiming('loaded');
+                }}
                 onError={() => {
                   setHasError(true);
                   setImageLoaded(false);
+                  logAvatarTiming('failed');
                 }}
                 style={{ opacity: imageLoaded ? 1 : 0 }}
               />

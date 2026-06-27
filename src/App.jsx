@@ -128,7 +128,7 @@ const AdminPageWrapper = () => {
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { data, loading, refetch } = useCharacterData(characterData);
+  const { data, refetch } = useCharacterData(characterData);
 
   // Listen for refresh events from UserPage
   useEffect(() => {
@@ -144,9 +144,7 @@ const HomePage = () => {
     return () => window.removeEventListener('meo:refresh', handleRefresh);
   }, [refetch]);
 
-  return loading ? (
-    <LoadingDialog/>
-  ) : (
+  return (
     <CharacterProvider data={data}>
       <div className="bg-pattern"></div>
       <div className="container">
