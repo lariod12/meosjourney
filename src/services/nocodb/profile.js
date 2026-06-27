@@ -51,6 +51,9 @@ const normalizeStringArray = (value) => (
     .filter(Boolean)
 );
 
+const STATUS_FIELDS_QUERY = 'fields=Id,current_activity,mood,location,UpdatedAt,CreatedAt&pageSize=1';
+const PET_PASSWORD_CONFIG_FIELDS_QUERY = 'fields=Id,pw_daily_update&pageSize=1';
+
 export const fetchStatus = async () => {
   const cacheKey = 'status';
 
@@ -73,7 +76,7 @@ export const fetchStatus = async () => {
       }
 
       // Use API in production
-      const data = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
+      const data = await nocoRequest(`${TABLE_IDS.STATUS}/records?${STATUS_FIELDS_QUERY}`, {
         method: 'GET',
       });
 
@@ -100,6 +103,43 @@ export const fetchStatus = async () => {
       };
     } catch (error) {
       console.error('❌ Error fetching status from NocoDB:', error);
+      throw error;
+    }
+  });
+};
+
+export const fetchPetPagePasswordConfig = async () => {
+  const cacheKey = 'pet_password_config';
+
+  return deduplicateRequest(cacheKey, async () => {
+    try {
+      if (USE_STATIC_DATA) {
+        const staticData = await fetchStaticData();
+        const configRecord = staticData.config.fields;
+
+        return {
+          id: staticData.config.id,
+          pwDailyUpdate: configRecord.pw_daily_update || ''
+        };
+      }
+
+      const data = await nocoRequest(`${TABLE_IDS.CONFIG}/records?${PET_PASSWORD_CONFIG_FIELDS_QUERY}`, {
+        method: 'GET',
+      });
+
+      if (!data.list || data.list.length === 0) {
+        console.warn('⚠️ No pet password config record found in NocoDB');
+        return null;
+      }
+
+      const configRecord = data.list[0];
+
+      return {
+        id: configRecord.Id,
+        pwDailyUpdate: configRecord.pw_daily_update || ''
+      };
+    } catch (error) {
+      console.error('❌ Error fetching pet password config from NocoDB:', error);
       throw error;
     }
   });

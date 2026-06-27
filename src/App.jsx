@@ -7,7 +7,7 @@ import { LoadingDialog } from './components/common';
 import PasswordModal from './components/PasswordModal/PasswordModal';
 import ConfirmModal from './components/ConfirmModal/ConfirmModal';
 import { usePasswordGate } from './features/auth/hooks/usePasswordGate';
-import { fetchConfig } from './services/nocodb';
+import { fetchPetPagePasswordConfig } from './services/nocodb';
 import CharacterSheet from './pages/HomePage';
 import './styles/global.css';
 
@@ -39,8 +39,14 @@ const PetPageWrapper = () => {
 
   useEffect(() => {
     const loadConfig = async () => {
+      const startedAt = Date.now();
+
       try {
-        const cfg = await fetchConfig();
+        const cfg = await fetchPetPagePasswordConfig();
+        if (import.meta.env.MODE !== 'production') {
+          console.log(`⏱️ Pet password config loaded in ${Date.now() - startedAt}ms`);
+        }
+
         if (cfg?.pwDailyUpdate) {
           setCorrectPassword(cfg.pwDailyUpdate);
           return;

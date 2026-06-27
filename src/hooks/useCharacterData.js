@@ -116,21 +116,40 @@ const mergeProfileStatusData = (baseData, defaultData, profile, status) => ({
  * Fetches data from NocoDB (primary data source)
  * 
  * @param {Object} defaultData - Default character data
+ * @param {Object} options - Optional behavior flags
+ * @param {boolean} options.enabled - Whether to start fetching immediately
  * @returns {Object} { data, loading, error, refetch }
  */
-export const useCharacterData = (defaultData) => {
+export const useCharacterData = (defaultData, options = {}) => {
+  const { enabled = true } = options;
   const [initialCache] = useState(() => readHomeDataCache());
   const [data, setData] = useState(() => initialCache || createInitialHomeData(defaultData));
-  const [loading, setLoading] = useState(() => !initialCache);
+  const [loading, setLoading] = useState(() => enabled && !initialCache);
   const [error, setError] = useState(null);
   const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
+  const requestSeqRef = useRef(0);
+  const enabledRef = useRef(enabled);
+
+  enabledRef.current = enabled;
 
   const fetchData = useCallback(async (forceRefresh = false) => {
+    if (!enabled) {
+      return;
+    }
+
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) {
       return;
     }
+
+    const requestId = requestSeqRef.current + 1;
+    requestSeqRef.current = requestId;
+    const shouldUseResult = () => (
+      mountedRef.current
+      && enabledRef.current
+      && requestSeqRef.current === requestId
+    );
 
     try {
       fetchingRef.current = true;
@@ -159,11 +178,11 @@ export const useCharacterData = (defaultData) => {
         profilePromise
       ]);
 
-      if (mountedRef.current) {
+      if (shouldUseResult()) {
         if (profile?.avatarUrl) {
           await preloadImage(profile.avatarUrl, 3000);
         }
-        if (!mountedRef.current) return;
+        if (!shouldUseResult()) return;
 
         setData(prev => {
           const nextData = mergeProfileStatusData(prev, defaultData, profile, status);
@@ -184,7 +203,7 @@ export const useCharacterData = (defaultData) => {
           })
         ])
           .then(([journals, config]) => {
-            if (!mountedRef.current) return;
+            if (!shouldUseResult()) return;
             setData(prev => {
               const updated = {
                 ...prev,
@@ -198,7 +217,7 @@ export const useCharacterData = (defaultData) => {
 
         Promise.all([fetchQuests(), fetchAchievements()])
           .then(([quests, achievements]) => {
-            if (!mountedRef.current) return;
+            if (!shouldUseResult()) return;
             setData(prev => {
               const updated = {
                 ...prev,
@@ -216,25 +235,33 @@ export const useCharacterData = (defaultData) => {
       }
     } catch (err) {
       console.error('❌ Error fetching character data:', err);
-      if (mountedRef.current) {
+      if (shouldUseResult()) {
         setError(err);
         setLoading(false);
         setData(prev => prev || createInitialHomeData(defaultData));
       }
     } finally {
-      fetchingRef.current = false;
+      if (requestSeqRef.current === requestId) {
+        fetchingRef.current = false;
+      }
     }
-  }, [defaultData]);
+  }, [defaultData, enabled]);
 
   // Initial fetch on mount
   useEffect(() => {
     mountedRef.current = true;
-    fetchData();
+    if (enabled) {
+      fetchData();
+    } else {
+      requestSeqRef.current += 1;
+      fetchingRef.current = false;
+      setLoading(false);
+    }
 
     return () => {
       mountedRef.current = false;
     };
-  }, [fetchData]);
+  }, [enabled, fetchData]);
 
   return {
     data,

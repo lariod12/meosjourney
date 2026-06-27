@@ -252,6 +252,20 @@ const TABS = [
 
 const PET_PAGE_CHANGELOGS = [
   {
+    version: 'v1.4.26',
+    changes: [
+      {
+        title: 'Faster Pet Page entry',
+        summary: 'Pet Page now opens after the critical pet data is ready.',
+        details: [
+          'The loading screen now waits only for pet inventory/status and event data before showing the stage.',
+          'Activity, mood, location, and weather continue loading in the background after the pet appears.',
+          'Pet password and status requests now fetch only the fields needed for faster staging loads.'
+        ]
+      }
+    ]
+  },
+  {
     version: 'v1.4.25',
     changes: [
       {
@@ -1255,6 +1269,11 @@ const clearPetPageBrowserCache = async () => {
   } catch (error) {
     console.warn('Failed to clear Pet Page browser cache:', error);
   }
+};
+
+const logPetLoadTiming = (label, startedAt) => {
+  if (IS_PRODUCTION_MODE) return;
+  console.log(`⏱️ PetPage ${label} in ${Date.now() - startedAt}ms`);
 };
 
 const getPetStatusLevel = (value) => {
@@ -2427,7 +2446,6 @@ const normalizePetInventoryItems = (items, fallbackItems = []) => {
       const icon = typeof item.icon === 'string' ? item.icon.trim() : '';
       const desc = typeof item.desc === 'string' ? item.desc.trim() : '';
       const shape = item.shape || DEFAULT_PET_SHAPES[name.toLowerCase()] || 'box';
-      console.log('🔧 Normalizing:', name, '→ shape:', shape, '(from item.shape:', item.shape, ', DEFAULT:', DEFAULT_PET_SHAPES[name.toLowerCase()], ')');
       return name ? {
         name,
         icon,
@@ -3355,9 +3373,11 @@ const PetCameraSaveModal = ({
 
 const PetPage = ({ onBack }) => {
   const navigate = useNavigate();
-  const { data: characterDataState, loading: characterLoading } = useCharacterData(characterData);
+  const [isPetReady, setIsPetReady] = useState(false);
+  const { data: characterDataState } = useCharacterData(characterData, { enabled: isPetReady });
   const petSaveQueueRef = useRef(Promise.resolve());
   const statusSaveQueueRef = useRef(Promise.resolve());
+  const localStatusMutationVersionRef = useRef(0);
   const petPhotoSaveQueueRef = useRef(Promise.resolve());
   const petNoticeTimerRef = useRef(null);
   const foodEffectTimeoutsRef = useRef(new Set());
@@ -3409,7 +3429,6 @@ const PetPage = ({ onBack }) => {
   const isSavingLocation = false;
   const [isSleeping, setIsSleeping] = useState(false);
   const [isAwakening, setIsAwakening] = useState(false);
-  const [isPetReady, setIsPetReady] = useState(false);
   const sleepTimerRef = useRef(null);
   const entryWaveStartedRef = useRef(false);
   const [petEntryWaveActive, setPetEntryWaveActive] = useState(false);
@@ -5065,11 +5084,110 @@ useEffect(() => {
 
 // Load initial data from NocoDB
 useEffect(() => {
+  let isMounted = true;
+  let readyTimeoutId = null;
+
+  const hydrateWeather = async () => {
+    const startedAt = Date.now();
+
+    try {
+      const weatherData = await getCurrentWeatherWithRain();
+      if (!isMounted) return;
+
+      if (weatherData) {
+        setRealTemperature({
+          value: Math.round(weatherData.temperature),
+          fill: calculateThermometerFill(weatherData.temperature),
+          unit: weatherData.unit,
+          location: weatherData.location
+        });
+        setWeatherRainVariant(weatherData.rainVariant);
+        setTemperatureError(null);
+      } else {
+        setWeatherRainVariant(null);
+        setTemperatureError('Weather unavailable');
+      }
+    } catch (error) {
+      console.warn('Failed to fetch real weather, using fallback:', error);
+      if (!isMounted) return;
+
+      setWeatherRainVariant(null);
+      setTemperatureError('Weather unavailable');
+    } finally {
+      if (isMounted) {
+        setIsWeatherLoading(false);
+      }
+      logPetLoadTiming('weather hydrated', startedAt);
+    }
+  };
+
+  const hydrateStatus = async () => {
+    const startedAt = Date.now();
+    const hydrationVersion = localStatusMutationVersionRef.current;
+    const canApplyHydratedStatus = () => (
+      isMounted
+      && localStatusMutationVersionRef.current === hydrationVersion
+    );
+
+    try {
+      const statusData = await fetchStatus();
+      if (!statusData || !canApplyHydratedStatus()) return;
+
+      if (statusData.doing && Array.isArray(statusData.doing)) {
+        setActivityItems(statusData.doing);
+        if (statusData.doing.length > 0) {
+          const currentActivity = statusData.doing[0].name || '';
+          setCurrentActivityName(currentActivity);
+
+          if (currentActivity.toLowerCase().includes('ngủ')) {
+            const now = new Date();
+            const hour = now.getHours();
+
+            if (hour >= 22 || hour < 5) {
+              setIsSleeping(true);
+            } else if (hour >= 5 && hour < 22) {
+              setIsSleeping(true);
+              setIsAwakening(true);
+            }
+          }
+        }
+      }
+
+      if (statusData.mood && Array.isArray(statusData.mood)) {
+        setMoodItems(statusData.mood);
+        if (statusData.mood.length > 0) {
+          setCurrentMoodName(statusData.mood[0].name || '');
+        }
+      }
+
+      if (statusData.location && Array.isArray(statusData.location)) {
+        if (statusData.location.length > 0) {
+          setCurrentLocationName(statusData.location[0]);
+        }
+        setLocationHistory(statusData.location);
+      }
+
+      if (statusData.biologicalClock) {
+        setBiologicalClock(prev => ({
+          ...prev,
+          ...statusData.biologicalClock
+        }));
+      }
+    } catch (error) {
+      console.warn('Failed to fetch status data:', error);
+    } finally {
+      logPetLoadTiming('status hydrated', startedAt);
+    }
+  };
+
   const loadInitialData = async () => {
+    const startedAt = Date.now();
+
     try {
       setIsWeatherLoading(true);
       await clearPetPageBrowserCache();
 
+      const criticalStartedAt = Date.now();
       const petPromise = fetchPet().catch((error) => {
         console.warn('Failed to fetch pet data:', error);
         return null;
@@ -5078,16 +5196,11 @@ useEffect(() => {
         console.warn('Failed to fetch pet events:', error);
         return null;
       });
-      const weatherPromise = getCurrentWeatherWithRain().catch((error) => {
-        console.warn('Failed to fetch real weather, using fallback:', error);
-        return null;
-      });
-      const statusPromise = fetchStatus().catch((error) => {
-        console.warn('Failed to fetch status data:', error);
-        return null;
-      });
 
       const [petData, loadedPetEvents] = await Promise.all([petPromise, petEventsPromise]);
+      logPetLoadTiming('critical pet/events loaded', criticalStartedAt);
+      if (!isMounted) return;
+
       const normalizedPetEvents = loadedPetEvents && typeof loadedPetEvents === 'object'
         ? loadedPetEvents
         : {};
@@ -5161,81 +5274,16 @@ useEffect(() => {
         }
       }
 
-      // Fetch real weather from Open-Meteo API before showing the pet stage.
-      const weatherData = await weatherPromise;
-      if (weatherData) {
-        setRealTemperature({
-          value: Math.round(weatherData.temperature),
-          fill: calculateThermometerFill(weatherData.temperature),
-          unit: weatherData.unit,
-          location: weatherData.location
-        });
-        setWeatherRainVariant(weatherData.rainVariant);
-        setTemperatureError(null);
-      } else {
-        setWeatherRainVariant(null);
-        setTemperatureError('Weather unavailable');
-      }
-      setIsWeatherLoading(false);
-
-      // Fetch status data (activities, moods, location)
-      const statusData = await statusPromise;
-      if (statusData) {
-        // Update activities
-        if (statusData.doing && Array.isArray(statusData.doing)) {
-          setActivityItems(statusData.doing);
-          if (statusData.doing.length > 0) {
-            const currentActivity = statusData.doing[0].name || '';
-            setCurrentActivityName(currentActivity);
-
-            // Check if current activity is sleep-related
-            if (currentActivity.toLowerCase().includes('ngủ')) {
-              const now = new Date();
-              const hour = now.getHours();
-
-              // If it's sleep time (22:00-5:00), set sleeping state
-              if (hour >= 22 || hour < 5) {
-                setIsSleeping(true);
-              } else if (hour >= 5 && hour < 22) {
-                // If it's wake time but activity is still sleep, show awakening
-                setIsSleeping(true);
-                setIsAwakening(true);
-              }
-            }
-          }
-        }
-
-        // Update moods
-        if (statusData.mood && Array.isArray(statusData.mood)) {
-          setMoodItems(statusData.mood);
-          if (statusData.mood.length > 0) {
-            setCurrentMoodName(statusData.mood[0].name || '');
-          }
-        }
-
-        // Update location
-        if (statusData.location && Array.isArray(statusData.location)) {
-          if (statusData.location.length > 0) {
-            setCurrentLocationName(statusData.location[0]);
-          }
-          setLocationHistory(statusData.location);
-        }
-
-        // Update biological clock
-        if (statusData.biologicalClock) {
-          setBiologicalClock(prev => ({
-            ...prev,
-            ...statusData.biologicalClock
-          }));
-        }
-      }
-
       // Mark data as loaded
       setIsDataLoaded(true);
 
       // Wait a bit for state to settle, then show pet
-      setTimeout(() => {
+      readyTimeoutId = window.setTimeout(() => {
+        if (!isMounted) return;
         setIsPetReady(true);
+        logPetLoadTiming('ready', startedAt);
+        hydrateStatus();
+        hydrateWeather();
       }, 100);
     } catch (error) {
       console.error('❌ Error loading pet page data:', error);
@@ -5248,6 +5296,13 @@ useEffect(() => {
   };
 
   loadInitialData();
+
+  return () => {
+    isMounted = false;
+    if (readyTimeoutId) {
+      window.clearTimeout(readyTimeoutId);
+    }
+  };
 }, []);
 
 // Refresh real weather every 3 minutes
@@ -6589,6 +6644,7 @@ useEffect(() => {
 
   const enqueueStatusSave = (statusData, options = {}) => {
     const { changes = [], label = 'status' } = options;
+    localStatusMutationVersionRef.current += 1;
 
     statusSaveQueueRef.current = statusSaveQueueRef.current
       .catch(() => {})
@@ -8353,11 +8409,9 @@ useEffect(() => {
                   </>
                 )}
                 {items.map((item, index) => {
-                  console.log('🔍 Item:', item.name, 'shape:', item.shape);
                   const petUsePreview = PET_ITEM_CATEGORIES.includes(activeTab)
                     ? getPetItemUsePreview(activeTab, petStatus, item.shape, item.name)
                     : null;
-                  console.log('📊 Preview for', item.name, ':', petUsePreview);
                   const isGameCare = isGameCareItem(activeTab, item);
                   const itemNoticeMessage = petNotice
                     && petNotice.targetCategory === activeTab
