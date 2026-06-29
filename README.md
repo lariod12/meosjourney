@@ -45,6 +45,22 @@ NocoDB is the primary data source. `src/data/characterData.js` is fallback/defau
 
 Agents must update this section whenever Pet Page behavior, UI, data flow, or user-visible content changes. Keep the newest version first, add changes under the matching version, bump `PET_PAGE_CHANGELOGS` in `src/features/pet/components/PetPage.jsx`, and always use the `vMAJOR.MINOR.PATCH` format, for example `v1.0.0`, `v1.0.1`, or `v1.1.0`. Do not use shortened versions such as `v1.0`. The Pet Page tab is named `Changelogs`: each version must be collapsed by default, show only the version number first, and expand to reveal its changes.
 
+### v1.4.28
+
+- Pet Page now saves mood and activity snapshots without waiting for a status refetch first.
+- Rapid repeated mood/activity updates keep only the latest pending snapshot instead of queueing every click.
+- Save Only keeps the current mood/activity at the front of the saved list.
+- Pet Page falls back to the safer fetch-and-merge save path if status has not hydrated yet.
+- The done popup now means the status PATCH succeeded while journal history saves in the background.
+
+### v1.4.27
+
+- Pet Page now shows a visible update popup while activity and mood saves are processing.
+- The popup changes to done only after the API save finishes.
+- The popup stays sticky over the item grid while the grid is scrolled.
+- Activity and mood icon updates use the same completion popup.
+- The popup helps users know when it is safe to leave after updating status.
+
 ### v1.4.26
 
 - Pet Page now opens after critical pet and event data is ready.

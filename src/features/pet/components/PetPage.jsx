@@ -27,6 +27,7 @@ import {
   savePet,
   savePetEvents,
   saveStatus,
+  saveStatusSnapshot,
   savePhotoAlbum,
   uploadProfileGalleryImages
 } from '../../../services';
@@ -250,7 +251,81 @@ const TABS = [
   { key: 'changelogs', label: 'Changelogs', Icon: LuCheck }
 ];
 
+const STATUS_SAVE_NOTICE_MESSAGES = {
+  activity: {
+    pending: 'Đang update activity...',
+    done: 'Đã update activity xong.',
+    failed: 'Update activity lỗi, thử lại nha.'
+  },
+  'activity icon': {
+    pending: 'Đang update activity...',
+    done: 'Đã update activity xong.',
+    failed: 'Update activity lỗi, thử lại nha.'
+  },
+  mood: {
+    pending: 'Đang update mood...',
+    done: 'Đã update mood xong.',
+    failed: 'Update mood lỗi, thử lại nha.'
+  },
+  'mood icon': {
+    pending: 'Đang update mood...',
+    done: 'Đã update mood xong.',
+    failed: 'Update mood lỗi, thử lại nha.'
+  }
+};
+
+const getStatusSaveNoticeMessage = (label, statusData, status) => {
+  const normalizedLabel = String(label || '').trim().toLowerCase();
+  const message = STATUS_SAVE_NOTICE_MESSAGES[normalizedLabel]?.[status] || '';
+
+  if (!message) {
+    return '';
+  }
+
+  if (normalizedLabel.includes('activity')) {
+    return statusData?.doing?.name ? message : '';
+  }
+
+  if (normalizedLabel.includes('mood')) {
+    return statusData?.mood?.name ? message : '';
+  }
+
+  return '';
+};
+
 const PET_PAGE_CHANGELOGS = [
+  {
+    version: 'v1.4.28',
+    changes: [
+      {
+        title: 'Faster mood and activity saves',
+        summary: 'Pet Page now saves mood and activity snapshots without waiting for a status refetch first.',
+        details: [
+          'Mood and activity updates now PATCH the full hydrated list directly after the UI changes.',
+          'Rapid repeated updates keep only the latest pending snapshot so the save notice no longer gets stuck behind old clicks.',
+          'Save Only keeps the current item at the front of the saved list instead of making the new item current.',
+          'If status has not hydrated yet, Pet Page falls back to the safer fetch-and-merge save path.',
+          'The done notice now means the status PATCH succeeded; journal history continues saving in the background.'
+        ]
+      }
+    ]
+  },
+  {
+    version: 'v1.4.27',
+    changes: [
+      {
+        title: 'Activity and mood save notice',
+        summary: 'Pet Page now confirms activity and mood updates after the API save finishes.',
+        details: [
+          'Activity and mood changes now show a visible update notice while the status save is processing.',
+          'The notice changes to done only after the status save completes.',
+          'The notice stays sticky over the item grid while the grid is scrolled.',
+          'Icon-only updates for activities and moods use the same completion notice.',
+          'The notice helps users know when it is safe to leave the Pet Page after updating status.'
+        ]
+      }
+    ]
+  },
   {
     version: 'v1.4.26',
     changes: [
@@ -1171,6 +1246,78 @@ const normalizeMoodItems = (moods, fallbackItems = TAB_ITEMS.moods) => {
     return true;
   });
 };
+
+const normalizeStatusSnapshotItems = (items, getShape) => (
+  (Array.isArray(items) ? items : [])
+    .map((item) => {
+      const name = typeof item?.name === 'string' ? item.name.trim() : String(item?.name || '').trim();
+      const icon = typeof item?.icon === 'string' ? item.icon.trim() : '';
+
+      return name ? {
+        ...(item && typeof item === 'object' ? item : {}),
+        name,
+        icon,
+        shape: item?.shape || getShape(name)
+      } : null;
+    })
+    .filter(Boolean)
+);
+
+const orderStatusSnapshotItems = (items, currentName) => {
+  const currentKey = String(currentName || '').trim().toLowerCase();
+
+  if (!currentKey) {
+    return items;
+  }
+
+  const currentIndex = items.findIndex((item) => item.name.toLowerCase() === currentKey);
+
+  if (currentIndex <= 0) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [currentItem] = nextItems.splice(currentIndex, 1);
+  return [currentItem, ...nextItems];
+};
+
+const upsertStatusSnapshotItem = (items, nextItem, options = {}) => {
+  const {
+    currentName = '',
+    makeCurrent = false,
+    getShape = getActivityShape
+  } = options;
+  const normalizedItem = normalizeStatusSnapshotItems([nextItem], getShape)[0];
+
+  if (!normalizedItem) {
+    return normalizeStatusSnapshotItems(items, getShape);
+  }
+
+  const filteredItems = normalizeStatusSnapshotItems(items, getShape)
+    .filter((item) => item.name.toLowerCase() !== normalizedItem.name.toLowerCase());
+
+  if (makeCurrent || normalizedItem.name.toLowerCase() === String(currentName || '').trim().toLowerCase()) {
+    return [normalizedItem, ...filteredItems];
+  }
+
+  const orderedItems = orderStatusSnapshotItems(filteredItems, currentName);
+  const currentIndex = orderedItems.findIndex(
+    (item) => item.name.toLowerCase() === String(currentName || '').trim().toLowerCase()
+  );
+
+  if (currentIndex === -1) {
+    return [normalizedItem, ...orderedItems];
+  }
+
+  const nextItems = [...orderedItems];
+  nextItems.splice(currentIndex + 1, 0, normalizedItem);
+  return nextItems;
+};
+
+const serializeStatusSnapshotItems = (items, getShape) => (
+  normalizeStatusSnapshotItems(items, getShape)
+    .map(({ name, icon }) => ({ name, icon }))
+);
 
 const getStatusText = (value) => {
   if (Array.isArray(value)) {
@@ -3377,6 +3524,10 @@ const PetPage = ({ onBack }) => {
   const { data: characterDataState } = useCharacterData(characterData, { enabled: isPetReady });
   const petSaveQueueRef = useRef(Promise.resolve());
   const statusSaveQueueRef = useRef(Promise.resolve());
+  const statusRecordIdRef = useRef(null);
+  const hasStatusSnapshotHydratedRef = useRef(false);
+  const statusSnapshotSaveInFlightRef = useRef(false);
+  const statusSnapshotPendingSaveRef = useRef(null);
   const localStatusMutationVersionRef = useRef(0);
   const petPhotoSaveQueueRef = useRef(Promise.resolve());
   const petNoticeTimerRef = useRef(null);
@@ -3407,6 +3558,8 @@ const PetPage = ({ onBack }) => {
   const lastInteractionRef = useRef(Date.now());
   const [activityItems, setActivityItems] = useState([]);
   const [moodItems, setMoodItems] = useState(() => normalizeMoodItems());
+  const activityItemsRef = useRef(activityItems);
+  const moodItemsRef = useRef(moodItems);
   const [currentActivityName, setCurrentActivityName] = useState('');
   const [currentMoodName, setCurrentMoodName] = useState('');
   const [currentLocationName, setCurrentLocationName] = useState('Home');
@@ -3713,6 +3866,10 @@ const PetPage = ({ onBack }) => {
 
     return itemList;
   }, [activeIsSleeping, activeTab, activityItems, moodItems, petItems, currentActivityName, currentMoodName, isStinkyEventActive]);
+  const statusSaveNoticeMessage = petNotice && !petNotice.targetCategory && !petNotice.targetName
+    ? petNotice.message
+    : '';
+  const isItemGridLocked = Boolean(statusSaveNoticeMessage);
   const petStatusRows = useMemo(() => createPetStatusRows(petStatus), [petStatus]);
   const petReaction = useMemo(() => {
     return getPetReaction(petStatus, biologicalClock);
@@ -5133,7 +5290,11 @@ useEffect(() => {
       const statusData = await fetchStatus();
       if (!statusData || !canApplyHydratedStatus()) return;
 
+      statusRecordIdRef.current = statusData.id || null;
+      hasStatusSnapshotHydratedRef.current = Boolean(statusData.id);
+
       if (statusData.doing && Array.isArray(statusData.doing)) {
+        activityItemsRef.current = statusData.doing;
         setActivityItems(statusData.doing);
         if (statusData.doing.length > 0) {
           const currentActivity = statusData.doing[0].name || '';
@@ -5154,6 +5315,7 @@ useEffect(() => {
       }
 
       if (statusData.mood && Array.isArray(statusData.mood)) {
+        moodItemsRef.current = statusData.mood;
         setMoodItems(statusData.mood);
         if (statusData.mood.length > 0) {
           setCurrentMoodName(statusData.mood[0].name || '');
@@ -6353,7 +6515,7 @@ useEffect(() => {
     }
   };
 
-  const showPetNotice = (message, target = {}) => {
+  const showPetNotice = (message, target = {}, durationMs = 2800) => {
     if (petNoticeTimerRef.current) {
       window.clearTimeout(petNoticeTimerRef.current);
     }
@@ -6368,7 +6530,7 @@ useEffect(() => {
     petNoticeTimerRef.current = window.setTimeout(() => {
       setPetNotice(null);
       petNoticeTimerRef.current = null;
-    }, 2800);
+    }, durationMs);
   };
 
   const handlePetItemClick = (item, category) => {
@@ -6645,6 +6807,12 @@ useEffect(() => {
   const enqueueStatusSave = (statusData, options = {}) => {
     const { changes = [], label = 'status' } = options;
     localStatusMutationVersionRef.current += 1;
+    const pendingMessage = getStatusSaveNoticeMessage(label, statusData, 'pending');
+    const failedMessage = getStatusSaveNoticeMessage(label, statusData, 'failed');
+
+    if (pendingMessage) {
+      showPetNotice(pendingMessage, {}, 120000);
+    }
 
     statusSaveQueueRef.current = statusSaveQueueRef.current
       .catch(() => {})
@@ -6652,34 +6820,148 @@ useEffect(() => {
         const result = await saveStatus(statusData);
         if (!result.success) {
           console.warn(`⚠️ Background ${label} sync failed:`, result.message);
+          if (failedMessage) {
+            showPetNotice(failedMessage);
+          }
           return;
         }
 
         await savePetStatusChangesJournal(changes);
         refreshStatusConsumers();
+
+        const doneMessage = getStatusSaveNoticeMessage(label, statusData, 'done');
+        if (doneMessage) {
+          showPetNotice(doneMessage);
+        }
       })
       .catch((error) => {
         console.warn(`⚠️ Background ${label} sync failed:`, error);
+        if (failedMessage) {
+          showPetNotice(failedMessage);
+        }
       });
+  };
+
+  const enqueueStatusSnapshotSave = (snapshotData, statusData, options = {}) => {
+    const { changes = [], label = 'status' } = options;
+
+    if (!hasStatusSnapshotHydratedRef.current || !statusRecordIdRef.current) {
+      enqueueStatusSave(statusData, options);
+      return;
+    }
+
+    localStatusMutationVersionRef.current += 1;
+
+    const saveRequest = {
+      snapshotData,
+      statusData,
+      changes,
+      label
+    };
+    const pendingMessage = getStatusSaveNoticeMessage(label, statusData, 'pending');
+
+    if (pendingMessage) {
+      showPetNotice(pendingMessage, {}, 120000);
+    }
+
+    if (statusSnapshotSaveInFlightRef.current) {
+      statusSnapshotPendingSaveRef.current = saveRequest;
+      return;
+    }
+
+    const runSnapshotSave = async (initialRequest) => {
+      statusSnapshotSaveInFlightRef.current = true;
+      let currentRequest = initialRequest;
+      let lastSuccessfulRequest = null;
+      let lastFailedRequest = null;
+
+      while (currentRequest) {
+        const result = await saveStatusSnapshot(currentRequest.snapshotData, {
+          statusId: statusRecordIdRef.current,
+          fallbackStatusData: currentRequest.statusData
+        });
+
+        if (result.success) {
+          statusRecordIdRef.current = result.statusId || statusRecordIdRef.current;
+          lastSuccessfulRequest = currentRequest;
+          lastFailedRequest = null;
+        } else {
+          console.warn(`⚠️ Background ${currentRequest.label} snapshot sync failed:`, result.message);
+          lastFailedRequest = currentRequest;
+        }
+
+        currentRequest = statusSnapshotPendingSaveRef.current;
+        statusSnapshotPendingSaveRef.current = null;
+      }
+
+      statusSnapshotSaveInFlightRef.current = false;
+
+      if (lastSuccessfulRequest) {
+        refreshStatusConsumers();
+
+        const doneMessage = getStatusSaveNoticeMessage(
+          lastSuccessfulRequest.label,
+          lastSuccessfulRequest.statusData,
+          'done'
+        );
+
+        if (doneMessage) {
+          showPetNotice(doneMessage);
+        }
+
+        if (lastSuccessfulRequest.changes.length > 0) {
+          window.setTimeout(() => {
+            savePetStatusChangesJournal(lastSuccessfulRequest.changes);
+          }, 0);
+        }
+        return;
+      }
+
+      const failedMessage = getStatusSaveNoticeMessage(
+        lastFailedRequest?.label,
+        lastFailedRequest?.statusData,
+        'failed'
+      );
+
+      if (failedMessage) {
+        showPetNotice(failedMessage);
+      }
+    };
+
+    runSnapshotSave(saveRequest).catch((error) => {
+      statusSnapshotSaveInFlightRef.current = false;
+      console.warn(`⚠️ Background ${label} snapshot sync failed:`, error);
+      const failedMessage = getStatusSaveNoticeMessage(label, statusData, 'failed');
+      if (failedMessage) {
+        showPetNotice(failedMessage);
+      }
+    });
   };
 
   const handleChooseActivityConfirm = (activity) => {
     lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     const oldActivityName = currentActivityName;
+    const nextActivityItems = upsertStatusSnapshotItem(activityItemsRef.current, activity, {
+      currentName: activity.name,
+      makeCurrent: true,
+      getShape: getActivityShape
+    });
 
     setCurrentActivityName(activity.name);
-    setActivityItems(prev => {
-      const filtered = prev.filter(item => item.name !== activity.name);
-      return [activity, ...filtered];
-    });
+    activityItemsRef.current = nextActivityItems;
+    setActivityItems(nextActivityItems);
     setIsChooseActivityModalOpen(false);
 
-    enqueueStatusSave({
+    const statusData = {
       doing: {
         name: activity.name,
         icon: activity.icon
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      doing: serializeStatusSnapshotItems(nextActivityItems, getActivityShape)
+    }, statusData, {
       label: 'activity',
       changes: [
         { fieldType: 'doing', oldValue: oldActivityName, newValue: activity.name }
@@ -6695,44 +6977,44 @@ useEffect(() => {
   };
 
   const handleUpdateIcon = (updatedActivity) => {
-    setActivityItems(prev => {
-      const filtered = prev.filter(item => item.name !== updatedActivity.name);
-      return [updatedActivity, ...filtered];
+    const nextActivityItems = upsertStatusSnapshotItem(activityItemsRef.current, updatedActivity, {
+      currentName: currentActivityName,
+      getShape: getActivityShape
     });
+    activityItemsRef.current = nextActivityItems;
+    setActivityItems(nextActivityItems);
     setIsUpdateIconModalOpen(false);
     setActivityToUpdate(null);
 
-    enqueueStatusSave({
+    const statusData = {
       doing: {
         name: updatedActivity.name,
         icon: updatedActivity.icon
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      doing: serializeStatusSnapshotItems(nextActivityItems, getActivityShape)
+    }, statusData, {
       label: 'activity icon'
     });
   };
 
   const handleAddActivity = (newActivity, setAsCurrent) => {
     const oldActivityName = currentActivityName;
-    const existingActivity = activityItems.find(
-      item => item.name.toLowerCase() === newActivity.name.toLowerCase()
-    );
     const normalizedActivity = {
       name: newActivity.name,
       icon: newActivity.icon,
       shape: getActivityShape(newActivity.name)
     };
+    const nextActivityItems = upsertStatusSnapshotItem(activityItemsRef.current, normalizedActivity, {
+      currentName: setAsCurrent ? newActivity.name : currentActivityName,
+      makeCurrent: setAsCurrent,
+      getShape: getActivityShape
+    });
 
-    if (existingActivity) {
-      setActivityItems(prev => {
-        const filtered = prev.filter(
-          item => item.name.toLowerCase() !== newActivity.name.toLowerCase()
-        );
-        return [normalizedActivity, ...filtered];
-      });
-    } else {
-      setActivityItems(prev => [normalizedActivity, ...prev]);
-    }
+    activityItemsRef.current = nextActivityItems;
+    setActivityItems(nextActivityItems);
 
     if (setAsCurrent) {
       setCurrentActivityName(newActivity.name);
@@ -6740,12 +7022,16 @@ useEffect(() => {
 
     setIsAddActivityModalOpen(false);
 
-    enqueueStatusSave({
+    const statusData = {
       doing: {
         name: newActivity.name,
         icon: newActivity.icon
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      doing: serializeStatusSnapshotItems(nextActivityItems, getActivityShape)
+    }, statusData, {
       label: 'activity',
       changes: setAsCurrent
         ? [{ fieldType: 'doing', oldValue: oldActivityName, newValue: newActivity.name }]
@@ -6756,20 +7042,27 @@ useEffect(() => {
   const handleChooseMoodConfirm = (mood) => {
     lastInteractionRef.current = Date.now(); // Track interaction for bubble timing
     const oldMoodName = currentMoodName;
+    const nextMoodItems = upsertStatusSnapshotItem(moodItemsRef.current, mood, {
+      currentName: mood.name,
+      makeCurrent: true,
+      getShape: getMoodShape
+    });
 
     setCurrentMoodName(mood.name);
-    setMoodItems(prev => {
-      const filtered = prev.filter(item => item.name !== mood.name);
-      return [mood, ...filtered];
-    });
+    moodItemsRef.current = nextMoodItems;
+    setMoodItems(nextMoodItems);
     setIsChooseMoodModalOpen(false);
 
-    enqueueStatusSave({
+    const statusData = {
       mood: {
         name: mood.name,
         icon: mood.icon
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      mood: serializeStatusSnapshotItems(nextMoodItems, getMoodShape)
+    }, statusData, {
       label: 'mood',
       changes: [
         { fieldType: 'mood', oldValue: oldMoodName, newValue: mood.name }
@@ -6784,19 +7077,25 @@ useEffect(() => {
   };
 
   const handleUpdateMoodIcon = (updatedMood) => {
-    setMoodItems(prev => {
-      const filtered = prev.filter(item => item.name !== updatedMood.name);
-      return [{ ...updatedMood, shape: getMoodShape(updatedMood.name) }, ...filtered];
+    const nextMoodItems = upsertStatusSnapshotItem(moodItemsRef.current, updatedMood, {
+      currentName: currentMoodName,
+      getShape: getMoodShape
     });
+    moodItemsRef.current = nextMoodItems;
+    setMoodItems(nextMoodItems);
     setIsUpdateMoodIconModalOpen(false);
     setMoodToUpdate(null);
 
-    enqueueStatusSave({
+    const statusData = {
       mood: {
         name: updatedMood.name,
         icon: updatedMood.icon
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      mood: serializeStatusSnapshotItems(nextMoodItems, getMoodShape)
+    }, statusData, {
       label: 'mood icon'
     });
   };
@@ -6806,25 +7105,19 @@ useEffect(() => {
     if (!moodName) return;
 
     const oldMoodName = currentMoodName;
-    const existingMood = moodItems.find(
-      item => item.name.toLowerCase() === moodName.toLowerCase()
-    );
     const normalizedMood = {
       name: moodName,
       icon: newMood.icon || '',
       shape: getMoodShape(moodName)
     };
+    const nextMoodItems = upsertStatusSnapshotItem(moodItemsRef.current, normalizedMood, {
+      currentName: setAsCurrent ? moodName : currentMoodName,
+      makeCurrent: setAsCurrent,
+      getShape: getMoodShape
+    });
 
-    if (existingMood) {
-      setMoodItems(prev => {
-        const filtered = prev.filter(
-          item => item.name.toLowerCase() !== moodName.toLowerCase()
-        );
-        return [normalizedMood, ...filtered];
-      });
-    } else {
-      setMoodItems(prev => [normalizedMood, ...prev]);
-    }
+    moodItemsRef.current = nextMoodItems;
+    setMoodItems(nextMoodItems);
 
     if (setAsCurrent) {
       setCurrentMoodName(moodName);
@@ -6832,12 +7125,16 @@ useEffect(() => {
 
     setIsAddMoodModalOpen(false);
 
-    enqueueStatusSave({
+    const statusData = {
       mood: {
         name: moodName,
         icon: newMood.icon || ''
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      mood: serializeStatusSnapshotItems(nextMoodItems, getMoodShape)
+    }, statusData, {
       label: 'mood',
       changes: setAsCurrent
         ? [{ fieldType: 'mood', oldValue: oldMoodName, newValue: moodName }]
@@ -6865,20 +7162,27 @@ useEffect(() => {
       setCurrentMoodName(selectedMood.name);
     }
 
-    setMoodItems(prev => {
-      const filtered = prev.filter(item => item.name !== selectedMood.name);
-      return [updatedMood, ...filtered];
+    const nextMoodItems = upsertStatusSnapshotItem(moodItemsRef.current, updatedMood, {
+      currentName: updateIconOnly ? currentMoodName : selectedMood.name,
+      makeCurrent: !updateIconOnly,
+      getShape: getMoodShape
     });
+    moodItemsRef.current = nextMoodItems;
+    setMoodItems(nextMoodItems);
 
     setIsConfirmMoodModalOpen(false);
     setSelectedMood(null);
 
-    enqueueStatusSave({
+    const statusData = {
       mood: {
         name: selectedMood.name,
         icon: iconToSave
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      mood: serializeStatusSnapshotItems(nextMoodItems, getMoodShape)
+    }, statusData, {
       label: 'mood',
       changes: !updateIconOnly
         ? [{ fieldType: 'mood', oldValue: oldMoodName, newValue: selectedMood.name }]
@@ -6905,20 +7209,27 @@ useEffect(() => {
       setCurrentActivityName(selectedActivity.name);
     }
 
-    setActivityItems(prev => {
-      const filtered = prev.filter(item => item.name !== selectedActivity.name);
-      return [updatedActivity, ...filtered];
+    const nextActivityItems = upsertStatusSnapshotItem(activityItemsRef.current, updatedActivity, {
+      currentName: updateIconOnly ? currentActivityName : selectedActivity.name,
+      makeCurrent: !updateIconOnly,
+      getShape: getActivityShape
     });
+    activityItemsRef.current = nextActivityItems;
+    setActivityItems(nextActivityItems);
 
     setIsConfirmModalOpen(false);
     setSelectedActivity(null);
 
-    enqueueStatusSave({
+    const statusData = {
       doing: {
         name: selectedActivity.name,
         icon: iconToSave
       }
-    }, {
+    };
+
+    enqueueStatusSnapshotSave({
+      doing: serializeStatusSnapshotItems(nextActivityItems, getActivityShape)
+    }, statusData, {
       label: 'activity',
       changes: !updateIconOnly
         ? [{ fieldType: 'doing', oldValue: oldActivityName, newValue: selectedActivity.name }]
@@ -8349,14 +8660,26 @@ useEffect(() => {
                 </ul>
               </section>
             ) : (
-              <div className="pet-item-grid">
+              <>
+              <div
+                className={`pet-item-grid ${isItemGridLocked ? 'pet-item-grid--locked' : ''}`}
+                aria-busy={isItemGridLocked || undefined}
+              >
+                {statusSaveNoticeMessage && (
+                  <div className="pet-save-notice-anchor" aria-hidden="false">
+                    <div className="pet-save-notice" role="status" aria-live="polite">
+                      <LuCheck className="pet-save-notice__icon" aria-hidden="true" />
+                      <span>{statusSaveNoticeMessage}</span>
+                    </div>
+                  </div>
+                )}
                 {PET_ITEM_CATEGORIES.includes(activeTab) && (
                   <button
                     type="button"
                     className="pet-item-card pet-item-card--add"
                     onClick={() => setPetItemModalCategory(activeTab)}
                     aria-label={`Add new ${activeTab} item`}
-                    disabled={isSavingPet}
+                    disabled={isSavingPet || isItemGridLocked}
                   >
                     <LuPlus className="pet-item-icon" aria-hidden="true" />
                     <span className="pet-item-card__name">Add</span>
@@ -8369,7 +8692,7 @@ useEffect(() => {
                       className="pet-item-card pet-item-card--add"
                       onClick={() => setIsAddMoodModalOpen(true)}
                       aria-label="Add new mood"
-                      disabled={isSavingMood}
+                      disabled={isSavingMood || isItemGridLocked}
                     >
                       <LuPlus className="pet-item-icon" aria-hidden="true" />
                       <span className="pet-item-card__name">Add</span>
@@ -8379,7 +8702,7 @@ useEffect(() => {
                       className="pet-item-card pet-item-card--choose"
                       onClick={() => setIsChooseMoodModalOpen(true)}
                       aria-label="Choose existing mood"
-                      disabled={isSavingMood}
+                      disabled={isSavingMood || isItemGridLocked}
                     >
                       <LuSearch className="pet-item-icon" aria-hidden="true" />
                       <span className="pet-item-card__name">Choose</span>
@@ -8393,6 +8716,7 @@ useEffect(() => {
                       className="pet-item-card pet-item-card--add"
                       onClick={() => setIsAddActivityModalOpen(true)}
                       aria-label="Add new activity"
+                      disabled={isSavingActivity || isItemGridLocked}
                     >
                       <LuPlus className="pet-item-icon" aria-hidden="true" />
                       <span className="pet-item-card__name">Add</span>
@@ -8402,6 +8726,7 @@ useEffect(() => {
                       className="pet-item-card pet-item-card--choose"
                       onClick={() => setIsChooseActivityModalOpen(true)}
                       aria-label="Choose existing activity"
+                      disabled={isSavingActivity || isItemGridLocked}
                     >
                       <LuSearch className="pet-item-icon" aria-hidden="true" />
                       <span className="pet-item-card__name">Choose</span>
@@ -8421,10 +8746,14 @@ useEffect(() => {
                   const metaBadge = isGameCare ? String(clawMachineCoinBalance) : '';
                   const isFoodLocked = activeTab === 'food' && (isFoodUseAnimating || activeIsSleeping);
                   const isCareLocked = activeTab === 'care' && (isCareUseAnimating || activeIsSleeping || isPetClawGameOpen);
-                  const isPetItemDisabled = Boolean(petUsePreview && (
-                    (!isGameCare && !petUsePreview.canUse) || isSavingPet || isFoodLocked || isCareLocked
-                  ));
-                  const disabledReason = activeIsSleeping
+                  const isPetItemDisabled = Boolean(
+                    isItemGridLocked || (petUsePreview && (
+                      (!isGameCare && !petUsePreview.canUse) || isSavingPet || isFoodLocked || isCareLocked
+                    ))
+                  );
+                  const disabledReason = isItemGridLocked
+                    ? 'Đợi popup biến mất rồi chọn tiếp nha.'
+                    : activeIsSleeping
                     ? 'Pet đang ngủ, đợi sáng mai nhé! 💤'
                     : isFoodLocked
                       ? 'Đợi món trước tan hết đã nha.'
@@ -8463,6 +8792,7 @@ useEffect(() => {
                   );
                 })}
               </div>
+              </>
             )}
           </div>
         </section>
@@ -8679,6 +9009,7 @@ useEffect(() => {
         locationHistory={locationHistory}
         isLoading={isSavingLocation}
       />
+
         </>
       )}
     </main>

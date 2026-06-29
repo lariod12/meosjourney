@@ -53,6 +53,7 @@ const normalizeStringArray = (value) => (
 
 const STATUS_FIELDS_QUERY = 'fields=Id,current_activity,mood,location,UpdatedAt,CreatedAt&pageSize=1';
 const PET_PASSWORD_CONFIG_FIELDS_QUERY = 'fields=Id,pw_daily_update&pageSize=1';
+let lastKnownStatusSnapshot = null;
 
 const getAttachmentUrl = (file) => file?.signedUrl || file?.url || null;
 
@@ -640,7 +641,27 @@ export const updateProfileXP = async (xpToAdd) => {
 export const saveStatus = async (statusData) => {
   try {
     // Get the current status record to find the ID
+    const isDebugMode = import.meta.env.MODE !== 'production';
+    const statusFetchStartedAt = isDebugMode ? performance.now() : 0;
+
+    if (isDebugMode) {
+      console.log('🔎 saveStatus fetchStatus start:', {
+        fields: Object.keys(statusData || {}),
+        at: new Date().toISOString()
+      });
+    }
+
     const currentStatus = await fetchStatus();
+
+    if (isDebugMode) {
+      console.log('✅ saveStatus fetchStatus done:', {
+        durationMs: Math.round(performance.now() - statusFetchStartedAt),
+        statusId: currentStatus?.id || null,
+        activityCount: currentStatus?.doing?.length || 0,
+        moodCount: currentStatus?.mood?.length || 0,
+        locationCount: currentStatus?.location?.length || 0
+      });
+    }
 
     if (!currentStatus || !currentStatus.id) {
       throw new Error('No status record found to update');
@@ -726,7 +747,7 @@ export const saveStatus = async (statusData) => {
     }];
 
     // Debug: Log status update (development only)
-    if (import.meta.env.MODE !== 'production') {
+    if (isDebugMode) {
       console.log('🔍 Sending Status PATCH to NocoDB:', updatePayload);
     }
 
@@ -736,12 +757,123 @@ export const saveStatus = async (statusData) => {
     });
 
     // Debug: Log status update success (development only)
-    if (import.meta.env.MODE !== 'production') {
+    if (isDebugMode) {
       console.log('✅ Status updated successfully in NocoDB:', response);
     }
     return { success: true, message: 'Status updated' };
   } catch (error) {
     console.error('❌ Error saving status to NocoDB:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Save full status array snapshots without a read-before-write round trip.
+ * Use this only when the caller already has a trusted, hydrated full list.
+ */
+export const saveStatusSnapshot = async (statusData, options = {}) => {
+  const {
+    statusId: providedStatusId = null,
+    fallbackStatusData = null
+  } = options || {};
+  const isDebugMode = import.meta.env.MODE !== 'production';
+
+  try {
+    const hasActivitySnapshot = statusData?.doing !== undefined;
+    const hasMoodSnapshot = statusData?.mood !== undefined;
+    const hasLocationSnapshot = statusData?.location !== undefined;
+    const hasInvalidSnapshot = (
+      (hasActivitySnapshot && !Array.isArray(statusData.doing)) ||
+      (hasMoodSnapshot && !Array.isArray(statusData.mood)) ||
+      (hasLocationSnapshot && !Array.isArray(statusData.location))
+    );
+
+    if (hasInvalidSnapshot) {
+      if (isDebugMode) {
+        console.log('↩️ saveStatusSnapshot fallback: invalid snapshot payload', {
+          fields: Object.keys(statusData || {})
+        });
+      }
+      return fallbackStatusData ? saveStatus(fallbackStatusData) : { success: true, message: 'No valid snapshot to save' };
+    }
+
+    const updates = {};
+
+    if (hasActivitySnapshot) {
+      updates.current_activity = normalizeActivityItems(statusData.doing);
+    }
+
+    if (hasMoodSnapshot) {
+      updates.mood = normalizeStatusItems(statusData.mood);
+    }
+
+    if (hasLocationSnapshot) {
+      updates.location = normalizeStringArray(statusData.location);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return { success: true, message: 'No data to save' };
+    }
+
+    let statusId = providedStatusId || statusData?.id || lastKnownStatusSnapshot?.id || null;
+    let fallbackCurrentStatus = null;
+
+    if (!statusId) {
+      if (isDebugMode) {
+        console.log('🔎 saveStatusSnapshot fetchStatus fallback start:', {
+          fields: Object.keys(updates),
+          at: new Date().toISOString()
+        });
+      }
+
+      fallbackCurrentStatus = await fetchStatus();
+      statusId = fallbackCurrentStatus?.id || null;
+
+      if (isDebugMode) {
+        console.log('✅ saveStatusSnapshot fetchStatus fallback done:', {
+          statusId,
+          activityCount: fallbackCurrentStatus?.doing?.length || 0,
+          moodCount: fallbackCurrentStatus?.mood?.length || 0,
+          locationCount: fallbackCurrentStatus?.location?.length || 0
+        });
+      }
+    }
+
+    if (!statusId) {
+      if (fallbackStatusData) {
+        return saveStatus(fallbackStatusData);
+      }
+      throw new Error('No status record found to update');
+    }
+
+    const updatePayload = [{
+      Id: statusId,
+      ...updates
+    }];
+
+    if (isDebugMode) {
+      console.log('🔍 Sending Status Snapshot PATCH to NocoDB:', updatePayload);
+    }
+
+    const response = await nocoRequest(`${TABLE_IDS.STATUS}/records`, {
+      method: 'PATCH',
+      body: JSON.stringify(updatePayload)
+    });
+
+    lastKnownStatusSnapshot = {
+      id: statusId,
+      doing: updates.current_activity || lastKnownStatusSnapshot?.doing || fallbackCurrentStatus?.doing || [],
+      mood: updates.mood || lastKnownStatusSnapshot?.mood || fallbackCurrentStatus?.mood || [],
+      location: updates.location || lastKnownStatusSnapshot?.location || fallbackCurrentStatus?.location || []
+    };
+
+    if (isDebugMode) {
+      console.log('✅ Status snapshot updated successfully in NocoDB:', response);
+    }
+
+    return { success: true, message: 'Status snapshot updated', statusId };
+  } catch (error) {
+    console.error('❌ Error saving status snapshot to NocoDB:', error);
     return { success: false, message: error.message };
   }
 };
